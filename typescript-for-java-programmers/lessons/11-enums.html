@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Literal Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Literal Types",
+
+  intro: `
+<p>Java enums are heavyweight machinery: full classes with fields,
+constructors, methods, even per-constant behavior. You reach for them
+constantly, and rightly so. TypeScript has an <code>enum</code> keyword too,
+but it is a much thinner thing — a set of named constants, no fields, no
+methods. A string enum like <code>enum OrderStatus { Pending = "PENDING" }</code>
+is a real runtime object (like Java's, it survives compilation), and anything
+your Java enum did with instance methods becomes a plain function that
+switches over the values.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>public enum OrderStatus { PENDING, SHIPPED }</code></td><td><code>enum OrderStatus { Pending = "PENDING", Shipped = "SHIPPED" }</code></td></tr>
+  <tr><td><code>status.getLabel()</code> (instance method)</td><td><code>statusLabel(status)</code> (plain function + <code>switch</code>)</td></tr>
+  <tr><td><code>OrderStatus.valueOf("PENDING")</code></td><td>the value already <em>is</em> the string <code>"PENDING"</code></td></tr>
+  <tr><td>No equivalent</td><td><code>type PaymentState = "unpaid" | "paid" | "refunded"</code></td></tr>
+</table>
+<p>The bigger surprise: idiomatic TypeScript often skips <code>enum</code>
+entirely in favor of a <strong>string-literal union type</strong> —
+<code>type PaymentState = "unpaid" | "paid" | "refunded"</code>. To Java eyes
+that looks like stringly-typed chaos, but the compiler enforces it exactly
+like an enum: pass <code>"cancelled"</code> where a <code>PaymentState</code>
+is expected and you get a compile error. Unlike an enum, the union is
+<em>erased</em> at compile time — at runtime the values are just strings, with
+zero imports and zero ceremony. You will see literal unions far more often
+than enums in modern TypeScript codebases.</p>`,
+
+  java: `public enum OrderStatus {
+    PENDING("Pending"),
+    SHIPPED("Shipped"),
+    DELIVERED("Delivered");
+
+    private final String label;
+
+    OrderStatus(String label) {
+        this.label = label;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+}
+
+OrderStatus status = OrderStatus.SHIPPED;
+System.out.println(status.getLabel());               // Shipped
+System.out.println(OrderStatus.valueOf("PENDING"));  // PENDING`,
+
+  task: `
+<p>Port the rich Java enum to TypeScript twice — once as a string enum, once
+as a literal union:</p>
+<ol>
+  <li>Declare a string enum <code>OrderStatus</code> with members
+      <code>Pending = "PENDING"</code>, <code>Shipped = "SHIPPED"</code>, and
+      <code>Delivered = "DELIVERED"</code>.</li>
+  <li>Write <code>statusLabel(status: OrderStatus): string</code> that returns
+      the human label — <code>"Pending"</code>, <code>"Shipped"</code>, or
+      <code>"Delivered"</code>. This replaces Java's <code>getLabel()</code>
+      instance method.</li>
+  <li>Declare a type alias <code>PaymentState</code> as the literal union
+      <code>"unpaid" | "paid" | "refunded"</code> — the idiomatic TS
+      alternative to a second enum.</li>
+  <li>Write <code>paymentBadge(state: PaymentState): string</code> that
+      returns <code>"Payment: "</code> followed by the state, e.g.
+      <code>"Payment: paid"</code>. Notice the value needs no unwrapping — it
+      is already a string.</li>
+</ol>`,
+
+  starter: `// 1. A string enum — the closest cousin of Java's enum.
+//    Java: public enum OrderStatus { PENDING, SHIPPED, DELIVERED }
+enum OrderStatus {
+  Pending = "PENDING",
+  // TODO: add Shipped = "SHIPPED" and Delivered = "DELIVERED"
+}
+
+// 2. Java's getLabel() instance method becomes a plain function.
+function statusLabel(status: OrderStatus): string {
+  // TODO: switch over the enum and return "Pending", "Shipped", or "Delivered"
+  return "";
+}
+
+// 3. The idiomatic TS alternative: a string-literal union type.
+//    TODO: extend the union with "paid" and "refunded".
+type PaymentState = "unpaid";
+
+// 4. At runtime a PaymentState is just a string — no .name(), no .toString().
+function paymentBadge(state: PaymentState): string {
+  // TODO: return "Payment: " followed by the state
+  return "";
+}
+`,
+
+  exportNames: ["OrderStatus", "statusLabel", "paymentBadge"],
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus/, message: "Declare an enum named OrderStatus" },
+    { pattern: /type\s+PaymentState\s*=/, message: "Declare a type alias named PaymentState" },
+    { pattern: /"\w+"\s*\|\s*"/, message: "PaymentState must be a string-literal union (quoted strings joined with |)" },
+  ],
+
+  tests: [
+    { name: 'OrderStatus.Shipped is the string "SHIPPED" at runtime', run: (x) => expectEqual(x.OrderStatus.Shipped, "SHIPPED") },
+    { name: 'statusLabel(OrderStatus.Pending) returns "Pending"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Pending), "Pending") },
+    { name: 'statusLabel(OrderStatus.Delivered) returns "Delivered"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Delivered), "Delivered") },
+    { name: 'paymentBadge("paid") returns "Payment: paid"', run: (x) => expectEqual(x.paymentBadge("paid"), "Payment: paid") },
+    { name: 'paymentBadge("refunded") returns "Payment: refunded"', run: (x) => expectEqual(x.paymentBadge("refunded"), "Payment: refunded") },
+  ],
+
+  solution: `enum OrderStatus {
+  Pending = "PENDING",
+  Shipped = "SHIPPED",
+  Delivered = "DELIVERED",
+}
+
+function statusLabel(status: OrderStatus): string {
+  switch (status) {
+    case OrderStatus.Pending:
+      return "Pending";
+    case OrderStatus.Shipped:
+      return "Shipped";
+    case OrderStatus.Delivered:
+      return "Delivered";
+  }
+}
+
+type PaymentState = "unpaid" | "paid" | "refunded";
+
+function paymentBadge(state: PaymentState): string {
+  return "Payment: " + state;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Basic enum</td><td><code>enum Status { PENDING, SHIPPED }</code></td><td><code>enum Status { Pending = "PENDING", Shipped = "SHIPPED" }</code></td></tr>
+  <tr><td>Enum with fields/methods</td><td>constructor + <code>getLabel()</code></td><td>string enum + a plain function with <code>switch</code></td></tr>
+  <tr><td>String → enum</td><td><code>Status.valueOf("PENDING")</code></td><td>the string <em>is</em> the value; narrow with a check if needed</td></tr>
+  <tr><td>All values</td><td><code>Status.values()</code></td><td><code>Object.values(Status)</code></td></tr>
+  <tr><td>Lightweight fixed set</td><td>(still an enum)</td><td><code>type State = "unpaid" | "paid" | "refunded"</code></td></tr>
+  <tr><td>Runtime cost</td><td>a class per enum</td><td>enum: small object; literal union: <strong>zero</strong> — erased</td></tr>
+</table>
+<p>Rule of thumb for the recovering Java developer: reach for a
+<strong>literal union</strong> by default — it gives you enum-grade compile
+checking on plain strings, which also makes JSON serialization trivial (no
+<code>valueOf</code> round-trips). Use an actual <code>enum</code> only when
+you need a runtime object to iterate over or to attach to. Either way, the
+behavior that lived in enum instance methods moves into standalone functions —
+a pattern you will see again and again in TypeScript.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

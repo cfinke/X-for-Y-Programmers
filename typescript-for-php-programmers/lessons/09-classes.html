@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes",
+
+  intro: `
+<p>Classes are where PHP and TypeScript feel most alike. Both have
+<code>class</code>, <code>public</code>/<code>protected</code>/<code>private</code>,
+a constructor, and methods on <code>this</code>. The cosmetic differences:
+the constructor is called <code>constructor</code> instead of
+<code>__construct</code>, you write <code>this.balance</code> instead of
+<code>$this-&gt;balance</code>, and <code>new BankAccount(...)</code> needs no
+parentheses gymnastics — it is the same <code>new</code> you know.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>public function __construct(...)</code></td><td><code>constructor(...)</code></td></tr>
+  <tr><td><code>$this-&gt;balance</code></td><td><code>this.balance</code></td></tr>
+  <tr><td><code>public function __construct(private float $b) {}</code> (8.0 promotion)</td><td><code>constructor(private b: number) {}</code> (parameter properties)</td></tr>
+  <tr><td><code>public readonly string $owner</code> (8.1)</td><td><code>readonly owner: string</code></td></tr>
+</table>
+<p>The best part: PHP 8.0's constructor property promotion was TypeScript's idea
+first. Writing <code>constructor(private balance: number) {}</code> declares the
+property, types it, and assigns it in one stroke — no
+<code>$this-&gt;balance = $balance;</code> boilerplate. And <code>readonly</code>
+works like PHP 8.1's readonly properties: assignable once in the constructor,
+a compile error anywhere else. One caveat to remember: TS visibility is
+compile-time only — after compilation, <code>private</code> fields are plain
+JavaScript properties (unlike PHP's runtime-enforced <code>private</code>).</p>`,
+
+  php: `<?php
+class BankAccount
+{
+    // PHP 8 constructor property promotion + readonly
+    public function __construct(
+        public readonly string $owner,
+        public readonly string $id,
+        private float $balance = 0.0
+    ) {}
+
+    public function deposit(float $amount): void
+    {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(float $amount): void
+    {
+        if ($amount > $this->balance) {
+            throw new RuntimeException('Insufficient funds');
+        }
+        $this->balance -= $amount;
+    }
+
+    public function getBalance(): float
+    {
+        return $this->balance;
+    }
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code> to TypeScript:</p>
+<ol>
+  <li>Define a class <code>BankAccount</code> using <strong>constructor parameter
+      properties</strong>: <code>public readonly owner: string</code>,
+      <code>public readonly id: string</code>, and
+      <code>private balance: number = 0</code> — all declared directly in the
+      constructor signature, PHP-promotion style.</li>
+  <li>Add <code>deposit(amount: number): void</code> that adds to the balance.</li>
+  <li>Add <code>withdraw(amount: number): void</code> that
+      <strong>throws</strong> <code>new Error("Insufficient funds")</code> when
+      <code>amount</code> exceeds the balance, and subtracts it otherwise.</li>
+  <li>Add <code>getBalance(): number</code> returning the private balance.</li>
+</ol>`,
+
+  starter: `class BankAccount {
+  // TODO: replace this constructor with parameter properties:
+  //   public readonly owner (string), public readonly id (string),
+  //   private balance (number, defaulting to 0)
+  constructor(owner: string, id: string, balance: number = 0) {
+  }
+
+  deposit(amount: number): void {
+    // TODO: add amount to the balance
+  }
+
+  withdraw(amount: number): void {
+    // TODO: throw new Error("Insufficient funds") if amount > balance,
+    // otherwise subtract it from the balance
+  }
+
+  getBalance(): number {
+    // TODO: return the private balance
+    return 0;
+  }
+}
+`,
+
+  exportNames: ["BankAccount"],
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Define a class named BankAccount" },
+    { pattern: /private\s+\w+/, message: "Keep the balance private (private balance: number)" },
+    { pattern: /readonly\s+\w+/, message: "Mark owner and id as readonly" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada", "acct-1", 100) starts with balance 100', run: (x) => expectEqual(new x.BankAccount("Ada", "acct-1", 100).getBalance(), 100) },
+    { name: "the owner is exposed as a readonly public property", run: (x) => expectEqual(new x.BankAccount("Ada", "acct-1", 100).owner, "Ada") },
+    { name: "deposit(50) raises the balance from 100 to 150", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 100); a.deposit(50); expectEqual(a.getBalance(), 150); } },
+    { name: "withdraw(30) lowers the balance from 100 to 70", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 100); a.withdraw(30); expectEqual(a.getBalance(), 70); } },
+    { name: "withdraw(101) on a balance of 100 throws", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 100); expectThrows(() => a.withdraw(101)); } },
+    { name: "the balance defaults to 0 when omitted", run: (x) => expectEqual(new x.BankAccount("Rasmus", "acct-2").getBalance(), 0) },
+  ],
+
+  solution: `class BankAccount {
+  constructor(
+    public readonly owner: string,
+    public readonly id: string,
+    private balance: number = 0
+  ) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("Insufficient funds");
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Constructor</td><td><code>public function __construct()</code></td><td><code>constructor()</code></td></tr>
+  <tr><td>Property access</td><td><code>$this-&gt;balance</code></td><td><code>this.balance</code> (never omit <code>this.</code>)</td></tr>
+  <tr><td>Promotion / parameter properties</td><td><code>__construct(private float $b)</code></td><td><code>constructor(private b: number)</code></td></tr>
+  <tr><td>Write-once property</td><td><code>public readonly string $owner</code></td><td><code>public readonly owner: string</code></td></tr>
+  <tr><td>Throw</td><td><code>throw new RuntimeException('...')</code></td><td><code>throw new Error("...")</code></td></tr>
+  <tr><td>Visibility enforcement</td><td>At runtime</td><td>Compile time only (erased in the emitted JS)</td></tr>
+</table>
+<p>Methods in TS classes take no <code>function</code> keyword and default to
+<code>public</code>, just like you wish PHP did. The habit to build:
+<code>this.</code> is mandatory for every property and method access — there is
+no PHP-style implicit scope, and forgetting it is the classic first-week
+mistake.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

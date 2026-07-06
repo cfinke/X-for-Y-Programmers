@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Lists → Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Lists → Arrays",
+
+  intro: `
+<p>Python lists map directly onto TypeScript arrays, and the type syntax is
+even shorter: <code>list[int]</code> becomes <code>number[]</code>,
+<code>list[str]</code> becomes <code>string[]</code>. The everyday
+operations all have one-to-one counterparts — <code>append</code> is
+<code>push</code>, <code>len(nums)</code> is <code>nums.length</code>, and
+<code>x in nums</code> is <code>nums.includes(x)</code> (the same two
+gotchas as strings: <code>.length</code> is a property, and membership is a
+method on the array).</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>nums: list[int] = [1, 2, 3]</code></td><td><code>const nums: number[] = [1, 2, 3];</code></td></tr>
+  <tr><td><code>nums.append(4)</code></td><td><code>nums.push(4);</code></td></tr>
+  <tr><td><code>len(nums)</code></td><td><code>nums.length</code></td></tr>
+  <tr><td><code>x in nums</code></td><td><code>nums.includes(x)</code></td></tr>
+  <tr><td><code>nums[-1]</code></td><td><code>nums.at(-1)</code></td></tr>
+  <tr><td><code>nums[0:3]</code></td><td><code>nums.slice(0, 3)</code></td></tr>
+</table>
+<p>The habit you must unlearn is negative indexing: <code>nums[-1]</code> is
+not an error in TypeScript — it quietly returns <code>undefined</code>,
+because <code>-1</code> is just a property name that does not exist. Use
+<code>nums.at(-1)</code> for last-element access, and <code>.slice()</code>
+where Python would use <code>[start:stop]</code> slicing (like Python
+slices, <code>.slice</code> returns a copy and accepts negative
+positions).</p>`,
+
+  python: `primes: list[int] = [2, 3, 5, 7]
+
+def add_item(items: list[str], item: str) -> list[str]:
+    items.append(item)
+    return items
+
+def last(nums: list[int]) -> int | None:
+    return nums[-1] if nums else None
+
+def first_n(nums: list[int], n: int) -> list[int]:
+    return nums[:n]
+
+def has_item(items: list[str], target: str) -> bool:
+    return target in items
+
+print(len(primes), last(primes))  # 4 7`,
+
+  task: `
+<p>Rewrite the Python list helpers as TypeScript arrays:</p>
+<ol>
+  <li>Declare a constant <code>primes</code> with an explicit
+      <code>number[]</code> annotation, holding <code>[2, 3, 5, 7]</code>.</li>
+  <li><code>addItem(items: string[], item: string): string[]</code> —
+      append with <code>.push()</code> and return the array. (Note:
+      <code>push</code> returns the new length, not the array — do not
+      <code>return items.push(item)</code>.)</li>
+  <li><code>last(nums: number[]): number | undefined</code> — return the
+      final element using <code>.at(-1)</code>. Bracket access
+      <code>nums[-1]</code> would return <code>undefined</code> every time!</li>
+  <li><code>firstN(nums: number[], n: number): number[]</code> — Python's
+      <code>nums[:n]</code> becomes <code>nums.slice(0, n)</code>.</li>
+  <li><code>hasItem(items: string[], target: string): boolean</code> —
+      membership via <code>.includes()</code>.</li>
+</ol>`,
+
+  starter: `// 1. Python: primes: list[int] = [2, 3, 5, 7]
+//    TODO: declare primes with an explicit number[] annotation.
+const primes = [0];
+
+// 2. Python: items.append(item)  ->  items.push(item)
+//    Careful: push returns the new length, not the array.
+function addItem(items: string[], item: string): string[] {
+  // TODO
+  return items;
+}
+
+// 3. Python: nums[-1]  ->  nums.at(-1)
+//    (nums[-1] compiles but is always undefined — no negative indexing!)
+function last(nums: number[]): number | undefined {
+  // TODO
+  return undefined;
+}
+
+// 4. Python: nums[:n]  ->  nums.slice(0, n)
+function firstN(nums: number[], n: number): number[] {
+  // TODO
+  return [];
+}
+
+// 5. Python: target in items  ->  items.includes(target)
+function hasItem(items: string[], target: string): boolean {
+  // TODO
+  return false;
+}
+`,
+
+  exportNames: ["primes", "addItem", "last", "firstN", "hasItem"],
+
+  requirements: [
+    { pattern: /primes\s*:\s*number\s*\[\s*\]/, message: "Annotate primes as number[] — the TS spelling of list[int]" },
+    { pattern: /\.push\s*\(/, message: "Use .push() — the TS spelling of .append()" },
+    { pattern: /\.at\s*\(\s*-\s*1\s*\)/, message: "Use .at(-1) for the last element — bracket [-1] does not work in TS" },
+    { pattern: /\.slice\s*\(/, message: "Use .slice() where Python would use [start:stop] slicing" },
+  ],
+
+  tests: [
+    { name: "primes is [2, 3, 5, 7]", run: (x) => expectDeepEqual(x.primes, [2, 3, 5, 7]) },
+    { name: 'addItem(["a"], "b") returns ["a", "b"]', run: (x) => expectDeepEqual(x.addItem(["a"], "b"), ["a", "b"]) },
+    { name: "last([1, 2, 3]) returns 3", run: (x) => expectEqual(x.last([1, 2, 3]), 3) },
+    { name: "last([]) returns undefined", run: (x) => expectEqual(x.last([]), undefined) },
+    { name: "firstN([1, 2, 3, 4, 5], 3) returns [1, 2, 3]", run: (x) => expectDeepEqual(x.firstN([1, 2, 3, 4, 5], 3), [1, 2, 3]) },
+    { name: 'hasItem finds "y" but not "z"', run: (x) => {
+        expectEqual(x.hasItem(["x", "y"], "y"), true);
+        expectEqual(x.hasItem(["x", "y"], "z"), false);
+      } },
+  ],
+
+  solution: `const primes: number[] = [2, 3, 5, 7];
+
+function addItem(items: string[], item: string): string[] {
+  items.push(item);
+  return items;
+}
+
+function last(nums: number[]): number | undefined {
+  return nums.at(-1);
+}
+
+function firstN(nums: number[], n: number): number[] {
+  return nums.slice(0, n);
+}
+
+function hasItem(items: string[], target: string): boolean {
+  return items.includes(target);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Type annotation</td><td><code>list[int]</code></td><td><code>number[]</code> (or <code>Array&lt;number&gt;</code>)</td></tr>
+  <tr><td>Append</td><td><code>nums.append(x)</code></td><td><code>nums.push(x)</code> (returns new length!)</td></tr>
+  <tr><td>Length</td><td><code>len(nums)</code></td><td><code>nums.length</code></td></tr>
+  <tr><td>Membership</td><td><code>x in nums</code></td><td><code>nums.includes(x)</code></td></tr>
+  <tr><td>Last element</td><td><code>nums[-1]</code></td><td><code>nums.at(-1)</code></td></tr>
+  <tr><td>Slice</td><td><code>nums[1:3]</code></td><td><code>nums.slice(1, 3)</code></td></tr>
+  <tr><td>Pop / insert front</td><td><code>.pop()</code> / <code>.insert(0, x)</code></td><td><code>.pop()</code> / <code>.unshift(x)</code></td></tr>
+</table>
+<p>The deepest difference is silent failure: Python raises
+<code>IndexError</code> for a bad index, while TypeScript arrays return
+<code>undefined</code> for any out-of-range (or negative) bracket access.
+Reach for <code>.at()</code> and <code>.slice()</code> whenever your Python
+instincts say "negative index", and let the type checker catch the rest.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

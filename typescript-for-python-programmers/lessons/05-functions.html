@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>You already saw <code>def f(x: int) -&gt; str</code> become
+<code>function f(x: number): string</code>. Default parameters carry over
+unchanged (<code>greeting: string = "Hello"</code>), and TypeScript adds
+optional parameters: <code>times?: number</code> means the caller may omit
+the argument, in which case it is <code>undefined</code> inside the
+function. Python's <code>lambda</code> maps to the arrow function —
+<code>lambda n: n * 2</code> becomes <code>(n: number) =&gt; n * 2</code> —
+but arrows are strictly better than lambdas: they take multiple statements
+in a <code>{ }</code> body, so they are used everywhere, not just for
+one-liners.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>def f(x: int) -&gt; str:</code></td><td><code>function f(x: number): string { }</code></td></tr>
+  <tr><td><code>def f(g: str = "Hello"):</code></td><td><code>function f(g: string = "Hello") { }</code></td></tr>
+  <tr><td><code>lambda n: n * 2</code></td><td><code>(n: number) =&gt; n * 2</code></td></tr>
+  <tr><td><code>f(name="Ada", admin=True)</code></td><td><code>f({ name: "Ada", isAdmin: true })</code></td></tr>
+</table>
+<p>The one thing TypeScript does <em>not</em> have is keyword arguments —
+every call site passes arguments by position. The idiomatic replacement is
+the <strong>options object</strong>: the function takes a single typed
+object parameter and destructures it, so the call
+<code>createUser({ name: "Ada", isAdmin: true })</code> reads exactly like
+Python's <code>create_user(name="Ada", admin=True)</code>, complete with
+per-field defaults. (Note the rename: <code>is_admin</code> →
+<code>isAdmin</code>.)</p>`,
+
+  python: `def greet_user(name: str, greeting: str = "Hello") -> str:
+    return f"{greeting}, {name}!"
+
+double = lambda n: n * 2
+
+def create_user(name: str, age: int = 0, is_admin: bool = False) -> dict:
+    return {"name": name, "age": age, "is_admin": is_admin}
+
+# Keyword arguments make call sites self-documenting:
+print(greet_user("Ada"))                    # Hello, Ada!
+print(greet_user("Ada", greeting="Hi"))     # Hi, Ada!
+print(create_user(name="Grace", is_admin=True))`,
+
+  task: `
+<p>Rewrite the Python functions in TypeScript:</p>
+<ol>
+  <li><code>greetUser(name: string, greeting: string = "Hello"):
+      string</code> — a default parameter, exactly like Python's. Returns
+      <code>"&lt;greeting&gt;, &lt;name&gt;!"</code>.</li>
+  <li><code>double</code> — an <em>arrow function</em> assigned to a
+      constant: the TS spelling of <code>lambda n: n * 2</code>. Take a
+      <code>number</code>, return a <code>number</code>.</li>
+  <li><code>createUser</code> — the options-object pattern standing in for
+      keyword arguments. It takes one destructured object parameter typed
+      <code>{ name: string; age?: number; isAdmin?: boolean }</code>, with
+      defaults <code>age = 0</code> and <code>isAdmin = false</code> applied
+      in the destructuring, and returns
+      <code>{ name, age, isAdmin }</code>.</li>
+</ol>
+<p>Call sites then look like
+<code>createUser({ name: "Grace", isAdmin: true })</code> — TypeScript's
+answer to <code>create_user(name="Grace", is_admin=True)</code>.</p>`,
+
+  starter: `// 1. Python: def greet_user(name: str, greeting: str = "Hello") -> str:
+//    Defaults work the same way — write it after the type annotation.
+function greetUser(name: string, greeting: string): string {
+  // TODO: give greeting a default of "Hello"
+  return "";
+}
+
+// 2. Python: double = lambda n: n * 2
+//    TODO: rewrite as an arrow function with typed parameter.
+const double = function (n: number): number {
+  return 0;
+};
+
+// 3. Keyword arguments -> a single destructured "options object".
+//    Python: def create_user(name, age=0, is_admin=False):
+function createUser(options: { name: string }) {
+  // TODO: destructure { name, age = 0, isAdmin = false } in the
+  // parameter list, type age and isAdmin as optional (?), and
+  // return { name, age, isAdmin }.
+  return { name: options.name, age: 0, isAdmin: false };
+}
+`,
+
+  exportNames: ["greetUser", "double", "createUser"],
+
+  requirements: [
+    { pattern: /greeting\s*(?::\s*string\s*)?=\s*["'`]Hello["'`]/, message: 'Give greeting a default value of "Hello" in the parameter list' },
+    { pattern: /double\s*=\s*\([^)]*\)[^={]*=>/, message: "Write double as an arrow function: (n: number) => ..." },
+    { pattern: /createUser\s*\(\s*\{/, message: "createUser should destructure a single options object in its parameter list" },
+    { pattern: /\w+\s*\?\s*:/, message: "Mark at least one options-object field optional with ?" },
+  ],
+
+  tests: [
+    { name: 'greetUser("Ada") uses the default: "Hello, Ada!"', run: (x) => expectEqual(x.greetUser("Ada"), "Hello, Ada!") },
+    { name: 'greetUser("Ada", "Hi") returns "Hi, Ada!"', run: (x) => expectEqual(x.greetUser("Ada", "Hi"), "Hi, Ada!") },
+    { name: "double(21) returns 42", run: (x) => expectEqual(x.double(21), 42) },
+    { name: 'createUser({ name: "Ada" }) fills in the defaults', run: (x) => expectDeepEqual(x.createUser({ name: "Ada" }), { name: "Ada", age: 0, isAdmin: false }) },
+    { name: 'createUser({ name: "Grace", age: 45, isAdmin: true }) keeps explicit values', run: (x) => expectDeepEqual(x.createUser({ name: "Grace", age: 45, isAdmin: true }), { name: "Grace", age: 45, isAdmin: true }) },
+  ],
+
+  solution: `function greetUser(name: string, greeting: string = "Hello"): string {
+  return \`\${greeting}, \${name}!\`;
+}
+
+const double = (n: number): number => n * 2;
+
+function createUser({ name, age = 0, isAdmin = false }: { name: string; age?: number; isAdmin?: boolean }) {
+  return { name, age, isAdmin };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Declaration</td><td><code>def f(x: int) -&gt; str:</code></td><td><code>function f(x: number): string { }</code></td></tr>
+  <tr><td>Default parameter</td><td><code>def f(g="Hello"):</code></td><td><code>function f(g = "Hello") { }</code></td></tr>
+  <tr><td>Optional parameter</td><td><code>g: str | None = None</code></td><td><code>g?: string</code> (undefined if omitted)</td></tr>
+  <tr><td>Lambda</td><td><code>lambda n: n * 2</code></td><td><code>(n) =&gt; n * 2</code> (multi-statement OK!)</td></tr>
+  <tr><td>Keyword arguments</td><td><code>f(name="Ada")</code></td><td>options object: <code>f({ name: "Ada" })</code></td></tr>
+  <tr><td>Per-field defaults</td><td><code>def f(age=0):</code></td><td><code>function f({ age = 0 }: Opts) { }</code></td></tr>
+</table>
+<p>The options-object pattern is the workhorse idiom of real-world
+TypeScript: any function with more than two or three parameters — or any
+boolean flag — takes a typed, destructured object instead, so call sites
+stay as readable as Python keyword arguments and new optional fields can be
+added without breaking existing callers.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

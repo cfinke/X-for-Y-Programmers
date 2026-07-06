@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Interfaces & Object Shapes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Interfaces & Object Shapes",
+
+  intro: `
+<p>A Java interface is a <em>nominal</em> contract: a class must publicly
+pledge allegiance with <code>implements Product</code>, or it is not a
+Product, however perfect its methods. A TypeScript interface describes a
+<em>shape</em>: any value with the right properties of the right types
+<em>is</em> a Product — object literal, class instance, JSON fresh off the
+wire, it does not matter. Nobody declares anything. This is structural
+typing, and it deletes an entire layer of Java ceremony: no POJO class, no
+getters and setters, no builder, no mapping library.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>POJO class + private fields + getters</td><td><code>interface Product { name: string; price: number; }</code></td></tr>
+  <tr><td><code>new Product("Widget", 9.99)</code></td><td><code>{ name: "Widget", price: 9.99 }</code> — a literal qualifies</td></tr>
+  <tr><td>Overloaded constructors / a builder for optional fields</td><td><code>description?: string</code> — one character</td></tr>
+  <tr><td>Membership by declaration (<code>implements</code>)</td><td>Membership by shape (structural)</td></tr>
+</table>
+<p>The <code>?</code> deserves a pause, because it replaces so much Java. An
+optional property means callers may omit it, and its type inside the function
+becomes <code>string | undefined</code> — so lesson 6's <code>??</code>
+handles the missing case. Where Java needs telescoping constructors or a
+48-line builder to make one field optional, TypeScript needs one character in
+the shape. And since interfaces are pure compile-time descriptions (fully
+erased from the output, like generics under erasure — but more thoroughly),
+they cost nothing at runtime.</p>`,
+
+  java: `// The Java data-carrier ritual, one optional field included:
+public class Product {
+    private final String name;
+    private final double price;
+    private final String description;  // optional... but can you tell?
+
+    public Product(String name, double price) {
+        this(name, price, null);       // telescoping constructor
+    }
+
+    public Product(String name, double price, String description) {
+        this.name = name;
+        this.price = price;
+        this.description = description;
+    }
+
+    public String getName() { return name; }
+    public double getPrice() { return price; }
+    public String getDescription() { return description; }
+}`,
+
+  task: `
+<p>Replace the entire POJO on the left with a shape and two functions:</p>
+<ol>
+  <li>Declare <code>interface Product</code> with <code>name: string</code>,
+      <code>price: number</code>, and an <em>optional</em>
+      <code>description?: string</code>.</li>
+  <li>Write <code>describeProduct(product: Product): string</code> returning
+      <code>"Widget ($9.99): A fine widget"</code> — that is,
+      name, price in parentheses with a dollar sign, then the description.
+      When the description is absent, use <code>"no description yet"</code>
+      in its place (<code>product.description ?? "no description yet"</code>).</li>
+  <li>Write <code>applyDiscount(product: Product, percent: number): Product</code>
+      returning a <strong>new</strong> product whose price is reduced by
+      <code>percent</code> and rounded to cents:
+      <code>Math.round(product.price * (100 - percent)) / 100</code>.
+      Spread copies the rest: <code>{ ...product, price: ... }</code>.</li>
+</ol>
+<p>Note what the tests pass in: bare object literals. No <code>new</code>, no
+class, no <code>implements</code> — they match the shape, so they are
+Products.</p>`,
+
+  starter: `// Describe the SHAPE — no class, no getters, no builder.
+interface Product {
+  name: string;
+  price: number;
+  // TODO 1: add an optional description (a string). In Java this cost an
+  //         overloaded constructor; here it costs one character: ?
+}
+
+function describeProduct(product: Product): string {
+  // TODO 2: "<name> ($<price>): <description>"
+  //         Absent description -> "no description yet"  (?? from lesson 6)
+  return "";
+}
+
+function applyDiscount(product: Product, percent: number): Product {
+  // TODO 3: return a NEW object with the discounted price, rounded to cents:
+  //         Math.round(product.price * (100 - percent)) / 100
+  //         Spread keeps the other fields: { ...product, price: ... }
+  return product;
+}
+`,
+
+  exportNames: ["describeProduct", "applyDiscount"],
+
+  requirements: [
+    { pattern: /interface\s+Product/, message: "Declare interface Product — the shape that replaces the whole POJO" },
+    { pattern: /\w+\?\s*:/, message: "Mark description optional with ? (description?: string) — Java's telescoping constructor in one character" },
+  ],
+
+  tests: [
+    { name: 'describeProduct with a description', run: (x) => expectEqual(x.describeProduct({ name: "Widget", price: 9.99, description: "A fine widget" }), "Widget ($9.99): A fine widget") },
+    { name: 'describeProduct without a description — a smaller literal still qualifies', run: (x) => expectEqual(x.describeProduct({ name: "Gadget", price: 25 }), "Gadget ($25): no description yet") },
+    { name: 'applyDiscount(100, 25%) prices at 75', run: (x) => expectEqual(x.applyDiscount({ name: "Gadget", price: 100 }, 25).price, 75) },
+    { name: 'applyDiscount keeps the name', run: (x) => expectEqual(x.applyDiscount({ name: "Gadget", price: 100 }, 25).name, "Gadget") },
+    { name: 'applyDiscount returns a complete new Product (rounded to cents)', run: (x) => expectDeepEqual(x.applyDiscount({ name: "Widget", price: 9.99, description: "A fine widget" }, 50), { name: "Widget", price: 5, description: "A fine widget" }) },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  description?: string;
+}
+
+function describeProduct(product: Product): string {
+  return product.name + " ($" + product.price + "): " +
+    (product.description ?? "no description yet");
+}
+
+function applyDiscount(product: Product, percent: number): Product {
+  return { ...product, price: Math.round(product.price * (100 - percent)) / 100 };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Data carrier</td><td>POJO / record + getters</td><td><code>interface</code> + object literals</td></tr>
+  <tr><td>Membership</td><td>Nominal — must declare <code>implements</code></td><td>Structural — matching shape suffices</td></tr>
+  <tr><td>Optional field</td><td>Overloaded constructors, builder, <code>Optional</code> getter</td><td><code>description?: string</code></td></tr>
+  <tr><td>Construction</td><td><code>new Product("Widget", 9.99)</code></td><td><code>{ name: "Widget", price: 9.99 }</code></td></tr>
+  <tr><td>Copy-with-changes</td><td>Builder's <code>toBuilder()</code>, or write it by hand</td><td><code>{ ...product, price: newPrice }</code></td></tr>
+  <tr><td>Runtime footprint</td><td>A .class file</td><td>Zero — erased at compile time</td></tr>
+</table>
+<p>Because interfaces are erased, there is no <code>x instanceof Product</code>
+at runtime — a Product is not a thing, it is a description. That erasure is
+also the superpower: data parsed from JSON never needs "mapping" into domain
+objects, because if it has the right shape it already <em>is</em> the domain
+type. Classes still exist in TypeScript (next lesson) — but reach for them
+when you need behavior and encapsulation, not to carry data.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

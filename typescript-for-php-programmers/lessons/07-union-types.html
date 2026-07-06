@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Union Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Union Types",
+
+  intro: `
+<p>PHP spent a decade documenting unions in docblocks (<code>@param int|string $id</code>)
+before PHP 8.0 finally made <code>int|string</code> a real, enforced parameter type. And
+when a value could truly be anything, PHP 8.0 gave you <code>mixed</code> — which is
+honest, but tells the caller nothing. TypeScript had unions from day one, and they are
+<em>first-class</em>: <code>number | string</code> is a type you can name with an alias,
+put in a variable declaration, nest inside arrays, and — crucially — the compiler
+forces you to handle each branch before using it.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>@param int|string $id</code> (docblock, unenforced)</td><td><code>id: number | string</code> (compile-checked)</td></tr>
+  <tr><td><code>function f(int|string $id)</code> (PHP 8.0)</td><td><code>function f(id: number | string)</code></td></tr>
+  <tr><td><code>mixed</code></td><td><code>unknown</code> (safe) / <code>any</code> (unsafe)</td></tr>
+  <tr><td><code>if (is_int($id)) { ... }</code></td><td><code>if (typeof id === "number") { ... }</code></td></tr>
+</table>
+<p>The killer feature is <em>narrowing</em>. Inside <code>if (typeof id === "number")</code>,
+TypeScript knows <code>id</code> is a <code>number</code> and lets you call number methods;
+in the <code>else</code> branch it knows <code>id</code> is a <code>string</code>. That is
+why unions beat <code>mixed</code>: the compiler tracks which branch you are in, exactly
+like your mental model after an <code>is_int()</code> check — except it is verified.</p>`,
+
+  php: `<?php
+/**
+ * The old way: document the union, hope callers read it.
+ * @param int|string $id
+ */
+function formatIdLegacy($id): string { /* ... */ }
+
+// PHP 8.0: a native, enforced union type
+function formatId(int|string $id): string
+{
+    if (is_int($id)) {
+        return str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+    }
+    return strtoupper($id);
+}
+
+echo formatId(42);        // "000042"
+echo formatId('ab12x');   // "AB12X"`,
+
+  task: `
+<p>Port <code>formatId</code> to TypeScript:</p>
+<ol>
+  <li>Write a function <code>formatId</code> whose parameter <code>id</code> is
+      typed with a union: <code>number | string</code>. The return type is
+      <code>string</code>.</li>
+  <li>If <code>id</code> is a <strong>number</strong>, return it as a string padded
+      to 6 digits with leading zeros — <code>String(id).padStart(6, "0")</code>
+      is the TS equivalent of <code>str_pad(..., STR_PAD_LEFT)</code>.</li>
+  <li>If <code>id</code> is a <strong>string</strong>, return it uppercased
+      (<code>strtoupper</code> → <code>.toUpperCase()</code>).</li>
+  <li>Use a <code>typeof</code> check to narrow the union — the compiler will not
+      let you call <code>.toUpperCase()</code> until it knows <code>id</code>
+      is a string.</li>
+</ol>`,
+
+  starter: `// TODO: 1. Change the parameter type to a union of the two allowed types.
+// TODO: 2. Use a typeof check to narrow, then handle each branch:
+//          - numbers: pad to 6 digits with leading zeros (padStart)
+//          - strings: return the uppercase version
+function formatId(id: number): string {
+  return "";
+}
+`,
+
+  exportNames: ["formatId"],
+
+  requirements: [
+    { pattern: /(number\s*\|\s*string|string\s*\|\s*number)/, message: "Type the id parameter as a union: number | string" },
+    { pattern: /typeof\s+\w+\s*===?\s*["'](number|string)["']/, message: "Narrow the union with a typeof check (typeof id === \"number\" or \"string\")" },
+  ],
+
+  tests: [
+    { name: 'formatId(42) returns "000042"', run: (x) => expectEqual(x.formatId(42), "000042") },
+    { name: 'formatId(123456) returns "123456" (no extra padding)', run: (x) => expectEqual(x.formatId(123456), "123456") },
+    { name: 'formatId("ab12x") returns "AB12X"', run: (x) => expectEqual(x.formatId("ab12x"), "AB12X") },
+    { name: 'formatId("order-9") returns "ORDER-9"', run: (x) => expectEqual(x.formatId("order-9"), "ORDER-9") },
+  ],
+
+  solution: `function formatId(id: number | string): string {
+  if (typeof id === "number") {
+    return String(id).padStart(6, "0");
+  }
+  return id.toUpperCase();
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Union parameter</td><td><code>int|string $id</code> (8.0+)</td><td><code>id: number | string</code></td></tr>
+  <tr><td>"Anything" type</td><td><code>mixed</code></td><td><code>unknown</code> (must narrow before use); avoid <code>any</code></td></tr>
+  <tr><td>Runtime type check</td><td><code>is_int($x)</code>, <code>is_string($x)</code></td><td><code>typeof x === "number"</code>, <code>typeof x === "string"</code></td></tr>
+  <tr><td>Nullable shorthand</td><td><code>?string</code></td><td><code>string | null</code> (just another union)</td></tr>
+  <tr><td>Name a union</td><td>— (no equivalent)</td><td><code>type Id = number | string;</code></td></tr>
+</table>
+<p>The deeper shift: in PHP a union type is a runtime gate at the function boundary —
+inside the function, <code>$id</code> is still whatever it is. In TypeScript the union
+follows the value through your code, and every <code>typeof</code> check permanently
+narrows it for the rest of that branch. Prefer a precise union over <code>any</code>
+or <code>unknown</code> whenever you can enumerate the possibilities.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

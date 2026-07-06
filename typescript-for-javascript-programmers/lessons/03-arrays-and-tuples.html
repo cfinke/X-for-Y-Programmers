@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays &amp; Tuples</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays & Tuples",
+
+  intro: `
+<p>A JavaScript array will hold anything you push into it, which is exactly
+the problem: one stray string in an array of numbers and your
+<code>reduce</code> quietly starts concatenating. TypeScript arrays are
+homogeneous by declaration: <code>number[]</code> is an array of numbers,
+full stop. <code>push</code>, <code>map</code>, indexing — every operation is
+checked against the element type. <code>Array&lt;number&gt;</code> means
+exactly the same thing as <code>number[]</code>; the bracket form is the
+common convention.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>const scores = [90, 85];</code></td><td><code>const scores: number[] = [90, 85];</code></td></tr>
+  <tr><td><code>scores.push("95");</code> — sure, why not</td><td><code>scores.push("95");</code> — compile error</td></tr>
+  <tr><td><code>const names = [];</code> (array of anything)</td><td><code>const names: string[] = [];</code> (empty needs an annotation)</td></tr>
+  <tr><td><code>const entry = ["Ada", 36];</code></td><td><code>const entry: [string, number] = ["Ada", 36];</code> — a tuple</td></tr>
+</table>
+<p>Then there is the JavaScript habit of using a small array as a quick
+struct — <code>["Ada", 36]</code>, where slot 0 means name and slot 1 means
+age, documented nowhere. TypeScript makes that habit safe with the
+<em>tuple</em> type <code>[string, number]</code>: a fixed-length array where
+each position has its own type. <code>entry[0]</code> is known to be a
+<code>string</code>, <code>entry[1]</code> a <code>number</code>, and
+<code>entry[2]</code> is a compile error. Tuples are how typed code returns
+two values at once — and destructuring
+(<code>const [name, age] = entry</code>) gives each piece the right type
+automatically.</p>`,
+
+  javascript: `// The "quick struct" habit: an array standing in for a record.
+const entry = ["Ada", 36];
+const age = entry[0]; // meant entry[1] — wrong data, no error
+
+const scores = [90, 85, 77];
+
+function sumScores(scores) {
+  let total = 0;
+  for (const s of scores) total += s;
+  return total;
+}
+
+sumScores(scores); // 252
+
+scores.push("95");   // a string sneaks in...
+sumScores(scores);   // "25295" — the total is now a string
+
+function upperCaseAll(names) {
+  return names.map((n) => n.toUpperCase()); // throws if a non-string got in
+}`,
+
+  task: `
+<p>Type the array code from the left:</p>
+<ol>
+  <li><code>sumScores</code> takes <code>scores: number[]</code> and returns
+      a <code>number</code> — the sum of the elements (<code>0</code> for an
+      empty array). With that annotation, <code>scores.push("95")</code> on a
+      <code>number[]</code> can't compile.</li>
+  <li><code>upperCaseAll</code> takes <code>names: string[]</code> and
+      returns a <code>string[]</code> with every name upper-cased.</li>
+  <li><code>makeEntry</code> takes <code>name: string</code> and
+      <code>score: number</code> and returns the <em>tuple</em>
+      <code>[string, number]</code> — the quick struct, now with each slot's
+      type on record.</li>
+</ol>
+<p>Annotate <code>makeEntry</code>'s return type as
+<code>[string, number]</code> explicitly; without it, TypeScript would infer
+the looser <code>(string | number)[]</code>.</p>`,
+
+  starter: `// 1. sumScores takes number[] and returns a number.
+function sumScores(scores) {
+  let total = 0;
+  for (const s of scores) {
+    total += s;
+  }
+  return total;
+}
+
+// 2. upperCaseAll takes string[] and returns string[].
+function upperCaseAll(names) {
+  return names.map((n) => n.toUpperCase());
+}
+
+// 3. makeEntry returns the tuple [string, number].
+function makeEntry(name, score) {
+  // TODO: return the [name, score] pair
+  return ["", 0];
+}
+`,
+
+  exportNames: ["sumScores", "upperCaseAll", "makeEntry"],
+
+  requirements: [
+    { pattern: /scores\s*:\s*number\s*\[\s*\]/, message: "Annotate sumScores' parameter as scores: number[]" },
+    { pattern: /names\s*:\s*string\s*\[\s*\]/, message: "Annotate upperCaseAll's parameter as names: string[]" },
+    { pattern: /\[\s*string\s*,\s*number\s*\]/, message: "Give makeEntry the tuple return type [string, number]" },
+  ],
+
+  tests: [
+    { name: "sumScores([90, 85, 77]) returns 252", run: (x) => expectEqual(x.sumScores([90, 85, 77]), 252) },
+    { name: "sumScores([]) returns 0", run: (x) => expectEqual(x.sumScores([]), 0) },
+    { name: 'upperCaseAll(["ada", "grace"]) returns ["ADA", "GRACE"]', run: (x) => expectDeepEqual(x.upperCaseAll(["ada", "grace"]), ["ADA", "GRACE"]) },
+    { name: "upperCaseAll([]) returns []", run: (x) => expectDeepEqual(x.upperCaseAll([]), []) },
+    { name: 'makeEntry("Ada", 95) returns ["Ada", 95]', run: (x) => expectDeepEqual(x.makeEntry("Ada", 95), ["Ada", 95]) },
+  ],
+
+  solution: `function sumScores(scores: number[]): number {
+  let total = 0;
+  for (const s of scores) {
+    total += s;
+  }
+  return total;
+}
+
+function upperCaseAll(names: string[]): string[] {
+  return names.map((n) => n.toUpperCase());
+}
+
+function makeEntry(name: string, score: number): [string, number] {
+  return [name, score];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Array of numbers</td><td><code>[1, 2, 3]</code></td><td><code>number[]</code> (same as <code>Array&lt;number&gt;</code>)</td></tr>
+  <tr><td>Empty array</td><td><code>const a = [];</code></td><td><code>const a: string[] = [];</code> — annotate, or it's <code>any[]</code></td></tr>
+  <tr><td>Wrong-type push</td><td>silently accepted</td><td>compile error</td></tr>
+  <tr><td>Fixed-shape pair</td><td><code>["Ada", 36]</code>, meaning by folklore</td><td><code>[string, number]</code> — per-slot types, fixed length</td></tr>
+  <tr><td>Destructuring</td><td><code>const [n, a] = entry;</code></td><td>same syntax; <code>n</code> and <code>a</code> get the slot types</td></tr>
+  <tr><td>Out-of-range slot</td><td><code>entry[2]</code> is <code>undefined</code></td><td><code>entry[2]</code> is a compile error on a tuple</td></tr>
+</table>
+<p>Rule of thumb: <code>T[]</code> when every element means the same kind of
+thing and the length varies; <code>[A, B]</code> when the length is fixed and
+each position means something different. If a tuple grows past two or three
+slots, that's the type system telling you it wants to be an object with named
+properties — which is exactly where the next lesson picks up.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>Strings are mostly good news. Concatenation with <code>+</code> carries
+over from <code>std::string</code> unchanged, and <code>==</code> compares by
+value in both languages — there are no <code>strcmp</code> ghosts and no
+"am I comparing pointers?" anxiety, because there are no pointers. Where C++
+makes you reach for <code>std::ostringstream</code> or <code>std::format</code>
+to mix text and numbers, TypeScript has <em>template literals</em>: backtick
+strings where <code>\${expr}</code> splices any expression in, converting
+numbers automatically.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>a + b</code></td><td><code>a + b</code> (same)</td></tr>
+  <tr><td><code>std::format("Hi, {}!", name)</code> / <code>ostringstream</code></td><td><code>\`Hi, \${name}!\`</code></td></tr>
+  <tr><td><code>s.size()</code> / <code>s.length()</code></td><td><code>s.length</code> (a property, no parens)</td></tr>
+  <tr><td><code>s.find(w) != std::string::npos</code></td><td><code>s.includes(w)</code> (a bool at last)</td></tr>
+  <tr><td><code>std::transform(..., ::toupper)</code></td><td><code>s.toUpperCase()</code></td></tr>
+  <tr><td><code>a == b</code></td><td><code>a === b</code> (by value in both)</td></tr>
+</table>
+<p>One real difference: TypeScript strings are <em>immutable</em>. There is no
+in-place <code>s[0] = 'X'</code> — indexing reads a (one-character string)
+value, and every "mutating" method like <code>toUpperCase()</code> returns a
+new string, closer to <code>std::string_view</code> semantics than to a
+mutable buffer. Also note <code>s.length</code> is a property, not a member
+function call, and there is no separate <code>char</code> type — a character
+is just a string of length 1.</p>`,
+
+  cpp: `#include <string>
+#include <sstream>
+#include <algorithm>
+
+std::string greet_user(const std::string& name, int count) {
+    std::ostringstream out;
+    out << "Hello, " << name << "! You have "
+        << count << " new messages.";
+    return out.str();
+}
+
+std::string shout(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+    return s + "!";
+}
+
+bool contains_word(const std::string& text, const std::string& word) {
+    return text.find(word) != std::string::npos;
+}`,
+
+  task: `
+<p>Rewrite the three functions in TypeScript:</p>
+<ol>
+  <li><code>greetUser(name: string, count: number): string</code> — return
+      <code>"Hello, &lt;name&gt;! You have &lt;count&gt; new messages."</code>.
+      Use a <strong>template literal</strong> (backticks with
+      <code>\${…}</code>) instead of the ostringstream dance — the number
+      converts itself.</li>
+  <li><code>shout(s: string): string</code> — return the string uppercased
+      with <code>"!"</code> appended. <code>s.toUpperCase()</code> replaces
+      the whole <code>std::transform</code> incantation; note it returns a
+      <em>new</em> string, since strings are immutable.</li>
+  <li><code>containsWord(text: string, word: string): boolean</code> — return
+      whether <code>text</code> contains <code>word</code>, using
+      <code>.includes(…)</code> instead of comparing <code>.find()</code>
+      against <code>npos</code>.</li>
+</ol>`,
+
+  starter: `// 1. greetUser: template literal instead of ostringstream.
+//    Backticks, with \${name} and \${count} spliced in.
+function greetUser(name: string, count: number): string {
+  // TODO: return \`Hello, ...\`
+  return "";
+}
+
+// 2. shout: s.toUpperCase() replaces std::transform(..., ::toupper).
+function shout(s: string): string {
+  // TODO
+  return "";
+}
+
+// 3. containsWord: .includes() replaces .find() != npos.
+function containsWord(text: string, word: string): boolean {
+  // TODO
+  return false;
+}
+`,
+
+  exportNames: ["greetUser", "shout", "containsWord"],
+
+  requirements: [
+    { pattern: /\`[^\`]*\$\{[^}]+\}[^\`]*\`/, message: "Use a template literal (backticks with ${…}) in greetUser" },
+    { pattern: /\.toUpperCase\s*\(/, message: "Use .toUpperCase() in shout" },
+    { pattern: /\.includes\s*\(/, message: "Use .includes(…) in containsWord instead of find/npos" },
+  ],
+
+  tests: [
+    { name: 'greetUser("Ada", 3) returns "Hello, Ada! You have 3 new messages."', run: (x) => expectEqual(x.greetUser("Ada", 3), "Hello, Ada! You have 3 new messages.") },
+    { name: 'greetUser("Bjarne", 0) returns "Hello, Bjarne! You have 0 new messages."', run: (x) => expectEqual(x.greetUser("Bjarne", 0), "Hello, Bjarne! You have 0 new messages.") },
+    { name: 'shout("hello") returns "HELLO!"', run: (x) => expectEqual(x.shout("hello"), "HELLO!") },
+    { name: 'containsWord("modern c++ is fine", "c++") is true', run: (x) => expectEqual(x.containsWord("modern c++ is fine", "c++"), true) },
+    { name: 'containsWord("hello world", "goodbye") is false', run: (x) => expectEqual(x.containsWord("hello world", "goodbye"), false) },
+  ],
+
+  solution: `function greetUser(name: string, count: number): string {
+  return \`Hello, \${name}! You have \${count} new messages.\`;
+}
+
+function shout(s: string): string {
+  return s.toUpperCase() + "!";
+}
+
+function containsWord(text: string, word: string): boolean {
+  return text.includes(word);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Concatenate</td><td><code>a + b</code></td><td><code>a + b</code></td></tr>
+  <tr><td>Format/interpolate</td><td><code>std::format</code>, <code>ostringstream</code></td><td><code>\`text \${expr}\`</code></td></tr>
+  <tr><td>Length</td><td><code>s.size()</code></td><td><code>s.length</code> (property)</td></tr>
+  <tr><td>Contains</td><td><code>s.find(w) != npos</code></td><td><code>s.includes(w)</code></td></tr>
+  <tr><td>Starts / ends</td><td><code>s.starts_with(p)</code> (C++20)</td><td><code>s.startsWith(p)</code> / <code>s.endsWith(p)</code></td></tr>
+  <tr><td>Uppercase</td><td><code>std::transform(..., ::toupper)</code></td><td><code>s.toUpperCase()</code> (returns a new string)</td></tr>
+  <tr><td>Compare</td><td><code>a == b</code> (by value)</td><td><code>a === b</code> (by value)</td></tr>
+  <tr><td>Mutate in place</td><td><code>s[0] = 'x';</code></td><td>Impossible — strings are immutable</td></tr>
+</table>
+<p>Prefer <code>===</code> over <code>==</code> in TypeScript: both compare
+strings by value, but <code>==</code> performs implicit type coercions
+(<code>"1" == 1</code> is true) that feel like the worst of C's implicit
+conversions. <code>===</code> is the strict, no-surprises comparison — treat
+<code>==</code> the way you treat C-style casts: legal, but a code smell.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

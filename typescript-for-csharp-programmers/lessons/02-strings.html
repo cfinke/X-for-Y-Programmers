@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>String interpolation is where the shared ancestry is most obvious:
+C#'s <code>$"{name} is {age}"</code> becomes
+<code>\`\${name} is \${age}\`</code> in TypeScript. Swap the
+<code>$"..."</code> wrapper for backticks and put a <code>$</code> in front of
+each brace — the expressions inside are unchanged. Template literals also span
+multiple lines without any <code>@</code> or <code>\\n</code> gymnastics.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>$"{name} is {age}"</code></td><td><code>\`\${name} is \${age}\`</code></td></tr>
+  <tr><td><code>name.Length</code></td><td><code>name.length</code> (property, camelCase)</td></tr>
+  <tr><td><code>name.ToUpper()</code></td><td><code>name.toUpperCase()</code></td></tr>
+  <tr><td><code>text.Contains("x")</code></td><td><code>text.includes("x")</code></td></tr>
+  <tr><td><code>string.Join(", ", tags)</code></td><td><code>tags.join(", ")</code></td></tr>
+</table>
+<p>The method surface maps almost one-to-one, just camelCased:
+<code>ToLower</code> → <code>toLowerCase</code>, <code>Trim</code> →
+<code>trim</code>, <code>StartsWith</code> → <code>startsWith</code>,
+<code>Replace</code> → <code>replaceAll</code>. One inversion worth noting:
+C#'s static <code>string.Join(separator, list)</code> flips into an instance
+method on the array — <code>list.join(separator)</code>. And strings are just
+as immutable here as they are in .NET: every method returns a new string.</p>`,
+
+  csharp: `string name = "Ada";
+int age = 36;
+
+string greeting = $"{name} is {age} years old";
+string shout = name.ToUpper() + "!";
+int length = name.Length;
+bool mentionsYears = greeting.Contains("years");
+
+var tags = new List<string> { "compiler", "csharp", "typescript" };
+string tagLine = string.Join(", ", tags);
+
+Console.WriteLine(greeting);   // Ada is 36 years old
+Console.WriteLine(shout);      // ADA!
+Console.WriteLine(tagLine);    // compiler, csharp, typescript`,
+
+  task: `
+<p>Port the string handling on the left:</p>
+<ol>
+  <li>Write <code>greet(name: string, age: number): string</code> that returns
+      <code>"Ada is 36 years old"</code> — but build it with a template literal
+      (backticks and <code>\${...}</code>), not concatenation.</li>
+  <li>Write <code>shout(message: string): string</code> that returns the
+      message uppercased with <code>"!"</code> appended —
+      <code>.ToUpper()</code> becomes <code>.toUpperCase()</code>.</li>
+  <li>Write <code>containsWord(sentence: string, word: string): boolean</code>
+      using <code>.includes()</code>, the camelCase twin of
+      <code>.Contains()</code>.</li>
+  <li>Write <code>tagLine(tags: string[]): string</code> that joins the tags
+      with <code>", "</code> — remember, <code>string.Join</code> flips into
+      <code>tags.join(", ")</code>.</li>
+</ol>`,
+
+  starter: `// 1. C#: $"{name} is {age} years old"  ->  backticks + \${...}
+function greet(name: string, age: number): string {
+  // TODO: return a template literal
+  return "";
+}
+
+// 2. .ToUpper() -> .toUpperCase()
+function shout(message: string): string {
+  // TODO: uppercase the message and append "!"
+  return "";
+}
+
+// 3. .Contains() -> .includes()
+function containsWord(sentence: string, word: string): boolean {
+  // TODO
+  return false;
+}
+
+// 4. string.Join(", ", tags) -> tags.join(", ")
+function tagLine(tags: string[]): string {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["greet", "shout", "containsWord", "tagLine"],
+
+  requirements: [
+    { pattern: /`[^`]*\$\{[^}]+\}[^`]*`/, message: "Use a template literal — backticks with ${...} interpolation" },
+    { pattern: /\.toUpperCase\s*\(\s*\)/, message: "Use .toUpperCase() (the camelCase .ToUpper())" },
+    { pattern: /\.includes\s*\(/, message: "Use .includes() (the camelCase .Contains())" },
+    { pattern: /\.join\s*\(/, message: "Use tags.join(...) — string.Join flips into an array method" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.greet("Ada", 36), "Ada is 36 years old") },
+    { name: 'greet("Anders", 65) returns "Anders is 65 years old"', run: (x) => expectEqual(x.greet("Anders", 65), "Anders is 65 years old") },
+    { name: 'shout("hey") returns "HEY!"', run: (x) => expectEqual(x.shout("hey"), "HEY!") },
+    { name: 'containsWord("the quick fox", "quick") is true', run: (x) => expectEqual(x.containsWord("the quick fox", "quick"), true) },
+    { name: 'containsWord("the quick fox", "slow") is false', run: (x) => expectEqual(x.containsWord("the quick fox", "slow"), false) },
+    { name: 'tagLine(["compiler", "csharp", "typescript"]) joins with ", "', run: (x) => expectEqual(x.tagLine(["compiler", "csharp", "typescript"]), "compiler, csharp, typescript") },
+  ],
+
+  solution: `function greet(name: string, age: number): string {
+  return \`\${name} is \${age} years old\`;
+}
+
+function shout(message: string): string {
+  return \`\${message.toUpperCase()}!\`;
+}
+
+function containsWord(sentence: string, word: string): boolean {
+  return sentence.includes(word);
+}
+
+function tagLine(tags: string[]): string {
+  return tags.join(", ");
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Interpolation</td><td><code>$"{name} is {age}"</code></td><td><code>\`\${name} is \${age}\`</code></td></tr>
+  <tr><td>Multi-line string</td><td><code>@"..."</code> or raw <code>"""..."""</code></td><td>backticks span lines already</td></tr>
+  <tr><td>Length</td><td><code>s.Length</code></td><td><code>s.length</code></td></tr>
+  <tr><td>Case</td><td><code>s.ToUpper()</code> / <code>s.ToLower()</code></td><td><code>s.toUpperCase()</code> / <code>s.toLowerCase()</code></td></tr>
+  <tr><td>Search</td><td><code>s.Contains(t)</code>, <code>s.StartsWith(t)</code></td><td><code>s.includes(t)</code>, <code>s.startsWith(t)</code></td></tr>
+  <tr><td>Join</td><td><code>string.Join(", ", list)</code></td><td><code>list.join(", ")</code></td></tr>
+  <tr><td>Split / trim</td><td><code>s.Split(',')</code>, <code>s.Trim()</code></td><td><code>s.split(",")</code>, <code>s.trim()</code></td></tr>
+</table>
+<p>The habit to build: reach for backticks by default, the way you reach for
+<code>$"..."</code> in modern C#. There is no plain-vs-interpolated decision
+tax — a template literal without any <code>\${...}</code> is just a string, so
+many TypeScript codebases use backticks for anything that might grow an
+interpolation later.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

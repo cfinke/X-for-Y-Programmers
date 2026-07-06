@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Type Narrowing & Guards</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Type Narrowing & Guards",
+
+  intro: `
+<p>In C++ you have three ways to ask "what is this thing, really?":
+<code>dynamic_cast</code> (check the pointer for <code>nullptr</code>),
+<code>std::holds_alternative</code> on a variant, and <code>typeid</code>.
+All three share an annoyance: even after the check succeeds, the original
+variable's static type is unchanged. You must introduce a <em>new</em>
+variable — the cast pointer, the <code>std::get</code> reference — to work
+with the concrete type. TypeScript folds the two steps into one: after a
+runtime check, the compiler <strong>narrows</strong> the variable's static
+type <em>in that scope</em>. It is as if <code>dynamic_cast</code> succeeded
+and then rewrote the declared type of the pointer you already had.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>dynamic_cast&lt;Circle*&gt;(s)</code> + nullptr check</td><td><code>if (s instanceof Circle)</code> — <code>s</code> <em>is</em> a Circle inside</td></tr>
+  <tr><td><code>std::holds_alternative&lt;std::string&gt;(v)</code> then <code>std::get</code></td><td><code>if (typeof v === "string")</code> — <code>v</code> is already the string</td></tr>
+  <tr><td>hand-rolled <code>is_user(p)</code> helper, then cast anyway</td><td>type predicate <code>function isUser(x): x is User</code> — the check <em>and</em> the cast</td></tr>
+  <tr><td><code>void*</code> — cast and pray, unchecked</td><td><code>unknown</code> — holds anything, but you <em>must</em> narrow before use</td></tr>
+</table>
+<p>The built-in guards are <code>typeof x === "string"</code> (for primitives),
+<code>x instanceof Foo</code> (for class instances), <code>Array.isArray(x)</code>,
+and <code>"field" in x</code>. For your own shapes you write a
+<strong>type predicate</strong>: a function whose return type is
+<code>x is User</code> instead of <code>boolean</code>. When it returns true,
+the compiler narrows the argument at the call site — a
+<code>dynamic_cast</code> whose success is visible to the type system.
+And <code>unknown</code> is the type-safe <code>void*</code>: it accepts any
+value, but unlike <code>any</code> (and unlike <code>void*</code>), the
+compiler refuses to let you touch it until a guard has narrowed it.</p>`,
+
+  cpp: `Shape* s = get_shape();
+if (auto* c = dynamic_cast<Circle*>(s)) {
+    c->radius();   // c is Circle* — but s is STILL just Shape*
+}
+
+std::variant<int, std::string> v = load();
+if (std::holds_alternative<std::string>(v)) {
+    // We *know* it's a string, yet we still have to fetch it:
+    auto& text = std::get<std::string>(v);
+}
+
+bool is_user(const void* p);      // hand-rolled check...
+void* p = opaque();               // void*: anything goes
+if (is_user(p)) {
+    auto* u = static_cast<User*>(p);  // ...and an unchecked cast anyway
+}`,
+
+  task: `
+<p>Write a checked replacement for the <code>void*</code>-and-cast dance:</p>
+<ol>
+  <li>Declare an interface <code>User</code> with <code>name: string</code>
+      and <code>age: number</code>.</li>
+  <li>Write a type predicate <code>isUser(value: unknown): value is User</code>.
+      It must return <code>true</code> only for a non-null object with a
+      string <code>name</code> and a number <code>age</code>
+      (use <code>typeof</code> and the <code>in</code> operator).</li>
+  <li>Write <code>describeValue(value: unknown): string</code> that narrows
+      its argument branch by branch and returns:
+      <ul>
+        <li><code>"string of length N"</code> for strings,</li>
+        <li><code>"number: N"</code> for numbers,</li>
+        <li><code>"array of N items"</code> for arrays
+            (<code>Array.isArray</code> — check <em>before</em> objects,
+            arrays are objects too),</li>
+        <li><code>"user NAME (AGE)"</code> when <code>isUser</code> says so,</li>
+        <li><code>"something else"</code> otherwise.</li>
+      </ul></li>
+</ol>
+<p>Note that inside each branch you use <code>value</code> directly —
+<code>value.length</code>, <code>value.name</code> — with no cast in sight.</p>`,
+
+  starter: `interface User {
+  name: string;
+  age: number;
+}
+
+// 2. A type predicate: the return type "value is User" tells the compiler
+//    that a true result narrows value to User at the call site.
+function isUser(value: unknown): value is User {
+  // TODO: non-null object, with a string .name and a number .age
+  //       (typeof value === "object", value !== null, "name" in value, ...)
+  return false;
+}
+
+// 3. Narrow branch by branch. unknown is the type-safe void*:
+//    the compiler blocks every use of value until a guard has run.
+function describeValue(value: unknown): string {
+  // TODO: typeof -> string / number, Array.isArray, isUser, fallback
+  return "";
+}
+`,
+
+  exportNames: ["isUser", "describeValue"],
+
+  requirements: [
+    { pattern: /unknown/, message: "Take unknown, not any — the type-safe void*" },
+    { pattern: /\bis\s+\w+/, message: "Give isUser a type-predicate return type (value is User)" },
+    { pattern: /typeof/, message: "Use typeof to narrow the primitive branches" },
+  ],
+
+  tests: [
+    { name: 'describeValue("hello") -> "string of length 5"', run: (x) => expectEqual(x.describeValue("hello"), "string of length 5") },
+    { name: 'describeValue(42) -> "number: 42"', run: (x) => expectEqual(x.describeValue(42), "number: 42") },
+    { name: 'describeValue([1, 2, 3]) -> "array of 3 items"', run: (x) => expectEqual(x.describeValue([1, 2, 3]), "array of 3 items") },
+    { name: 'describeValue({ name: "Ada", age: 36 }) -> "user Ada (36)"', run: (x) => expectEqual(x.describeValue({ name: "Ada", age: 36 }), "user Ada (36)") },
+    { name: "isUser accepts a real user, rejects null and near-misses", run: (x) => {
+        expectEqual(x.isUser({ name: "Ada", age: 36 }), true);
+        expectEqual(x.isUser(null), false);
+        expectEqual(x.isUser({ name: "Ada" }), false);
+        expectEqual(x.isUser({ name: 7, age: 36 }), false);
+      } },
+    { name: 'describeValue(true) and describeValue(null) -> "something else"', run: (x) => {
+        expectEqual(x.describeValue(true), "something else");
+        expectEqual(x.describeValue(null), "something else");
+      } },
+  ],
+
+  solution: `interface User {
+  name: string;
+  age: number;
+}
+
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "name" in value &&
+    "age" in value &&
+    typeof (value as User).name === "string" &&
+    typeof (value as User).age === "number"
+  );
+}
+
+function describeValue(value: unknown): string {
+  if (typeof value === "string") {
+    return "string of length " + value.length;   // value: string here
+  }
+  if (typeof value === "number") {
+    return "number: " + value;                   // value: number here
+  }
+  if (Array.isArray(value)) {
+    return "array of " + value.length + " items";
+  }
+  if (isUser(value)) {
+    return "user " + value.name + " (" + value.age + ")";  // value: User
+  }
+  return "something else";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Check</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Downcast a base pointer</td><td><code>dynamic_cast&lt;D*&gt;(p)</code> + nullptr test</td><td><code>p instanceof D</code> — narrows <code>p</code> itself</td></tr>
+  <tr><td>Which variant alternative?</td><td><code>std::holds_alternative&lt;T&gt;(v)</code> + <code>std::get</code></td><td><code>typeof v === "string"</code> — no get step</td></tr>
+  <tr><td>Is it an array?</td><td>overloads / <code>if constexpr</code></td><td><code>Array.isArray(v)</code></td></tr>
+  <tr><td>Does it have a member?</td><td>SFINAE / <code>requires</code> (compile time only)</td><td><code>"field" in v</code> (runtime, and it narrows)</td></tr>
+  <tr><td>Your own check</td><td><code>bool is_user(...)</code> + <code>static_cast</code></td><td><code>function isUser(x): x is User</code></td></tr>
+  <tr><td>Untyped payload</td><td><code>void*</code> (unchecked)</td><td><code>unknown</code> (must narrow before use)</td></tr>
+</table>
+<p>The insight: in C++ a runtime check and the static type are two separate
+worlds — <code>holds_alternative</code> can be true and <code>std::get</code>
+can still be written wrong. TypeScript's control-flow analysis makes the
+check <em>be</em> the cast: inside the guarded branch there is nothing left
+to get wrong, and <code>unknown</code> guarantees you cannot skip the check
+the way a <code>static_cast</code> from <code>void*</code> always could.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

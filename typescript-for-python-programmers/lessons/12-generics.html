@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>In Python, writing a generic function has always come with ceremony: import
+<code>TypeVar</code>, declare <code>T = TypeVar("T")</code> at module level,
+then finally use it — <code>def first(items: list[T]) -&gt; T | None</code>.
+Python 3.12's <code>def first[T](items: list[T])</code> syntax finally trimmed
+that down. TypeScript has worked the lightweight way from day one: you declare
+the type parameter inline, right after the function name —
+<code>function firstItem&lt;T&gt;(items: T[]): T | undefined</code>. No import,
+no module-level variable, zero ceremony.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>T = TypeVar("T")</code><br><code>def first(items: list[T]) -&gt; T | None:</code></td>
+      <td><code>function firstItem&lt;T&gt;(items: T[]): T | undefined</code></td></tr>
+  <tr><td><code>def first[T](items: list[T]) -&gt; T | None:</code> (3.12+)</td>
+      <td>same thing — TS always looked like this</td></tr>
+  <tr><td><code>T = TypeVar("T", bound=Named)</code></td>
+      <td><code>&lt;T extends Named&gt;</code></td></tr>
+  <tr><td><code>class Box(Generic[T]):</code></td>
+      <td><code>class Box&lt;T&gt; { }</code></td></tr>
+</table>
+<p>Constraints work like <code>TypeVar(bound=...)</code>: <code>&lt;T extends
+Named&gt;</code> means "any T, as long as it has Named's shape". A particularly
+TypeScript trick is <code>&lt;K extends keyof T&gt;</code> — K must be one of
+T's actual property names, so <code>pluck(products, "pricee")</code> is a
+compile error. Python has no equivalent short of a Protocol per field. As
+always, functions are <code>camelCase</code>: <code>first_item</code> becomes
+<code>firstItem</code>.</p>`,
+
+  python: `from typing import TypeVar, Generic
+
+T = TypeVar("T")
+
+def first(items: list[T]) -> T | None:
+    return items[0] if items else None
+
+class Box(Generic[T]):
+    def __init__(self, value: T) -> None:
+        self.value = value
+
+# Python 3.12 made this lighter — much closer to TypeScript:
+def first_modern[T](items: list[T]) -> T | None:
+    return items[0] if items else None
+
+names = ["Ada", "Grace"]
+n = first(names)  # checker infers str | None`,
+
+  task: `
+<p>Write three generic functions:</p>
+<ol>
+  <li><code>firstItem&lt;T&gt;(items: T[]): T | undefined</code> — return the
+      first element, or <code>undefined</code> for an empty array. This is
+      Python's <code>first</code> with <code>None</code> traded for
+      <code>undefined</code>.</li>
+  <li><code>wrap&lt;T&gt;(value: T): { value: T }</code> — put any value in a
+      box object, preserving its type. <code>wrap(42)</code> is a
+      <code>{ value: number }</code>, <code>wrap("hi")</code> a
+      <code>{ value: string }</code>.</li>
+  <li><code>pluck&lt;T, K extends keyof T&gt;(items: T[], key: K): T[K][]</code>
+      — collect one property from every object in an array, like
+      <code>[getattr(item, key) for item in items]</code> but with the key
+      checked at compile time via the <code>extends keyof</code> constraint.</li>
+</ol>
+<p>Declare each type parameter inline in angle brackets after the function
+name — no TypeVar anywhere.</p>`,
+
+  starter: `// 1. firstItem — Python: def first(items: list[T]) -> T | None:
+//    TODO: make this generic: <T> after the name, items: T[], return T | undefined.
+function firstItem(items: unknown[]): unknown {
+  // TODO: return the first item, or undefined if the array is empty
+  return undefined;
+}
+
+// 2. wrap — box a value without losing its type.
+//    TODO: add <T> and type the return as { value: T }.
+function wrap(value: unknown) {
+  return { value: value };
+}
+
+// 3. pluck — like TypeVar(bound=...), "K extends keyof T" constrains K
+//    to the property names of T.
+//    TODO: declare <T, K extends keyof T>, take (items: T[], key: K),
+//    and return every item's value for that key.
+function pluck(items: unknown[], key: string): unknown[] {
+  // TODO
+  return [];
+}
+`,
+
+  exportNames: ["firstItem", "wrap", "pluck"],
+
+  requirements: [
+    { pattern: /<T\b/, message: "Declare a generic type parameter in angle brackets, like <T>" },
+    { pattern: /firstItem\s*<\s*T\s*>\s*\(\s*items\s*:\s*T\s*\[\s*\]\s*\)/, message: "Give firstItem the generic signature firstItem<T>(items: T[])" },
+    { pattern: /:\s*T\s*\|\s*undefined/, message: "firstItem's return type should be T | undefined (Python's T | None)" },
+    { pattern: /extends\s+keyof/, message: "Constrain pluck's key with K extends keyof T (like TypeVar bound=...)" },
+  ],
+
+  tests: [
+    { name: "firstItem([10, 20, 30]) returns 10", run: (x) => expectEqual(x.firstItem([10, 20, 30]), 10) },
+    { name: "firstItem([]) returns undefined", run: (x) => expectEqual(x.firstItem([]), undefined) },
+    { name: 'firstItem(["a", "b"]) returns "a" — same function, different T', run: (x) => expectEqual(x.firstItem(["a", "b"]), "a") },
+    { name: "wrap(42) returns { value: 42 }", run: (x) => expectDeepEqual(x.wrap(42), { value: 42 }) },
+    { name: 'pluck(products, "name") collects every name', run: (x) => expectDeepEqual(x.pluck([{ name: "mouse", price: 39 }, { name: "monitor", price: 249 }], "name"), ["mouse", "monitor"]) },
+    { name: 'pluck(products, "price") collects every price', run: (x) => expectDeepEqual(x.pluck([{ name: "mouse", price: 39 }, { name: "monitor", price: 249 }], "price"), [39, 249]) },
+  ],
+
+  solution: `function firstItem<T>(items: T[]): T | undefined {
+  return items.length > 0 ? items[0] : undefined;
+}
+
+function wrap<T>(value: T): { value: T } {
+  return { value: value };
+}
+
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Declare a type variable</td><td><code>T = TypeVar("T")</code></td><td><code>&lt;T&gt;</code> inline, nothing else</td></tr>
+  <tr><td>Generic function</td><td><code>def first(items: list[T]) -&gt; T | None</code></td><td><code>function firstItem&lt;T&gt;(items: T[]): T | undefined</code></td></tr>
+  <tr><td>3.12 shorthand</td><td><code>def first[T](items: list[T])</code></td><td>the same idea, TS-style, since 2012</td></tr>
+  <tr><td>Bounded type var</td><td><code>TypeVar("T", bound=Named)</code></td><td><code>&lt;T extends Named&gt;</code></td></tr>
+  <tr><td>Key-of constraint</td><td>no direct equivalent</td><td><code>&lt;K extends keyof T&gt;</code></td></tr>
+  <tr><td>Generic class</td><td><code>class Box(Generic[T]):</code></td><td><code>class Box&lt;T&gt; { }</code></td></tr>
+  <tr><td>Calling</td><td><code>first(names)</code> — T inferred</td><td><code>firstItem(names)</code> — T inferred too</td></tr>
+</table>
+<p>In both languages you almost never spell out the type argument at the call
+site — the checker infers <code>T</code> from what you pass in. The payoff is
+identical to Python's: <code>firstItem(names)</code> comes back as
+<code>string | undefined</code>, not <code>any</code>, so the type information
+flows through the pipeline instead of evaporating at the first helper
+function.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

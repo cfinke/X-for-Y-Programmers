@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Lambdas need no translation at all: <code>x =&gt; x * 2</code> is valid,
+character for character, in both languages — Hejlsberg brought the arrow with
+him. Where C# stores one in a <code>Func&lt;int, int&gt;</code> or
+<code>Action</code>, TypeScript writes the function type inline:
+<code>(x: number) =&gt; number</code>. Default parameter values also carry
+over unchanged: <code>string greeting = "Hello"</code> in a C# parameter list
+is <code>greeting: string = "Hello"</code> here.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>string Greet(string n, string g = "Hello")</code></td><td><code>function greet(n: string, g: string = "Hello")</code></td></tr>
+  <tr><td><code>Func&lt;int, int&gt; triple = x =&gt; x * 3;</code></td><td><code>const triple = (x: number): number =&gt; x * 3;</code></td></tr>
+  <tr><td><code>Format(9.99m, decimals: 0)</code> (named args)</td><td><code>format({ amount: 9.99, decimals: 0 })</code> (options object)</td></tr>
+  <tr><td>overload with fewer params</td><td><code>middle?: string</code> (optional param)</td></tr>
+</table>
+<p>What TypeScript does <em>not</em> have is named arguments at the call site.
+The idiom that replaces them — and most overload sets — is the
+<strong>options object</strong>: the function takes a single typed object
+parameter and destructures it, with defaults, right in the signature. Callers
+then write <code>format({ amount: 9.99, decimals: 0 })</code>, which reads
+just like C# named arguments and lets them skip any middle parameter. A
+trailing <code>?</code> marks a parameter or property optional — the same
+<code>?</code> you know from nullable annotations, doing the job of an
+overload.</p>`,
+
+  csharp: `string Greet(string name, string greeting = "Hello") =>
+    $"{greeting}, {name}!";
+
+Greet("Ada");                    // "Hello, Ada!"
+Greet("Ada", greeting: "Hi");    // named argument -> "Hi, Ada!"
+
+Func<int, int> triple = x => x * 3;   // the same arrow as TS
+
+string FormatPrice(decimal amount, string currency = "USD",
+                   int decimals = 2)
+{
+    return $"{Math.Round(amount, decimals)} {currency}";
+}
+
+// Named arguments let callers skip the middle parameter:
+FormatPrice(9.99m, decimals: 0);`,
+
+  task: `
+<p>Port the functions on the left:</p>
+<ol>
+  <li>Write <code>greet(name: string, greeting: string = "Hello"): string</code>
+      returning <code>"Hello, Ada!"</code>-style strings — the default value
+      syntax is identical to C#.</li>
+  <li>Write <code>triple</code> as a <code>const</code> holding an arrow
+      function <code>(x: number): number =&gt; x * 3</code> — the typed-inline
+      version of <code>Func&lt;int, int&gt;</code>.</li>
+  <li>Write <code>formatPrice</code> in the options-object style: a single
+      destructured parameter typed
+      <code>{ amount: number; currency?: string; decimals?: number }</code>,
+      with defaults <code>currency = "USD"</code> and <code>decimals = 2</code>.
+      Return <code>amount.toFixed(decimals)</code> plus a space plus the
+      currency, e.g. <code>formatPrice({ amount: 9.99 })</code> →
+      <code>"9.99 USD"</code>. Callers get named-argument ergonomics:
+      <code>formatPrice({ amount: 5, decimals: 0 })</code> skips the middle
+      "parameter" exactly like <code>FormatPrice(5m, decimals: 0)</code>.</li>
+</ol>`,
+
+  starter: `// 1. Default parameter — identical syntax to C#.
+function greet(name: string, greeting: string = "Hello"): string {
+  // TODO: return "<greeting>, <name>!"
+  return "";
+}
+
+// 2. Func<int, int> triple = x => x * 3;
+//    -> a const holding a typed arrow function.
+// TODO: const triple = ...
+
+// 3. Options object: one destructured, typed parameter with defaults
+//    replaces C# named arguments.
+function formatPrice(options: { amount: number; currency?: string; decimals?: number }): string {
+  // TODO: destructure in the parameter list instead, apply defaults
+  //       "USD" and 2, and return \`\${amount.toFixed(decimals)} \${currency}\`
+  return "";
+}
+`,
+
+  exportNames: ["greet", "triple", "formatPrice"],
+
+  requirements: [
+    { pattern: /const\s+triple\s*=\s*\([^)]*\)[^=]*=>/, message: "Declare triple as a const arrow function (the Func<int, int> translation)" },
+    { pattern: /greeting\s*:\s*string\s*=\s*"Hello"/, message: 'Give greeting a default value of "Hello" — same syntax as C#' },
+    { pattern: /\w+\?\s*:/, message: "Mark at least one options property optional with ?" },
+    { pattern: /\{\s*amount\s*,/, message: "Destructure the options object ({ amount, ... }) in the parameter list" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"', run: (x) => expectEqual(x.greet("Ada"), "Hello, Ada!") },
+    { name: 'greet("Ada", "Hi") overrides it: "Hi, Ada!"', run: (x) => expectEqual(x.greet("Ada", "Hi"), "Hi, Ada!") },
+    { name: "triple(7) returns 21", run: (x) => expectEqual(x.triple(7), 21) },
+    { name: 'formatPrice({ amount: 9.99 }) returns "9.99 USD"', run: (x) => expectEqual(x.formatPrice({ amount: 9.99 }), "9.99 USD") },
+    { name: 'formatPrice({ amount: 5, decimals: 0 }) skips the middle param: "5 USD"', run: (x) => expectEqual(x.formatPrice({ amount: 5, decimals: 0 }), "5 USD") },
+    { name: 'formatPrice({ amount: 3.5, currency: "EUR" }) returns "3.50 EUR"', run: (x) => expectEqual(x.formatPrice({ amount: 3.5, currency: "EUR" }), "3.50 EUR") },
+  ],
+
+  solution: `function greet(name: string, greeting: string = "Hello"): string {
+  return \`\${greeting}, \${name}!\`;
+}
+
+const triple = (x: number): number => x * 3;
+
+interface PriceOptions {
+  amount: number;
+  currency?: string;
+  decimals?: number;
+}
+
+function formatPrice({ amount, currency = "USD", decimals = 2 }: PriceOptions): string {
+  return \`\${amount.toFixed(decimals)} \${currency}\`;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Default parameter</td><td><code>string g = "Hello"</code></td><td><code>g: string = "Hello"</code></td></tr>
+  <tr><td>Optional parameter</td><td>overload, or default</td><td><code>middle?: string</code></td></tr>
+  <tr><td>Lambda</td><td><code>x =&gt; x * 3</code></td><td><code>x =&gt; x * 3</code> (identical)</td></tr>
+  <tr><td>Function-typed value</td><td><code>Func&lt;int, int&gt;</code> / <code>Action&lt;string&gt;</code></td><td><code>(x: number) =&gt; number</code> / <code>(s: string) =&gt; void</code></td></tr>
+  <tr><td>Named arguments</td><td><code>F(a, c: 3)</code></td><td>options object: <code>f({ a, c: 3 })</code></td></tr>
+  <tr><td>Expression body</td><td><code>int F(int x) =&gt; x * 2;</code></td><td><code>const f = (x: number) =&gt; x * 2;</code></td></tr>
+</table>
+<p>Once a function grows past two or three parameters — especially several of
+the same type — reach for the options object the way you would reach for named
+arguments in C#. The call site labels every value, new optional settings can
+be added without breaking callers or writing overloads, and the destructuring
+defaults in the signature keep the whole thing to one line. It is the standard
+API shape across the TypeScript ecosystem, from DOM APIs to Node
+libraries.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

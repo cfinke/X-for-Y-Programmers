@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays & Lists</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays & Lists",
+
+  intro: `
+<p>In C# you constantly choose between <code>int[]</code> (fixed size) and
+<code>List&lt;int&gt;</code> (growable). TypeScript erases the decision: there
+is one array type, written <code>number[]</code> (or the equivalent
+<code>Array&lt;number&gt;</code>), and it is always growable. It reads like the
+C# array type but behaves like the <code>List&lt;T&gt;</code> you actually use
+day to day.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>int[] xs = { 1, 2 };</code> / <code>new List&lt;int&gt; { 1, 2 }</code></td><td><code>const xs: number[] = [1, 2];</code></td></tr>
+  <tr><td><code>list.Add(x)</code></td><td><code>xs.push(x)</code></td></tr>
+  <tr><td><code>list.Count</code> / <code>array.Length</code></td><td><code>xs.length</code> (one spelling, lowercase)</td></tr>
+  <tr><td><code>list.Contains(x)</code></td><td><code>xs.includes(x)</code></td></tr>
+  <tr><td><code>foreach (var x in xs)</code></td><td><code>for (const x of xs)</code></td></tr>
+</table>
+<p>Two renames to absorb: <code>foreach ... in</code> becomes
+<code>for ... of</code> (watch out — TypeScript also has a
+<code>for ... in</code>, but it iterates <em>keys/indices</em>, so
+<code>of</code> is the one you want), and the <code>Count</code>-vs-
+<code>Length</code> split you have juggled for years collapses into a single
+lowercase <code>.length</code>. Everything else — indexing with
+<code>xs[0]</code>, mutation through a <code>const</code> reference (like
+adding to a <code>readonly List</code> field) — works exactly as your C#
+intuition predicts.</p>`,
+
+  csharp: `int[] scores = { 90, 75, 88 };
+var names = new List<string> { "Ada", "Linus" };
+
+names.Add("Grace");
+int count = names.Count;        // List<T> uses .Count...
+int size = scores.Length;       // ...arrays use .Length
+bool hasAda = names.Contains("Ada");
+
+int total = 0;
+foreach (var score in scores)
+{
+    total += score;
+}
+Console.WriteLine($"Total: {total}");   // Total: 253`,
+
+  task: `
+<p>Port the collection code on the left as three typed functions:</p>
+<ol>
+  <li><code>sumScores(scores: number[]): number</code> — total the scores with
+      a <code>for (const score of scores)</code> loop, the direct translation
+      of <code>foreach</code>. Annotate the parameter as
+      <code>number[]</code> explicitly.</li>
+  <li><code>hasName(names: string[], target: string): boolean</code> — the
+      <code>.Contains()</code> check, using <code>.includes()</code>. Annotate
+      <code>names</code> as <code>string[]</code>.</li>
+  <li><code>addName(names: string[], name: string): string[]</code> — the
+      <code>.Add()</code> call, using <code>.push()</code>, then return the
+      array. Like <code>List&lt;T&gt;.Add</code>, <code>push</code> mutates in
+      place (and returns the new length, not the array — hence the explicit
+      <code>return names;</code>).</li>
+</ol>`,
+
+  starter: `// 1. foreach (var score in scores) -> for (const score of scores)
+function sumScores(scores: number[]): number {
+  let total = 0;
+  // TODO: loop with for..of and add each score to total
+  return total;
+}
+
+// 2. names.Contains(target) -> names.includes(target)
+function hasName(names: string[], target: string): boolean {
+  // TODO
+  return false;
+}
+
+// 3. names.Add(name) -> names.push(name)
+function addName(names: string[], name: string): string[] {
+  // TODO: push, then return the array
+  return names;
+}
+`,
+
+  exportNames: ["sumScores", "hasName", "addName"],
+
+  requirements: [
+    { pattern: /:\s*number\[\]/, message: "Annotate the scores parameter as number[]" },
+    { pattern: /:\s*string\[\]/, message: "Annotate the names parameter as string[]" },
+    { pattern: /for\s*\(\s*(const|let)\s+\w+\s+of\b/, message: "Use a for..of loop (the foreach translation)" },
+    { pattern: /\.push\s*\(/, message: "Use .push() (the .Add() translation)" },
+  ],
+
+  tests: [
+    { name: "sumScores([90, 75, 88]) returns 253", run: (x) => expectEqual(x.sumScores([90, 75, 88]), 253) },
+    { name: "sumScores([]) returns 0", run: (x) => expectEqual(x.sumScores([]), 0) },
+    { name: 'hasName(["Ada", "Linus"], "Ada") is true', run: (x) => expectEqual(x.hasName(["Ada", "Linus"], "Ada"), true) },
+    { name: 'hasName(["Ada", "Linus"], "Grace") is false', run: (x) => expectEqual(x.hasName(["Ada", "Linus"], "Grace"), false) },
+    { name: 'addName(["Ada"], "Grace") returns ["Ada", "Grace"]', run: (x) => expectDeepEqual(x.addName(["Ada"], "Grace"), ["Ada", "Grace"]) },
+  ],
+
+  solution: `function sumScores(scores: number[]): number {
+  let total = 0;
+  for (const score of scores) {
+    total += score;
+  }
+  return total;
+}
+
+function hasName(names: string[], target: string): boolean {
+  return names.includes(target);
+}
+
+function addName(names: string[], name: string): string[] {
+  names.push(name);
+  return names;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Type</td><td><code>int[]</code> or <code>List&lt;int&gt;</code></td><td><code>number[]</code> (one type, always growable)</td></tr>
+  <tr><td>Literal</td><td><code>new List&lt;int&gt; { 1, 2 }</code></td><td><code>[1, 2]</code></td></tr>
+  <tr><td>Append</td><td><code>list.Add(x)</code></td><td><code>xs.push(x)</code></td></tr>
+  <tr><td>Size</td><td><code>list.Count</code> / <code>arr.Length</code></td><td><code>xs.length</code></td></tr>
+  <tr><td>Membership</td><td><code>list.Contains(x)</code></td><td><code>xs.includes(x)</code></td></tr>
+  <tr><td>Iterate values</td><td><code>foreach (var x in xs)</code></td><td><code>for (const x of xs)</code> (not <code>in</code>!)</td></tr>
+  <tr><td>Index lookup</td><td><code>list.IndexOf(x)</code></td><td><code>xs.indexOf(x)</code></td></tr>
+  <tr><td>Slice</td><td><code>xs[1..3]</code></td><td><code>xs.slice(1, 3)</code></td></tr>
+</table>
+<p>One safety note your C# reflexes will not expect: indexing out of range does
+not throw an <code>IndexOutOfRangeException</code> — <code>xs[99]</code>
+quietly returns <code>undefined</code>. Prefer <code>for..of</code>,
+<code>.includes()</code>, and (in a later lesson) the LINQ-like
+<code>.map()</code>/<code>.filter()</code> methods, and you will rarely index
+blindly. Empty arrays are the one place inference needs help: annotate
+<code>const xs: number[] = [];</code>, just as you would name the
+<code>T</code> in <code>new List&lt;T&gt;()</code>.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

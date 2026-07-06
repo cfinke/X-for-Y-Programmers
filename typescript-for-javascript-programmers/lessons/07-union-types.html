@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Union Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Union Types",
+
+  intro: `
+<p>Plenty of real JavaScript functions accept "a number <em>or</em> a
+string" — ids from the database arrive as numbers, ids from the URL arrive as
+strings. In JavaScript you document that in a comment and hope; in TypeScript
+you write it in the signature: <code>id: number | string</code>. The
+<code>|</code> reads as "or", and the result is called a
+<em>union type</em>.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>function formatId(id) { ... }</code> — accepts anything, including a <code>Date</code></td><td><code>function formatId(id: number | string)</code> — exactly two shapes allowed</td></tr>
+  <tr><td><code>id.toUpperCase()</code> — 💥 crashes if <code>id</code> is a number</td><td>Compile error: <em>toUpperCase does not exist on type number | string</em></td></tr>
+  <tr><td><code>typeof id === "number"</code> — a runtime check, if you remember it</td><td>Same check — and the compiler <em>narrows</em> the type inside the branch</td></tr>
+</table>
+<p>Here is the clever part. On a value of type <code>number | string</code>,
+the compiler only lets you do things that are legal for <em>both</em> types
+(like <code>String(id)</code>). To call <code>id.toUpperCase()</code>, you
+must first prove which side of the union you hold — and the ordinary
+JavaScript <code>typeof</code> check you have always written is exactly that
+proof. Inside <code>if (typeof id === "number")</code>, the type of
+<code>id</code> is just <code>number</code>; in the branch after it, it is
+just <code>string</code>. This is called <em>narrowing</em>, and it is the
+engine behind most of TypeScript's ergonomics.</p>`,
+
+  javascript: `// Ids arrive as numbers from the database and as strings from the URL.
+function formatId(id) {
+  return "ID-" + id.toUpperCase(); // fine... until a number shows up
+}
+
+function printAll(ids) {
+  for (const id of ids) {
+    console.log(formatId(id));
+  }
+}
+
+printAll(["abc", "x9"]);
+// ID-ABC
+// ID-X9
+
+printAll(["abc", 42]);
+// ID-ABC
+// 💥 TypeError: id.toUpperCase is not a function`,
+
+  task: `
+<p>Write the typed version:</p>
+<ol>
+  <li>Declare <code>formatId</code> so its parameter is
+      <code>id: number | string</code> and its return type is
+      <code>string</code>.</li>
+  <li>Narrow with <code>typeof</code>: when <code>id</code> is a
+      <strong>number</strong>, return <code>"ID-"</code> plus the number
+      left-padded with zeros to 5 digits —
+      <code>String(id).padStart(5, "0")</code> — so <code>42</code> becomes
+      <code>"ID-00042"</code>.</li>
+  <li>When <code>id</code> is a <strong>string</strong>, return
+      <code>"ID-"</code> plus the string uppercased, so <code>"abc"</code>
+      becomes <code>"ID-ABC"</code>.</li>
+</ol>
+<p>In a strict project, calling <code>id.toUpperCase()</code> before the
+<code>typeof</code> check refuses to compile — the exact crash from the left
+panel, caught before the code ever runs.</p>`,
+
+  starter: `// 1. Give id a union type: it is a number OR a string.
+// 2. Use a typeof check so the compiler knows which one you hold.
+function formatId(id): string {
+  // TODO: numbers  -> "ID-" + zero-padded to 5 digits ("ID-00042")
+  // TODO: strings  -> "ID-" + uppercased              ("ID-ABC")
+  return "";
+}
+`,
+
+  exportNames: ["formatId"],
+
+  requirements: [
+    { pattern: /id\s*:\s*(number\s*\|\s*string|string\s*\|\s*number)/, message: "Declare the parameter with a union type: id: number | string" },
+    { pattern: /formatId\s*\([^)]*\)\s*:\s*string/, message: "Annotate formatId's return type as string" },
+    { pattern: /typeof\s+id/, message: "Narrow the union with a typeof check before using type-specific methods" },
+  ],
+
+  tests: [
+    { name: 'formatId(42) returns "ID-00042"', run: (x) => expectEqual(x.formatId(42), "ID-00042") },
+    { name: 'formatId(7) returns "ID-00007"', run: (x) => expectEqual(x.formatId(7), "ID-00007") },
+    { name: 'formatId(12345) returns "ID-12345"', run: (x) => expectEqual(x.formatId(12345), "ID-12345") },
+    { name: 'formatId("abc") returns "ID-ABC"', run: (x) => expectEqual(x.formatId("abc"), "ID-ABC") },
+    { name: 'formatId("x9") returns "ID-X9"', run: (x) => expectEqual(x.formatId("x9"), "ID-X9") },
+  ],
+
+  solution: `function formatId(id: number | string): string {
+  if (typeof id === "number") {
+    return "ID-" + String(id).padStart(5, "0");
+  }
+  return "ID-" + id.toUpperCase();
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>"Number or string" parameter</td><td>A comment, at best: <code>/** @param id number or string */</code></td><td><code>id: number | string</code> — enforced</td></tr>
+  <tr><td>Calling <code>.toUpperCase()</code> on it</td><td>💥 <code>TypeError</code> when a number arrives</td><td>Compile error until you narrow</td></tr>
+  <tr><td>Checking the type</td><td><code>typeof id === "number"</code> (optional)</td><td>Same expression — doubles as a <em>type guard</em></td></tr>
+  <tr><td>What you can do without narrowing</td><td>Anything (and pray)</td><td>Only what is valid for <em>every</em> member of the union</td></tr>
+  <tr><td>More than two options</td><td>—</td><td><code>string | number | boolean | null</code> — unions can be any width</td></tr>
+</table>
+<p>The habit to build: a union type is a to-do list. Each <code>|</code> is a
+case your code must handle, and <code>typeof</code> (later also
+<code>in</code> and <code>instanceof</code>) is how you check items off. The
+compiler tracks your control flow — an early <code>return</code> in the
+number branch means <code>id</code> is plain <code>string</code> for the rest
+of the function, no <code>else</code> required.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Modules &amp; Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Modules & Capstone",
+
+  intro: `
+<p>C++ code sharing is textual: <code>#include</code> pastes a header into the
+translation unit, header guards fend off double inclusion, the One Definition
+Rule polices duplicates, and every entity lives twice — declared in the
+<code>.h</code>, defined in the <code>.cpp</code>. ES modules delete the whole
+apparatus. A file <em>is</em> a module. You write a definition once, mark it
+<code>export</code> at the definition site, and consumers write
+<code>import { cartTotal } from "./inventory"</code>. No headers, no forward
+declarations, no include order, no link step — each module is evaluated
+exactly once, and the loader resolves the graph.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>#include "inventory.h"</code> (textual paste)</td><td><code>import { cartTotal } from "./inventory"</code></td></tr>
+  <tr><td><code>#ifndef INVENTORY_H</code> guards / <code>#pragma once</code></td><td>unnecessary — modules load once</td></tr>
+  <tr><td>declare in <code>.h</code>, define in <code>.cpp</code></td><td>one definition, marked <code>export</code></td></tr>
+  <tr><td>forward declarations, include order</td><td>none — imports name what they need</td></tr>
+  <tr><td>ODR violations at link time</td><td>impossible; each module has its own scope</td></tr>
+  <tr><td>everything visible once included</td><td>only <code>export</code>ed names cross the boundary</td></tr>
+</table>
+<p>Anything <em>not</em> exported is private to the module — the anonymous
+namespace / <code>static</code>-linkage idiom, as the default. This final
+lesson is also the capstone: you'll publish a small typed inventory module
+that pulls together the course — an <code>interface</code>, a generic
+function, array methods, spread, and narrowing — with every public symbol
+marked <code>export</code>. (This playground compiles a single module, so
+write the <code>export</code>s but skip <code>import</code> lines here.)</p>`,
+
+  cpp: `// inventory.h
+#ifndef INVENTORY_H              // header guard: without it, a
+#define INVENTORY_H              // second #include breaks the build
+#include <string>
+#include <vector>
+
+struct Item { std::string name; double price; int qty; };
+
+double cart_total(const std::vector<Item>& cart);  // declaration
+#endif
+
+// inventory.cpp
+#include "inventory.h"           // textual paste of the header
+double cart_total(const std::vector<Item>& cart) { // definition
+    double total = 0;
+    for (const auto& it : cart) total += it.price * it.qty;
+    return total;
+}
+
+// main.cpp
+#include "inventory.h"           // pasted again; guard + ODR save us`,
+
+  task: `
+<p>Capstone: build the inventory module, exporting every public symbol at its
+definition site (no header, no second file):</p>
+<ol>
+  <li><code>export interface Item</code> — <code>name: string</code>,
+      <code>price: number</code>, <code>qty: number</code> (Lesson 8).</li>
+  <li><code>export const catalog: Item[]</code> — at least two items, e.g.
+      hammer at 12.5 × 2 and nails at 0.05 × 500.</li>
+  <li><code>export function firstWhere&lt;T&gt;(items: T[], pred: (item: T) =&gt; boolean): T | undefined</code>
+      — a generic (Lesson 12): return the first element matching
+      <code>pred</code>, or <code>undefined</code>. (<code>items.find(pred)</code>
+      counts.)</li>
+  <li><code>export function addItem(cart: Item[], item: Item): Item[]</code> —
+      return <code>[...cart, item]</code> without mutating <code>cart</code>
+      (Lesson 15).</li>
+  <li><code>export function cartTotal(cart: Item[]): number</code> — sum
+      <code>price * qty</code> with <code>reduce</code> (Lesson 13).</li>
+  <li><code>export function describeItem(item: Item | undefined): string</code>
+      — narrow the union (Lesson 16): <code>"not found"</code> when
+      <code>undefined</code>, otherwise
+      <code>item.name + ": $" + item.price</code>.</li>
+</ol>`,
+
+  starter: `// The whole "module" is this one file. Mark public symbols with
+// export at the definition — no .h/.cpp split, no guards, no ODR.
+
+// 1. The shared shape (in C++ this struct lived in the header).
+export interface Item {
+  name: string;
+  price: number;
+  qty: number;
+}
+
+// 2. TODO: export const catalog: Item[] with at least two items.
+
+
+// 3. TODO: export function firstWhere<T>(...) — generic find.
+export function firstWhere<T>(items: T[], pred: (item: T) => boolean): T | undefined {
+  // TODO
+  return undefined;
+}
+
+// 4. TODO: add without mutating — spread, not push.
+export function addItem(cart: Item[], item: Item): Item[] {
+  // TODO
+  return cart;
+}
+
+// 5. TODO: reduce over price * qty.
+export function cartTotal(cart: Item[]): number {
+  // TODO
+  return 0;
+}
+
+// 6. TODO: narrow Item | undefined before touching .name.
+export function describeItem(item: Item | undefined): string {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["catalog", "firstWhere", "addItem", "cartTotal", "describeItem"],
+
+  requirements: [
+    { pattern: /export\s+(function|const)/, message: "Publish your symbols with export at the definition site" },
+    { pattern: /interface\s+Item/, message: "Define the Item shape as interface Item { ... }" },
+    { pattern: /firstWhere\s*<\s*T\s*>/, message: "Make firstWhere generic: firstWhere<T>(...)" },
+    { pattern: /\[\s*\.\.\./, message: "Build the new cart with array spread ([...cart, item])" },
+  ],
+
+  tests: [
+    { name: "catalog has at least two well-formed items", run: (x) => { expectTruthy(Array.isArray(x.catalog) && x.catalog.length >= 2); for (const it of x.catalog) { expectTruthy(typeof it.name === "string" && typeof it.price === "number" && typeof it.qty === "number"); } } },
+    { name: "firstWhere works generically (numbers and objects)", run: (x) => { expectEqual(x.firstWhere([1, 2, 3], (n) => n > 1), 2); expectEqual(x.firstWhere([1, 2, 3], (n) => n > 9), undefined); expectDeepEqual(x.firstWhere([{ name: "a" }, { name: "b" }], (o) => o.name === "b"), { name: "b" }); } },
+    { name: "addItem returns a grown cart", run: (x) => { const cart = [{ name: "hammer", price: 12.5, qty: 1 }]; expectDeepEqual(x.addItem(cart, { name: "saw", price: 20, qty: 1 }), [{ name: "hammer", price: 12.5, qty: 1 }, { name: "saw", price: 20, qty: 1 }]); } },
+    { name: "addItem does not mutate the original cart", run: (x) => { const cart = [{ name: "hammer", price: 12.5, qty: 1 }]; const grown = x.addItem(cart, { name: "saw", price: 20, qty: 1 }); expectEqual(cart.length, 1); expectTruthy(grown !== cart); } },
+    { name: "cartTotal([]) is 0 and a mixed cart sums price × qty", run: (x) => { expectEqual(x.cartTotal([]), 0); expectEqual(x.cartTotal([{ name: "a", price: 2, qty: 3 }, { name: "b", price: 1, qty: 4 }]), 10); } },
+    { name: "describeItem narrows Item | undefined", run: (x) => { expectEqual(x.describeItem(undefined), "not found"); expectEqual(x.describeItem({ name: "Nails", price: 3, qty: 1 }), "Nails: $3"); } },
+  ],
+
+  solution: `export interface Item {
+  name: string;
+  price: number;
+  qty: number;
+}
+
+export const catalog: Item[] = [
+  { name: "hammer", price: 12.5, qty: 2 },
+  { name: "nails", price: 0.05, qty: 500 },
+];
+
+export function firstWhere<T>(items: T[], pred: (item: T) => boolean): T | undefined {
+  return items.find(pred);
+}
+
+export function addItem(cart: Item[], item: Item): Item[] {
+  return [...cart, item];
+}
+
+export function cartTotal(cart: Item[]): number {
+  return cart.reduce((total, it) => total + it.price * it.qty, 0);
+}
+
+export function describeItem(item: Item | undefined): string {
+  if (item === undefined) {
+    return "not found";
+  }
+  return item.name + ": $" + item.price;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Share code</td><td><code>#include "file.h"</code> — textual paste</td><td><code>import { name } from "./file"</code></td></tr>
+  <tr><td>Publish a symbol</td><td>declare in header, define in source</td><td><code>export</code> at the definition</td></tr>
+  <tr><td>Double inclusion</td><td>header guards / <code>#pragma once</code></td><td>non-issue: modules evaluate once</td></tr>
+  <tr><td>Duplicate definitions</td><td>ODR, linker errors</td><td>impossible — per-module scope</td></tr>
+  <tr><td>Module-private helper</td><td><code>static</code> / anonymous namespace</td><td>anything without <code>export</code></td></tr>
+  <tr><td>Rename on use</td><td>n/a</td><td><code>import { a as b }</code></td></tr>
+  <tr><td>Primary export</td><td>n/a</td><td><code>export default</code> / <code>import x from</code></td></tr>
+  <tr><td>Types across files</td><td>headers again</td><td><code>export interface</code> — erased at compile time</td></tr>
+</table>
+<p>And that's the course. Look back at the capstone: an erased
+<code>interface</code> instead of a header struct, a generic checked at its
+declaration instead of at instantiation, <code>reduce</code> instead of
+<code>std::accumulate</code>, spread instead of a copy-then-mutate dance,
+narrowing instead of <code>dynamic_cast</code> — all published with
+<code>export</code> instead of a header/source split. The discipline you
+brought from C++ — caring about types, ownership of data flow, and API
+boundaries — is exactly what makes TypeScript strong; the ceremony you left
+behind (headers, manual memory, UB) stays gone.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

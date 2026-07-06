@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring",
+
+  intro: `
+<p>PHP has had array unpacking for years — <code>list($a, $b) = $pair</code>,
+or the shorter <code>[$a, $b] = $pair</code> since PHP 7.1, including
+string-keyed unpacking like <code>['host' =&gt; $host] = $config</code>. But
+for the everyday case of pulling values out of an associative array with
+fallbacks, most PHP code still does it one line at a time:
+<code>$role = $user['role'] ?? 'member';</code>. TypeScript's destructuring
+does all of that in a single pattern: pick several properties at once, rename
+them, and give each one a default.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>[$a, $b] = $pair;</code></td><td><code>const [a, b] = pair;</code></td></tr>
+  <tr><td><code>$name = $user['name'];</code></td><td><code>const { name } = user;</code></td></tr>
+  <tr><td><code>$role = $user['role'] ?? 'member';</code></td><td><code>const { role = "member" } = user;</code></td></tr>
+  <tr><td><code>$n = $user['name'];</code> (rename by hand)</td><td><code>const { name: n } = user;</code></td></tr>
+</table>
+<p>The pattern also works directly in function parameters — the TypeScript
+equivalent of a PHP function that takes an <code>$options</code> array and
+immediately unpacks it. Write <code>function draw({ x, y }: Point)</code> and
+the destructuring happens as the argument arrives, fully typed. One syntax
+note: renaming uses a colon (<code>{ name: n }</code> means "take
+<code>name</code>, call it <code>n</code>"), which looks backwards at first —
+the property is on the left, your new variable on the right.</p>`,
+
+  php: `<?php
+$pair = [3, 4];
+[$x, $y] = $pair;                 // array unpacking (PHP 7.1+)
+list($first, $second) = $pair;    // the older spelling
+
+$user = ['name' => 'Ada', 'email' => 'ada@example.com'];
+
+// Manual pulls, one line and one ?? per key:
+$name  = $user['name'];
+$email = $user['email'];
+$role  = $user['role'] ?? 'member';
+
+function formatUser(array $user): string
+{
+    $name  = $user['name'];
+    $email = $user['email'];
+    $role  = $user['role'] ?? 'member';
+    return "$name <$email> ($role)";
+}
+
+echo formatUser($user); // Ada <ada@example.com> (member)`,
+
+  task: `
+<ol>
+  <li>Write <code>formatUser(user: { name: string; email: string; role?: string }): string</code>
+      that returns <code>"Ada &lt;ada@example.com&gt; (member)"</code>-style
+      output. Use <strong>object destructuring</strong> with a default of
+      <code>"member"</code> for <code>role</code> — one
+      <code>const { ... } = user;</code> line instead of three manual pulls.</li>
+  <li>Write <code>swapPair(pair: [number, number]): [number, number]</code>
+      that returns a new pair with the elements swapped. Use <strong>array
+      destructuring</strong> (<code>const [a, b] = pair;</code>) rather than
+      index access.</li>
+  <li>Write <code>pointToString(point: { x: number; y: number }): string</code>
+      returning <code>"(3, 4)"</code>-style output, destructuring
+      <code>{ x, y }</code> directly <strong>in the parameter list</strong>.</li>
+</ol>`,
+
+  starter: `interface User {
+  name: string;
+  email: string;
+  role?: string;
+}
+
+function formatUser(user: User): string {
+  // TODO: const { name, email, role = "member" } = user;
+  // then return "name <email> (role)"
+  return "";
+}
+
+function swapPair(pair: [number, number]): [number, number] {
+  // TODO: destructure with const [a, b] = pair; then return the swap
+  return pair;
+}
+
+// TODO: destructure { x, y } directly in the parameter list
+function pointToString(point: { x: number; y: number }): string {
+  return "";
+}
+`,
+
+  exportNames: ["formatUser", "swapPair", "pointToString"],
+
+  requirements: [
+    { pattern: /const\s*\{[^}]*\}\s*=/, message: "Use object destructuring: const { ... } = user" },
+    { pattern: /role\s*=/, message: "Give role a default value inside the destructuring pattern" },
+    { pattern: /\[\s*\w+\s*,\s*\w+\s*\]\s*=/, message: "Use array destructuring: const [a, b] = pair" },
+    { pattern: /\(\s*\{\s*x\s*,\s*y\s*\}/, message: "Destructure { x, y } directly in pointToString's parameter list" },
+  ],
+
+  tests: [
+    { name: "formatUser with an explicit role", run: (x) => expectEqual(
+        x.formatUser({ name: "Ada", email: "ada@example.com", role: "admin" }),
+        "Ada <ada@example.com> (admin)") },
+    { name: 'formatUser falls back to "member" when role is missing', run: (x) => expectEqual(
+        x.formatUser({ name: "Bob", email: "bob@example.com" }),
+        "Bob <bob@example.com> (member)") },
+    { name: "swapPair([1, 2]) returns [2, 1]", run: (x) => expectDeepEqual(x.swapPair([1, 2]), [2, 1]) },
+    { name: "swapPair returns a new array (input unchanged)", run: (x) => {
+        const pair = [7, 9];
+        x.swapPair(pair);
+        expectDeepEqual(pair, [7, 9]);
+      } },
+    { name: 'pointToString({ x: 3, y: 4 }) returns "(3, 4)"', run: (x) => expectEqual(x.pointToString({ x: 3, y: 4 }), "(3, 4)") },
+  ],
+
+  solution: `interface User {
+  name: string;
+  email: string;
+  role?: string;
+}
+
+function formatUser(user: User): string {
+  const { name, email, role = "member" } = user;
+  return name + " <" + email + "> (" + role + ")";
+}
+
+function swapPair(pair: [number, number]): [number, number] {
+  const [first, second] = pair;
+  return [second, first];
+}
+
+function pointToString({ x, y }: { x: number; y: number }): string {
+  return "(" + x + ", " + y + ")";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Unpack a list</td><td><code>[$a, $b] = $pair;</code> / <code>list()</code></td><td><code>const [a, b] = pair;</code></td></tr>
+  <tr><td>Unpack by key</td><td><code>['host' =&gt; $host] = $config;</code></td><td><code>const { host } = config;</code></td></tr>
+  <tr><td>Default when missing</td><td><code>$role = $u['role'] ?? 'member';</code></td><td><code>const { role = "member" } = u;</code></td></tr>
+  <tr><td>Rename while unpacking</td><td><code>$n = $u['name'];</code></td><td><code>const { name: n } = u;</code></td></tr>
+  <tr><td>Unpack in the signature</td><td>Take <code>array $options</code>, unpack inside</td><td><code>function f({ x, y }: Point)</code></td></tr>
+  <tr><td>Skip an element</td><td><code>[, $second] = $pair;</code></td><td><code>const [, second] = pair;</code></td></tr>
+</table>
+<p>Destructuring shines in typed code because the compiler checks the pattern
+against the shape: destructure a property that does not exist on the type and
+you get an error immediately, where <code>$user['rolle'] ?? 'member'</code>
+would silently hand every user the default forever. Combined with parameter
+destructuring, it replaces the whole "options array plus a wall of
+<code>??</code> lines" idiom at the top of PHP functions.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Good news first: default arguments carry over almost character-for-character.
+<code>int f(int x, int y = 10)</code> becomes
+<code>function f(x: number, y: number = 10)</code>. The bigger win is lambdas:
+C++'s <code>[](int x) { return x * 2; }</code> becomes the arrow function
+<code>(x: number) =&gt; x * 2</code> — and notice what's <em>missing</em>: the
+capture list. There is no <code>[=]</code>, <code>[&amp;]</code>, or
+<code>[this]</code> to agonize over. Closures capture every variable they
+mention, automatically and by reference — and because the garbage collector
+keeps captured variables alive as long as the closure exists, there is no
+dangling-reference footgun. Returning a lambda that captures a local is not a
+bug here; it's the idiom.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>int f(int x, int y = 10)</code></td><td><code>function f(x: number, y: number = 10)</code></td></tr>
+  <tr><td><code>[](int x) { return x * 2; }</code></td><td><code>(x: number) =&gt; x * 2</code></td></tr>
+  <tr><td><code>[factor](int x) { return x * factor; }</code></td><td><code>(x) =&gt; x * factor</code> — no capture list</td></tr>
+  <tr><td><code>std::function&lt;int(int)&gt;</code></td><td><code>(x: number) =&gt; number</code> (a function type)</td></tr>
+  <tr><td>Overloads: two <code>area(...)</code> bodies</td><td>One body with optional (<code>h?</code>) or union params</td></tr>
+</table>
+<p>Overloading works differently. C++ picks among several function bodies by
+signature at compile time. TypeScript functions have exactly <em>one</em> body,
+so the idiom is a single function whose signature absorbs the variations:
+optional parameters (<code>h?: number</code>), default values, or union-typed
+parameters — then a runtime check inside the body decides what to do. Where
+you would write two overloads of <code>area</code>, you write one
+<code>area(w, h?)</code> and branch on <code>h === undefined</code>.</p>`,
+
+  cpp: `#include <string>
+
+// Default argument: caller may omit it.
+std::string greet(const std::string& name,
+                  const std::string& greeting = "Hello") {
+    return greeting + ", " + name + "!";
+}
+
+// Lambda: capture list required, even when empty.
+auto doubler = [](int x) { return x * 2; };
+
+// Capturing a local means opting in — [factor] copies, [&factor]
+// references (and dangles if the lambda outlives the scope!).
+auto make_multiplier(int factor) {
+    return [factor](int x) { return x * factor; };
+}
+
+// Overloads: separate bodies chosen by signature.
+double area(double w) { return w * w; }
+double area(double w, double h) { return w * h; }`,
+
+  task: `
+<p>Port the functions to TypeScript:</p>
+<ol>
+  <li><code>greet(name: string, greeting: string = "Hello"): string</code> —
+      return <code>greeting + ", " + name + "!"</code>. The default argument
+      syntax is the same one you already know.</li>
+  <li><code>doubler</code> — a <code>const</code> holding an <em>arrow
+      function</em> <code>(x: number) =&gt; x * 2</code>. No capture list, no
+      <code>auto</code>.</li>
+  <li><code>makeMultiplier(factor: number): (x: number) =&gt; number</code> —
+      return an arrow function that multiplies by <code>factor</code>. The
+      closure captures <code>factor</code> automatically, and the GC keeps it
+      alive after <code>makeMultiplier</code> returns — the "dangling
+      reference" case from C++ simply cannot happen.</li>
+  <li><code>area(w: number, h?: number): number</code> — the two C++ overloads
+      collapsed into one function with an optional parameter: if <code>h</code>
+      is <code>undefined</code> return <code>w * w</code>, otherwise
+      <code>w * h</code>.</li>
+</ol>`,
+
+  starter: `// 1. greet: default arguments work exactly like C++.
+function greet(name: string, greeting: string = "Hello"): string {
+  // TODO
+  return "";
+}
+
+// 2. doubler: [](int x) { return x * 2; }  →  (x: number) => x * 2
+// TODO: declare const doubler as an arrow function
+
+
+// 3. makeMultiplier: return an arrow function that captures factor.
+//    No [factor] capture list — and no dangling: GC keeps factor alive.
+function makeMultiplier(factor: number): (x: number) => number {
+  // TODO
+  return (x: number) => 0;
+}
+
+// 4. area: both C++ overloads become one function with an optional h.
+function area(w: number, h?: number): number {
+  // TODO: h === undefined ? square : rectangle
+  return 0;
+}
+`,
+
+  exportNames: ["greet", "doubler", "makeMultiplier", "area"],
+
+  requirements: [
+    { pattern: /greeting\s*:\s*string\s*=\s*"Hello"/, message: 'Give greeting a default value: greeting: string = "Hello"' },
+    { pattern: /const\s+doubler\s*=/, message: "Declare doubler as a const holding an arrow function" },
+    { pattern: /=>/, message: "Use at least one arrow function (=>)" },
+    { pattern: /h\s*\?\s*:\s*number/, message: "Make h an optional parameter in area (h?: number)" },
+  ],
+
+  tests: [
+    { name: 'greet("World") uses the default greeting', run: (x) => expectEqual(x.greet("World"), "Hello, World!") },
+    { name: 'greet("Ada", "Hi") overrides the default', run: (x) => expectEqual(x.greet("Ada", "Hi"), "Hi, Ada!") },
+    { name: "doubler(21) returns 42", run: (x) => expectEqual(x.doubler(21), 42) },
+    { name: "makeMultiplier(3) returns a working closure", run: (x) => { const triple = x.makeMultiplier(3); expectEqual(triple(5), 15); expectEqual(triple(7), 21); } },
+    { name: "closures from separate calls stay independent", run: (x) => { const twice = x.makeMultiplier(2); const tenX = x.makeMultiplier(10); expectEqual(twice(4), 8); expectEqual(tenX(4), 40); } },
+    { name: "area(3) is 9 and area(3, 4) is 12", run: (x) => { expectEqual(x.area(3), 9); expectEqual(x.area(3, 4), 12); } },
+  ],
+
+  solution: `function greet(name: string, greeting: string = "Hello"): string {
+  return greeting + ", " + name + "!";
+}
+
+const doubler = (x: number): number => x * 2;
+
+function makeMultiplier(factor: number): (x: number) => number {
+  return (x: number) => x * factor;
+}
+
+function area(w: number, h?: number): number {
+  return h === undefined ? w * w : w * h;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Default argument</td><td><code>int f(int x, int y = 10)</code></td><td><code>function f(x: number, y: number = 10)</code></td></tr>
+  <tr><td>Lambda</td><td><code>[](int x) { return x * 2; }</code></td><td><code>(x: number) =&gt; x * 2</code></td></tr>
+  <tr><td>Capture</td><td><code>[=]</code>, <code>[&amp;]</code>, <code>[this]</code>, <code>[x = std::move(y)]</code></td><td>automatic — everything mentioned is captured</td></tr>
+  <tr><td>Lambda outliving scope</td><td>dangling reference (UB) with <code>[&amp;]</code></td><td>safe — GC keeps captured variables alive</td></tr>
+  <tr><td>Function type</td><td><code>std::function&lt;int(int)&gt;</code></td><td><code>(x: number) =&gt; number</code></td></tr>
+  <tr><td>Overloading</td><td>multiple bodies, picked by signature</td><td>one body; optional/default/union parameters</td></tr>
+  <tr><td>Optional parameter</td><td>trailing default argument</td><td><code>h?: number</code> — reads as <code>undefined</code> if omitted</td></tr>
+</table>
+<p>The deepest shift here is trust in closures. In C++, a lambda that captures
+by reference is a time bomb waiting for its scope to die; the capture list
+exists precisely to make you think about lifetimes. In TypeScript, a closure
+<em>extends</em> the lifetime of what it captures — <code>makeMultiplier</code>
+returns, its stack frame is gone, and <code>factor</code> lives on for as long
+as any returned function can reach it. Factory functions that return
+closures are everyday TypeScript, not a lifetime puzzle.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

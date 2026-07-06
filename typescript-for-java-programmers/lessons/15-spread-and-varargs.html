@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Spread & Varargs</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Spread & Varargs",
+
+  intro: `
+<p>You already know half of this lesson: Java's varargs
+(<code>void log(String... parts)</code>) exist in TypeScript as <em>rest
+parameters</em> — same idea, the dots just move to the left of the name:
+<code>function log(...parts: string[])</code>. Inside the function,
+<code>parts</code> is a real array either way. The other half is where
+TypeScript pulls ahead: those same three dots work in <em>expressions</em>
+too, spreading an existing array or object into a new one.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>static int sum(int... nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td><code>new ArrayList&lt;&gt;(a); list.addAll(b);</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td><code>new HashMap&lt;&gt;(defaults); map.putAll(overrides);</code></td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+  <tr><td><code>list.add(item)</code> (mutates)</td><td><code>[...items, item]</code> (new array)</td></tr>
+  <tr><td><code>config.toBuilder().timeout(30).build()</code></td><td><code>{ ...config, timeout: 30 }</code></td></tr>
+</table>
+<p>Spread turns Java's two-step "copy then mutate" dances into single
+expressions. Merging maps — <code>new HashMap&lt;&gt;(defaults)</code> plus
+<code>putAll(overrides)</code> — becomes
+<code>{ ...defaults, ...overrides }</code>, and just like
+<code>putAll</code>, later entries win. Best of all, immutable
+copy-with-changes — the thing Java grows a whole builder class for —
+is just <code>{ ...config, timeout: 30 }</code>: every field copied, one
+field replaced, original untouched. In codebases that treat data as
+immutable (most modern TS), spread <em>is</em> the builder pattern.</p>`,
+
+  java: `static int sum(int... nums) {
+    int total = 0;
+    for (int n : nums) total += n;
+    return total;
+}
+sum(1, 2, 3);            // varargs call site
+sum(existingArray);      // or pass an array directly
+
+// Merging collections: mutable copy + addAll / putAll.
+Map<String, Object> merged = new HashMap<>(defaultSettings);
+merged.putAll(userSettings);   // later entries win
+
+List<String> both = new ArrayList<>(listA);
+both.addAll(listB);
+
+// Copy-with-changes usually means a builder:
+Config updated = config.toBuilder()
+    .timeout(30)
+    .build();`,
+
+  task: `
+<p>The <code>Settings</code> interface is already in the starter. Write three
+functions — the last two must <strong>not mutate their arguments</strong>
+(the tests check):</p>
+<ol>
+  <li><code>sum(...nums: number[]): number</code> — a rest parameter, Java's
+      <code>int... nums</code> with the dots moved left. Return the total
+      (a <code>reduce</code> with seed <code>0</code> handles the empty
+      call).</li>
+  <li><code>mergeSettings(defaults: Settings, overrides: Partial&lt;Settings&gt;): Settings</code>
+      — return a <strong>new</strong> object built with object spread:
+      <code>{ ...defaults, ...overrides }</code>. Later spreads win, exactly
+      like <code>putAll</code>. (<code>Partial&lt;Settings&gt;</code> means
+      "Settings with every field optional" — a preview of Lesson 18.)</li>
+  <li><code>appendItem&lt;T&gt;(items: T[], item: T): T[]</code> — return a
+      <strong>new</strong> array with <code>item</code> at the end, via array
+      spread: <code>[...items, item]</code>. No <code>.push()</code> — that
+      is <code>list.add()</code>, a mutation.</li>
+</ol>`,
+
+  starter: `interface Settings {
+  theme: string;
+  fontSize: number;
+  autoSave: boolean;
+}
+
+// 1. Java: static int sum(int... nums)
+//    TODO: give sum a rest parameter: ...nums: number[]
+function sum(): number {
+  // TODO: add up all the numbers (reduce with seed 0)
+  return 0;
+}
+
+// 2. new HashMap<>(defaults) + putAll(overrides), as one expression.
+//    Partial<Settings> = Settings with every field optional.
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  // TODO: return a NEW object: spread defaults, then overrides
+  return defaults;
+}
+
+// 3. Immutable append — no .push(), no mutation.
+function appendItem<T>(items: T[], item: T): T[] {
+  // TODO: return a NEW array containing items plus item at the end
+  return items;
+}
+`,
+
+  exportNames: ["sum", "mergeSettings", "appendItem"],
+
+  requirements: [
+    { pattern: /\.\.\./, message: "Use the three dots — rest parameters and spread are this lesson's whole point" },
+    { pattern: /sum\s*\(\s*\.\.\.\w+\s*:\s*number\s*\[\s*\]/, message: "Declare sum with a rest parameter: sum(...nums: number[])" },
+    { pattern: /\{\s*\.\.\./, message: "Build the merged settings with object spread: { ...defaults, ...overrides }" },
+    { pattern: /\[\s*\.\.\./, message: "Build the appended array with array spread: [...items, item]" },
+  ],
+
+  tests: [
+    { name: "sum(1, 2, 3) returns 6", run: (x) => expectEqual(x.sum(1, 2, 3), 6) },
+    { name: "sum() with no arguments returns 0", run: (x) => expectEqual(x.sum(), 0) },
+    {
+      name: "mergeSettings: overrides win, untouched fields survive",
+      run: (x) => expectDeepEqual(
+        x.mergeSettings({ theme: "light", fontSize: 14, autoSave: true }, { theme: "dark" }),
+        { theme: "dark", fontSize: 14, autoSave: true }
+      ),
+    },
+    {
+      name: "mergeSettings does NOT mutate the defaults object",
+      run: (x) => {
+        const defaults = { theme: "light", fontSize: 14, autoSave: true };
+        const merged = x.mergeSettings(defaults, { theme: "dark", fontSize: 16 });
+        expectTruthy(merged !== defaults);
+        expectEqual(defaults.theme, "light");
+        expectEqual(defaults.fontSize, 14);
+      },
+    },
+    {
+      name: 'appendItem(["a", "b"], "c") returns ["a", "b", "c"]',
+      run: (x) => expectDeepEqual(x.appendItem(["a", "b"], "c"), ["a", "b", "c"]),
+    },
+    {
+      name: "appendItem does NOT mutate the input array",
+      run: (x) => {
+        const items = [1, 2];
+        const result = x.appendItem(items, 3);
+        expectTruthy(result !== items);
+        expectDeepEqual(items, [1, 2]);
+      },
+    },
+  ],
+
+  solution: `interface Settings {
+  theme: string;
+  fontSize: number;
+  autoSave: boolean;
+}
+
+function sum(...nums: number[]): number {
+  return nums.reduce((total, n) => total + n, 0);
+}
+
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  return { ...defaults, ...overrides };
+}
+
+function appendItem<T>(items: T[], item: T): T[] {
+  return [...items, item];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Varargs / rest parameter</td><td><code>int sum(int... nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td>Pass an array to varargs</td><td><code>sum(arr)</code> (arrays double as varargs)</td><td><code>sum(...arr)</code> (spread at the call site)</td></tr>
+  <tr><td>Concatenate lists</td><td><code>new ArrayList&lt;&gt;(a)</code> + <code>addAll(b)</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td>Merge maps</td><td><code>new HashMap&lt;&gt;(a)</code> + <code>putAll(b)</code></td><td><code>{ ...a, ...b }</code> — later keys win</td></tr>
+  <tr><td>Copy-with-changes</td><td>builder: <code>toBuilder().x(1).build()</code></td><td><code>{ ...obj, x: 1 }</code></td></tr>
+  <tr><td>Immutable append</td><td><code>List.copyOf</code> gymnastics</td><td><code>[...items, item]</code></td></tr>
+</table>
+<p>One caveat before you spread everything in sight: spread makes a
+<em>shallow</em> copy, like Java's copy constructors — nested objects are
+still shared references, so <code>{ ...config }</code> clones the top level
+only. And symmetry worth noticing: the same three dots that <em>gather</em>
+arguments in a parameter list (<code>...nums</code>) also <em>scatter</em> a
+collection at a call site (<code>sum(...arr)</code>) — Java needs no spread
+there because arrays already double as varargs, but in TypeScript the
+explicitness cuts both ways and works on any iterable.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

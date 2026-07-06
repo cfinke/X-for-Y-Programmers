@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>Here is a lesson where your Java instincts transfer almost untouched.
+<code>&lt;T&gt;</code> means the same thing, bounds still use
+<code>extends</code>, and type arguments are inferred at call sites just like
+Java has done since the diamond operator. Even the famous gotcha carries
+over: TypeScript generics are <strong>erased at runtime</strong>, exactly like
+Java's — there is no <code>T</code> to reflect on, no
+<code>instanceof List&lt;String&gt;</code>. If you have internalized erasure
+once, you have internalized it twice.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>static &lt;T&gt; T first(List&lt;T&gt; items)</code></td><td><code>function first&lt;T&gt;(items: T[]): T</code></td></tr>
+  <tr><td><code>&lt;T extends Comparable&lt;T&gt;&gt;</code></td><td><code>&lt;T extends SomeShape&gt;</code> (bound is a structural shape)</td></tr>
+  <tr><td><code>List&lt;? extends Number&gt;</code> wildcard</td><td>usually just <code>T[]</code> — no wildcards needed</td></tr>
+  <tr><td>Erasure: <code>T</code> gone at runtime</td><td>Erasure: identical — types vanish after compilation</td></tr>
+</table>
+<p>The two differences worth savoring: first, there are <strong>no
+wildcards</strong>. Java needs <code>? extends</code> and <code>? super</code>
+because its generics are invariant and nominal; TypeScript's structural typing
+makes most of that variance dance unnecessary — a <code>Dog[]</code> is simply
+usable where the shapes line up. Second, bounds can reference <em>other type
+parameters' structure</em>: <code>&lt;T, K extends keyof T&gt;</code> means
+"K must be the name of a property of T" — something Java's type system cannot
+express at all. That one construct replaces a whole family of reflective
+<code>getProperty(bean, "name")</code> utilities with a compile-checked
+version.</p>`,
+
+  java: `public static <T> T firstItem(List<T> items) {
+    return items.isEmpty() ? null : items.get(0);
+}
+
+public static <T extends Comparable<T>> T max(T a, T b) {
+    return a.compareTo(b) >= 0 ? a : b;
+}
+
+// Wildcards, needed because Java generics are invariant:
+public static double total(List<? extends Number> nums) {
+    double sum = 0;
+    for (Number n : nums) sum += n.doubleValue();
+    return sum;
+}
+
+List<String> names = List.of("Ada", "Linus");
+String first = firstItem(names);   // T inferred as String
+// Erasure: at runtime, firstItem has no idea T was String.`,
+
+  task: `
+<p>Port two generic utilities:</p>
+<ol>
+  <li>Write <code>firstItem&lt;T&gt;(items: T[]): T | undefined</code> —
+      return the first element, or <code>undefined</code> for an empty array.
+      Where Java smuggles a <code>null</code> through the <code>T</code>
+      return type, TypeScript makes the empty case an honest part of the
+      signature: <code>T | undefined</code>.</li>
+  <li>Write <code>pluck&lt;T, K extends keyof T&gt;(items: T[], key: K): T[K][]</code>
+      — given an array of objects and a property name, return the array of
+      that property's values. It is <code>.map(Product::getName)</code>
+      generalized to <em>every</em> property, with the compiler rejecting
+      misspelled keys. Implement it with <code>items.map(...)</code>.</li>
+</ol>
+<p>Both functions are called with zero explicit type arguments — inference
+fills in <code>T</code> and <code>K</code>, just like Java call sites.</p>`,
+
+  starter: `// 1. Java: public static <T> T firstItem(List<T> items)
+//    The <T> moves to just after the function name; List<T> becomes T[].
+function firstItem<T>(items: T[]): T | undefined {
+  // TODO: return the first element, or undefined if the array is empty
+  return undefined;
+}
+
+// 2. A bound that Java cannot write: K must be a property name of T.
+//    TODO: add the type parameters <T, K extends keyof T> and retype the
+//    signature as (items: T[], key: K): T[K][]
+function pluck(items: any[], key: any): any[] {
+  // TODO: map each item to item[key]
+  return [];
+}
+`,
+
+  exportNames: ["firstItem", "pluck"],
+
+  requirements: [
+    { pattern: /<T\b/, message: "Declare a generic type parameter <T> (after the function name, like Java's <T> before the return type)" },
+    { pattern: /extends\s+keyof/, message: "Bound the key parameter with K extends keyof T" },
+    { pattern: /:\s*T\s*\|\s*undefined/, message: "Give firstItem the honest return type T | undefined" },
+  ],
+
+  tests: [
+    { name: "firstItem([10, 20, 30]) returns 10", run: (x) => expectEqual(x.firstItem([10, 20, 30]), 10) },
+    { name: "firstItem([]) returns undefined", run: (x) => expectEqual(x.firstItem([]), undefined) },
+    { name: 'firstItem(["ada"]) returns "ada" (T inferred as string)', run: (x) => expectEqual(x.firstItem(["ada"]), "ada") },
+    { name: 'pluck(users, "name") returns ["Ada", "Linus"]', run: (x) => expectDeepEqual(x.pluck([{ name: "Ada", age: 36 }, { name: "Linus", age: 55 }], "name"), ["Ada", "Linus"]) },
+    { name: 'pluck(users, "age") returns [36, 55]', run: (x) => expectDeepEqual(x.pluck([{ name: "Ada", age: 36 }, { name: "Linus", age: 55 }], "age"), [36, 55]) },
+  ],
+
+  solution: `function firstItem<T>(items: T[]): T | undefined {
+  return items.length > 0 ? items[0] : undefined;
+}
+
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map(item => item[key]);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Generic method</td><td><code>static &lt;T&gt; T f(List&lt;T&gt; xs)</code></td><td><code>function f&lt;T&gt;(xs: T[]): T</code></td></tr>
+  <tr><td>Bounded parameter</td><td><code>&lt;T extends Number&gt;</code></td><td><code>&lt;T extends number&gt;</code> (bound can be any type, incl. shapes)</td></tr>
+  <tr><td>Key-of-object bound</td><td>not expressible (use reflection)</td><td><code>&lt;T, K extends keyof T&gt;</code>, indexed access <code>T[K]</code></td></tr>
+  <tr><td>Wildcards</td><td><code>List&lt;? extends Shape&gt;</code></td><td>rarely needed — structural typing handles it</td></tr>
+  <tr><td>Runtime type info</td><td>erased (pass a <code>Class&lt;T&gt;</code> token)</td><td>erased (pass a value or check shapes)</td></tr>
+  <tr><td>Generic classes/interfaces</td><td><code>class Box&lt;T&gt; { }</code></td><td><code>class Box&lt;T&gt; { }</code> — identical</td></tr>
+</table>
+<p>Erasure means the same discipline applies in both languages: you cannot
+branch on <code>T</code> at runtime. But TypeScript turns erasure into a
+feature — since types cost nothing, you can write luxuriously precise
+signatures like <code>pluck</code>'s and pay zero bytes for them in the
+shipped JavaScript. The compile-time expressiveness is strictly higher than
+Java's; the runtime is exactly as type-free as the JVM's erased bytecode.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

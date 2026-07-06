@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Utility Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Utility Types",
+
+  intro: `
+<p>Every Java service accumulates them: <code>User</code>, then
+<code>UserPatchDto</code> for PATCH endpoints (every field nullable), then
+<code>UserSummaryDto</code> for list views, then a builder or MapStruct config
+to shuttle data between them. Each is a hand-written class that silently
+drifts when <code>User</code> gains a field. TypeScript <em>derives</em> these
+variants from the original type instead: <code>Partial&lt;User&gt;</code> makes
+every property optional, <code>Pick&lt;User, "id" | "name"&gt;</code> keeps just
+those keys, <code>Omit&lt;User, "email"&gt;</code> drops them, and
+<code>Readonly&lt;User&gt;</code> makes every property immutable. Zero extra
+classes, and they can never drift — change <code>User</code> and every derived
+type updates itself.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>class UserPatchDto { Long id; String name; ... }</code></td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td><code>class UserSummaryDto { long id; String name; }</code></td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td>a DTO minus sensitive fields</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+  <tr><td><code>final</code> fields / <code>List.copyOf</code></td><td><code>Readonly&lt;User&gt;</code> / <code>readonly string[]</code></td></tr>
+  <tr><td>builder <code>.toBuilder().name(n).build()</code></td><td><code>{ ...user, ...changes }</code></td></tr>
+</table>
+<p>These utility types pair naturally with the spread operator from lesson 15:
+a patch is just <code>{ ...user, ...changes }</code> — copy the original, let
+the changed fields win, never mutate. That one expression replaces the
+null-check-per-field merge method (or Lombok's
+<code>toBuilder</code>) that Java patch endpoints usually carry.</p>`,
+
+  java: `class User {
+    long id; String name; String email;
+}
+
+// Partial<User>, written by hand: a second class, all fields nullable.
+class UserPatchDto {
+    Long id; String name; String email;
+}
+
+// Pick<User, "id" | "name">, written by hand: a third class.
+record UserSummaryDto(long id, String name) {}
+
+static User updateUser(User user, UserPatchDto patch) {
+    User updated = new User();
+    updated.id    = patch.id    != null ? patch.id    : user.id;
+    updated.name  = patch.name  != null ? patch.name  : user.name;
+    updated.email = patch.email != null ? patch.email : user.email;
+    return updated;
+}
+
+static UserSummaryDto toSummary(User user) {
+    return new UserSummaryDto(user.id, user.name);
+}`,
+
+  task: `
+<p>Replace three Java classes with one interface and two derived types:</p>
+<ol>
+  <li>Define <code>interface User</code> with <code>id: number</code>,
+      <code>name: string</code>, and <code>email: string</code>.</li>
+  <li>Write <code>updateUser(user: User, changes: Partial&lt;User&gt;): User</code>
+      that returns a <strong>new</strong> object with the changes applied, using
+      object spread: <code>{ ...user, ...changes }</code>. It must not mutate
+      the original — treat <code>user</code> the way you would treat an
+      immutable record.</li>
+  <li>Write <code>toSummary(user: User): Pick&lt;User, "id" | "name"&gt;</code>
+      that returns an object containing <em>only</em> <code>id</code> and
+      <code>name</code> — no <code>email</code> key at all (build a fresh
+      object; a spread here would smuggle email through).</li>
+</ol>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// TODO 1: accept a patch object where every User field is optional.
+// Java needed a whole UserPatchDto class; here one utility type does it.
+function updateUser(user: User, changes: User): User {
+  return user; // TODO: return a NEW merged object (object spread)
+}
+
+// TODO 2: return only id and name — express that in the return type
+// with a utility type instead of a hand-written UserSummaryDto.
+function toSummary(user: User) {
+  return user; // TODO: build an object with exactly id and name
+}
+`,
+
+  exportNames: ["updateUser", "toSummary"],
+
+  requirements: [
+    { pattern: /Partial\s*</, message: "Type the changes parameter as Partial<User>" },
+    { pattern: /Pick\s*<|Omit\s*</, message: "Derive the summary type with Pick (or Omit) instead of a new interface" },
+    { pattern: /\.\.\./, message: "Merge with object spread, not field-by-field assignment" },
+  ],
+
+  tests: [
+    { name: "updateUser applies a partial patch over the original", run: (x) => {
+        const original = { id: 1, name: "Ada", email: "ada@example.com" };
+        expectDeepEqual(x.updateUser(original, { name: "Ada Lovelace" }),
+          { id: 1, name: "Ada Lovelace", email: "ada@example.com" });
+      } },
+    { name: "updateUser does not mutate the original user", run: (x) => {
+        const original = { id: 1, name: "Ada", email: "ada@example.com" };
+        x.updateUser(original, { email: "countess@example.com" });
+        expectEqual(original.email, "ada@example.com");
+        expectEqual(original.name, "Ada");
+      } },
+    { name: "updateUser returns a new object, even for an empty patch", run: (x) => {
+        const original = { id: 2, name: "Grace", email: "grace@example.com" };
+        const result = x.updateUser(original, {});
+        expectTruthy(result !== original);
+        expectDeepEqual(result, original);
+      } },
+    { name: "toSummary keeps id and name and drops email entirely", run: (x) => {
+        const summary = x.toSummary({ id: 7, name: "Linus", email: "linus@example.com" });
+        expectEqual(summary.id, 7);
+        expectEqual(summary.name, "Linus");
+        expectEqual("email" in summary, false);
+      } },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+function updateUser(user: User, changes: Partial<User>): User {
+  return { ...user, ...changes };
+}
+
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  return { id: user.id, name: user.name };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Need</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>All fields optional (PATCH body)</td><td>hand-written DTO with nullable fields</td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td>All fields required again</td><td>the original class</td><td><code>Required&lt;T&gt;</code></td></tr>
+  <tr><td>Subset of fields (list view)</td><td>another DTO / projection interface</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td>Everything except some fields</td><td>another DTO again</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+  <tr><td>Immutable view</td><td><code>final</code> fields, defensive copies</td><td><code>Readonly&lt;User&gt;</code></td></tr>
+  <tr><td>String-keyed map</td><td><code>Map&lt;String, V&gt;</code></td><td><code>Record&lt;string, V&gt;</code></td></tr>
+  <tr><td>Copy-with-changes</td><td>builder / <code>toBuilder()</code></td><td><code>{ ...user, ...changes }</code></td></tr>
+</table>
+<p>Remember these are compile-time constructs: <code>Partial&lt;User&gt;</code>
+is erased just like generics under Java's erasure, so nothing enforces the
+shape at runtime. But that is exactly why they are free — deriving a fourth,
+fifth, or tenth view of <code>User</code> costs one line of type algebra
+instead of one more class file to keep in sync during every refactor.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Comprehensions → Array Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Comprehensions → Array Methods",
+
+  intro: `
+<p>Here is the loss you will feel most: TypeScript has no list comprehensions.
+The jobs they do have not gone anywhere, though — they are spread across the
+array methods <code>.filter()</code>, <code>.map()</code>, and
+<code>.reduce()</code>, chained left to right instead of read inside-out.
+<code>[p.name for p in products if p.in_stock]</code> becomes
+<code>products.filter(p =&gt; p.inStock).map(p =&gt; p.name)</code> — condition
+first, transform second, which is arguably the order you think in anyway.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>[p.name for p in products if p.in_stock]</code></td>
+      <td><code>products.filter(p =&gt; p.inStock).map(p =&gt; p.name)</code></td></tr>
+  <tr><td><code>sum(p.price for p in products)</code></td>
+      <td><code>products.reduce((acc, p) =&gt; acc + p.price, 0)</code></td></tr>
+  <tr><td><code>sorted(products, key=lambda p: p.price)</code></td>
+      <td><code>[...products].sort((a, b) =&gt; a.price - b.price)</code></td></tr>
+</table>
+<p>Sorting has two traps. First, there is no <code>key=</code> — you write a
+<em>comparator</em> that takes two elements and returns a negative number,
+zero, or a positive number (for numbers, <code>a.price - b.price</code> is the
+idiom). Second, unlike <code>sorted()</code>, which returns a new list,
+<code>.sort()</code> <strong>mutates the array in place</strong> — copy first
+with <code>[...products]</code> if the caller's array must survive. And note
+the naming shift while you are here: <code>in_stock</code> becomes
+<code>inStock</code>.</p>`,
+
+  python: `from dataclasses import dataclass
+
+@dataclass
+class Product:
+    name: str
+    price: float
+    in_stock: bool
+
+products = [
+    Product("keyboard", 89.0, True),
+    Product("monitor", 249.0, False),
+    Product("mouse", 39.0, True),
+]
+
+in_stock_names = [p.name for p in products if p.in_stock]
+total_value = sum(p.price for p in products)
+by_price = sorted(products, key=lambda p: p.price)  # new list!`,
+
+  task: `
+<p>Given <code>type Product = { name: string; price: number; inStock: boolean }</code>
+(already in the starter), write the pipeline:</p>
+<ol>
+  <li><code>inStockNames(products: Product[]): string[]</code> — the names of
+      the in-stock products, via <code>.filter()</code> then
+      <code>.map()</code>.</li>
+  <li><code>totalValue(products: Product[]): number</code> — the sum of all
+      prices, via <code>.reduce()</code> with an initial value of
+      <code>0</code> (so an empty array totals 0, just like
+      <code>sum([])</code>).</li>
+  <li><code>sortByPrice(products: Product[]): Product[]</code> — a <em>new</em>
+      array sorted cheapest-first. Copy before you sort: the original array
+      must be left untouched (there is a test for that).</li>
+</ol>`,
+
+  starter: `type Product = { name: string; price: number; inStock: boolean };
+
+// Python: [p.name for p in products if p.in_stock]
+function inStockNames(products: Product[]): string[] {
+  // TODO: .filter(...) for in-stock products, then .map(...) to their names
+  return [];
+}
+
+// Python: sum(p.price for p in products)
+function totalValue(products: Product[]): number {
+  // TODO: .reduce((acc, p) => ..., 0)
+  return 0;
+}
+
+// Python: sorted(products, key=lambda p: p.price)
+function sortByPrice(products: Product[]): Product[] {
+  // TODO: copy the array first (.sort mutates in place!), then sort
+  // with a comparator: (a, b) => negative / zero / positive
+  return products;
+}
+`,
+
+  exportNames: ["inStockNames", "totalValue", "sortByPrice"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter() for the comprehension's if-clause" },
+    { pattern: /\.map\s*\(/, message: "Use .map() for the comprehension's expression part" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce() to sum the prices" },
+    { pattern: /(\[\s*\.\.\.|\.slice\s*\(|toSorted)/, message: "Copy the array before sorting — [...products], .slice(), or .toSorted()" },
+  ],
+
+  tests: [
+    {
+      name: "inStockNames picks only in-stock product names, in order",
+      run: (x) => expectDeepEqual(
+        x.inStockNames([
+          { name: "keyboard", price: 89, inStock: true },
+          { name: "monitor", price: 249, inStock: false },
+          { name: "mouse", price: 39, inStock: true },
+        ]),
+        ["keyboard", "mouse"]
+      ),
+    },
+    {
+      name: "totalValue sums every price",
+      run: (x) => expectEqual(
+        x.totalValue([
+          { name: "keyboard", price: 89, inStock: true },
+          { name: "monitor", price: 249, inStock: false },
+          { name: "mouse", price: 39, inStock: true },
+        ]),
+        377
+      ),
+    },
+    { name: "totalValue of an empty array is 0", run: (x) => expectEqual(x.totalValue([]), 0) },
+    {
+      name: "sortByPrice orders cheapest first",
+      run: (x) => expectDeepEqual(
+        x.sortByPrice([
+          { name: "keyboard", price: 89, inStock: true },
+          { name: "monitor", price: 249, inStock: false },
+          { name: "mouse", price: 39, inStock: true },
+        ]).map((p) => p.name),
+        ["mouse", "keyboard", "monitor"]
+      ),
+    },
+    {
+      name: "sortByPrice does NOT mutate the original array (like sorted(), not list.sort())",
+      run: (x) => {
+        const original = [
+          { name: "keyboard", price: 89, inStock: true },
+          { name: "monitor", price: 249, inStock: false },
+          { name: "mouse", price: 39, inStock: true },
+        ];
+        x.sortByPrice(original);
+        expectDeepEqual(original.map((p) => p.name), ["keyboard", "monitor", "mouse"]);
+      },
+    },
+  ],
+
+  solution: `type Product = { name: string; price: number; inStock: boolean };
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter((p) => p.inStock).map((p) => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products.reduce((acc, p) => acc + p.price, 0);
+}
+
+function sortByPrice(products: Product[]): Product[] {
+  return [...products].sort((a, b) => a.price - b.price);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Map</td><td><code>[f(x) for x in xs]</code></td><td><code>xs.map(x =&gt; f(x))</code></td></tr>
+  <tr><td>Filter</td><td><code>[x for x in xs if cond(x)]</code></td><td><code>xs.filter(x =&gt; cond(x))</code></td></tr>
+  <tr><td>Filter + map</td><td><code>[f(x) for x in xs if cond(x)]</code></td><td><code>xs.filter(x =&gt; cond(x)).map(x =&gt; f(x))</code></td></tr>
+  <tr><td>Sum</td><td><code>sum(f(x) for x in xs)</code></td><td><code>xs.reduce((acc, x) =&gt; acc + f(x), 0)</code></td></tr>
+  <tr><td>Sort (new list)</td><td><code>sorted(xs, key=lambda x: x.k)</code></td><td><code>[...xs].sort((a, b) =&gt; a.k - b.k)</code></td></tr>
+  <tr><td>Sort (in place)</td><td><code>xs.sort(key=...)</code></td><td><code>xs.sort((a, b) =&gt; ...)</code> — the default!</td></tr>
+  <tr><td>Any / all</td><td><code>any(...)</code> / <code>all(...)</code></td><td><code>xs.some(...)</code> / <code>xs.every(...)</code></td></tr>
+</table>
+<p>The mental flip: Python comprehensions read inside-out (expression, loop,
+condition), while method chains read left to right as a pipeline — each step
+returns a new array that feeds the next. Since <code>.map</code> and
+<code>.filter</code> never mutate, the chain style is naturally as functional
+as a comprehension; <code>.sort</code> and <code>.reverse</code> are the two
+legacy exceptions to keep an eye on.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Modules &amp; Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Modules & Capstone",
+
+  intro: `
+<p>You already use ES modules — <code>import</code>/<code>export</code>
+works exactly the same in TypeScript. The news is that <em>types travel with
+the exports</em>. Export a typed function and every importer gets its full
+signature; export an <code>interface</code> right next to it and the shape
+your module speaks becomes part of its public API. No more "check the README
+for what an item looks like" — the contract ships with the code, and a
+mismatched import is a compile error in the importer's file.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>export function addItem(cart, item)</code></td><td><code>export function addItem(cart: CartItem[], item: CartItem)</code></td></tr>
+  <tr><td>item shape documented in a comment, maybe</td><td><code>export interface CartItem { ... }</code></td></tr>
+  <tr><td><code>import { addItem } from "./cart"</code></td><td>same — plus the types come along for free</td></tr>
+  <tr><td>n/a</td><td><code>import type { CartItem } from "./cart"</code> — erased at compile time</td></tr>
+</table>
+<p>Since interfaces are erased when TypeScript compiles, there's a dedicated
+<code>import type</code> syntax for bringing in types only — it disappears
+entirely from the output, so bundlers never chase a file you only needed for
+its shapes. Time to put it all together: this capstone module combines an
+exported interface, spread-based immutability, typed array methods, a
+<code>typeof</code> narrowing, and a generic constrained with
+<code>keyof</code> — one of everything from the course, published behind
+<code>export</code>.</p>`,
+
+  javascript: `// cart.js — an untyped module
+export function addItem(cart, item) {
+  return [...cart, item];
+}
+
+export function cartTotal(cart) {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+export function findItem(cart, idOrName) {
+  if (typeof idOrName === "number") {
+    return cart.find((item) => item.id === idOrName);
+  }
+  return cart.find((item) => item.name === idOrName);
+}
+
+// What shape is an item? price and quantity are... probably numbers?
+// Every importer guesses for themselves.`,
+
+  task: `
+<p>Build the typed cart module. Every symbol must be <code>export</code>ed:</p>
+<ol>
+  <li><code>export interface CartItem</code> — <code>id: number</code>,
+      <code>name: string</code>, <code>price: number</code>,
+      <code>quantity: number</code>.</li>
+  <li><code>export function addItem(cart: CartItem[], item: CartItem): CartItem[]</code>
+      — return a <strong>new</strong> array via spread; never mutate the
+      input (the tests check).</li>
+  <li><code>export function cartTotal(cart: CartItem[]): number</code> —
+      sum <code>price × quantity</code> with <code>reduce</code>.</li>
+  <li><code>export function findItem(cart: CartItem[], idOrName: number | string): CartItem | undefined</code>
+      — narrow with <code>typeof</code>: a number searches by
+      <code>id</code>, a string by <code>name</code>.</li>
+  <li><code>export function pluck&lt;T, K extends keyof T&gt;(items: T[], key: K): T[K][]</code>
+      — the generic finale: map one property out of every element, keeping
+      its exact type.</li>
+</ol>
+<p>(The editor here compiles a single module, so there's nothing to
+<code>import</code> — but everything you <code>export</code> is exactly what
+an <code>import { addItem } from "./cart"</code> would receive.)</p>`,
+
+  starter: `// cart.ts — your typed module. Add "export" to everything below.
+
+// 1. TODO: export this interface so importers can share the shape.
+interface CartItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+// 2. TODO: export; return a NEW array (spread) — never mutate cart.
+function addItem(cart: CartItem[], item: CartItem): CartItem[] {
+  return cart;
+}
+
+// 3. TODO: export; sum price * quantity with reduce.
+function cartTotal(cart: CartItem[]): number {
+  return 0;
+}
+
+// 4. TODO: export; narrow idOrName with typeof, then find by id or name.
+function findItem(cart: CartItem[], idOrName: number | string): CartItem | undefined {
+  return undefined;
+}
+
+// 5. TODO: export; make it generic: pluck<T, K extends keyof T>(items: T[], key: K): T[K][]
+function pluck(items: any[], key: string): any[] {
+  return items.map((item) => item[key]);
+}
+`,
+
+  exportNames: ["addItem", "cartTotal", "findItem", "pluck"],
+
+  requirements: [
+    { pattern: /export\s+(function|const)/, message: "Publish the functions with export" },
+    { pattern: /export\s+interface\s+CartItem/, message: "Export the CartItem interface alongside the functions" },
+    { pattern: /pluck\s*<\s*T\s*,\s*K\s+extends\s+keyof\s+T\s*>/, message: "Give pluck the generic signature pluck<T, K extends keyof T>" },
+    { pattern: /\.\.\.\s*cart/, message: "Build the new array in addItem by spreading the old cart" },
+  ],
+
+  tests: [
+    {
+      name: "addItem returns a new array containing the item",
+      run: (x) => {
+        const cart = [{ id: 1, name: "pen", price: 2, quantity: 3 }];
+        const next = x.addItem(cart, { id: 2, name: "pad", price: 5, quantity: 1 });
+        expectEqual(next.length, 2);
+        expectEqual(next[0].name, "pen");
+        expectEqual(next[1].name, "pad");
+      },
+    },
+    {
+      name: "addItem does not mutate the original cart",
+      run: (x) => {
+        const cart = [{ id: 1, name: "pen", price: 2, quantity: 3 }];
+        x.addItem(cart, { id: 2, name: "pad", price: 5, quantity: 1 });
+        expectEqual(cart.length, 1);
+      },
+    },
+    {
+      name: "cartTotal sums price * quantity (2*3 + 5*1 = 11)",
+      run: (x) => {
+        const cart = [
+          { id: 1, name: "pen", price: 2, quantity: 3 },
+          { id: 2, name: "pad", price: 5, quantity: 1 },
+        ];
+        expectEqual(x.cartTotal(cart), 11);
+        expectEqual(x.cartTotal([]), 0);
+      },
+    },
+    {
+      name: "findItem narrows: number finds by id, string finds by name",
+      run: (x) => {
+        const cart = [
+          { id: 1, name: "pen", price: 2, quantity: 3 },
+          { id: 2, name: "pad", price: 5, quantity: 1 },
+        ];
+        expectEqual(x.findItem(cart, 2).name, "pad");
+        expectEqual(x.findItem(cart, "pen").id, 1);
+      },
+    },
+    {
+      name: "findItem returns undefined when nothing matches",
+      run: (x) => {
+        const cart = [{ id: 1, name: "pen", price: 2, quantity: 3 }];
+        expectEqual(x.findItem(cart, 99), undefined);
+        expectEqual(x.findItem(cart, "yacht"), undefined);
+      },
+    },
+    {
+      name: 'pluck(cart, "name") collects every name',
+      run: (x) => {
+        const cart = [
+          { id: 1, name: "pen", price: 2, quantity: 3 },
+          { id: 2, name: "pad", price: 5, quantity: 1 },
+        ];
+        expectDeepEqual(x.pluck(cart, "name"), ["pen", "pad"]);
+        expectDeepEqual(x.pluck(cart, "price"), [2, 5]);
+      },
+    },
+  ],
+
+  solution: `export interface CartItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export function addItem(cart: CartItem[], item: CartItem): CartItem[] {
+  return [...cart, item];
+}
+
+export function cartTotal(cart: CartItem[]): number {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+export function findItem(cart: CartItem[], idOrName: number | string): CartItem | undefined {
+  if (typeof idOrName === "number") {
+    return cart.find((item) => item.id === idOrName);
+  }
+  return cart.find((item) => item.name === idOrName);
+}
+
+export function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Export a function</td><td><code>export function f()</code></td><td>same — signature travels to importers</td></tr>
+  <tr><td>Export a shape</td><td>n/a (comments/README)</td><td><code>export interface CartItem { ... }</code></td></tr>
+  <tr><td>Import values</td><td><code>import { addItem } from "./cart"</code></td><td>same</td></tr>
+  <tr><td>Import only types</td><td>n/a</td><td><code>import type { CartItem } from "./cart"</code></td></tr>
+  <tr><td>What survives compilation</td><td>everything</td><td>values stay; interfaces and <code>import type</code> vanish</td></tr>
+  <tr><td>Wrong usage by importer</td><td>runtime surprise</td><td>compile error in the importer's own file</td></tr>
+</table>
+<p>The insight — and a fitting end to the course: TypeScript's biggest wins
+are at <em>boundaries</em>. Inside one function, you mostly knew what your
+values were; it's across module edges, API responses, and teammates' code
+that "probably a number" used to decay into production incidents. A module
+that exports its interfaces alongside its functions turns every one of those
+edges into a checked contract — which is really all TypeScript is:
+JavaScript with its handshakes written down.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

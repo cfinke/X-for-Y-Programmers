@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Typing Async Code</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Typing Async Code",
+
+  intro: `
+<p>You already write <code>async/await</code> in your sleep — nothing about
+the control flow changes here. The news is purely in the types. A promise is
+generic: <code>Promise&lt;User&gt;</code> is "a promise that resolves to a
+User", so <code>await</code>-ing it gives you a <code>User</code>, with
+autocomplete, not a mystery object. And an <code>async</code> function
+<em>always</em> returns a promise, so its return type is always
+<code>Promise&lt;Something&gt;</code> — you write
+<code>Promise&lt;string[]&gt;</code> even though the body appears to
+<code>return names</code> directly.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>function fetchUser(id)</code> → a promise of ???</td><td><code>function fetchUser(id: number): Promise&lt;User&gt;</code></td></tr>
+  <tr><td><code>const u = await fetchUser(1)</code> → ???</td><td><code>u</code> is a <code>User</code> — checked and completed</td></tr>
+  <tr><td><code>async function f()</code> returns... something</td><td><code>async function f(): Promise&lt;string[]&gt;</code></td></tr>
+  <tr><td><code>Promise.all([...])</code> → array of ???</td><td>resolved types preserved, even as a tuple per slot</td></tr>
+  <tr><td><code>catch (err)</code> — err is anything</td><td><code>catch (err: unknown)</code> — narrow before use</td></tr>
+</table>
+<p>Two bonuses. <code>Promise.all</code> is fully typed:
+<code>Promise.all([fetchUser(1), fetchCount()])</code> resolves to the tuple
+<code>[User, number]</code> — each slot keeps its own type. And errors: since
+<em>anything</em> can be thrown in JavaScript, the honest type for a caught
+error is <code>unknown</code> (lesson 17's friend), which pushes you to
+narrow — <code>err instanceof Error</code> — before reading
+<code>.message</code>.</p>`,
+
+  javascript: `function fetchUser(id) {
+  return Promise.resolve(id).then(function (n) {
+    var name = USERS[n];
+    if (!name) throw new Error("no user with id " + n);
+    return { id: n, name: name };
+  });
+}
+
+async function fetchUserNames(ids) {
+  var users = await Promise.all(ids.map(fetchUser));
+  return users.map(function (u) { return u.name; });
+  // What's in 'users'? What does this resolve to?
+  // Your editor shrugs; the caller guesses.
+}
+
+async function fetchNameOrGuest(id) {
+  try { return (await fetchUser(id)).name; }
+  catch (err) { return "guest"; } // err could be anything
+}`,
+
+  task: `
+<p>The starter provides a deterministic fake API,
+<code>fetchUser(id: number): Promise&lt;User&gt;</code> — leave it as is.
+Build on top of it:</p>
+<ol>
+  <li>Write <code>async function fetchUserNames(ids: number[]): Promise&lt;string[]&gt;</code>
+      — map the ids through <code>fetchUser</code>, await them all in
+      parallel with <code>Promise.all</code>, and return just the names.
+      If any lookup fails, the whole promise rejects — that's
+      <code>Promise.all</code>'s normal behavior; don't catch it here.</li>
+  <li>Write <code>async function fetchNameOrGuest(id: number): Promise&lt;string&gt;</code>
+      — <code>await fetchUser(id)</code> inside <code>try/catch</code> and
+      return <code>"guest"</code> when it rejects. Type the caught error as
+      <code>unknown</code>.</li>
+</ol>
+<p>Note both return type annotations start with <code>Promise&lt;</code> —
+inside the body you work with plain <code>string</code> values, and the
+<code>async</code> keyword does the wrapping.</p>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+}
+
+// --- provided: a deterministic fake API (leave unchanged) ---
+const USERS: Record<number, string> = { 1: "Ada", 2: "Grace", 3: "Alan" };
+
+function fetchUser(id: number): Promise<User> {
+  return Promise.resolve(id).then((n) => {
+    const name = USERS[n];
+    if (!name) {
+      throw new Error("no user with id " + n);
+    }
+    return { id: n, name: name };
+  });
+}
+// -------------------------------------------------------------
+
+// 1. TODO: make this async, annotate the return type Promise<string[]>,
+//    fetch all users in parallel with Promise.all, return their names.
+function fetchUserNames(ids: number[]) {
+  return Promise.resolve([] as string[]);
+}
+
+// 2. TODO: make this async with return type Promise<string>.
+//    await fetchUser in try/catch (err: unknown); return "guest" on failure.
+function fetchNameOrGuest(id: number) {
+  return Promise.resolve("guest");
+}
+`,
+
+  exportNames: ["fetchUser", "fetchUserNames", "fetchNameOrGuest"],
+
+  requirements: [
+    { pattern: /async\s+function/, message: "Declare fetchUserNames and fetchNameOrGuest with async function" },
+    { pattern: /fetchUserNames\s*\(\s*ids\s*:\s*number\s*\[\s*\]\s*\)\s*:\s*Promise\s*<\s*string\s*\[\s*\]\s*>/, message: "Annotate fetchUserNames(ids: number[]): Promise<string[]>" },
+    { pattern: /Promise\.all/, message: "Await all the lookups in parallel with Promise.all" },
+    { pattern: /catch\s*\(\s*\w+\s*:\s*unknown\s*\)/, message: "Type the caught error as unknown: catch (err: unknown)" },
+  ],
+
+  tests: [
+    {
+      name: 'fetchUserNames([1, 2]) resolves to ["Ada", "Grace"]',
+      run: async (x) => expectDeepEqual(await x.fetchUserNames([1, 2]), ["Ada", "Grace"]),
+    },
+    {
+      name: 'fetchUserNames([3, 1, 2]) preserves order',
+      run: async (x) => expectDeepEqual(await x.fetchUserNames([3, 1, 2]), ["Alan", "Ada", "Grace"]),
+    },
+    {
+      name: "fetchUserNames([]) resolves to an empty array",
+      run: async (x) => expectDeepEqual(await x.fetchUserNames([]), []),
+    },
+    {
+      name: "fetchUserNames([1, 99]) rejects when any id is unknown",
+      run: async (x) => {
+        let rejected = false;
+        try {
+          await x.fetchUserNames([1, 99]);
+        } catch (err) {
+          rejected = true;
+        }
+        expectTruthy(rejected);
+      },
+    },
+    {
+      name: 'fetchNameOrGuest(2) resolves to "Grace"',
+      run: async (x) => expectEqual(await x.fetchNameOrGuest(2), "Grace"),
+    },
+    {
+      name: 'fetchNameOrGuest(99) falls back to "guest"',
+      run: async (x) => expectEqual(await x.fetchNameOrGuest(99), "guest"),
+    },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+}
+
+const USERS: Record<number, string> = { 1: "Ada", 2: "Grace", 3: "Alan" };
+
+function fetchUser(id: number): Promise<User> {
+  return Promise.resolve(id).then((n) => {
+    const name = USERS[n];
+    if (!name) {
+      throw new Error("no user with id " + n);
+    }
+    return { id: n, name: name };
+  });
+}
+
+async function fetchUserNames(ids: number[]): Promise<string[]> {
+  const users = await Promise.all(ids.map((id) => fetchUser(id)));
+  return users.map((u) => u.name);
+}
+
+async function fetchNameOrGuest(id: number): Promise<string> {
+  try {
+    const user = await fetchUser(id);
+    return user.name;
+  } catch (err: unknown) {
+    return "guest";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Promise of a value</td><td>a promise</td><td><code>Promise&lt;User&gt;</code></td></tr>
+  <tr><td>Async return type</td><td>implicit</td><td>always <code>Promise&lt;T&gt;</code>, never bare <code>T</code></td></tr>
+  <tr><td>await result</td><td>???</td><td>the <code>T</code> inside the <code>Promise&lt;T&gt;</code></td></tr>
+  <tr><td>Parallel awaits</td><td><code>Promise.all([...])</code></td><td>same — resolved tuple keeps each slot's type</td></tr>
+  <tr><td>Caught error</td><td><code>catch (err)</code></td><td><code>catch (err: unknown)</code> → <code>instanceof Error</code> to narrow</td></tr>
+  <tr><td>Promise you build yourself</td><td><code>new Promise(...)</code></td><td><code>new Promise&lt;string&gt;((resolve) =&gt; ...)</code></td></tr>
+</table>
+<p>The insight: <code>async/await</code> was always about making promises
+look like plain values — TypeScript completes the illusion by making them
+<em>type</em> like plain values too. Inside an <code>async</code> function
+you think in <code>string</code> and <code>User</code>; the
+<code>Promise&lt;...&gt;</code> wrapper exists only at the signature, exactly
+where callers need to see it. If you ever write
+<code>Promise&lt;Promise&lt;T&gt;&gt;</code>, that's the compiler telling you
+that you forgot an <code>await</code>.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

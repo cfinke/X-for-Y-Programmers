@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Async &amp; Promises</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Async & Promises",
+
+  intro: `
+<p>This is the easiest lesson in the course, because <code>async</code>/<code>await</code>
+is <em>your</em> syntax — C# shipped it in 2012 and TypeScript borrowed it
+almost verbatim. Mentally substitute <code>Task&lt;T&gt;</code> →
+<code>Promise&lt;T&gt;</code> and <code>Task.WhenAll</code> →
+<code>Promise.all</code> and you already write idiomatic async TypeScript:
+<code>await</code> unwraps the value, exceptions inside an async function
+become a rejected promise, and <code>try</code>/<code>catch</code> around an
+<code>await</code> catches a rejection exactly like it catches a faulted task.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>async Task&lt;string&gt; GetNameAsync()</code></td><td><code>async function getName(): Promise&lt;string&gt;</code></td></tr>
+  <tr><td><code>var name = await GetNameAsync();</code></td><td><code>const name = await getName();</code></td></tr>
+  <tr><td><code>await Task.WhenAll(tasks)</code></td><td><code>await Promise.all(promises)</code></td></tr>
+  <tr><td><code>Task.FromResult(42)</code></td><td><code>Promise.resolve(42)</code></td></tr>
+  <tr><td><code>task.Result</code> / <code>task.Wait()</code></td><td>does not exist — you can only <code>await</code></td></tr>
+  <tr><td><code>.ConfigureAwait(false)</code></td><td>not needed — there is no <code>SynchronizationContext</code></td></tr>
+</table>
+<p>What you get to <em>forget</em> is the fun part. JavaScript runs your code on
+a single-threaded event loop, so the whole family of C# async foot-guns simply
+does not exist: there is no <code>.Result</code> or <code>.Wait()</code> to
+deadlock on, no <code>ConfigureAwait(false)</code> cargo cult, and no
+<code>lock</code> statements — nothing else runs while your synchronous code
+between two <code>await</code>s is executing. Concurrency still happens
+(<code>Promise.all</code> starts every operation before awaiting any of them,
+just like collecting <code>Task</code>s before <code>WhenAll</code>), but data
+races on shared state between awaits are structurally impossible.</p>`,
+
+  csharp: `public async Task<string[]> FetchUserNamesAsync(int[] ids)
+{
+    // Start every request, then await them together.
+    IEnumerable<Task<string>> tasks = ids.Select(id => FetchUserAsync(id));
+    return await Task.WhenAll(tasks);
+}
+
+public async Task<string> FetchUserNameSafeAsync(int id, string fallback)
+{
+    try
+    {
+        return await FetchUserAsync(id);
+    }
+    catch (KeyNotFoundException)
+    {
+        return fallback;      // a faulted task is just an exception
+    }
+}`,
+
+  task: `
+<p>The starter gives you <code>fetchUser(id): Promise&lt;string&gt;</code> — a
+deterministic fake API that resolves to a name, or rejects for unknown ids
+(the <code>Promise</code> version of <code>FetchUserAsync</code>). Port the
+two C# methods (note the PascalCase → camelCase rename, and no
+<code>Async</code> suffix — the <code>Promise</code> return type says it all):</p>
+<ol>
+  <li>Write <code>async function fetchUserNames(ids: number[]): Promise&lt;string[]&gt;</code>
+      that fetches every user <em>concurrently</em>: map the ids to promises
+      with <code>ids.map(...)</code>, then <code>await Promise.all(...)</code> —
+      the direct translation of <code>Select</code> + <code>Task.WhenAll</code>.</li>
+  <li>Write <code>async function fetchUserNameSafe(id: number, fallback: string): Promise&lt;string&gt;</code>
+      that returns the user's name, or <code>fallback</code> if the lookup
+      rejects — the same <code>try</code>/<code>catch</code> around an
+      <code>await</code> you would write in C#.</li>
+</ol>`,
+
+  starter: `// Provided: a deterministic fake API (no network, no timers).
+// Promise.resolve().then(...) plays the role of Task.FromResult + ContinueWith;
+// throwing inside .then() produces a REJECTED promise (a faulted Task).
+const USERS: Record<number, string> = { 1: "Ada", 2: "Grace", 3: "Linus" };
+
+function fetchUser(id: number): Promise<string> {
+  return Promise.resolve(id).then((n) => {
+    const name = USERS[n];
+    if (name === undefined) {
+      throw new Error(\`user \${n} not found\`);
+    }
+    return name;
+  });
+}
+
+// 1. Select + Task.WhenAll -> ids.map + Promise.all
+async function fetchUserNames(ids: number[]): Promise<string[]> {
+  // TODO: start all fetches, then await Promise.all
+  return [];
+}
+
+// 2. try/catch around await — identical to the C#
+async function fetchUserNameSafe(id: number, fallback: string): Promise<string> {
+  // TODO: await fetchUser(id); on rejection, return the fallback
+  return fallback;
+}
+`,
+
+  exportNames: ["fetchUser", "fetchUserNames", "fetchUserNameSafe"],
+
+  requirements: [
+    { pattern: /async\s+function/, message: "Declare your functions with async function (same keyword as C#)" },
+    { pattern: /await/, message: "Use await to unwrap the promises (no .Result / .Wait() exists here)" },
+    { pattern: /Promise\.all/, message: "Use Promise.all for the concurrent fetch (the Task.WhenAll of TypeScript)" },
+    { pattern: /try\s*\{/, message: "Use try/catch around an await for the fallback — rejections are just exceptions" },
+  ],
+
+  tests: [
+    { name: 'fetchUser(1) resolves to "Ada" (provided helper still works)', run: async (x) => expectEqual(await x.fetchUser(1), "Ada") },
+    { name: 'fetchUserNames([1, 2]) resolves to ["Ada", "Grace"]', run: async (x) => expectDeepEqual(await x.fetchUserNames([1, 2]), ["Ada", "Grace"]) },
+    { name: "fetchUserNames([3, 1]) preserves input order like Task.WhenAll", run: async (x) => expectDeepEqual(await x.fetchUserNames([3, 1]), ["Linus", "Ada"]) },
+    { name: "fetchUserNames([]) resolves to an empty array", run: async (x) => expectDeepEqual(await x.fetchUserNames([]), []) },
+    {
+      name: "fetchUserNames([1, 99]) rejects when any lookup fails (like WhenAll faulting)",
+      run: async (x) => {
+        let rejected = false;
+        try {
+          await x.fetchUserNames([1, 99]);
+        } catch (e) {
+          rejected = true;
+        }
+        expectTruthy(rejected);
+      },
+    },
+    { name: 'fetchUserNameSafe(2, "Unknown") resolves to "Grace"', run: async (x) => expectEqual(await x.fetchUserNameSafe(2, "Unknown"), "Grace") },
+    { name: 'fetchUserNameSafe(99, "Unknown") falls back to "Unknown"', run: async (x) => expectEqual(await x.fetchUserNameSafe(99, "Unknown"), "Unknown") },
+  ],
+
+  solution: `const USERS: Record<number, string> = { 1: "Ada", 2: "Grace", 3: "Linus" };
+
+function fetchUser(id: number): Promise<string> {
+  return Promise.resolve(id).then((n) => {
+    const name = USERS[n];
+    if (name === undefined) {
+      throw new Error(\`user \${n} not found\`);
+    }
+    return name;
+  });
+}
+
+async function fetchUserNames(ids: number[]): Promise<string[]> {
+  // Start every fetch first, then await them together — Select + Task.WhenAll.
+  const promises = ids.map((id) => fetchUser(id));
+  return await Promise.all(promises);
+}
+
+async function fetchUserNameSafe(id: number, fallback: string): Promise<string> {
+  try {
+    return await fetchUser(id);
+  } catch (e) {
+    return fallback;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Async return type</td><td><code>Task&lt;T&gt;</code> / <code>Task</code></td><td><code>Promise&lt;T&gt;</code> / <code>Promise&lt;void&gt;</code></td></tr>
+  <tr><td>Declare</td><td><code>async Task&lt;T&gt; FooAsync()</code></td><td><code>async function foo(): Promise&lt;T&gt;</code></td></tr>
+  <tr><td>Unwrap</td><td><code>await task</code></td><td><code>await promise</code> (identical)</td></tr>
+  <tr><td>Run concurrently</td><td><code>Task.WhenAll(tasks)</code></td><td><code>Promise.all(promises)</code></td></tr>
+  <tr><td>First to finish</td><td><code>Task.WhenAny(tasks)</code></td><td><code>Promise.race(promises)</code></td></tr>
+  <tr><td>Completed value</td><td><code>Task.FromResult(x)</code></td><td><code>Promise.resolve(x)</code></td></tr>
+  <tr><td>Faulted / rejected</td><td>exception inside the task</td><td><code>throw</code> inside async fn / <code>Promise.reject(e)</code></td></tr>
+  <tr><td>Handle failure</td><td><code>try { await … } catch</code></td><td><code>try { await … } catch</code> (identical)</td></tr>
+  <tr><td>Block synchronously</td><td><code>.Result</code> / <code>.Wait()</code> (deadlock bait)</td><td>impossible — <code>await</code> is the only way</td></tr>
+  <tr><td>Context capture</td><td><code>.ConfigureAwait(false)</code></td><td>not a thing — single-threaded event loop</td></tr>
+</table>
+<p>The deep difference is the runtime, not the syntax. C#'s <code>await</code>
+may resume your continuation on another thread, which is why
+<code>SynchronizationContext</code>, <code>ConfigureAwait(false)</code>, and
+sync-over-async deadlocks exist. JavaScript has one thread and an event loop:
+an <code>async</code> function runs synchronously until its first
+<code>await</code>, yields, and resumes on the same thread when the promise
+settles. That is why blocking accessors like <code>.Result</code> were never
+added — blocking the only thread would freeze everything, including the code
+that would have resolved the promise — and why you will never write a
+<code>lock</code> around cart state between two awaits.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>Concatenation with <code>+</code> works exactly as in Java, so half of
+your string habits carry over untouched. The upgrade is that
+<code>String.format("%s is %d", name, age)</code> becomes a <em>template
+literal</em>: backtick-quoted strings where <code>\${expr}</code> interpolates
+any expression inline — like Java 21's string templates preview, except it
+shipped a decade ago and everyone uses it. Methods mostly keep their names
+(<code>toUpperCase</code>, <code>trim</code>, <code>indexOf</code>), with two
+adjustments: <code>length</code> is a <em>property</em>, not a method — no
+parentheses — and <code>contains</code> is spelled <code>includes</code>.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>a + " " + b</code></td><td><code>a + " " + b</code> (unchanged)</td></tr>
+  <tr><td><code>String.format("%s is %d", n, a)</code></td><td>template literal with <code>\${n}</code> and <code>\${a}</code></td></tr>
+  <tr><td><code>s.length()</code></td><td><code>s.length</code> — property, no parens!</td></tr>
+  <tr><td><code>s.equals(t)</code></td><td><code>s === t</code></td></tr>
+  <tr><td><code>s.contains("x")</code></td><td><code>s.includes("x")</code></td></tr>
+  <tr><td><code>s.toUpperCase()</code></td><td><code>s.toUpperCase()</code> (unchanged)</td></tr>
+</table>
+<p>Now the big one. Every Java programmer has the <code>.equals()</code>
+reflex burned in, because Java's <code>==</code> compares references and
+<code>"foo" == input</code> is a classic interview-question bug. In
+TypeScript that entire trap <em>disappears</em>: strings are primitives,
+and <code>===</code> compares them by value. There is no
+<code>.equals()</code>, no <code>equalsIgnoreCase</code> reference-vs-value
+distinction, no interning subtleties. Always use <code>===</code> (triple
+equals) — the double-equals <code>==</code> exists but does loose type
+coercion, so treat it the way you treat raw types in Java: legal, and never
+what you want.</p>`,
+
+  java: `String first = "Grace";
+String last = "Hopper";
+
+String full = first + " " + last;                    // + concat, same as TS
+String label = String.format("%s is %d", full, 85);  // -> template literal
+
+int len = full.length();                   // method call in Java
+String shout = full.toUpperCase() + "!";
+boolean hasGrace = full.contains("Grace"); // -> .includes() in TS
+
+// The classic Java trap: == compares references, .equals() compares values.
+boolean same = full.equals("Grace Hopper");   // true
+boolean trap = (full == "Grace Hopper");      // false-ish! never use == here
+boolean caseSame = full.equalsIgnoreCase("GRACE HOPPER");`,
+
+  task: `
+<p>Port the string toolkit to TypeScript:</p>
+<ol>
+  <li>Write <code>formatUser(name: string, age: number): string</code>
+      returning <code>"Grace is 85 years old"</code>-style output. Use a
+      <em>template literal</em> (backticks + <code>\${...}</code>), not
+      <code>+</code> concatenation — this is your
+      <code>String.format</code> replacement.</li>
+  <li>Write <code>shout(s: string): string</code> that returns the string
+      uppercased with <code>"!"</code> appended, e.g.
+      <code>shout("hello")</code> → <code>"HELLO!"</code>.</li>
+  <li>Write <code>sameText(a: string, b: string): boolean</code> that
+      compares the two strings <em>by value</em>. In Java this is
+      <code>a.equals(b)</code>; here it is just <code>a === b</code>.</li>
+  <li>Write <code>containsWord(s: string, word: string): boolean</code>
+      using <code>.includes(...)</code> — Java's <code>.contains()</code>
+      under its JS name.</li>
+</ol>`,
+
+  starter: `// 1. String.format("%s is %d years old", name, age) -> template literal.
+//    Backticks, with \${name} and \${age} interpolated inline.
+function formatUser(name: string, age: number): string {
+  // TODO: return a template literal, not + concatenation
+  return "";
+}
+
+// 2. toUpperCase carries over from Java unchanged.
+function shout(s: string): string {
+  // TODO: uppercase s and append "!"
+  return s;
+}
+
+// 3. Java: a.equals(b). TypeScript: === compares string VALUES.
+function sameText(a: string, b: string): boolean {
+  // TODO: use === (there is no .equals here, and you don't need it)
+  return false;
+}
+
+// 4. Java: s.contains(word). TypeScript renames it to .includes(word).
+function containsWord(s: string, word: string): boolean {
+  // TODO
+  return false;
+}
+`,
+
+  exportNames: ["formatUser", "shout", "sameText", "containsWord"],
+
+  requirements: [
+    { pattern: /`[^`]*\$\{[^`]*`/, message: "Use a template literal (backticks with ${...}) in formatUser" },
+    { pattern: /===/, message: "Compare strings with === (Java's .equals reflex is not needed — === is value comparison)" },
+    { pattern: /\.includes\s*\(/, message: "Use .includes(...) — the TypeScript spelling of Java's .contains(...)" },
+    { pattern: /\.toUpperCase\s*\(/, message: "Use .toUpperCase() — same name as in Java" },
+  ],
+
+  tests: [
+    { name: 'formatUser("Grace", 85) returns "Grace is 85 years old"', run: (x) => expectEqual(x.formatUser("Grace", 85), "Grace is 85 years old") },
+    { name: 'formatUser("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.formatUser("Ada", 36), "Ada is 36 years old") },
+    { name: 'shout("hello") returns "HELLO!"', run: (x) => expectEqual(x.shout("hello"), "HELLO!") },
+    { name: "sameText compares by value, not reference", run: (x) => { expectEqual(x.sameText("Ada", "Ada"), true); expectEqual(x.sameText("Ada", "Grace"), false); } },
+    { name: 'containsWord("Grace Hopper", "Grace") is true', run: (x) => expectEqual(x.containsWord("Grace Hopper", "Grace"), true) },
+    { name: 'containsWord("Grace Hopper", "Linus") is false', run: (x) => expectEqual(x.containsWord("Grace Hopper", "Linus"), false) },
+  ],
+
+  solution: `function formatUser(name: string, age: number): string {
+  return \`\${name} is \${age} years old\`;
+}
+
+function shout(s: string): string {
+  return s.toUpperCase() + "!";
+}
+
+function sameText(a: string, b: string): boolean {
+  return a === b;
+}
+
+function containsWord(s: string, word: string): boolean {
+  return s.includes(word);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Concatenation</td><td><code>a + " " + b</code></td><td><code>a + " " + b</code></td></tr>
+  <tr><td>Formatting</td><td><code>String.format("%s is %d", n, a)</code></td><td>backtick template literal with <code>\${n}</code>, <code>\${a}</code></td></tr>
+  <tr><td>Length</td><td><code>s.length()</code></td><td><code>s.length</code> (property)</td></tr>
+  <tr><td>Value equality</td><td><code>s.equals(t)</code></td><td><code>s === t</code></td></tr>
+  <tr><td>Case-insensitive equality</td><td><code>s.equalsIgnoreCase(t)</code></td><td><code>s.toLowerCase() === t.toLowerCase()</code></td></tr>
+  <tr><td>Substring test</td><td><code>s.contains(x)</code></td><td><code>s.includes(x)</code></td></tr>
+  <tr><td>Case / trim / search</td><td><code>toUpperCase</code>, <code>trim</code>, <code>indexOf</code>, <code>startsWith</code></td><td>Same names, all carried over</td></tr>
+</table>
+<p>Why the <code>==</code> trap vanished: JavaScript strings are primitives,
+not objects on the heap, so there is no reference identity to accidentally
+compare — <code>===</code> is value comparison, full stop. The lingering
+gotcha is <code>s.length</code>: writing <code>s.length()</code> compiles in
+your muscle memory but is a runtime "length is not a function" error — the
+one string mistake nearly every Java developer makes exactly once.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

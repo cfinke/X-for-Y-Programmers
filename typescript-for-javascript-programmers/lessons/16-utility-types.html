@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Utility Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Utility Types",
+
+  intro: `
+<p>You already write these patterns in JavaScript every day: an update
+function that merges "whatever fields changed" into an object, a helper that
+returns a slimmed-down view with just a couple of properties. What JavaScript
+can't do is <em>describe</em> those shapes. "An object with some subset of a
+user's fields" and "just the id and name of a user" live only in your head —
+and in the bug reports when someone passes <code>emial</code> instead of
+<code>email</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>changes</code> — any bag of fields</td><td><code>changes: Partial&lt;User&gt;</code> — User fields only, all optional</td></tr>
+  <tr><td>summary shape lives in the function body</td><td><code>Pick&lt;User, "id" | "name"&gt;</code> — named subset</td></tr>
+  <tr><td>"everything except password" — comment</td><td><code>Omit&lt;User, "password"&gt;</code></td></tr>
+  <tr><td>"please don't mutate this" — comment</td><td><code>Readonly&lt;User&gt;</code> — compiler blocks writes</td></tr>
+  <tr><td>"same type as what f returns"</td><td><code>ReturnType&lt;typeof f&gt;</code></td></tr>
+</table>
+<p>TypeScript ships a toolbox of <em>utility types</em> — generic types that
+build new types out of existing ones. <code>Partial&lt;User&gt;</code> is
+User with every field optional (perfect for update objects);
+<code>Pick&lt;User, "id" | "name"&gt;</code> keeps only the listed keys;
+<code>Omit</code> is Pick's mirror image, dropping keys instead. They are
+pure type-level operations: nothing changes at runtime, but typos and bogus
+fields in an update object become compile errors instead of silent data
+corruption.</p>`,
+
+  javascript: `// A "partial update": merge whatever fields arrived.
+function updateUser(user, changes) {
+  return { ...user, ...changes };
+}
+
+// Nothing stops a typo'd or bogus field:
+updateUser(user, { emial: "new@example.com" }); // silently ignored field
+updateUser(user, { id: "seven" });              // id is a string now?!
+
+// A trimmed-down "view" of the object:
+function toSummary(user) {
+  return { id: user.id, name: user.name };
+}
+// Which fields does a summary have? Read the body and hope
+// nobody adds user.email to it next sprint.`,
+
+  task: `
+<p>Type the update-and-summarize pair using utility types:</p>
+<ol>
+  <li>Keep the provided <code>interface User</code> with fields
+      <code>id: number</code>, <code>name: string</code>,
+      <code>email: string</code>, <code>active: boolean</code>.</li>
+  <li>Write <code>updateUser(user: User, changes: Partial&lt;User&gt;): User</code>
+      — return a <strong>new</strong> object with <code>changes</code> spread
+      over <code>user</code>. Do not mutate the original (the tests check).</li>
+  <li>Write <code>toSummary(user: User): Pick&lt;User, "id" | "name"&gt;</code>
+      — return an object holding <em>only</em> the <code>id</code> and
+      <code>name</code> fields.</li>
+</ol>
+<p>Note what you did <em>not</em> write: a second
+<code>UserChanges</code> interface duplicating every field with a
+<code>?</code>. <code>Partial</code> derives it, so the two can never drift
+apart.</p>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+// 1. Accept a partial set of changes: any User fields, all optional.
+//    TODO: replace "any" with Partial<User>
+function updateUser(user: User, changes: any): User {
+  // TODO: return a NEW object — spread user, then spread changes over it
+  return user;
+}
+
+// 2. A summary is only the id and name of a User.
+//    TODO: annotate the return type as Pick<User, "id" | "name">
+function toSummary(user: User) {
+  // TODO: return an object with only id and name
+  return { id: 0, name: "" };
+}
+`,
+
+  exportNames: ["updateUser", "toSummary"],
+
+  requirements: [
+    { pattern: /interface\s+User/, message: "Keep the interface User declaration" },
+    { pattern: /changes\s*:\s*Partial\s*<\s*User\s*>/, message: "Type the changes parameter as Partial<User>" },
+    { pattern: /(Pick|Omit)\s*</, message: "Use Pick (or Omit) to describe the summary shape" },
+  ],
+
+  tests: [
+    {
+      name: 'updateUser merges changes over the original fields',
+      run: (x) => {
+        const u = { id: 1, name: "Ada", email: "ada@example.com", active: true };
+        const next = x.updateUser(u, { email: "lovelace@example.com", active: false });
+        expectEqual(next.id, 1);
+        expectEqual(next.name, "Ada");
+        expectEqual(next.email, "lovelace@example.com");
+        expectEqual(next.active, false);
+      },
+    },
+    {
+      name: "updateUser with no changes returns an equal copy",
+      run: (x) => {
+        const u = { id: 2, name: "Grace", email: "grace@example.com", active: true };
+        expectDeepEqual(x.updateUser(u, {}), u);
+      },
+    },
+    {
+      name: "updateUser does not mutate the original user",
+      run: (x) => {
+        const u = { id: 3, name: "Alan", email: "alan@example.com", active: true };
+        x.updateUser(u, { name: "Turing", active: false });
+        expectEqual(u.name, "Alan");
+        expectEqual(u.active, true);
+      },
+    },
+    {
+      name: "toSummary keeps id and name",
+      run: (x) => {
+        const s = x.toSummary({ id: 7, name: "Ada", email: "ada@example.com", active: true });
+        expectEqual(s.id, 7);
+        expectEqual(s.name, "Ada");
+      },
+    },
+    {
+      name: "toSummary drops email and active",
+      run: (x) => {
+        const s = x.toSummary({ id: 8, name: "Grace", email: "grace@example.com", active: false });
+        expectEqual("email" in s, false);
+        expectEqual("active" in s, false);
+        expectEqual(Object.keys(s).length, 2);
+      },
+    },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+function updateUser(user: User, changes: Partial<User>): User {
+  return { ...user, ...changes };
+}
+
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  return { id: user.id, name: user.name };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Update object</td><td>any bag of fields</td><td><code>Partial&lt;User&gt;</code> — every field optional</td></tr>
+  <tr><td>Keep only some keys</td><td>shape implied by the code</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td>Drop some keys</td><td>delete / destructure &amp; rest</td><td><code>Omit&lt;User, "password"&gt;</code></td></tr>
+  <tr><td>Freeze against writes</td><td><code>Object.freeze</code> (runtime)</td><td><code>Readonly&lt;User&gt;</code> (compile time)</td></tr>
+  <tr><td>Type of a function's result</td><td>n/a</td><td><code>ReturnType&lt;typeof getUser&gt;</code></td></tr>
+  <tr><td>All fields required again</td><td>n/a</td><td><code>Required&lt;User&gt;</code></td></tr>
+</table>
+<p>The insight: utility types let one interface be the <em>single source of
+truth</em>, with every variant — the update payload, the API view, the frozen
+config — derived from it mechanically. Add a field to <code>User</code> and
+<code>Partial&lt;User&gt;</code>, <code>Pick</code>, and
+<code>ReturnType</code> all update themselves; the hand-copied JavaScript
+equivalents are exactly the places that used to rot.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

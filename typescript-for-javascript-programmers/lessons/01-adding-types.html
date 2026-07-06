@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Adding Types to Variables</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Adding Types to Variables",
+
+  intro: `
+<p>TypeScript is the JavaScript you already write, plus one new layer: a type
+annotation slot after every name. <code>let age = 36</code> becomes
+<code>let age: number = 36</code>. The compiler checks the annotations before
+your code runs, then erases them — the emitted JavaScript is exactly what you
+would have written by hand. Nothing about the runtime changes; what changes is
+that a whole category of bugs now fails to compile instead of failing in
+production.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>let age = 36;</code></td><td><code>let age: number = 36;</code></td></tr>
+  <tr><td><code>const name = "Ada";</code></td><td><code>const name = "Ada";</code> (inferred as string — no annotation needed)</td></tr>
+  <tr><td><code>age = "thirty-six";</code> — fine, good luck</td><td><code>age = "thirty-six";</code> — compile error</td></tr>
+  <tr><td>every value accepts anything</td><td><code>let x: any</code> — explicit opt-out, avoid it</td></tr>
+</table>
+<p>You will annotate less than you expect. TypeScript <em>infers</em> types
+from values: <code>const city = "London"</code> is already a
+<code>string</code>, and reassigning a <code>let</code> to a different type is
+an error even without an annotation. Idiomatic TypeScript writes annotations
+where they add information (function signatures, empty containers) and lets
+inference handle the rest. This lesson asks for explicit annotations anyway,
+to get the syntax into your fingers.</p>
+<p>One warning up front: the type <code>any</code> means "stop checking this
+value". It is not a wildcard, it is a trapdoor — every operation on an
+<code>any</code> is allowed, every value it touches degrades toward
+<code>any</code>, and you are back to plain JavaScript without noticing.
+Reach for it last, not first.</p>`,
+
+  javascript: `let userName = "Ada";
+let userAge = 36;
+
+// JavaScript doesn't mind — the reassignment succeeds silently:
+userAge = "thirty-six";
+
+function describeUser(name, age) {
+  return \`\${name} is \${age} years old\`;
+}
+
+describeUser(userName, userAge); // "Ada is thirty-six years old"
+
+// The bug surfaces far from its cause:
+const ageNextYear = userAge + 1; // "thirty-six1"`,
+
+  task: `
+<p>Write the typed version of the code on the left:</p>
+<ol>
+  <li>Declare a constant <code>userName</code> with an explicit
+      <code>: string</code> annotation and the value <code>"Ada"</code>,
+      and a constant <code>userAge</code> with an explicit
+      <code>: number</code> annotation and the value <code>36</code>.</li>
+  <li>Write a function <code>describeUser</code> that takes
+      <code>name: string</code> and <code>age: number</code> and returns a
+      <code>string</code> like <code>"Ada is 36 years old"</code>.
+      The return type is annotated after the parameter list:
+      <code>function describeUser(...): string</code>.</li>
+</ol>
+<p>With those annotations in place, <code>userAge = "thirty-six"</code> and
+<code>describeUser(36, "Ada")</code> are both compile errors — the silent bug
+on the left can no longer be written.</p>`,
+
+  starter: `// 1. Declare userName and userAge with explicit type annotations.
+//    JS:  let userName = "Ada";  ->  TS:  const userName: string = "Ada";
+
+
+// 2. Add parameter types and a return type to describeUser.
+function describeUser(name, age) {
+  // TODO: return "<name> is <age> years old"
+  return "";
+}
+`,
+
+  exportNames: ["userName", "userAge", "describeUser"],
+
+  requirements: [
+    { pattern: /const\s+userName\s*:\s*string/, message: "Declare userName as a const with an explicit : string annotation" },
+    { pattern: /const\s+userAge\s*:\s*number/, message: "Declare userAge as a const with an explicit : number annotation" },
+    { pattern: /describeUser\s*\(\s*name\s*:\s*string\s*,\s*age\s*:\s*number\s*\)\s*:\s*string/, message: "Give describeUser typed parameters (name: string, age: number) and a : string return type" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', run: (x) => expectEqual(x.userName, "Ada") },
+    { name: "userAge is 36", run: (x) => expectEqual(x.userAge, 36) },
+    { name: 'describeUser("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.describeUser("Ada", 36), "Ada is 36 years old") },
+    { name: 'describeUser("Grace", 85) returns "Grace is 85 years old"', run: (x) => expectEqual(x.describeUser("Grace", 85), "Grace is 85 years old") },
+  ],
+
+  solution: `const userName: string = "Ada";
+const userAge: number = 36;
+
+function describeUser(name: string, age: number): string {
+  return \`\${name} is \${age} years old\`;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Annotated variable</td><td><code>let x = 1;</code></td><td><code>let x: number = 1;</code></td></tr>
+  <tr><td>Inference</td><td>—</td><td><code>const s = "hi";</code> is already <code>string</code></td></tr>
+  <tr><td>Reassign to another type</td><td>allowed, silent</td><td>compile error (annotation or not)</td></tr>
+  <tr><td>Basic types</td><td>typeof strings at runtime</td><td><code>string</code>, <code>number</code>, <code>boolean</code></td></tr>
+  <tr><td>Opt out of checking</td><td>the default everywhere</td><td><code>: any</code> — use sparingly and deliberately</td></tr>
+  <tr><td>When checked</td><td>never</td><td>at compile time; annotations are erased from output</td></tr>
+</table>
+<p>The mental shift: in JavaScript a variable's type is whatever it holds
+right now; in TypeScript it is a contract fixed at the declaration. Every
+<code>any</code> you write punches a hole in that contract — and the hole
+spreads, because everything computed from an <code>any</code> is
+<code>any</code> too. A codebase's safety is roughly inversely proportional
+to its <code>any</code> count.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

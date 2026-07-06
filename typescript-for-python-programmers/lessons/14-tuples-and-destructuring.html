@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Tuples & Destructuring</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Tuples & Destructuring",
+
+  intro: `
+<p>Python tuples are their own runtime type; JavaScript only has arrays. But
+TypeScript adds tuples back <em>at the type level</em>: <code>[number,
+number]</code> is an array that the compiler knows has exactly two elements,
+in that order, with those types — a straight translation of
+<code>tuple[float, float]</code>. At runtime it is still a plain array, so it
+is not immutable the way a Python tuple is; the fixed shape lives in the type
+checker.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>point: tuple[int, int] = (3, 4)</code></td>
+      <td><code>const point: [number, number] = [3, 4];</code></td></tr>
+  <tr><td><code>x, y = point</code></td>
+      <td><code>const [x, y] = point;</code></td></tr>
+  <tr><td><code>first, *rest = items</code></td>
+      <td><code>const [first, ...rest] = items;</code></td></tr>
+  <tr><td><code>a, b = b, a</code></td>
+      <td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td>(no dict unpacking to variables)</td>
+      <td><code>const { name, age } = user;</code></td></tr>
+</table>
+<p>Unpacking is called <em>destructuring</em> and comes in two flavors. Array
+destructuring is Python unpacking with brackets: <code>const [x, y] =
+point</code>, including star-unpacking as <code>...rest</code>. Object
+destructuring has no Python equivalent and you will use it constantly:
+<code>const { name, age } = user</code> pulls properties out by name, with
+renaming (<code>{ name: userName }</code>) and defaults (<code>{ age = 0
+}</code>) built in. It works directly in parameter lists too — the standard
+way to consume an options object.</p>`,
+
+  python: `point: tuple[int, int] = (3, 4)
+x, y = point                  # unpacking
+
+def distance(p: tuple[float, float]) -> float:
+    x, y = p
+    return (x ** 2 + y ** 2) ** 0.5
+
+items = [1, 2, 3, 4]
+first, *rest = items          # first=1, rest=[2, 3, 4]
+
+a, b = 1, 2
+a, b = b, a                   # the classic swap
+
+user = {"name": "Ada", "age": 36}
+print(f"{user['name']} ({user['age']})")`,
+
+  task: `
+<p>Write three functions:</p>
+<ol>
+  <li><code>distance(p: [number, number]): number</code> — annotate the
+      parameter with a tuple type, destructure it with
+      <code>const [x, y] = p</code>, and return the vector length
+      (<code>Math.sqrt(x * x + y * y)</code>).</li>
+  <li><code>swapPair(pair: [string, number]): [number, string]</code> —
+      return the pair with its elements swapped, like <code>b, a = a, b</code>.
+      Both parameter and return type are tuple types.</li>
+  <li><code>formatUser(user: { name: string; age: number }): string</code> —
+      use <em>object</em> destructuring to pull out <code>name</code> and
+      <code>age</code> (in the body or straight in the parameter list) and
+      return a string like <code>"Ada (36)"</code>.</li>
+</ol>`,
+
+  starter: `// 1. distance — Python: def distance(p: tuple[float, float]) -> float:
+//    TODO: keep the tuple annotation, destructure p into x and y,
+//    and return Math.sqrt(x * x + y * y).
+function distance(p: [number, number]): number {
+  // TODO
+  return 0;
+}
+
+// 2. swapPair — Python: b, a = a, b
+//    TODO: return the two elements in reverse order.
+function swapPair(pair: [string, number]): [number, string] {
+  // TODO
+  return [0, ""];
+}
+
+// 3. formatUser — destructure name and age out of the object
+//    (const { name, age } = user), then return "Name (age)".
+function formatUser(user: { name: string; age: number }): string {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["distance", "swapPair", "formatUser"],
+
+  requirements: [
+    { pattern: /\[\s*(number|string)\s*,/, message: "Annotate a parameter or return with a tuple type like [number, number]" },
+    { pattern: /const\s*\[/, message: "Use array destructuring: const [x, y] = ..." },
+    { pattern: /\{\s*\w+/, message: "Use object destructuring to pull name and age out of the user object" },
+  ],
+
+  tests: [
+    { name: "distance([3, 4]) returns 5", run: (x) => expectEqual(x.distance([3, 4]), 5) },
+    { name: "distance([0, 0]) returns 0", run: (x) => expectEqual(x.distance([0, 0]), 0) },
+    { name: 'swapPair(["a", 1]) returns [1, "a"]', run: (x) => expectDeepEqual(x.swapPair(["a", 1]), [1, "a"]) },
+    { name: 'swapPair(["price", 42]) returns [42, "price"]', run: (x) => expectDeepEqual(x.swapPair(["price", 42]), [42, "price"]) },
+    { name: 'formatUser({ name: "Ada", age: 36 }) returns "Ada (36)"', run: (x) => expectEqual(x.formatUser({ name: "Ada", age: 36 }), "Ada (36)") },
+    { name: 'formatUser({ name: "Guido", age: 70 }) returns "Guido (70)"', run: (x) => expectEqual(x.formatUser({ name: "Guido", age: 70 }), "Guido (70)") },
+  ],
+
+  solution: `function distance(p: [number, number]): number {
+  const [x, y] = p;
+  return Math.sqrt(x * x + y * y);
+}
+
+function swapPair(pair: [string, number]): [number, string] {
+  const [text, num] = pair;
+  return [num, text];
+}
+
+function formatUser(user: { name: string; age: number }): string {
+  const { name, age } = user;
+  return name + " (" + age + ")";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Tuple type</td><td><code>tuple[str, int]</code></td><td><code>[string, number]</code></td></tr>
+  <tr><td>Unpack a pair</td><td><code>x, y = point</code></td><td><code>const [x, y] = point;</code></td></tr>
+  <tr><td>Star unpacking</td><td><code>first, *rest = items</code></td><td><code>const [first, ...rest] = items;</code></td></tr>
+  <tr><td>Skip an element</td><td><code>_, second = pair</code></td><td><code>const [, second] = pair;</code></td></tr>
+  <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td>Pull fields from an object</td><td><code>name = user["name"]</code></td><td><code>const { name, age } = user;</code></td></tr>
+  <tr><td>Rename / default while pulling</td><td>—</td><td><code>const { name: userName, age = 0 } = user;</code></td></tr>
+  <tr><td>Destructured parameter</td><td>—</td><td><code>function f({ name, age }: User) { }</code></td></tr>
+</table>
+<p>One honest caveat: a TypeScript tuple is only a tuple to the compiler. At
+runtime <code>[3, 4]</code> is a mutable array — <code>point.push(5)</code>
+will even type-check in some edge cases. If you want Python-tuple immutability
+in the type system, annotate it as <code>readonly [number, number]</code> and
+the compiler will reject any mutation.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

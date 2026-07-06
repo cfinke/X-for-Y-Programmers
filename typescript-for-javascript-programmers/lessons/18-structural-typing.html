@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Structural Typing</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Structural Typing",
+
+  intro: `
+<p>JavaScript has always been duck-typed: if the object has a
+<code>.label</code>, <code>printLabel</code> can print it — no ceremony, no
+class registration. TypeScript keeps that spirit and formalizes it. Types in
+TypeScript are <em>shapes</em>, not names: a value matches an interface if it
+has the required properties with the right types, full stop. Nobody ever
+declares "I implement Labeled". This is called <em>structural typing</em>
+(Java and C# are the opposite — <em>nominal</em> — where only the declared
+name matters).</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>"has .label? good enough"</td><td>same — checked at compile time, not runtime</td></tr>
+  <tr><td>typo'd property → undefined at runtime</td><td>missing property → compile error</td></tr>
+  <tr><td>extra properties → silently fine</td><td>extra properties → fine, when passed via a variable</td></tr>
+  <tr><td>two libs with same-shaped objects mix freely</td><td>two same-shaped <em>types</em> are interchangeable</td></tr>
+</table>
+<p>Two consequences follow. First, independently declared types with the
+same shape are the <em>same type</em> as far as the compiler cares — a
+<code>Point</code> from your code and a <code>Coordinate</code> from a
+library interoperate with zero glue. Second, any object with <em>at least</em>
+the required properties is accepted; extras are ignored. The one exception:
+when you pass a <em>fresh object literal</em> directly, TypeScript runs an
+"excess property check" and flags unknown keys — because on a literal, an
+extra key is almost certainly a typo rather than a richer object.</p>`,
+
+  javascript: `// Duck typing: "if it has .label, I can print it."
+function printLabel(item) {
+  return "Label: " + item.label;
+}
+
+printLabel({ label: "crate" });          // works
+printLabel({ label: "box", size: 10 });  // extra fields? fine
+printLabel({ lable: "oops" });           // typo -> "Label: undefined"
+
+function distance(a, b) {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+distance({ x: 0, y: 0 }, { x: 3 });      // forgot y -> NaN, no warning`,
+
+  task: `
+<p>Give the duck-typed helpers real shapes:</p>
+<ol>
+  <li>Declare <code>interface Labeled</code> with a single field
+      <code>label: string</code>, and write
+      <code>printLabel(item: Labeled): string</code> returning
+      <code>"Label: "</code> plus the label.</li>
+  <li>Declare <code>interface Point</code> with <code>x: number</code> and
+      <code>y: number</code>, and write
+      <code>distance(a: Point, b: Point): number</code> — the usual
+      Pythagorean formula.</li>
+</ol>
+<p>The tests deliberately pass plain object literals and objects with
+<em>extra</em> properties (like a crate that also has a <code>size</code>).
+None of them mention your interfaces by name — they don't have to. Matching
+the shape is the whole contract.</p>`,
+
+  starter: `// 1. TODO: declare interface Labeled with label: string,
+//    then use it to type the parameter.
+function printLabel(item: any): string {
+  return "Label: " + item.label;
+}
+
+// 2. TODO: declare interface Point with x: number and y: number,
+//    then type both parameters with it.
+function distance(a: any, b: any): number {
+  // TODO: return the distance between a and b
+  return 0;
+}
+`,
+
+  exportNames: ["printLabel", "distance"],
+
+  requirements: [
+    { pattern: /interface\s+Labeled\s*\{/, message: "Declare interface Labeled" },
+    { pattern: /printLabel\s*\(\s*item\s*:\s*Labeled\s*\)\s*:\s*string/, message: "Type the parameter as Labeled: printLabel(item: Labeled): string" },
+    { pattern: /distance\s*\(\s*a\s*:\s*Point\s*,\s*b\s*:\s*Point\s*\)\s*:\s*number/, message: "Type both parameters as Point: distance(a: Point, b: Point): number" },
+  ],
+
+  tests: [
+    {
+      name: 'printLabel({ label: "crate" }) returns "Label: crate"',
+      run: (x) => expectEqual(x.printLabel({ label: "crate" }), "Label: crate"),
+    },
+    {
+      name: "printLabel accepts an object with extra properties (structural match)",
+      run: (x) => {
+        const shipment = { label: "fragile", size: 10, destination: "Oslo" };
+        expectEqual(x.printLabel(shipment), "Label: fragile");
+      },
+    },
+    {
+      name: "distance({x: 0, y: 0}, {x: 3, y: 4}) returns 5",
+      run: (x) => expectEqual(x.distance({ x: 0, y: 0 }, { x: 3, y: 4 }), 5),
+    },
+    {
+      name: "distance works with same-shaped objects from 'somewhere else'",
+      run: (x) => {
+        // Declared independently of any Point interface — shape is all that counts.
+        const gpsReading = { x: 6, y: 8, accuracy: 0.9 };
+        expectEqual(x.distance({ x: 0, y: 0 }, gpsReading), 10);
+      },
+    },
+    {
+      name: "distance between identical points is 0",
+      run: (x) => expectEqual(x.distance({ x: 2, y: 7 }, { x: 2, y: 7 }), 0),
+    },
+  ],
+
+  solution: `interface Labeled {
+  label: string;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+function printLabel(item: Labeled): string {
+  return "Label: " + item.label;
+}
+
+function distance(a: Point, b: Point): number {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>What makes a match</td><td>has the properties at runtime</td><td>has the properties at compile time</td></tr>
+  <tr><td>Same shape, different names</td><td>indistinguishable</td><td>interchangeable — types compare by structure</td></tr>
+  <tr><td>Extra properties (via variable)</td><td>ignored</td><td>ignored — "at least this shape" is enough</td></tr>
+  <tr><td>Extra properties (fresh literal)</td><td>ignored</td><td>excess property check — flagged as a likely typo</td></tr>
+  <tr><td>Missing property</td><td>undefined at runtime</td><td>compile error at the call site</td></tr>
+  <tr><td>Declaring conformance</td><td>never</td><td>never required — <code>implements</code> is optional documentation</td></tr>
+</table>
+<p>The insight: an interface is not a club that objects join, it's a
+description that objects either fit or don't. That's why TypeScript layers
+so smoothly onto existing JavaScript — your functions already operated on
+"anything with these properties", and structural typing just writes that
+contract down. The excess property check on fresh literals is the compiler
+noticing the one situation where an unknown key can't be intentional.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

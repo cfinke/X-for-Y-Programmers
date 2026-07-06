@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes",
+
+  intro: `
+<p>You could write a TypeScript class exactly like a Java one — declare each
+private field, assign each in the constructor, add getters — and it would
+work. But TypeScript folds that whole ritual into the constructor signature.
+Writing <code>constructor(private balance: number)</code> does three things
+at once: declares the field, assigns the parameter to it, and sets its
+visibility. These are <em>parameter properties</em>, and they turn a
+15-line Java class into 1 line.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Field + constructor param + <code>this.x = x;</code></td><td><code>constructor(private x: number) {}</code> — all three at once</td></tr>
+  <tr><td><code>private final String owner;</code></td><td><code>readonly owner: string</code> (add <code>private</code> only to hide it)</td></tr>
+  <tr><td><code>public double getBalance()</code></td><td>Often just a method — or expose <code>readonly</code> fields directly</td></tr>
+  <tr><td><code>throw new IllegalStateException("...")</code></td><td><code>throw new Error("...")</code></td></tr>
+</table>
+<p>Visibility works as you expect — <code>private</code>,
+<code>protected</code>, <code>public</code> (the default, so nobody writes
+it) — with the Java-familiar caveat that it is enforced by the
+<em>compiler</em>, then erased, much like generics under erasure.
+<code>readonly</code> is <code>final</code> for fields: assignable in the
+constructor, frozen after. And note the cultural shift on getters: a
+<code>readonly</code> public field needs no <code>getOwner()</code>, because
+nobody can assign to it anyway. Reserve <code>private</code> + a getter for
+state you must guard, like a balance that only <code>deposit</code> and
+<code>withdraw</code> may touch.</p>`,
+
+  java: `public class BankAccount {
+    private final String owner;
+    private final String id;
+    private double balance;
+
+    public BankAccount(String owner, String id, double balance) {
+        this.owner = owner;      // the ritual: declare above,
+        this.id = id;            // accept as parameter,
+        this.balance = balance;  // assign by hand. Three times.
+    }
+
+    public void deposit(double amount) { this.balance += amount; }
+
+    public void withdraw(double amount) {
+        if (amount > balance) throw new IllegalStateException("Insufficient funds");
+        this.balance -= amount;
+    }
+
+    public double getBalance() { return balance; }
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code>, letting parameter properties eat the
+boilerplate:</p>
+<ol>
+  <li>Declare <code>class BankAccount</code> whose constructor takes, in
+      order: <code>readonly owner: string</code>,
+      <code>readonly id: string</code>, <code>private balance: number</code>.
+      The constructor body stays <em>empty</em> — the modifiers do the field
+      declarations and assignments for you.</li>
+  <li>Add <code>deposit(amount: number): void</code> — adds to the
+      balance.</li>
+  <li>Add <code>withdraw(amount: number): void</code> — if
+      <code>amount</code> exceeds the balance, <code>throw new
+      Error("Insufficient funds")</code>; otherwise subtract it.</li>
+  <li>Add <code>getBalance(): number</code>. The balance needs a getter
+      because it is <code>private</code>; <code>owner</code> and
+      <code>id</code> need none — they are <code>readonly</code>, so
+      exposing them is already safe.</li>
+</ol>`,
+
+  starter: `// The literal Java translation — it works, but TypeScript can delete
+// most of it. Replace the field declarations AND the constructor body with
+// parameter properties:
+//   constructor(readonly owner: string, readonly id: string, private balance: number) {}
+class BankAccount {
+  owner: string;
+  id: string;
+  balance: number;
+
+  constructor(owner: string, id: string, balance: number) {
+    this.owner = owner;
+    this.id = id;
+    this.balance = balance;
+  }
+
+  // TODO: deposit(amount: number): void — add to the balance
+
+  // TODO: withdraw(amount: number): void — throw new Error("Insufficient funds")
+  //       when amount > balance, otherwise subtract
+
+  // TODO: getBalance(): number
+}
+`,
+
+  exportNames: ["BankAccount"],
+
+  requirements: [
+    { pattern: /private\s+balance/, message: "Make balance private (in the constructor parameter list) — only deposit/withdraw may touch it" },
+    { pattern: /readonly\s+owner/, message: "Mark owner readonly — TypeScript's final" },
+    { pattern: /readonly\s+id/, message: "Mark id readonly too" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada", "ACCT-1", 100) starts with balance 100', run: (x) => expectEqual(new x.BankAccount("Ada", "ACCT-1", 100).getBalance(), 100) },
+    { name: "deposit(50) raises the balance to 150", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-1", 100); a.deposit(50); expectEqual(a.getBalance(), 150); } },
+    { name: "withdraw(30) lowers the balance to 70", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-1", 100); a.withdraw(30); expectEqual(a.getBalance(), 70); } },
+    { name: "withdraw beyond the balance throws", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-1", 100); expectThrows(() => a.withdraw(1000)); } },
+    { name: "owner is set by the parameter property (no this.owner = owner needed)", run: (x) => expectEqual(new x.BankAccount("Ada", "ACCT-1", 100).owner, "Ada") },
+  ],
+
+  solution: `class BankAccount {
+  constructor(
+    readonly owner: string,
+    readonly id: string,
+    private balance: number
+  ) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("Insufficient funds");
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Field + assignment + visibility</td><td>Three separate lines</td><td><code>constructor(private x: number) {}</code></td></tr>
+  <tr><td><code>final</code> field</td><td><code>private final String id;</code></td><td><code>readonly id: string</code></td></tr>
+  <tr><td>Default visibility</td><td>package-private</td><td><code>public</code> (so it is rarely written)</td></tr>
+  <tr><td>Getter culture</td><td>Getters for everything</td><td>Getters only for guarded <code>private</code> state</td></tr>
+  <tr><td>Field access</td><td><code>balance</code> (implicit this)</td><td><code>this.balance</code> — always explicit</td></tr>
+  <tr><td>Exceptions</td><td><code>IllegalStateException</code> etc., some checked</td><td><code>Error</code>; nothing is checked</td></tr>
+</table>
+<p>Two habits to retrain. First, <code>this.</code> is mandatory inside
+methods — bare <code>balance</code> is not the field, it is a missing
+variable. Second, remember lesson 8: TypeScript is structural even for
+classes, so a class earns its keep through <em>encapsulation and
+behavior</em> — an invariant like "balance never goes negative" that
+<code>private</code> protects — not through being a container for data. If
+there is no invariant to guard, an interface and a literal are the more
+idiomatic tool.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

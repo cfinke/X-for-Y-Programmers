@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes",
+
+  intro: `
+<p>TypeScript classes will feel familiar, minus some ceremony.
+<code>__init__</code> becomes <code>constructor</code>, and <code>self</code>
+becomes <code>this</code> — but you never list it as a parameter;
+<code>this</code> just exists inside methods. Where Python marks privacy by
+convention (<code>_balance</code>, wink wink), TypeScript has real
+<code>private</code>, <code>protected</code>, and <code>public</code>
+keywords the compiler enforces, plus <code>readonly</code> for fields that
+can only be set in the constructor (like a frozen dataclass field).</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>def __init__(self, owner):</code></td><td><code>constructor(owner: string) { }</code></td></tr>
+  <tr><td><code>self._balance = 0</code></td><td><code>private balance = 0;</code></td></tr>
+  <tr><td><code>self.owner</code> (in methods)</td><td><code>this.owner</code> (no self parameter)</td></tr>
+  <tr><td><code>@dataclass</code> field list</td><td><code>constructor(private balance: number) { }</code></td></tr>
+</table>
+<p>The trick worth stealing: <strong>constructor parameter properties</strong>.
+Writing <code>constructor(private balance: number, readonly owner: string)</code>
+declares the fields <em>and</em> assigns them in one stroke — TypeScript's
+answer to the <code>@dataclass</code> shortcut, killing the
+<code>self.x = x</code> boilerplate. One habit to unlearn: accessing a
+<code>private</code> member from outside is a compile error, not a social
+faux pas. Methods are camelCase: <code>get_balance</code> →
+<code>getBalance</code>.</p>`,
+
+  python: `class BankAccount:
+    def __init__(self, owner: str, account_id: str, balance: float = 0):
+        self.owner = owner            # public by default
+        self.account_id = account_id  # nothing stops reassignment
+        self._balance = balance       # "private" by convention only
+
+    def deposit(self, amount: float) -> None:
+        self._balance += amount
+
+    def withdraw(self, amount: float) -> None:
+        if amount > self._balance:
+            raise ValueError("insufficient funds")
+        self._balance -= amount
+
+    @property
+    def balance(self) -> float:
+        return self._balance
+
+acct = BankAccount("Ada", "acct-1", 100)
+acct._balance = 10**9  # Python lets this slide`,
+
+  task: `
+<p>Build the enforced version:</p>
+<ol>
+  <li>Define a class <code>BankAccount</code> whose constructor takes
+      <code>owner: string</code>, <code>id: string</code>, and
+      <code>initialBalance: number</code>.</li>
+  <li>Store the balance in a <code>private</code> field and expose
+      <code>owner</code> and <code>id</code> as <code>readonly</code> public
+      fields. Constructor parameter properties (e.g.
+      <code>constructor(readonly owner: string, ...)</code>) let you do all
+      of this on one line each.</li>
+  <li>Add <code>deposit(amount: number): void</code> and
+      <code>withdraw(amount: number): void</code>. <code>withdraw</code> must
+      <code>throw new Error("insufficient funds")</code> when
+      <code>amount</code> exceeds the balance — the port of
+      <code>raise ValueError(...)</code>.</li>
+  <li>Add <code>getBalance(): number</code> returning the current balance
+      (the stand-in for the <code>@property</code>).</li>
+</ol>
+<p>Remember: no <code>self</code> in the parameter lists — inside methods you
+use <code>this.balance</code>, and it is simply in scope.</p>`,
+
+  starter: `class BankAccount {
+  // TODO: make owner and id readonly, and keep the balance private.
+  // Tip: constructor parameter properties do field + assignment in one go:
+  //   constructor(readonly owner: string, private balance: number) {}
+  owner: string;
+  id: string;
+  balance: number;
+
+  constructor(owner: string, id: string, initialBalance: number) {
+    this.owner = owner;   // Python: self.owner = owner
+    this.id = id;
+    this.balance = initialBalance;
+  }
+
+  deposit(amount: number): void {
+    // TODO: add amount to the balance (this.…, no self)
+  }
+
+  withdraw(amount: number): void {
+    // TODO: throw new Error("insufficient funds") if amount > balance,
+    // otherwise subtract it.
+  }
+
+  getBalance(): number {
+    // TODO: return the private balance
+    return 0;
+  }
+}
+`,
+
+  exportNames: ["BankAccount"],
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Define a class named BankAccount" },
+    { pattern: /private\s+(readonly\s+)?\w+/, message: "Keep the balance in a private field (enforced, unlike Python's _underscore)" },
+    { pattern: /readonly\s+\w+/, message: "Mark owner and id as readonly" },
+  ],
+
+  tests: [
+    { name: "new account reports its initial balance", run: (x) => {
+        const a = new x.BankAccount("Ada", "acct-1", 100);
+        expectEqual(a.getBalance(), 100);
+      } },
+    { name: "owner and id are exposed", run: (x) => {
+        const a = new x.BankAccount("Ada", "acct-1", 100);
+        expectEqual(a.owner, "Ada");
+        expectEqual(a.id, "acct-1");
+      } },
+    { name: "deposit(50) then getBalance() → 150", run: (x) => {
+        const a = new x.BankAccount("Ada", "acct-1", 100);
+        a.deposit(50);
+        expectEqual(a.getBalance(), 150);
+      } },
+    { name: "withdraw(30) then getBalance() → 120", run: (x) => {
+        const a = new x.BankAccount("Ada", "acct-1", 150);
+        a.withdraw(30);
+        expectEqual(a.getBalance(), 120);
+      } },
+    { name: "withdrawing more than the balance throws", run: (x) => {
+        const a = new x.BankAccount("Ada", "acct-1", 50);
+        expectThrows(() => a.withdraw(1000));
+        expectEqual(a.getBalance(), 50);
+      } },
+  ],
+
+  solution: `class BankAccount {
+  // Parameter properties: declares AND assigns the fields — the
+  // @dataclass-style shortcut.
+  constructor(
+    readonly owner: string,
+    readonly id: string,
+    private balance: number,
+  ) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("insufficient funds");
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Constructor</td><td><code>def __init__(self, ...):</code></td><td><code>constructor(...) { }</code></td></tr>
+  <tr><td>Instance reference</td><td><code>self</code>, listed as a parameter</td><td><code>this</code>, implicit in methods</td></tr>
+  <tr><td>Private field</td><td><code>self._x</code> (convention)</td><td><code>private x</code> (compile-time enforced)</td></tr>
+  <tr><td>Immutable field</td><td>frozen dataclass / discipline</td><td><code>readonly x</code></td></tr>
+  <tr><td>Field boilerplate killer</td><td><code>@dataclass</code></td><td><code>constructor(private x: number) {}</code></td></tr>
+  <tr><td>Raise on bad input</td><td><code>raise ValueError("msg")</code></td><td><code>throw new Error("msg")</code></td></tr>
+  <tr><td>Instantiate</td><td><code>BankAccount("Ada", ...)</code></td><td><code>new BankAccount("Ada", ...)</code> (<code>new</code> required)</td></tr>
+</table>
+<p>One honest caveat: <code>private</code> is enforced by the
+<em>compiler</em>, then erased — at runtime the property still physically
+exists on the object, much like Python's underscore field. If you need
+runtime-hard privacy, JavaScript's native <code>#field</code> syntax provides
+it; in typed codebases, the compile-time guarantee is almost always what you
+actually want, and it is a guarantee Python never gives you at all.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

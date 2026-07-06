@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Discriminated Unions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Discriminated Unions",
+
+  intro: `
+<p>You have written the C tagged union: an <code>enum</code> tag next to a
+<code>union</code> payload, and a <code>switch</code> that everyone must
+promise to keep in sync. The compiler enforces none of it — read
+<code>s.rect</code> while the tag says circle and you get silent undefined
+behavior. C++17's <code>std::variant</code> fixed the safety problem, and
+<code>std::visit</code> even gives you exhaustiveness: add an alternative
+and every visitor stops compiling until it handles the new case. The price
+is the <code>overloaded</code> lambda incantation and error messages
+measured in screens.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>enum Kind kind;</code> + <code>union { ... }</code></td><td><code>kind: "circle"</code> — a literal-typed tag field</td></tr>
+  <tr><td><code>std::variant&lt;Circle, Rect&gt;</code></td><td><code>type Shape = Circle | Rect</code></td></tr>
+  <tr><td><code>std::visit(overloaded { ... }, s)</code></td><td><code>switch (s.kind) { case "circle": ... }</code></td></tr>
+  <tr><td>visitor won't compile if a case is missing</td><td><code>never</code>-typed <code>default</code> won't compile if a case is missing</td></tr>
+</table>
+<p>TypeScript's version is the tagged union with the checking built in.
+Give each alternative a <code>kind</code> property whose type is a string
+<em>literal</em> (<code>kind: "circle"</code>, not <code>kind: string</code>),
+union them, and <code>switch</code> on the tag. In each <code>case</code>
+the compiler narrows the variable to that alternative's <em>full shape</em> —
+<code>s.radius</code> is legal only under <code>case "circle"</code>. For
+exhaustiveness, assign the switched value to a variable of type
+<code>never</code> in the <code>default</code>: if every case is handled,
+nothing reaches the default and the assignment type-checks; add a new
+alternative and the assignment becomes a <strong>compile error</strong> at
+every switch you forgot. That is <code>std::visit</code>'s guarantee,
+without the overload boilerplate.</p>`,
+
+  cpp: `// The C way: discipline, not checking
+struct ShapeC {
+    enum class Kind { Circle, Rect } kind;
+    union { double radius; struct { double w, h; } rect; };
+};
+double area_c(const ShapeC& s) {
+    switch (s.kind) {
+    case ShapeC::Kind::Circle: return 3.14159 * s.radius * s.radius;
+    case ShapeC::Kind::Rect:   return s.rect.w * s.rect.h;
+    }  // forgot a case? -Wswitch *might* warn; wrong member read is UB
+}
+
+// The C++17 way: safe and exhaustive, but ceremonious
+using Shape = std::variant<Circle, Rect>;
+double area(const Shape& s) {
+    return std::visit(overloaded {
+        [](const Circle& c) { return 3.14159 * c.radius * c.radius; },
+        [](const Rect& r)   { return r.w * r.h; },
+    }, s);  // add Triangle to the variant -> this stops compiling
+}`,
+
+  task: `
+<p>Model shapes as a discriminated union and compute areas:</p>
+<ol>
+  <li>Define three interfaces — <code>Circle</code> with
+      <code>kind: "circle"</code> and <code>radius: number</code>;
+      <code>Rectangle</code> with <code>kind: "rectangle"</code>,
+      <code>width: number</code>, <code>height: number</code>;
+      <code>Triangle</code> with <code>kind: "triangle"</code>,
+      <code>base: number</code>, <code>height: number</code>.
+      The <code>kind</code> values are string <em>literal</em> types —
+      that is the enum tag.</li>
+  <li>Define <code>type Shape = Circle | Rectangle | Triangle;</code></li>
+  <li>Write <code>area(shape: Shape): number</code> as a
+      <code>switch (shape.kind)</code>: circle is
+      <code>Math.PI * radius * radius</code>, rectangle is
+      <code>width * height</code>, triangle is
+      <code>0.5 * base * height</code>.</li>
+  <li>In the <code>default</code> branch, assign <code>shape</code> to a
+      constant of type <code>never</code> (then throw). This is your
+      exhaustiveness proof: add a fourth shape later and this line refuses
+      to compile until <code>area</code> handles it.</li>
+</ol>`,
+
+  starter: `// 1. One interface per alternative; kind is a string LITERAL type.
+interface Circle {
+  kind: "circle";
+  radius: number;
+}
+// TODO: Rectangle (kind: "rectangle", width, height)
+// TODO: Triangle  (kind: "triangle", base, height)
+
+// 2. The union — std::variant<Circle, Rectangle, Triangle>
+type Shape = Circle;  // TODO: | Rectangle | Triangle
+
+// 3. + 4. switch on the tag; each case sees the full alternative.
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    // TODO: rectangle, triangle
+    default: {
+      // TODO: const _exhaustive: never = shape; then throw.
+      throw new Error("unhandled shape");
+    }
+  }
+}
+`,
+
+  exportNames: ["area"],
+
+  requirements: [
+    { pattern: /kind\s*:\s*"/, message: "Tag each alternative with a string-literal kind property" },
+    { pattern: /never/, message: "Use a never-typed default branch as the exhaustiveness check" },
+    { pattern: /switch\s*\(/, message: "Dispatch on the tag with a switch statement" },
+  ],
+
+  tests: [
+    { name: "area of a circle with radius 2 is PI * 4", run: (x) => expectEqual(x.area({ kind: "circle", radius: 2 }), Math.PI * 4) },
+    { name: "area of a 3 x 4 rectangle is 12", run: (x) => expectEqual(x.area({ kind: "rectangle", width: 3, height: 4 }), 12) },
+    { name: "area of a triangle with base 6, height 4 is 12", run: (x) => expectEqual(x.area({ kind: "triangle", base: 6, height: 4 }), 12) },
+    { name: "area of a unit circle is PI", run: (x) => expectEqual(x.area({ kind: "circle", radius: 1 }), Math.PI) },
+  ],
+
+  solution: `interface Circle {
+  kind: "circle";
+  radius: number;
+}
+interface Rectangle {
+  kind: "rectangle";
+  width: number;
+  height: number;
+}
+interface Triangle {
+  kind: "triangle";
+  base: number;
+  height: number;
+}
+
+type Shape = Circle | Rectangle | Triangle;
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    case "rectangle":
+      return shape.width * shape.height;   // shape: Rectangle here
+    case "triangle":
+      return 0.5 * shape.base * shape.height;
+    default: {
+      // Every alternative is handled, so shape has type never here.
+      // Add a fourth shape and this assignment is a COMPILE error.
+      const _exhaustive: never = shape;
+      throw new Error("unhandled shape: " + _exhaustive);
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>The tag</td><td><code>enum class Kind kind;</code></td><td><code>kind: "circle"</code> (literal type)</td></tr>
+  <tr><td>The sum type</td><td><code>std::variant&lt;A, B, C&gt;</code></td><td><code>type S = A | B | C</code></td></tr>
+  <tr><td>Dispatch</td><td><code>std::visit</code> + <code>overloaded</code> lambdas</td><td><code>switch (s.kind)</code></td></tr>
+  <tr><td>Payload access</td><td><code>std::get&lt;A&gt;(v)</code></td><td>just <code>s.radius</code> — the case narrowed it</td></tr>
+  <tr><td>Exhaustiveness</td><td>visitor fails to compile</td><td><code>const _x: never = s;</code> in <code>default</code></td></tr>
+  <tr><td>Wrong-member access</td><td>UB (raw union) / throw (variant)</td><td>compile error</td></tr>
+</table>
+<p>The insight: <code>never</code> is the empty type — the type with no
+values, like a function that only throws. Narrowing works by
+<em>subtraction</em>: each handled case removes an alternative from
+<code>Shape</code>, and when all are removed, <code>never</code> is what
+remains. The exhaustiveness trick simply asks the compiler to confirm that
+the leftovers are empty — the same proof <code>std::visit</code> performs,
+expressed as one declaration.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

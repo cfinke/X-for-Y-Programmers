@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Type Narrowing & Guards</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Type Narrowing & Guards",
+
+  intro: `
+<p>You already defend your code with runtime checks:
+<code>typeof x === "string"</code>, <code>Array.isArray(x)</code>,
+<code>"id" in obj</code>, <code>err instanceof Error</code>. The news is that
+the TypeScript compiler <em>reads</em> those checks. Inside the
+<code>if (typeof x === "string")</code> branch, <code>x</code> <em>is</em> a
+<code>string</code> — <code>x.toUpperCase()</code> compiles, no cast needed.
+This is called <em>narrowing</em>, and it means your existing defensive style
+is also your typing style.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>typeof x === "string"</code> — runtime only</td><td>same check — and <code>x</code> is <code>string</code> in that branch</td></tr>
+  <tr><td><code>Array.isArray(x)</code></td><td>narrows <code>x</code> to an array type</td></tr>
+  <tr><td><code>function isUser(v) { return ...; }</code></td><td><code>function isUser(v: unknown): v is User</code> — a type predicate</td></tr>
+  <tr><td>untrusted data is "whatever"</td><td><code>unknown</code> — must narrow before use (unlike <code>any</code>)</td></tr>
+</table>
+<p>Two new tools complete the picture. <code>unknown</code> is the safe
+<code>any</code>: it accepts every value, but you cannot <em>touch</em> it
+until a check narrows it — perfect for <code>JSON.parse</code> results and
+API payloads. And when the check is your own function, a <em>type
+predicate</em> return annotation — <code>value is User</code> instead of
+<code>boolean</code> — tells the compiler "if I return true, treat the
+argument as a <code>User</code> from here on".</p>`,
+
+  javascript: `function describeValue(value) {
+  if (typeof value === "string") return "string: " + value.toUpperCase();
+  if (typeof value === "number") return "number: " + value * 2;
+  if (Array.isArray(value)) return "array of " + value.length + " items";
+  if (isUser(value)) return "user: " + value.name;
+  return "something else";
+}
+
+function isUser(value) {
+  return typeof value === "object" && value !== null &&
+    typeof value.name === "string" &&
+    typeof value.email === "string";
+}
+
+// The checks work at runtime — but nothing stops you from
+// calling value.toUpperCase() in the wrong branch by mistake.`,
+
+  task: `
+<p>Port the code, taking <code>unknown</code> instead of trusting the caller:</p>
+<ol>
+  <li>Define a type <code>User</code> with <code>name: string</code> and
+      <code>email: string</code>, then write the guard
+      <code>isUser(value: unknown): value is User</code> — an object (not
+      <code>null</code>) whose <code>name</code> and <code>email</code> are
+      both strings. Note the return type: <code>value is User</code>, not
+      <code>boolean</code>.</li>
+  <li>Write <code>describeValue(value: unknown): string</code> returning:
+      <code>"string: "</code> + the uppercased string for strings;
+      <code>"number: "</code> + double the number for numbers;
+      <code>"array of N items"</code> for arrays;
+      <code>"user: "</code> + the name when <code>isUser(value)</code>;
+      and <code>"something else"</code> otherwise.</li>
+</ol>
+<p>Notice there is not a single cast: every property access compiles because
+a check above it narrowed <code>unknown</code> down to something concrete.</p>`,
+
+  starter: `type User = {
+  name: string;
+  email: string;
+};
+
+// 1. A custom guard. The return type "value is User" is the magic part:
+//    wherever isUser(x) is true, the compiler treats x as a User.
+function isUser(value: unknown): value is User {
+  // TODO: object, not null, and name/email are both strings
+  return false;
+}
+
+// 2. unknown in, string out — narrow with typeof / Array.isArray / isUser.
+function describeValue(value: unknown): string {
+  // TODO: handle string, number, array, User, then everything else
+  return "something else";
+}
+`,
+
+  exportNames: ["describeValue", "isUser"],
+
+  requirements: [
+    { pattern: /unknown/, message: "Take unknown (the safe any) as the parameter type" },
+    { pattern: /\bis\s+\w+/, message: "Give isUser a type-predicate return type: value is User" },
+    { pattern: /typeof/, message: "Narrow with typeof checks — the compiler understands them" },
+  ],
+
+  tests: [
+    { name: 'describeValue("hello") returns "string: HELLO"', run: (x) => expectEqual(x.describeValue("hello"), "string: HELLO") },
+    { name: 'describeValue(21) returns "number: 42"', run: (x) => expectEqual(x.describeValue(21), "number: 42") },
+    { name: 'describeValue([1, 2, 3]) returns "array of 3 items"', run: (x) => expectEqual(x.describeValue([1, 2, 3]), "array of 3 items") },
+    { name: 'describeValue(a user object) returns "user: Ada"', run: (x) => expectEqual(x.describeValue({ name: "Ada", email: "ada@example.com" }), "user: Ada") },
+    { name: 'describeValue(true) returns "something else"', run: (x) => expectEqual(x.describeValue(true), "something else") },
+    {
+      name: "isUser accepts a real user, rejects null and half-users",
+      run: (x) => {
+        expectTruthy(x.isUser({ name: "Ada", email: "ada@example.com" }));
+        expectTruthy(!x.isUser(null));
+        expectTruthy(!x.isUser({ name: "Ada" }));
+        expectTruthy(!x.isUser("Ada"));
+      },
+    },
+  ],
+
+  solution: `type User = {
+  name: string;
+  email: string;
+};
+
+function isUser(value: unknown): value is User {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as { name?: unknown; email?: unknown };
+  return typeof candidate.name === "string" && typeof candidate.email === "string";
+}
+
+function describeValue(value: unknown): string {
+  if (typeof value === "string") return "string: " + value.toUpperCase();
+  if (typeof value === "number") return "number: " + value * 2;
+  if (Array.isArray(value)) return "array of " + value.length + " items";
+  if (isUser(value)) return "user: " + value.name;
+  return "something else";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Primitive check</td><td><code>typeof x === "string"</code></td><td>same — narrows <code>x</code> to <code>string</code> in the branch</td></tr>
+  <tr><td>Array check</td><td><code>Array.isArray(x)</code></td><td>same — narrows to an array type</td></tr>
+  <tr><td>Property check</td><td><code>"id" in obj</code></td><td>same — narrows unions by shape</td></tr>
+  <tr><td>Class check</td><td><code>x instanceof Error</code></td><td>same — narrows to <code>Error</code></td></tr>
+  <tr><td>Custom check</td><td><code>function isUser(v) { }</code> returns bool</td><td><code>(v: unknown): v is User</code> — the compiler trusts it</td></tr>
+  <tr><td>Untrusted value</td><td>anything goes</td><td><code>unknown</code>: assign anything, use nothing until narrowed</td></tr>
+</table>
+<p>Reach for <code>unknown</code> wherever data crosses into your program —
+<code>JSON.parse</code>, <code>fetch</code> bodies, <code>catch (e)</code> —
+and let narrowing walk it down to a real type. One caution about predicates:
+<code>v is User</code> is a promise the compiler takes on faith, so the body
+had better actually check what it claims, or you have rebuilt <code>any</code>
+with extra steps.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

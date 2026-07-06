@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance & Abstract Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Python spells inheritance with parentheses — <code>class Circle(Shape):</code>
+— and TypeScript spells it with a keyword: <code>class Circle extends Shape</code>.
+Calling the parent constructor is nearly identical:
+<code>super().__init__(...)</code> becomes <code>super(...)</code>. And where
+Python needs an import (<code>abc.ABC</code>) plus a decorator
+(<code>@abstractmethod</code>) to fake abstract classes, TypeScript builds
+them in: <code>abstract class Shape</code> with
+<code>abstract area(): number;</code> — a signature ending in a semicolon,
+no body, no <code>...</code>, no <code>raise NotImplementedError</code>.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>class Circle(Shape):</code></td><td><code>class Circle extends Shape { }</code></td></tr>
+  <tr><td><code>super().__init__(x)</code></td><td><code>super(x)</code></td></tr>
+  <tr><td><code>class Shape(abc.ABC):</code></td><td><code>abstract class Shape { }</code></td></tr>
+  <tr><td><code>@abstractmethod</code><br><code>def area(self): ...</code></td><td><code>abstract area(): number;</code></td></tr>
+</table>
+<p>The enforcement timing is the real upgrade. Python only complains when you
+try to <em>instantiate</em> an ABC at runtime — a subclass that forgot a
+method slips through until someone constructs it. TypeScript rejects both at
+<em>compile time</em>: <code>new Shape()</code> is an error, and a subclass
+missing <code>area()</code> will not build. Concrete methods on the abstract
+class can call the abstract ones through <code>this</code> — the classic
+template-method pattern — and every subclass fills in the blank.</p>`,
+
+  python: `import abc
+import math
+
+class Shape(abc.ABC):
+    @abc.abstractmethod
+    def area(self) -> float: ...
+
+    def describe(self) -> str:  # template method: uses the abstract hook
+        return f"A shape with area {round(self.area(), 2)}"
+
+class Circle(Shape):
+    def __init__(self, radius: float):
+        super().__init__()
+        self.radius = radius
+
+    def area(self) -> float:
+        return math.pi * self.radius ** 2
+
+class Rectangle(Shape):
+    def __init__(self, width: float, height: float):
+        super().__init__()
+        self.width = width
+        self.height = height
+
+    def area(self) -> float:
+        return self.width * self.height
+
+print(Circle(1).describe())  # A shape with area 3.14`,
+
+  task: `
+<p>Port the shape hierarchy:</p>
+<ol>
+  <li>Define <code>abstract class Shape</code> with an abstract method
+      <code>area(): number</code> (just the signature — no body) and a
+      concrete <code>describe(): string</code> that returns
+      <code>"A shape with area X"</code>, where X is the area rounded to two
+      decimals: <code>Math.round(this.area() * 100) / 100</code>.</li>
+  <li>Define <code>class Circle extends Shape</code> with a constructor
+      taking <code>radius: number</code>, calling <code>super()</code>, and
+      implementing <code>area()</code> with <code>Math.PI</code> (Python's
+      <code>math.pi</code>).</li>
+  <li>Define <code>class Rectangle extends Shape</code> taking
+      <code>width: number</code> and <code>height: number</code>, with
+      <code>area()</code> returning their product.</li>
+</ol>
+<p>Note where the errors happen: delete <code>area()</code> from
+<code>Circle</code> and the compiler stops you immediately — Python's ABC
+would wait silently until <code>Circle(1)</code> ran.</p>`,
+
+  starter: `// 1. Make Shape abstract, give it an abstract area() signature, and a
+//    concrete describe() that uses this.area() (template method).
+class Shape {
+  // TODO: abstract area(): number;
+
+  describe(): string {
+    // TODO: return "A shape with area X" with the area rounded to
+    // two decimals: Math.round(this.area() * 100) / 100
+    return "";
+  }
+}
+
+// 2. TODO: Circle extends Shape — constructor(radius), super(), area()
+//    Python: class Circle(Shape): ... math.pi -> Math.PI
+class Circle {
+}
+
+// 3. TODO: Rectangle extends Shape — constructor(width, height), area()
+class Rectangle {
+}
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class (like abc.ABC, but compile-time)" },
+    { pattern: /abstract\s+area\s*\(\s*\)/, message: "Declare area() as an abstract method — a signature with no body" },
+    { pattern: /extends\s+Shape/, message: "Subclasses must use extends Shape (Python: class Circle(Shape):)" },
+  ],
+
+  tests: [
+    { name: "Circle(1).area() is approximately pi", run: (x) => expectEqual(Math.round(new x.Circle(1).area() * 100) / 100, 3.14) },
+    { name: "Circle(2).area() is approximately 12.57", run: (x) => expectEqual(Math.round(new x.Circle(2).area() * 100) / 100, 12.57) },
+    { name: "Rectangle(3, 4).area() is 12", run: (x) => expectEqual(new x.Rectangle(3, 4).area(), 12) },
+    { name: "both subclasses are instanceof Shape", run: (x) => {
+        expectTruthy(new x.Circle(1) instanceof x.Shape);
+        expectTruthy(new x.Rectangle(1, 1) instanceof x.Shape);
+      } },
+    { name: 'Rectangle(3, 4).describe() → "A shape with area 12"', run: (x) => expectEqual(new x.Rectangle(3, 4).describe(), "A shape with area 12") },
+    { name: 'Circle(1).describe() → "A shape with area 3.14"', run: (x) => expectEqual(new x.Circle(1).describe(), "A shape with area 3.14") },
+  ],
+
+  solution: `abstract class Shape {
+  abstract area(): number; // signature only — subclasses must implement
+
+  describe(): string {
+    // Template method: concrete code calling the abstract hook.
+    return "A shape with area " + (Math.round(this.area() * 100) / 100);
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super(); // Python: super().__init__()
+  }
+
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(private width: number, private height: number) {
+    super();
+  }
+
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Inherit</td><td><code>class Circle(Shape):</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td>Parent constructor</td><td><code>super().__init__(x)</code></td><td><code>super(x)</code></td></tr>
+  <tr><td>Abstract base</td><td><code>class Shape(abc.ABC):</code></td><td><code>abstract class Shape</code></td></tr>
+  <tr><td>Abstract method</td><td><code>@abstractmethod</code> + <code>...</code> body</td><td><code>abstract area(): number;</code> (no body)</td></tr>
+  <tr><td>When it's enforced</td><td>At instantiation, at runtime</td><td>At compile time — for both <code>new Shape()</code> and incomplete subclasses</td></tr>
+  <tr><td>π</td><td><code>math.pi</code></td><td><code>Math.PI</code></td></tr>
+  <tr><td>Runtime type check</td><td><code>isinstance(c, Shape)</code></td><td><code>c instanceof Shape</code></td></tr>
+</table>
+<p>Same design guidance as in Python applies: reach for an abstract class only
+when you have shared <em>implementation</em> to inherit (like
+<code>describe()</code> here). If all you need is a shared <em>shape</em> —
+"anything with an <code>area(): number</code>" — a plain interface from
+Lesson 8 does it with no hierarchy at all, exactly the ABC-vs-Protocol
+tradeoff you already know.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

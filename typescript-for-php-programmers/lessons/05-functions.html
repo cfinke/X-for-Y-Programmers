@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>PHP function signatures already look a lot like TypeScript's:
+<code>function f(int $x, string $y = "hi"): string</code> has typed parameters,
+a default value, and a return type. TypeScript keeps the same structure —
+<code>function f(x: number, y: string = "hi"): string</code> — with the type
+<em>after</em> the name instead of before it. Two things are genuinely new.
+First, <em>optional</em> parameters: <code>last?: string</code> means the
+caller may omit the argument entirely, and inside the function its value is
+<code>undefined</code> — close in spirit to PHP's nullable
+<code>?string $last = null</code>, but "not passed" rather than "passed as
+null".</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>function f(int $x): string</code></td><td><code>function f(x: number): string</code></td></tr>
+  <tr><td><code>string $y = "hi"</code> (default)</td><td><code>y: string = "hi"</code></td></tr>
+  <tr><td><code>?string $last = null</code></td><td><code>last?: string</code> (undefined if omitted)</td></tr>
+  <tr><td><code>fn($n) => $n * 2</code></td><td><code>(n: number) => n * 2</code></td></tr>
+</table>
+<p>Second, arrow functions are everywhere. PHP 7.4's
+<code>fn($n) => $n * 2</code> is the same idea as TypeScript's
+<code>(n: number) => n * 2</code>, but where PHP arrow functions are limited to
+a single expression, TS arrows can also take a full <code>{ … }</code> body,
+and idiomatic TS assigns them to <code>const</code> instead of using
+<code>function</code> declarations for small helpers and callbacks.</p>`,
+
+  php: `<?php
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+// PHP 7.4 arrow function: single expression, auto-captures scope.
+$double = fn(int $n): int => $n * 2;
+
+function fullName(string $first, ?string $last = null): string {
+    if ($last === null) {
+        return $first;
+    }
+    return "$first $last";
+}
+
+echo greet("Ada") . "\\n";          // Hello, Ada!
+echo greet("Ada", "Howdy") . "\\n"; // Howdy, Ada!
+echo $double(21) . "\\n";           // 42
+echo fullName("Ada", "Lovelace");   // Ada Lovelace`,
+
+  task: `
+<p>Rewrite the PHP on the left as TypeScript:</p>
+<ol>
+  <li>Write <code>greet(name: string, greeting: string = "Hello"): string</code>
+      — a <strong>default parameter</strong>, exactly like PHP's — returning
+      <code>"Hello, Ada!"</code> or, with a custom greeting,
+      <code>"Howdy, Ada!"</code>.</li>
+  <li>Write <code>double</code> as a <strong>const holding an arrow
+      function</strong>, <code>(n: number) => n * 2</code> style — PHP's
+      <code>fn(int $n) => $n * 2</code>.</li>
+  <li>Write <code>fullName(first: string, last?: string): string</code> — an
+      <strong>optional parameter</strong> replacing PHP's
+      <code>?string $last = null</code>. Return just the first name when
+      <code>last</code> is omitted, otherwise <code>"first last"</code>.
+      (Check for <code>undefined</code>, not <code>null</code>.)</li>
+</ol>`,
+
+  starter: `// 1. Add a default value for greeting, exactly like PHP's $greeting = "Hello".
+function greet(name: string, greeting: string): string {
+  // TODO: return "<greeting>, <name>!"
+  return "";
+}
+
+// 2. Rewrite as a const arrow function: fn(int $n) => $n * 2 in PHP.
+function double(n: number): number {
+  // TODO: replace this whole declaration with a const holding an arrow function
+  return 0;
+}
+
+// 3. Make last optional with ?, and handle the omitted case.
+function fullName(first: string, last: string): string {
+  // TODO: return first when last is undefined, else "first last"
+  return "";
+}
+`,
+
+  exportNames: ["greet", "double", "fullName"],
+
+  requirements: [
+    { pattern: /greeting\s*:\s*string\s*=\s*["'`]Hello["'`]/, message: 'Give greeting a default value: greeting: string = "Hello"' },
+    { pattern: /double\s*=\s*\(\s*n\s*:\s*number\s*\)\s*(:\s*number\s*)?=>/, message: "Write double as a const arrow function: const double = (n: number) => ..." },
+    { pattern: /last\s*\?\s*:\s*string/, message: "Make last an optional parameter: last?: string" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") returns "Hello, Ada!" (default applied)', run: (x) => expectEqual(x.greet("Ada"), "Hello, Ada!") },
+    { name: 'greet("Ada", "Howdy") returns "Howdy, Ada!"', run: (x) => expectEqual(x.greet("Ada", "Howdy"), "Howdy, Ada!") },
+    { name: "double(21) returns 42", run: (x) => expectEqual(x.double(21), 42) },
+    { name: "double(-3) returns -6", run: (x) => expectEqual(x.double(-3), -6) },
+    { name: 'fullName("Ada", "Lovelace") returns "Ada Lovelace"', run: (x) => expectEqual(x.fullName("Ada", "Lovelace"), "Ada Lovelace") },
+    { name: 'fullName("Ada") returns "Ada" (optional param omitted)', run: (x) => expectEqual(x.fullName("Ada"), "Ada") },
+  ],
+
+  solution: `function greet(name: string, greeting: string = "Hello"): string {
+  return \`\${greeting}, \${name}!\`;
+}
+
+const double = (n: number): number => n * 2;
+
+function fullName(first: string, last?: string): string {
+  if (last === undefined) {
+    return first;
+  }
+  return \`\${first} \${last}\`;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Typed signature</td><td><code>function f(int $x): string</code></td><td><code>function f(x: number): string</code></td></tr>
+  <tr><td>Default parameter</td><td><code>string $y = "hi"</code></td><td><code>y: string = "hi"</code></td></tr>
+  <tr><td>"May be missing"</td><td><code>?string $y = null</code> (null)</td><td><code>y?: string</code> (undefined)</td></tr>
+  <tr><td>Arrow function</td><td><code>fn($n) => $n * 2</code></td><td><code>(n: number) => n * 2</code></td></tr>
+  <tr><td>Multi-line closure</td><td><code>function ($n) use ($k) { … }</code></td><td><code>(n) => { … }</code> (captures scope automatically)</td></tr>
+  <tr><td>Function as a value</td><td><code>$f = 'strlen'; $f($s);</code></td><td><code>const f = (s: string) => s.length;</code></td></tr>
+</table>
+<p>The <code>use ($k)</code> clause has no TypeScript equivalent because it is
+not needed: every TS function — arrow or not — closes over surrounding
+variables automatically, like PHP arrow functions do. And note the ordering
+rule TS shares with PHP: optional and defaulted parameters must come after the
+required ones.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

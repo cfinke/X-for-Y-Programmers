@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Dicts → Objects</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Dicts → Objects",
+
+  intro: `
+<p>Where Python reaches for a dict, TypeScript usually reaches for a plain
+object literal — and the syntax is nearly identical, except keys are bare
+identifiers (<code>{ name: "Ada" }</code>, no quotes needed) and access is
+usually dot-style: <code>user.name</code> instead of
+<code>user["name"]</code>. When the keys are a fixed, known set you describe
+the shape inline (<code>{ name: string; age: number }</code>); when the
+object is a lookup table with arbitrary string keys — the true
+<code>dict[str, int]</code> use case — the type is
+<code>Record&lt;string, number&gt;</code>.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>d: dict[str, int] = {"a": 1}</code></td><td><code>const d: Record&lt;string, number&gt; = { a: 1 };</code></td></tr>
+  <tr><td><code>d["a"]</code></td><td><code>d.a</code> or <code>d["a"]</code></td></tr>
+  <tr><td><code>d.get("a", 0)</code></td><td><code>d["a"] ?? 0</code></td></tr>
+  <tr><td><code>d.keys()</code></td><td><code>Object.keys(d)</code></td></tr>
+  <tr><td><code>d.items()</code></td><td><code>Object.entries(d)</code></td></tr>
+</table>
+<p>Two adjustments. First, <code>.keys()</code> and <code>.items()</code>
+are not methods on the object — they are static functions:
+<code>Object.keys(d)</code> and <code>Object.entries(d)</code> (entries
+gives <code>[key, value]</code> pairs, exactly like <code>.items()</code>).
+Second, there is no <code>.get(key, default)</code>; a missing key reads as
+<code>undefined</code> rather than raising <code>KeyError</code>, so the
+idiom is <code>d[key] ?? fallback</code> — the <code>??</code> operator
+supplies the default only when the left side is missing. More on
+<code>??</code> in Lesson 6.</p>`,
+
+  python: `ages: dict[str, int] = {"ada": 36, "grace": 45}
+
+def get_age(table: dict[str, int], name: str, fallback: int) -> int:
+    return table.get(name, fallback)
+
+def key_list(table: dict[str, int]) -> list[str]:
+    return list(table.keys())
+
+def describe_all(table: dict[str, int]) -> list[str]:
+    return [f"{name} is {age}" for name, age in table.items()]
+
+print(get_age(ages, "ada", 0))      # 36
+print(get_age(ages, "unknown", 99)) # 99
+print(describe_all(ages))           # ['ada is 36', 'grace is 45']`,
+
+  task: `
+<p>Rewrite the Python dict helpers as TypeScript objects:</p>
+<ol>
+  <li>Declare a constant <code>ages</code> annotated as
+      <code>Record&lt;string, number&gt;</code> — the TS spelling of
+      <code>dict[str, int]</code> — with entries <code>ada: 36</code> and
+      <code>grace: 45</code>.</li>
+  <li><code>getAge(table: Record&lt;string, number&gt;, name: string,
+      fallback: number): number</code> — the <code>.get(name, fallback)</code>
+      replacement: look the key up with brackets and supply the default with
+      <code>??</code>.</li>
+  <li><code>keyList(table: Record&lt;string, number&gt;): string[]</code> —
+      return the keys via <code>Object.keys(table)</code>.</li>
+  <li><code>describeAll(table: Record&lt;string, number&gt;): string[]</code>
+      — for each <code>[name, age]</code> pair from
+      <code>Object.entries(table)</code>, produce
+      <code>"&lt;name&gt; is &lt;age&gt;"</code> (the loop over
+      <code>.items()</code>).</li>
+</ol>`,
+
+  starter: `// 1. Python: ages: dict[str, int] = {"ada": 36, "grace": 45}
+//    TODO: annotate as Record<string, number>; keys need no quotes.
+const ages = { ada: 0 };
+
+// 2. Python: table.get(name, fallback)
+//    TypeScript has no .get() — a missing key reads as undefined,
+//    so the idiom is: table[name] ?? fallback
+function getAge(table: Record<string, number>, name: string, fallback: number): number {
+  // TODO
+  return 0;
+}
+
+// 3. Python: list(table.keys())  ->  Object.keys(table)
+function keyList(table: Record<string, number>): string[] {
+  // TODO
+  return [];
+}
+
+// 4. Python: [f"{name} is {age}" for name, age in table.items()]
+//    -> Object.entries(table) gives [key, value] pairs to loop over.
+function describeAll(table: Record<string, number>): string[] {
+  // TODO
+  return [];
+}
+`,
+
+  exportNames: ["ages", "getAge", "keyList", "describeAll"],
+
+  requirements: [
+    { pattern: /Record\s*<\s*string\s*,\s*number\s*>/, message: "Use Record<string, number> — the TS spelling of dict[str, int]" },
+    { pattern: /\?\?/, message: "Use the ?? operator to supply the default, like .get(key, default)" },
+    { pattern: /Object\.keys\s*\(/, message: "Use Object.keys(...) — a static function, not a method on the object" },
+    { pattern: /Object\.entries\s*\(/, message: "Use Object.entries(...) — the TS spelling of .items()" },
+  ],
+
+  tests: [
+    { name: "ages holds ada: 36 and grace: 45", run: (x) => expectDeepEqual(x.ages, { ada: 36, grace: 45 }) },
+    { name: 'getAge(ages, "ada", 0) returns 36', run: (x) => expectEqual(x.getAge(x.ages, "ada", 0), 36) },
+    { name: 'getAge(ages, "unknown", 99) falls back to 99', run: (x) => expectEqual(x.getAge(x.ages, "unknown", 99), 99) },
+    { name: 'keyList(ages) returns ["ada", "grace"]', run: (x) => expectDeepEqual(x.keyList(x.ages), ["ada", "grace"]) },
+    { name: 'describeAll({ bob: 20 }) returns ["bob is 20"]', run: (x) => expectDeepEqual(x.describeAll({ bob: 20 }), ["bob is 20"]) },
+    { name: "describeAll(ages) describes every entry", run: (x) => expectDeepEqual(x.describeAll(x.ages), ["ada is 36", "grace is 45"]) },
+  ],
+
+  solution: `const ages: Record<string, number> = { ada: 36, grace: 45 };
+
+function getAge(table: Record<string, number>, name: string, fallback: number): number {
+  return table[name] ?? fallback;
+}
+
+function keyList(table: Record<string, number>): string[] {
+  return Object.keys(table);
+}
+
+function describeAll(table: Record<string, number>): string[] {
+  const lines: string[] = [];
+  for (const [name, age] of Object.entries(table)) {
+    lines.push(\`\${name} is \${age}\`);
+  }
+  return lines;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Lookup-table type</td><td><code>dict[str, int]</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+  <tr><td>Fixed shape</td><td><code>TypedDict</code></td><td>inline type <code>{ name: string; age: number }</code></td></tr>
+  <tr><td>Literal</td><td><code>{"name": "Ada"}</code></td><td><code>{ name: "Ada" }</code> (bare keys)</td></tr>
+  <tr><td>Access</td><td><code>d["name"]</code></td><td><code>d.name</code> (or <code>d["name"]</code>)</td></tr>
+  <tr><td>Missing key</td><td>raises <code>KeyError</code></td><td>reads as <code>undefined</code></td></tr>
+  <tr><td>Default</td><td><code>d.get(k, 0)</code></td><td><code>d[k] ?? 0</code></td></tr>
+  <tr><td>Keys / items</td><td><code>d.keys()</code> / <code>d.items()</code></td><td><code>Object.keys(d)</code> / <code>Object.entries(d)</code></td></tr>
+</table>
+<p>The mental split to internalize: Python uses <code>dict</code> for both
+"record with known fields" and "lookup table", but TypeScript separates
+them. Known fields get an inline object type (or an interface, coming in
+Lesson 8) with dot access; arbitrary keys get
+<code>Record&lt;string, T&gt;</code> with bracket access and the
+<code>?? fallback</code> idiom standing in for <code>.get()</code>.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

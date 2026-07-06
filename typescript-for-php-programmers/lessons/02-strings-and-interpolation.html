@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>In PHP, string interpolation only happens inside <em>double</em> quotes:
+<code>"Hello, $name"</code> works, <code>'Hello, $name'</code> does not, and for
+anything fancier you reach for concatenation with <code>.</code> or
+<code>sprintf()</code>. TypeScript flips the mechanism: <code>"…"</code> and
+<code>'…'</code> are both plain, non-interpolating strings, and interpolation
+lives in a third kind of string — the <em>template literal</em>, written with
+backticks (<code>\`…\`</code>). Inside backticks, <code>\${expr}</code> embeds
+any expression, not just a variable.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>"Hello, $name"</code></td><td><code>\`Hello, \${name}\`</code></td></tr>
+  <tr><td><code>$a . " and " . $b</code></td><td><code>\`\${a} and \${b}\`</code> (or <code>a + " and " + b</code>)</td></tr>
+  <tr><td><code>sprintf("%s has %d", $n, $c)</code></td><td><code>\`\${n} has \${c}\`</code></td></tr>
+  <tr><td><code>strlen($s)</code></td><td><code>s.length</code> (a property, not a function)</td></tr>
+  <tr><td><code>strtoupper($s)</code></td><td><code>s.toUpperCase()</code></td></tr>
+  <tr><td><code>str_contains($s, $needle)</code></td><td><code>s.includes(needle)</code></td></tr>
+</table>
+<p>The other habit shift: PHP's string toolbox is a bag of global functions
+(<code>strlen</code>, <code>strtoupper</code>, <code>str_contains</code>…) that
+take the string as an argument. In TypeScript the string itself is the object —
+you call <em>methods on it</em>: <code>name.length</code>,
+<code>name.toUpperCase()</code>, <code>name.includes("x")</code>.</p>`,
+
+  php: `<?php
+$name = "Ada";
+
+// Interpolation only works in double quotes; strlen() is a global function.
+$greeting = "Hello, $name! Your name has " . strlen($name) . " letters.";
+
+function shout(string $message): string {
+    return strtoupper($message) . "!";
+}
+
+function mentionsPhp(string $text): bool {
+    return str_contains($text, 'PHP');
+}
+
+echo $greeting . "\\n";
+echo shout("hello") . "\\n";
+var_dump(mentionsPhp("I love PHP"));`,
+
+  task: `
+<p>Rewrite the PHP on the left as TypeScript. Every string you build must use a
+template literal (backticks) — no <code>+</code> concatenation:</p>
+<ol>
+  <li>Write <code>greet(name: string): string</code> that returns
+      <code>"Hello, Ada! Your name has 3 letters."</code> for input
+      <code>"Ada"</code>. Use a template literal with <code>\${…}</code> and
+      the <code>.length</code> property.</li>
+  <li>Write <code>shout(message: string): string</code> that returns the
+      message uppercased with a <code>!</code> appended —
+      <code>shout("hello")</code> is <code>"HELLO!"</code>. Use
+      <code>.toUpperCase()</code>.</li>
+  <li>Write <code>mentionsPhp(text: string): boolean</code> that returns
+      whether the text contains the exact substring <code>"PHP"</code>. Use
+      <code>.includes()</code>.</li>
+</ol>`,
+
+  starter: `// 1. Build the greeting with a template literal (backticks, not quotes).
+function greet(name: string): string {
+  // TODO: "Hello, <name>! Your name has <n> letters." (use .length)
+  return "";
+}
+
+// 2. Uppercase the message and add "!" — strtoupper() becomes a method.
+function shout(message: string): string {
+  // TODO: use .toUpperCase() inside a template literal
+  return "";
+}
+
+// 3. str_contains($text, 'PHP') becomes a method on the string itself.
+function mentionsPhp(text: string): boolean {
+  // TODO: use .includes()
+  return false;
+}
+`,
+
+  exportNames: ["greet", "shout", "mentionsPhp"],
+
+  requirements: [
+    { pattern: /`[^`]*\$\{[^`]*`/, message: "Use a template literal (backticks) with ${…} interpolation" },
+    { pattern: /\.\s*length/, message: "Use the .length property (TypeScript's strlen)" },
+    { pattern: /\.\s*toUpperCase\s*\(\s*\)/, message: "Use .toUpperCase() (TypeScript's strtoupper)" },
+    { pattern: /\.\s*includes\s*\(/, message: "Use .includes() (TypeScript's str_contains)" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") returns "Hello, Ada! Your name has 3 letters."', run: (x) => expectEqual(x.greet("Ada"), "Hello, Ada! Your name has 3 letters.") },
+    { name: 'greet("Rasmus") returns "Hello, Rasmus! Your name has 6 letters."', run: (x) => expectEqual(x.greet("Rasmus"), "Hello, Rasmus! Your name has 6 letters.") },
+    { name: 'shout("hello") returns "HELLO!"', run: (x) => expectEqual(x.shout("hello"), "HELLO!") },
+    { name: 'shout("TypeScript") returns "TYPESCRIPT!"', run: (x) => expectEqual(x.shout("TypeScript"), "TYPESCRIPT!") },
+    { name: 'mentionsPhp("I love PHP") is true', run: (x) => expectEqual(x.mentionsPhp("I love PHP"), true) },
+    { name: 'mentionsPhp("I love Java") is false', run: (x) => expectEqual(x.mentionsPhp("I love Java"), false) },
+  ],
+
+  solution: `function greet(name: string): string {
+  return \`Hello, \${name}! Your name has \${name.length} letters.\`;
+}
+
+function shout(message: string): string {
+  return \`\${message.toUpperCase()}!\`;
+}
+
+function mentionsPhp(text: string): boolean {
+  return text.includes("PHP");
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Interpolation</td><td><code>"Hello, $name"</code> (double quotes only)</td><td><code>\`Hello, \${name}\`</code> (backticks only)</td></tr>
+  <tr><td>Concatenation</td><td><code>$a . $b</code></td><td><code>a + b</code> (but prefer template literals)</td></tr>
+  <tr><td>Formatting</td><td><code>sprintf("%s: %d", $k, $v)</code></td><td><code>\`\${k}: \${v}\`</code></td></tr>
+  <tr><td>Length</td><td><code>strlen($s)</code></td><td><code>s.length</code></td></tr>
+  <tr><td>Uppercase / lowercase</td><td><code>strtoupper($s)</code> / <code>strtolower($s)</code></td><td><code>s.toUpperCase()</code> / <code>s.toLowerCase()</code></td></tr>
+  <tr><td>Contains substring</td><td><code>str_contains($s, $n)</code></td><td><code>s.includes(n)</code></td></tr>
+  <tr><td>Starts / ends with</td><td><code>str_starts_with</code> / <code>str_ends_with</code></td><td><code>s.startsWith(n)</code> / <code>s.endsWith(n)</code></td></tr>
+</table>
+<p>One trap for PHP muscle memory: <code>+</code> on a string and a number does
+not add — it concatenates (<code>"3" + 4</code> is <code>"34"</code>). PHP uses
+separate operators (<code>.</code> vs <code>+</code>) so this never bites you;
+TypeScript's answer is the type system itself, which is one more reason
+idiomatic TS reaches for <code>\`\${…}\`</code> instead of <code>+</code>.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Interfaces & Object Shapes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Interfaces & Object Shapes",
+
+  intro: `
+<p>In PHP, <code>interface</code> is a contract for <em>classes</em> — a list of methods
+something must implement. But for plain <em>data</em>, PHP has traditionally shipped
+associative arrays around and documented their shape (if at all) in a docblock like
+<code>@param array{id: int, name: string} $product</code>. Nothing enforces it; a typo
+in <code>$product['nmae']</code> is a runtime <code>null</code>, not an error.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>@param array{id: int, name: string} $p</code></td><td><code>interface Product { id: number; name: string; }</code></td></tr>
+  <tr><td><code>$p['description'] ?? 'fallback'</code></td><td><code>p.description ?? "fallback"</code> with <code>description?: string</code></td></tr>
+  <tr><td><code>class Foo implements Shape</code> (explicit)</td><td>Any object with the right properties matches (structural)</td></tr>
+  <tr><td><code>$p['nmae']</code> → <code>null</code> at runtime</td><td><code>p.nmae</code> → compile error</td></tr>
+</table>
+<p>A TypeScript <code>interface</code> describes the shape of plain data — no class
+required. Mark a property optional with <code>?</code>, exactly the fields your PHP
+code guarded with <code>isset()</code> or <code>??</code>. And typing is
+<em>structural</em>: an object literal never declares <code>implements Product</code>;
+if it has the right properties with the right types, it <em>is</em> a
+<code>Product</code>. Interfaces are erased at compile time — they are pure
+documentation that the compiler actually enforces.</p>`,
+
+  php: `<?php
+/**
+ * The undocumented-assoc-array tradition, upgraded to a
+ * docblock array shape that only static analyzers read:
+ * @param array{id: int, name: string, price: float, description?: string} $product
+ */
+function productLabel(array $product): string
+{
+    return $product['name'] . ' ($' . number_format($product['price'], 2) . ')';
+}
+
+function getDescription(array $product): string
+{
+    return $product['description'] ?? 'No description available';
+}
+
+$product = ['id' => 1, 'name' => 'Widget', 'price' => 9.99];
+echo productLabel($product);   // Widget ($9.99)
+echo getDescription($product); // No description available`,
+
+  task: `
+<p>Give that product a real, compiler-checked shape:</p>
+<ol>
+  <li>Define an <code>interface Product</code> with <code>id: number</code>,
+      <code>name: string</code>, <code>price: number</code>, and an
+      <strong>optional</strong> <code>description?: string</code>.</li>
+  <li>Write <code>productLabel(product: Product): string</code> returning the name
+      and price in parentheses, e.g. <code>"Widget ($9.99)"</code> — use
+      <code>product.price.toFixed(2)</code> for the two decimals
+      (PHP's <code>number_format($p, 2)</code>).</li>
+  <li>Write <code>getDescription(product: Product): string</code> returning the
+      description, or <code>"No description available"</code> when it is missing —
+      <code>??</code> works the same as in PHP.</li>
+</ol>
+<p>Note there is no <code>implements</code> anywhere: the test objects are plain
+literals that match the shape.</p>`,
+
+  starter: `// TODO: 1. Define interface Product with id (number), name (string),
+//          price (number), and an OPTIONAL description (string).
+interface Product {
+  id: number;
+  // TODO: add the remaining properties
+}
+
+function productLabel(product: Product): string {
+  // TODO: return the name plus the price in parentheses, e.g. "Widget ($9.99)"
+  return "";
+}
+
+function getDescription(product: Product): string {
+  // TODO: return the description, or "No description available" if absent
+  return "";
+}
+`,
+
+  exportNames: ["productLabel", "getDescription"],
+
+  requirements: [
+    { pattern: /interface\s+Product/, message: "Define an interface named Product" },
+    { pattern: /\w+\?\s*:/, message: "Make description optional with the ? modifier (description?: string)" },
+    { pattern: /:\s*Product/, message: "Type the function parameters as Product" },
+  ],
+
+  tests: [
+    { name: 'productLabel({id: 1, name: "Widget", price: 9.99}) returns "Widget ($9.99)"', run: (x) => expectEqual(x.productLabel({ id: 1, name: "Widget", price: 9.99 }), "Widget ($9.99)") },
+    { name: 'productLabel({id: 2, name: "Gadget", price: 5}) returns "Gadget ($5.00)"', run: (x) => expectEqual(x.productLabel({ id: 2, name: "Gadget", price: 5 }), "Gadget ($5.00)") },
+    { name: "getDescription returns the description when present", run: (x) => expectEqual(x.getDescription({ id: 1, name: "Widget", price: 9.99, description: "A fine widget" }), "A fine widget") },
+    { name: 'getDescription falls back to "No description available"', run: (x) => expectEqual(x.getDescription({ id: 2, name: "Gadget", price: 5 }), "No description available") },
+  ],
+
+  solution: `interface Product {
+  id: number;
+  name: string;
+  price: number;
+  description?: string;
+}
+
+function productLabel(product: Product): string {
+  return \`\${product.name} ($\${product.price.toFixed(2)})\`;
+}
+
+function getDescription(product: Product): string {
+  return product.description ?? "No description available";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Describe a data shape</td><td><code>@param array{...}</code> docblock</td><td><code>interface Product { ... }</code></td></tr>
+  <tr><td>Optional field</td><td><code>$p['x'] ?? $default</code>, <code>isset()</code></td><td><code>x?: string</code>, then <code>p.x ?? default</code></td></tr>
+  <tr><td>Access a field</td><td><code>$product['name']</code></td><td><code>product.name</code></td></tr>
+  <tr><td>Conformance</td><td>Nominal: <code>implements</code> required for interfaces</td><td>Structural: matching shape is enough</td></tr>
+  <tr><td>Runtime cost</td><td>Docblocks ignored at runtime</td><td>Interfaces fully erased — zero runtime cost</td></tr>
+  <tr><td>Format money</td><td><code>number_format($p, 2)</code></td><td><code>p.toFixed(2)</code></td></tr>
+</table>
+<p>Structural typing is the big mental shift: PHP asks "what does this value
+<em>declare</em> itself to be?", TypeScript asks "what does this value <em>look</em>
+like?". That is why a bare object literal can satisfy <code>Product</code> — and why
+interfaces are perfect for the assoc-array-shaped data you have been passing around
+in PHP all along.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

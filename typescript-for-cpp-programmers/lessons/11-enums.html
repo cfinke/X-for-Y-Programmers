@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Literal Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Literal Types",
+
+  intro: `
+<p><code>enum class Color { Red, Green };</code> maps almost one-to-one onto a
+TypeScript <code>enum</code> — scoped names, used as <code>Color.Red</code>,
+and a real type the compiler checks. TypeScript adds one upgrade C++
+programmers will appreciate immediately: <em>string enums</em>. Give each
+member a string value and it prints as <code>"red"</code> straight away — no
+<code>static_cast&lt;int&gt;</code>, no hand-written <code>to_string</code>
+switch, no operator&lt;&lt; overload just to log a value.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>enum class Color { Red, Green };</code></td><td><code>enum Color { Red = "red", Green = "green" }</code></td></tr>
+  <tr><td><code>Color::Red</code></td><td><code>Color.Red</code></td></tr>
+  <tr><td><code>std::cout &lt;&lt; static_cast&lt;int&gt;(c);</code></td><td><code>console.log(c);</code> — prints <code>"red"</code></td></tr>
+  <tr><td>(no equivalent)</td><td><code>type Color = "red" | "green";</code> — literal union</td></tr>
+</table>
+<p>The second row of that table is the more idiomatic choice in modern
+TypeScript: a <em>string-literal union type</em> like
+<code>type Priority = "low" | "medium" | "high"</code>. It behaves like an
+<code>enum class</code> whose values need no qualification at the use site —
+you pass the bare string <code>"high"</code>, and the compiler rejects
+<code>"urgent"</code> because it is not one of the listed literals. Unlike an
+enum, a literal union is pure type information: it is erased at compile time
+and leaves nothing behind at runtime. Enums, by contrast, compile to real
+objects — they are one of the few TypeScript type constructs that exist at
+runtime.</p>`,
+
+  cpp: `enum class OrderStatus { Pending, Shipped, Delivered };
+
+std::string statusLabel(OrderStatus s) {
+    switch (s) {
+        case OrderStatus::Pending:   return "Order is pending";
+        case OrderStatus::Shipped:   return "Order has shipped";
+        case OrderStatus::Delivered: return "Order was delivered";
+    }
+    return "";
+}
+
+// Printing the enum itself? Not without a cast:
+// std::cout << OrderStatus::Shipped;                  // error
+// std::cout << static_cast<int>(OrderStatus::Shipped); // prints 1
+
+// And there is no C++ analogue of a type that admits
+// exactly the strings "low", "medium", or "high".`,
+
+  task: `
+<p>Port the enum — and try the more idiomatic literal-union style too:</p>
+<ol>
+  <li>Declare a string enum <code>OrderStatus</code> with members
+      <code>Pending = "pending"</code>, <code>Shipped = "shipped"</code>, and
+      <code>Delivered = "delivered"</code>.</li>
+  <li>Write <code>statusLabel(status: OrderStatus): string</code> returning
+      <code>"Order is pending"</code>, <code>"Order has shipped"</code>, or
+      <code>"Order was delivered"</code> — a <code>switch</code> on the enum,
+      just like the C++.</li>
+  <li>Declare a type alias <code>Priority</code> as the literal union
+      <code>"low" | "medium" | "high"</code>, and write
+      <code>priorityWeight(priority: Priority): number</code> returning
+      <code>1</code>, <code>2</code>, or <code>3</code> respectively. Note the
+      call sites: bare strings, no <code>Priority::</code> qualifier
+      needed.</li>
+</ol>`,
+
+  starter: `// 1. A string enum — each member carries a readable value.
+//    C++: enum class OrderStatus { Pending, ... };
+enum OrderStatus {
+  // TODO: Pending = "pending", Shipped = "shipped", Delivered = "delivered"
+  Pending = "pending",
+}
+
+// 2. Switch on the enum, like the C++ version — but no OrderStatus:: prefix
+//    inside the case labels; the values ARE the strings.
+function statusLabel(status: OrderStatus): string {
+  // TODO: return "Order is pending" / "Order has shipped" / "Order was delivered"
+  return "";
+}
+
+// 3. The idiomatic alternative: a string-literal union type.
+//    TODO: type Priority = "low" | "medium" | "high";
+type Priority = "low";
+
+function priorityWeight(priority: Priority): number {
+  // TODO: low -> 1, medium -> 2, high -> 3
+  return 0;
+}
+`,
+
+  exportNames: ["OrderStatus", "statusLabel", "priorityWeight"],
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus/, message: "Declare an enum named OrderStatus" },
+    { pattern: /Shipped\s*=\s*"shipped"/, message: 'Make it a string enum: Shipped = "shipped" (readable values, no static_cast to print)' },
+    { pattern: /"\w+"\s*\|\s*"/, message: 'Declare Priority as a string-literal union type ("low" | "medium" | "high")' },
+  ],
+
+  tests: [
+    { name: 'OrderStatus.Shipped is the string "shipped" — no cast needed', run: (x) => expectEqual(x.OrderStatus.Shipped, "shipped") },
+    { name: 'statusLabel(OrderStatus.Pending) returns "Order is pending"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Pending), "Order is pending") },
+    { name: 'statusLabel(OrderStatus.Delivered) returns "Order was delivered"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Delivered), "Order was delivered") },
+    { name: 'priorityWeight("low") returns 1', run: (x) => expectEqual(x.priorityWeight("low"), 1) },
+    { name: 'priorityWeight("medium") returns 2', run: (x) => expectEqual(x.priorityWeight("medium"), 2) },
+    { name: 'priorityWeight("high") returns 3', run: (x) => expectEqual(x.priorityWeight("high"), 3) },
+  ],
+
+  solution: `enum OrderStatus {
+  Pending = "pending",
+  Shipped = "shipped",
+  Delivered = "delivered",
+}
+
+function statusLabel(status: OrderStatus): string {
+  switch (status) {
+    case OrderStatus.Pending:
+      return "Order is pending";
+    case OrderStatus.Shipped:
+      return "Order has shipped";
+    case OrderStatus.Delivered:
+      return "Order was delivered";
+  }
+}
+
+type Priority = "low" | "medium" | "high";
+
+function priorityWeight(priority: Priority): number {
+  if (priority === "low") return 1;
+  if (priority === "medium") return 2;
+  return 3;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Scoped enum</td><td><code>enum class Color { Red };</code></td><td><code>enum Color { Red = "red" }</code></td></tr>
+  <tr><td>Use a member</td><td><code>Color::Red</code></td><td><code>Color.Red</code></td></tr>
+  <tr><td>Print a value</td><td><code>static_cast&lt;int&gt;(c)</code> or a to_string switch</td><td>string enums print themselves</td></tr>
+  <tr><td>Closed set of values</td><td>enum class only</td><td><code>type P = "low" | "high";</code> (idiomatic)</td></tr>
+  <tr><td>Runtime footprint</td><td>an integer</td><td>enum: a real object; literal union: erased, nothing</td></tr>
+  <tr><td>Use site</td><td><code>f(Priority::Low)</code></td><td><code>f("low")</code> — no qualifier</td></tr>
+</table>
+<p>When should you reach for which? Habitual C++ instinct says enum, but most
+TypeScript codebases prefer the literal union: it needs no import at the call
+site, it serializes to JSON as-is, and it costs nothing at runtime. Save
+<code>enum</code> for when you genuinely want a runtime object to iterate over
+or attach to. Either way you keep the property you care about from
+<code>enum class</code>: the compiler rejects any value outside the set.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>
