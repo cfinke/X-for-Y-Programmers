@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: For Loops → Array Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "For Loops → Array Methods",
+
+  intro: `
+<p>You know this Go pattern by heart: <code>make</code> a result slice,
+<code>range</code> over the input, <code>if</code>, <code>append</code>. It
+is honest, explicit, and you have typed it a thousand times. In TypeScript
+the whole dance collapses into one chain:
+<code>products.filter(p =&gt; p.inStock).map(p =&gt; p.name)</code>. The
+accumulator loop for a sum is <code>.reduce</code>. And everything stays
+fully typed — <code>filter</code> on <code>Product[]</code> gives
+<code>Product[]</code>, then <code>map</code> to a name gives
+<code>string[]</code>, inferred end to end.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>make</code> + <code>range</code> + <code>if</code> + <code>append</code></td><td><code>items.filter(p =&gt; p.inStock).map(p =&gt; p.name)</code></td></tr>
+  <tr><td><code>total := 0.0; for ... { total += p.Price }</code></td><td><code>items.reduce((total, p) =&gt; total + p.price, 0)</code></td></tr>
+  <tr><td><code>sort.Slice(v, func(i, j int) bool { less })</code></td><td><code>[...v].sort((a, b) =&gt; a.price - b.price)</code></td></tr>
+  <tr><td>Comparator returns a less-<em>bool</em></td><td>Comparator returns a <em>number</em> (neg / 0 / pos)</td></tr>
+</table>
+<p>Two traps for the Go-trained hand. First, the sort comparator is not a
+<code>less</code> function: it takes two <em>elements</em> (not indices) and
+returns a <em>number</em> — negative for "a first", positive for "b first" —
+so ascending-by-price is just <code>a.price - b.price</code>. Second,
+<code>.sort()</code> mutates in place, exactly like <code>sort.Slice</code>.
+When the caller's slice should survive, copy first with a spread:
+<code>[...products].sort(...)</code>.</p>`,
+
+  go: `func InStockNames(products []Product) []string {
+	names := make([]string, 0, len(products))
+	for _, p := range products {
+		if p.InStock {
+			names = append(names, p.Name)
+		}
+	}
+	return names
+}
+
+func TotalValue(products []Product) float64 {
+	total := 0.0
+	for _, p := range products {
+		total += p.Price
+	}
+	return total
+}
+
+// sort.Slice mutates in place; the func is a less-comparison on indices
+sort.Slice(products, func(i, j int) bool {
+	return products[i].Price < products[j].Price
+})`,
+
+  task: `
+<p>Rewrite the three loops as typed pipelines:</p>
+<ol>
+  <li><code>inStockNames(products: Product[]): string[]</code> — one chain:
+      <code>.filter</code> for <code>inStock</code>, then <code>.map</code>
+      to <code>name</code>. No <code>make</code>, no <code>append</code>.</li>
+  <li><code>totalValue(products: Product[]): number</code> — replace the
+      accumulator loop with <code>.reduce((total, p) =&gt; ..., 0)</code>.
+      The <code>0</code> is your <code>total := 0.0</code> line.</li>
+  <li><code>sortByPrice(products: Product[]): Product[]</code> — ascending by
+      price, <strong>without mutating the input</strong>. Copy with
+      <code>[...products]</code> first, then <code>.sort((a, b) =&gt;
+      a.price - b.price)</code> — elements, not indices; a number, not a
+      bool.</li>
+</ol>
+<p>A test checks that <code>sortByPrice</code> leaves its argument untouched
+— the bug <code>sort.Slice</code> habits will write for you if you let
+them.</p>`,
+
+  starter: `type Product = { name: string; price: number; inStock: boolean };
+
+// 1. TODO: one chain — filter for inStock, then map to name.
+//    Go: make, range, if, append. Here: products.filter(...).map(...)
+function inStockNames(products: Product[]): string[] {
+  return [];
+}
+
+// 2. TODO: replace the accumulator loop with
+//    products.reduce((total, p) => total + p.price, 0)
+function totalValue(products: Product[]): number {
+  return 0;
+}
+
+// 3. TODO: sort ascending by price WITHOUT mutating the input.
+//    .sort() mutates like sort.Slice — copy first: [...products].sort(...)
+//    The comparator returns a NUMBER (a.price - b.price), not a less-bool.
+function sortByPrice(products: Product[]): Product[] {
+  return products;
+}
+`,
+
+  exportNames: ["inStockNames", "totalValue", "sortByPrice"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter for the in-stock check — no manual if/append" },
+    { pattern: /\.map\s*\(/, message: "Use .map to project products to names" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce for the sum — the accumulator loop in one call" },
+    { pattern: /\[\s*\.\.\.\w+\s*\]|\.slice\s*\(\s*\)/, message: "Copy the array ([...products] or .slice()) before sorting — .sort() mutates like sort.Slice" },
+  ],
+
+  tests: [
+    { name: 'inStockNames returns ["Mouse", "Keyboard"] for the sample data', run: (x) => expectDeepEqual(x.inStockNames([
+        { name: "Mouse", price: 25, inStock: true },
+        { name: "Monitor", price: 220, inStock: false },
+        { name: "Keyboard", price: 90, inStock: true },
+      ]), ["Mouse", "Keyboard"]) },
+    { name: "inStockNames([]) returns [] — empty in, empty out", run: (x) => expectDeepEqual(x.inStockNames([]), []) },
+    { name: "totalValue sums prices (25 + 220 + 90 = 335)", run: (x) => expectEqual(x.totalValue([
+        { name: "Mouse", price: 25, inStock: true },
+        { name: "Monitor", price: 220, inStock: false },
+        { name: "Keyboard", price: 90, inStock: true },
+      ]), 335) },
+    { name: "totalValue([]) returns 0 — the reduce seed", run: (x) => expectEqual(x.totalValue([]), 0) },
+    { name: "sortByPrice orders ascending by price", run: (x) => {
+        const sorted = x.sortByPrice([
+          { name: "Monitor", price: 220, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+          { name: "Keyboard", price: 90, inStock: true },
+        ]);
+        expectDeepEqual(sorted.map((p) => p.name), ["Mouse", "Keyboard", "Monitor"]);
+      } },
+    { name: "sortByPrice does NOT mutate its input", run: (x) => {
+        const original = [
+          { name: "Monitor", price: 220, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ];
+        x.sortByPrice(original);
+        expectDeepEqual(original.map((p) => p.name), ["Monitor", "Mouse"]);
+      } },
+  ],
+
+  solution: `type Product = { name: string; price: number; inStock: boolean };
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter((p) => p.inStock).map((p) => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products.reduce((total, p) => total + p.price, 0);
+}
+
+function sortByPrice(products: Product[]): Product[] {
+  return [...products].sort((a, b) => a.price - b.price);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Transform</td><td><code>range</code> + <code>append</code></td><td><code>items.map(fn)</code></td></tr>
+  <tr><td>Select</td><td><code>range</code> + <code>if</code> + <code>append</code></td><td><code>items.filter(fn)</code></td></tr>
+  <tr><td>Accumulate</td><td><code>total := 0; for ... { total += }</code></td><td><code>items.reduce(fn, seed)</code></td></tr>
+  <tr><td>Sort</td><td><code>sort.Slice(v, less)</code> — indices, bool</td><td><code>v.sort(cmp)</code> — elements, number</td></tr>
+  <tr><td>Sort mutates?</td><td>Yes</td><td>Yes — copy first: <code>[...v].sort(cmp)</code></td></tr>
+  <tr><td>Any / all</td><td>Loop with early <code>return</code></td><td><code>items.some(fn)</code> / <code>items.every(fn)</code></td></tr>
+</table>
+<p>Go rejected map/filter for years partly because closures and allocation
+made loops the transparent choice, and its slices package still only covers
+part of this ground. In TypeScript the chain <em>is</em> the idiom — reviewers
+will read <code>filter(...).map(...)</code> faster than a loop, and each step
+is separately typed, so a mistake in the middle of a pipeline is a compile
+error at exactly that step. Keep loops for early exits and side effects;
+reach for the chain when the shape is "slice in, slice out".</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

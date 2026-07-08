@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null, ?? &amp; ?-></title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null, ?? & ?->",
+
+  intro: `
+<p>Good news first: the null tooling you use every day in C# carries over
+almost intact. <code>??</code> (null coalescing) and <code>??=</code>
+(coalescing assignment) work character-for-character the same. The nullsafe
+member access <code>?.</code> exists too — it just wears PHP's arrow:
+<code>?-&gt;</code>. A chain like <code>user?.Address?.City ?? "Unknown"</code>
+translates almost mechanically.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>x ?? fallback</code></td><td><code>$x ?? $fallback</code> (identical)</td></tr>
+  <tr><td><code>x ??= fallback;</code></td><td><code>$x ??= $fallback;</code> (identical)</td></tr>
+  <tr><td><code>user?.Address?.City</code></td><td><code>$user?-&gt;address?-&gt;city</code></td></tr>
+  <tr><td><code>string? name</code></td><td><code>?string $name</code> (prefix, not suffix)</td></tr>
+  <tr><td>Compile-time nullable analysis (CS8602 warnings)</td><td>None — <code>isset()</code> / <code>?-&gt;</code> checks at runtime</td></tr>
+</table>
+<p>Two differences matter. First, syntax: a nullable type is written with the
+question mark <em>in front</em> — C#'s <code>string?</code> becomes PHP's
+<code>?string</code>, on parameters, returns, and properties alike. Second,
+and more important: there is no compile-time nullable flow analysis. C#'s
+compiler warns you when you dereference a maybe-null value; PHP simply throws
+at runtime when you do. The runtime check <code>isset($x)</code> answers
+"is this declared <em>and</em> not null?" — and <code>??</code> is built on
+it, which is why <code>$arr['missing'] ?? $default</code> never complains
+about the missing key. Defensive nullsafe chains are your static analysis
+here.</p>`,
+
+  csharp: `record Address(string City);
+record User(Address? Address = null);
+
+string GetCity(User? user) =>
+    user?.Address?.City ?? "Unknown";
+
+string Pick(Dictionary<string, string?> data,
+            string key, string fallback)
+{
+    // ?? treats a null value like a missing key.
+    return data.GetValueOrDefault(key) ?? fallback;
+}
+
+Console.WriteLine(GetCity(null));                       // Unknown
+Console.WriteLine(GetCity(new User()));                 // Unknown
+Console.WriteLine(GetCity(new User(new Address("Oslo")))); // Oslo`,
+
+  task: `
+<p>The starter defines <code>Address</code> and <code>User</code> for you
+(note the <code>?Address</code> prefix nullable). Port the two functions:</p>
+<ol>
+  <li><code>get_city(?User $user): string</code> — walk
+      <code>$user?-&gt;address?-&gt;city</code> with the nullsafe arrow and
+      fall back to <code>"Unknown"</code> with <code>??</code>. One return
+      statement is enough.</li>
+  <li><code>pick(array $data, string $key, string $default): string</code> —
+      return <code>$data[$key]</code> when it is set and not null, otherwise
+      <code>$default</code>. In PHP this is the one-liner
+      <code>$data[$key] ?? $default</code>: no
+      <code>TryGetValue</code> dance, no missing-key warning.</li>
+</ol>
+<p>Remember: <code>??</code> skips <em>null</em> values too, not just missing
+keys — the tests check that.</p>`,
+
+  starter: `<?php
+
+// Given: constructor property promotion, ?Type = nullable (prefix form).
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+// 1. C#: user?.Address?.City ?? "Unknown"
+//    PHP: same idea, arrows instead of dots.
+function get_city(?User $user): string {
+    throw new Exception("TODO: implement get_city");
+}
+
+// 2. C#: data.GetValueOrDefault(key) ?? fallback
+//    PHP: ?? already handles missing keys AND null values.
+function pick(array $data, string $key, string $default): string {
+    throw new Exception("TODO: implement pick");
+}
+`,
+
+  requirements: [
+    { pattern: /\?\?/, message: "Use the null coalescing operator ??" },
+    { pattern: /\?->/, message: "Use the nullsafe arrow ?-> to chain through possibly-null objects" },
+    { pattern: /\?User|\?Address/, message: "Keep the prefix nullable types (?User / ?Address) in the signatures" },
+  ],
+
+  tests: [
+    { name: 'get_city(null) returns "Unknown"',
+      code: 'expect_eq(get_city(null), "Unknown");' },
+    { name: 'get_city(new User()) — user exists, address is null — returns "Unknown"',
+      code: 'expect_eq(get_city(new User()), "Unknown");' },
+    { name: 'get_city(new User(new Address("Oslo"))) returns "Oslo"',
+      code: 'expect_eq(get_city(new User(new Address("Oslo"))), "Oslo");' },
+    { name: 'pick(["theme" => "dark"], "theme", "light") returns "dark"',
+      code: 'expect_eq(pick(["theme" => "dark"], "theme", "light"), "dark");' },
+    { name: 'pick([], "theme", "light") returns "light" (missing key, no warning)',
+      code: 'expect_eq(pick([], "theme", "light"), "light");' },
+    { name: 'pick(["theme" => null], "theme", "light") returns "light" (?? skips null values)',
+      code: 'expect_eq(pick(["theme" => null], "theme", "light"), "light");' },
+  ],
+
+  solution: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+function get_city(?User $user): string {
+    return $user?->address?->city ?? "Unknown";
+}
+
+function pick(array $data, string $key, string $default): string {
+    return $data[$key] ?? $default;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Null coalescing</td><td><code>x ?? y</code></td><td><code>$x ?? $y</code> (identical, and array-safe)</td></tr>
+  <tr><td>Coalescing assignment</td><td><code>x ??= y;</code></td><td><code>$x ??= $y;</code> (identical)</td></tr>
+  <tr><td>Nullsafe access</td><td><code>obj?.Member</code></td><td><code>$obj?-&gt;member</code></td></tr>
+  <tr><td>Nullable type</td><td><code>string?</code> (suffix)</td><td><code>?string</code> (prefix)</td></tr>
+  <tr><td>"Has a non-null value?"</td><td>compiler flow analysis, <code>is not null</code></td><td><code>isset($x)</code> — declared and not null, at runtime</td></tr>
+  <tr><td>Dictionary miss</td><td><code>TryGetValue</code> / <code>GetValueOrDefault</code></td><td><code>$arr[$key] ?? $default</code></td></tr>
+</table>
+<p>The insight to internalize: PHP's <code>??</code> is more than sugar over a
+ternary — it suppresses the undefined-index warning, so it doubles as C#'s
+whole <code>TryGetValue</code> pattern in one operator. But nothing checks
+your null handling before the code runs: without the compiler's nullable
+warnings, <code>?-&gt;</code> and <code>??</code> are habits you apply
+yourself (or let PHPStan/Psalm nag you, which is what real PHP teams do).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

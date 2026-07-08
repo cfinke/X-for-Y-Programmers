@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>In Python, shared behavior gets bolted on with mixins: small classes with
+no state of their own, stacked via multiple inheritance. It works, but the
+cost is the MRO — <code>class Dog(Describable, Animal, LoggerMixin)</code>
+makes you reason about C3 linearization to know whose method wins, and
+<code>super()</code> calls thread through classes you didn't write. PHP took a
+different path: inheritance stays <em>single</em> (<code>extends</code> takes
+exactly one class), and horizontal reuse is a separate construct — the
+<strong>trait</strong>.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>class Describable:</code> (mixin class)</td><td><code>trait Describable { ... }</code></td></tr>
+  <tr><td><code>class Dog(Describable):</code></td><td><code>class Dog { use Describable; }</code></td></tr>
+  <tr><td>mixin + base: <code>class Dog(Mixin, Base):</code></td><td><code>class Dog extends Base { use Mixin; }</code></td></tr>
+  <tr><td>conflicts resolved by MRO order</td><td>conflicts are errors — you pick with <code>insteadof</code></td></tr>
+  <tr><td><code>self.name()</code> in the mixin</td><td><code>$this-&gt;name()</code> in the trait</td></tr>
+</table>
+<p>A trait is a block of methods (and properties) that gets <em>copied
+into</em> each class that says <code>use TraitName;</code> — think of it as
+compiler-assisted paste rather than a parent in a lookup chain. Inside the
+trait, <code>$this</code> refers to whatever class it lands in, so a trait
+method can freely call <code>$this-&gt;name()</code> and trust the host class
+to provide it — exactly how your mixins call <code>self.name()</code>. If two
+traits bring a method with the same name, PHP refuses to guess: you get a
+fatal error unless you resolve it explicitly with
+<code>insteadof</code>. No linearization puzzle, no diamond — the ambiguity
+simply isn't allowed to exist silently.</p>`,
+
+  python: `class Describable:
+    """A mixin: behavior only, expects self.name() to exist."""
+    def describe(self) -> str:
+        return f"This is {self.name()}"
+
+class Dog(Describable):          # mixin via inheritance...
+    def name(self) -> str:
+        return "Rex"
+
+class Robot(Describable):        # ...and the MRO grows with
+    def name(self) -> str:       # every mixin you stack on.
+        return "R2-D2"
+
+print(Dog().describe())    # This is Rex
+print(Robot().describe())  # This is R2-D2`,
+
+  task: `
+<p>Port the mixin to a trait:</p>
+<ol>
+  <li>Fill in <code>trait Describable</code>: its
+      <code>describe(): string</code> method returns
+      <code>"This is "</code> followed by <code>$this-&gt;name()</code> —
+      the trait calls a method it doesn't define, trusting the host class.</li>
+  <li>Complete <code>class Dog</code>: it does <code>use Describable;</code>
+      and defines <code>name(): string</code> returning <code>"Rex"</code>.</li>
+  <li>Complete <code>class Robot</code> the same way, with
+      <code>name(): string</code> returning <code>"R2-D2"</code>.</li>
+</ol>
+<p>The tests call both <code>-&gt;describe()</code> and <code>-&gt;name()</code>
+on each class — one <code>describe</code> implementation, two hosts.</p>`,
+
+  starter: `<?php
+
+// The trait: a bundle of methods copied into any class that use-s it.
+// Inside, $this is the host object — call $this->name() and trust
+// the class to provide it, just like self.name() in a Python mixin.
+trait Describable {
+    public function describe(): string {
+        throw new Exception("TODO: return 'This is ' . \$this->name()");
+    }
+}
+
+// No extends needed — 'use TraitName;' pastes the methods in.
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return 'Rex'");
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return 'R2-D2'");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describable/, message: "Define the shared behavior in trait Describable" },
+    { pattern: /use\s+Describable/, message: "Mix the trait into each class with 'use Describable;'" },
+  ],
+
+  tests: [
+    { name: "(new Dog())->describe() returns 'This is Rex'",
+      code: "expect_eq((new Dog())->describe(), 'This is Rex');" },
+    { name: "(new Robot())->describe() returns 'This is R2-D2'",
+      code: "expect_eq((new Robot())->describe(), 'This is R2-D2');" },
+    { name: "Dog defines its own name()",
+      code: "expect_eq((new Dog())->name(), 'Rex');" },
+    { name: "Robot defines its own name()",
+      code: "expect_eq((new Robot())->name(), 'R2-D2');" },
+  ],
+
+  solution: `<?php
+
+trait Describable {
+    public function describe(): string {
+        return "This is " . $this->name();
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        return "Rex";
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        return "R2-D2";
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Reusable behavior</td><td>mixin class</td><td><code>trait Describable { ... }</code></td></tr>
+  <tr><td>Attach it</td><td><code>class Dog(Describable):</code></td><td><code>class Dog { use Describable; }</code></td></tr>
+  <tr><td>Inheritance slots</td><td>unlimited bases</td><td>one <code>extends</code>, any number of traits</td></tr>
+  <tr><td>Refer to host</td><td><code>self</code></td><td><code>$this</code></td></tr>
+  <tr><td>Name clash</td><td>MRO decides silently</td><td>fatal error unless <code>insteadof</code>/<code>as</code> resolves it</td></tr>
+  <tr><td>isinstance check</td><td><code>isinstance(d, Describable)</code> works</td><td><code>instanceof</code> does <em>not</em> see traits — use an interface too</td></tr>
+</table>
+<p>The mental model shift: a Python mixin is a <em>parent</em> — it sits in
+the MRO, and method lookup walks through it at call time. A PHP trait is
+<em>flattening</em> — its methods become the class's own methods at compile
+time, as if you'd typed them there. That's why traits don't participate in
+<code>instanceof</code>: there's no ancestry, just copied code. When you need
+the type relationship ("this object is describable") alongside the shared
+implementation, the idiom is to pair them — an <code>interface</code> for the
+contract, a trait for the default implementation, and classes that declare
+both.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

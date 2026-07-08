@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>Here's a question JavaScript never asks you: if a function returns a
+reference, <em>whose data is it borrowing from?</em> In JS it doesn't
+matter — the garbage collector watches every reference and keeps the
+underlying data alive for as long as anything points at it. Return a
+string from any function, stash it anywhere, and it just works. Rust has
+no GC, so the compiler needs to answer that question at compile time:
+a returned <code>&amp;str</code> is a view into <em>someone's</em>
+memory, and Rust must prove that memory outlives the reference.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Who keeps returned data alive?</td><td>Who does this reference borrow from?</td></tr>
+  <tr><td>The GC, at runtime, invisibly</td><td>The compiler, at compile time, in the signature</td></tr>
+  <tr><td><code>function longest(a, b)</code></td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>never written</td><td><code>'a</code> — a <em>name</em> for "how long the borrow lives"</td></tr>
+</table>
+<p><code>&lt;'a&gt;</code> (read "tick-a") is just a label. The signature
+above says: "the result borrows from <code>a</code> and/or <code>b</code>,
+so it's only valid while <em>both</em> of them are." That's it — lifetimes
+never change what your code does; they only describe borrows the compiler
+couldn't otherwise trace. And most of the time you don't write them at
+all: when a function takes one reference and returns one, Rust fills the
+lifetime in for you (this is called <em>elision</em>). You only reach for
+<code>'a</code> when there are two possible sources, like
+<code>longest</code>, and the compiler asks you which one it is.</p>`,
+
+  javascript: `function longest(a, b) {
+  return a.length >= b.length ? a : b;
+}
+
+let result;
+{
+  const inner = "a longer string made here";
+  result = longest(inner, "short");
+}
+// Whose data does result point at? Who cares — the GC saw us keep
+// a reference to it, so the string stays alive. JS never asks.
+console.log(result);
+
+function firstWord(s) {
+  return s.split(/\\s+/).filter(Boolean)[0] ?? "";
+}
+console.log(firstWord("hello brave new world"));`,
+
+  task: `
+<p>Write two borrowing functions — one that needs a lifetime, one that
+doesn't:</p>
+<ol>
+  <li>Write <code>longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+      returning whichever string is longer by <code>.len()</code> —
+      and <code>a</code> if they're the same length. Two possible sources
+      for the returned reference, so the signature names the lifetime.</li>
+  <li>Write <code>first_word(s: &amp;str) -&gt; &amp;str</code> returning
+      the first whitespace-separated word, or <code>""</code> for an empty
+      string: <code>s.split_whitespace().next().unwrap_or("")</code>.
+      One reference in, one out — elision handles the lifetime, and you
+      write none.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. longest: return the longer of the two (a wins ties).
+//    <'a> declares the lifetime name; &'a str uses it. The annotations are
+//    already written for you — your job is just the body.
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// 2. first_word: one &str in, one &str out — the compiler infers the
+//    lifetime (elision), so the signature needs no 'a at all.
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a lifetime parameter <'a> on longest" },
+    { pattern: /&'a\s+str/, message: "Use &'a str so the returned reference is tied to the inputs" },
+  ],
+
+  tests: [
+    { name: 'longest("hello", "hi") returns "hello"',
+      code: 'assert_eq!(longest("hello", "hi"), "hello");' },
+    { name: 'longest("hi", "hello!") returns "hello!"',
+      code: 'assert_eq!(longest("hi", "hello!"), "hello!");' },
+    { name: 'longest("abc", "xyz") returns the first on a tie',
+      code: 'assert_eq!(longest("abc", "xyz"), "abc");' },
+    { name: 'first_word("hello brave new world") returns "hello"',
+      code: 'assert_eq!(first_word("hello brave new world"), "hello");' },
+    { name: 'first_word handles leading spaces and empty strings',
+      code: 'assert_eq!(first_word("   leading spaces"), "leading");\nassert_eq!(first_word(""), "");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() >= b.len() {
+        a
+    } else {
+        b
+    }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Keeping referenced data alive</td><td>the GC, automatically</td><td>the compiler proves it at compile time</td></tr>
+  <tr><td>"Whose data is this?"</td><td>never asked</td><td>answered in the signature with <code>'a</code></td></tr>
+  <tr><td>Declaring a lifetime</td><td>—</td><td><code>fn longest&lt;'a&gt;(...)</code>, like a generic <code>&lt;T&gt;</code></td></tr>
+  <tr><td>Using it</td><td>—</td><td><code>&amp;'a str</code> — "a borrow that lives at least <code>'a</code>"</td></tr>
+  <tr><td>One ref in, one ref out</td><td>—</td><td>elision: no annotation needed (see <code>first_word</code>)</td></tr>
+</table>
+<p>The key reassurance: a lifetime annotation never <em>extends</em> how
+long anything lives — it can't. It's documentation the compiler checks,
+exactly like a type: <code>first_word</code> works with zero annotations
+because there's only one place the result could borrow from, and
+<code>longest</code> needs <code>'a</code> only because there are two.
+If you got through fifteen lessons of borrowing without writing
+<code>'a</code>, that's the honest ratio — most Rust code never needs
+one.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Ownership & Moves</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Ownership & Moves",
+
+  intro: `
+<p>This is the lesson Rust is famous for, so let's be honest about the
+trade up front. In Go, memory management is someone else's problem: the
+garbage collector frees things eventually, escape analysis decides
+heap-vs-stack for you (and you can't control it, only inspect it with
+<code>-gcflags=-m</code>), and any value can be shared from anywhere. In
+Rust there is no GC. Instead, <strong>every value has exactly one
+owner</strong>, and when the owner goes out of scope the memory is freed —
+deterministically, right there, at compile-time-known points. No GC
+pauses, no guessing what escaped.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>b := a</code> — both usable, GC sorts it out</td><td><code>let b = a;</code> — a <em>move</em>: <code>a</code> is now statically dead</td></tr>
+  <tr><td>who frees it? the GC, eventually</td><td>the owner, at end of scope, deterministically</td></tr>
+  <tr><td>copying a slice: easy to alias by accident</td><td><code>v.clone()</code> — deep copy, explicitly spelled</td></tr>
+  <tr><td><code>x := y</code> for an <code>int</code></td><td>same: numbers are <code>Copy</code>, no move happens</td></tr>
+</table>
+<p>The rule that makes single-ownership work: assignment <em>moves</em>.
+After <code>let b = a;</code>, using <code>a</code> is a compile error —
+there's one owner, and it's <code>b</code> now. Passing a value to a
+function moves it the same way. When you genuinely need two copies,
+<code>.clone()</code> makes the allocation cost visible in the source —
+which is exactly the Go philosophy ("no hidden costs") applied to memory.
+Small fixed-size types (<code>i32</code>, <code>f64</code>, <code>bool</code>)
+are <code>Copy</code> and exempt: they're duplicated bit-for-bit like Go
+ints, and the moved-from variable stays alive. The cost of all this is
+real — you'll fight the compiler this week — but what you get is Go-level
+explicitness extended all the way down to allocation.</p>`,
+
+  go: `func consumeAndShout(s string) string {
+	return strings.ToUpper(s) + "!"
+}
+
+func keepBoth(v []int) ([]int, []int) {
+	// Go foot-gun: clone := v would just alias the same
+	// backing array. Copying must be done by hand:
+	clone := make([]int, len(v))
+	copy(clone, v)
+	clone = append(clone, 0)
+	return v, clone
+}
+
+func main() {
+	a := []int{1, 2, 3}
+	orig, longer := keepBoth(a)
+	fmt.Println(orig, longer) // [1 2 3] [1 2 3 0]
+}`,
+
+  task: `
+<p>Port the Go, letting moves and clones do the bookkeeping:</p>
+<ol>
+  <li><code>consume_and_shout</code> takes <code>s: String</code> —
+      an <em>owned</em> string, so calling it moves the argument in — and
+      returns a <code>String</code>: the input uppercased with
+      <code>"!"</code> appended. The caller's variable is dead afterward;
+      the tests hand you a fresh <code>String</code> each time.</li>
+  <li><code>keep_both</code> takes <code>v: Vec&lt;i32&gt;</code> and returns
+      a tuple <code>(Vec&lt;i32&gt;, Vec&lt;i32&gt;)</code>: the original
+      vector, and a clone with the number <code>0</code> pushed on the end.
+      Make the clone first with <code>.clone()</code> (bind it with
+      <code>let mut</code>), <code>.push(0)</code> onto it, and return
+      <code>(v, clone)</code>. Unlike Go, <code>.clone()</code> can never
+      accidentally alias — it's a real deep copy, every time.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. consume_and_shout: takes an OWNED String (moved in),
+//    returns it uppercased with "!" appended.
+fn consume_and_shout(s: String) -> String {
+    todo!()
+}
+
+// 2. keep_both: clone v (let mut clone = v.clone();),
+//    push 0 onto the clone, return (v, clone).
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.clone\(\)/, message: "Use .clone() to make an explicit copy of the vector" },
+    { pattern: /\.push\(/, message: "Use .push() to append an element to the clone" },
+  ],
+
+  tests: [
+    { name: 'consume_and_shout(String::from("go")) returns "GO!"',
+      code: 'assert_eq!(consume_and_shout(String::from("go")), "GO!");' },
+    { name: 'consume_and_shout(String::from("borrow checker")) returns "BORROW CHECKER!"',
+      code: 'assert_eq!(consume_and_shout(String::from("borrow checker")), "BORROW CHECKER!");' },
+    { name: "keep_both(vec![1, 2, 3]) returns ([1, 2, 3], [1, 2, 3, 0])",
+      code: "assert_eq!(keep_both(vec![1, 2, 3]), (vec![1, 2, 3], vec![1, 2, 3, 0]));" },
+    { name: "keep_both(vec![]) returns ([], [0])",
+      code: "assert_eq!(keep_both(vec![]), (vec![], vec![0]));" },
+    { name: "the original is returned unchanged — pushing to the clone did not alias it",
+      code: "let (orig, cloned) = keep_both(vec![7, 8]);\nassert_eq!(orig, vec![7, 8]);\nassert_eq!(cloned, vec![7, 8, 0]);" },
+  ],
+
+  solution: `fn consume_and_shout(s: String) -> String {
+    format!("{}!", s.to_uppercase())
+}
+
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    let mut clone = v.clone();
+    clone.push(0);
+    (v, clone)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Assignment</td><td><code>b := a</code> — both alive (slices alias!)</td><td><code>let b = a;</code> — moves; <code>a</code> is dead</td></tr>
+  <tr><td>Passing to a function</td><td>copies the header, shares the data</td><td>moves ownership into the function</td></tr>
+  <tr><td>Real copy</td><td><code>make</code> + <code>copy(dst, src)</code></td><td><code>v.clone()</code> — one call, never aliases</td></tr>
+  <tr><td>Freeing memory</td><td>GC, eventually, with pauses</td><td>end of owner's scope, deterministic, zero runtime cost</td></tr>
+  <tr><td>Small numbers</td><td>copied</td><td>copied too — <code>Copy</code> types are exempt from moves</td></tr>
+</table>
+<p>The mental shift: Go asks "who can see this value?" (answer: anyone)
+and lets the GC clean up. Rust asks "who <em>owns</em> this value?"
+(answer: exactly one variable) and the compiler inserts the free at the
+exact right spot. Note what returning <code>(v, clone)</code> did: it
+moved ownership <em>back out</em> to the caller. Moving in and back out
+works, but it's clumsy — the next lesson replaces it with borrowing, the
+Rust equivalent of passing a pointer.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring & Splat</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>Good news: this is the lesson where almost nothing changes. Python's
+unpacking — one of its best features — exists in Ruby nearly
+character-for-character. <code>a, b = pair</code> destructures.
+<code>a, b = b, a</code> swaps. <code>first, *rest = list</code> star-unpacks.
+<code>def sum(*nums)</code> is <code>*args</code>, and <code>**opts</code> is
+<code>**kwargs</code>. Even array spreading matches:
+<code>[*a, *b]</code> means the same thing in both languages.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>a, b = pair</code></td><td><code>a, b = pair</code> — identical</td></tr>
+  <tr><td><code>a, b = b, a</code></td><td><code>a, b = b, a</code> — identical</td></tr>
+  <tr><td><code>first, *rest = items</code></td><td><code>first, *rest = items</code> — identical</td></tr>
+  <tr><td><code>def total(*nums):</code> / <code>def f(**opts):</code></td><td><code>def total(*nums)</code> / <code>def f(**opts)</code></td></tr>
+  <tr><td><code>{**defaults, **overrides}</code></td><td><code>defaults.merge(overrides)</code></td></tr>
+</table>
+<p>On the array side even the exotic forms line up — the rest can sit at the
+front (<code>*init, last = list</code>) or in the middle
+(<code>first, *mid, last = list</code>) in both languages. The one real gap
+is hashes: Ruby has no <code>{**d1, **d2}</code> literal-merge for combining
+two existing hashes — the idiom is <code>d1.merge(d2)</code>, right-hand
+side winning on conflicts, exactly like the Python spread.</p>`,
+
+  python: `pair = (1, 2)
+a, b = pair                    # tuple unpacking
+a, b = b, a                    # the classic swap
+
+first, *rest = [1, 2, 3, 4]    # star-unpacking
+# first == 1, rest == [2, 3, 4]
+
+def total(*nums):              # *args
+    return sum(nums)
+
+total(1, 2, 3)                 # 6
+
+defaults  = {"theme": "light", "debug": False}
+overrides = {"debug": True}
+settings = {**defaults, **overrides}
+# {'theme': 'light', 'debug': True}
+
+combined = [*rest, *rest]      # list spread`,
+
+  task: `
+<p>Write the Ruby — it will feel like writing Python:</p>
+<ol>
+  <li><code>swap(pair)</code> — destructure the two-element array with
+      <code>a, b = pair</code> and return <code>[b, a]</code>.</li>
+  <li><code>head_tail(list)</code> — split with
+      <code>first, *rest = list</code> (identical to Python's star-unpacking)
+      and return <code>[first, rest]</code>.</li>
+  <li><code>sum(*nums)</code> — a variadic method, Ruby's <code>*args</code>.
+      Inside, <code>nums</code> is a plain array; return
+      <code>nums.sum</code>.</li>
+  <li><code>merge_settings(defaults, overrides)</code> — Python's
+      <code>{**defaults, **overrides}</code> is
+      <code>defaults.merge(overrides)</code>; later keys win, just like the
+      dict spread.</li>
+</ol>`,
+
+  starter: `# 1. swap: a, b = pair — exactly as in Python.
+def swap(pair)
+  raise NotImplementedError, "TODO: implement swap"
+end
+
+# 2. head_tail: first, *rest = list — Python's star-unpacking, unchanged.
+#    Return [first, rest].
+def head_tail(list)
+  raise NotImplementedError, "TODO: implement head_tail"
+end
+
+# 3. sum: *nums collects arguments into an array, like *args.
+def sum(*nums)
+  raise NotImplementedError, "TODO: implement sum"
+end
+
+# 4. merge_settings: {**defaults, **overrides} becomes .merge.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: implement merge_settings"
+end
+`,
+
+  requirements: [
+    { pattern: /\*\w+/, message: "Use a splat (*name) somewhere — Ruby's star-unpacking" },
+    { pattern: /,\s*\*/, message: "Destructure with a rest: first, *rest = ..." },
+    { pattern: /\.merge/, message: "Merge the hashes with .merge" },
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Define sum with a variadic parameter: def sum(*nums)" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: '  expect_eq(swap([1, 2]), [2, 1])' },
+    { name: 'swap(["a", "b"]) returns ["b", "a"]',
+      code: '  expect_eq(swap(["a", "b"]), ["b", "a"])' },
+    { name: "head_tail([1, 2, 3, 4]) returns [1, [2, 3, 4]]",
+      code: '  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])' },
+    { name: "sum(1, 2, 3) returns 6",
+      code: '  expect_eq(sum(1, 2, 3), 6)' },
+    { name: "sum() with no arguments returns 0",
+      code: '  expect_eq(sum(), 0)' },
+    { name: "merge_settings lets overrides win",
+      code: '  expect_eq(merge_settings({ theme: "light", debug: false }, { debug: true }), { theme: "light", debug: true })' },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  [b, a]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Destructure</td><td><code>a, b = pair</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Rest at the end</td><td><code>first, *rest = xs</code></td><td><code>first, *rest = xs</code></td></tr>
+  <tr><td>Rest at the front</td><td><code>*init, last = xs</code></td><td><code>*init, last = xs</code></td></tr>
+  <tr><td>Variadic / options</td><td><code>*args</code>, <code>**kwargs</code></td><td><code>*args</code>, <code>**opts</code></td></tr>
+  <tr><td>Spread a list</td><td><code>[*a, *b]</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td>Merge dicts/hashes</td><td><code>{**d1, **d2}</code></td><td><code>d1.merge(d2)</code> (also takes a block for conflicts)</td></tr>
+</table>
+<p>Enjoy the free lesson — and note the one asymmetry. Arrays splat
+everywhere: assignments, parameters, literals, even <code>case</code>
+patterns. Hashes splat only in method calls (<code>f(**opts)</code>) and hash
+literals containing at least one new key; to combine two existing hashes you
+say it with a method, <code>.merge</code>, which even accepts a block to
+resolve key conflicts — something the dict spread can't do.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

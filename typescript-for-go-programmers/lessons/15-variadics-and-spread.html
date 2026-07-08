@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Spread & Rest</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Spread & Rest",
+
+  intro: `
+<p>Go's variadics translate almost mechanically — the three dots just switch
+sides. Declaring: <code>func Sum(nums ...int)</code> becomes
+<code>function sum(...nums: number[])</code> (dots before the name, and the
+type is a full array type). Calling with a slice:
+<code>Sum(values...)</code> becomes <code>sum(...values)</code> — the dots
+move to the front. Inside the function, <code>nums</code> is an ordinary
+typed array either way.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>func Sum(nums ...int) int</code></td><td><code>function sum(...nums: number[]): number</code></td></tr>
+  <tr><td><code>Sum(values...)</code></td><td><code>sum(...values)</code></td></tr>
+  <tr><td><code>append(a, b...)</code></td><td><code>[...a, ...b]</code> — always a fresh array</td></tr>
+  <tr><td><code>c := defaults; c.Theme = "dark"</code></td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+</table>
+<p>But in TypeScript the dots are a general <em>spread</em> operator, not
+just call-site syntax. <code>[...a, ...b]</code> concatenates into a
+guaranteed-fresh array — no wondering whether <code>append</code> reused
+<code>a</code>'s backing array. <code>{ ...defaults, ...overrides }</code>
+copies an object and applies changes in one expression, with later spreads
+winning — Go's "copy the struct, then assign the fields you want to change",
+minus the statements. These two spreads are the backbone of immutable-update
+style: functions return new values instead of mutating arguments.</p>`,
+
+  go: `func Sum(nums ...int) int {
+	total := 0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}
+
+Sum(1, 2, 3)
+values := []int{4, 5, 6}
+Sum(values...) // spread at the call site: dots after the slice
+
+merged := append(a, b...) // may share a's backing array — aliasing!
+
+// Copy-with-changes on a struct takes statements:
+type Settings struct{ Theme string; FontSize int }
+override := defaults // value copy
+override.Theme = "dark"`,
+
+  task: `
+<p>Move the dots to the other side, then use them everywhere Go can't:</p>
+<ol>
+  <li>Write <code>sum(...nums: number[]): number</code> returning the total
+      (a <code>.reduce</code> is one line). Same dots as
+      <code>nums ...int</code>, other side of the name — and it must also
+      work called as <code>sum(...values)</code>.</li>
+  <li>Write <code>mergeSettings(defaults: Settings, overrides: { theme?:
+      string; fontSize?: number }): Settings</code> returning
+      <code>{ ...defaults, ...overrides }</code> — copy-with-changes in one
+      expression. Do not modify <code>defaults</code>.</li>
+  <li>Write <code>appendItem&lt;T&gt;(items: T[], item: T): T[]</code>
+      returning <code>[...items, item]</code> — an append that
+      <em>provably</em> never touches the original, unlike
+      <code>append</code> and its backing-array roulette.</li>
+</ol>
+<p>Two tests check mutation safety: the originals passed to
+<code>mergeSettings</code> and <code>appendItem</code> must come back
+byte-for-byte unchanged.</p>`,
+
+  starter: `type Settings = { theme: string; fontSize: number };
+
+// 1. TODO: variadic — Go: func Sum(nums ...int) int
+//    TS: function sum(...nums: number[]): number — same dots, other side.
+//    Inside, nums is a plain number[]; total it with .reduce or a loop.
+function sum(): number {
+  return 0;
+}
+
+// 2. TODO: return a NEW object: { ...defaults, ...overrides }.
+//    Later spreads win — copy-the-struct-then-assign, in one expression.
+function mergeSettings(defaults: Settings, overrides: { theme?: string; fontSize?: number }): Settings {
+  return defaults; // TODO: and never mutate defaults itself
+}
+
+// 3. TODO: return [...items, item] — a fresh array every time.
+//    append(a, x) may or may not share a's backing array; this never does.
+function appendItem<T>(items: T[], item: T): T[] {
+  return items;
+}
+`,
+
+  exportNames: ["sum", "mergeSettings", "appendItem"],
+
+  requirements: [
+    { pattern: /\.\.\.nums\s*:\s*number\s*\[\s*\]/, message: "Declare sum with a rest parameter: sum(...nums: number[])" },
+    { pattern: /\{\s*\.\.\./, message: "Build the merged settings with object spread: { ...defaults, ... }" },
+    { pattern: /\[\s*\.\.\./, message: "Build the appended array with array spread: [...items, item]" },
+  ],
+
+  tests: [
+    { name: "sum(1, 2, 3) returns 6", run: (x) => expectEqual(x.sum(1, 2, 3), 6) },
+    { name: "sum() returns 0 — zero args is legal, like in Go", run: (x) => expectEqual(x.sum(), 0) },
+    { name: "sum(...[4, 5, 6]) — call-site spread works (values... in Go)", run: (x) => expectEqual(x.sum(...[4, 5, 6]), 15) },
+    { name: "mergeSettings applies overrides over defaults", run: (x) => expectDeepEqual(
+        x.mergeSettings({ theme: "light", fontSize: 14 }, { theme: "dark" }),
+        { theme: "dark", fontSize: 14 }
+      ) },
+    { name: "mergeSettings does NOT mutate defaults", run: (x) => {
+        const defaults = { theme: "light", fontSize: 14 };
+        x.mergeSettings(defaults, { theme: "dark", fontSize: 18 });
+        expectDeepEqual(defaults, { theme: "light", fontSize: 14 });
+      } },
+    { name: "appendItem returns a new array and leaves the input alone", run: (x) => {
+        const items = [1, 2];
+        const result = x.appendItem(items, 3);
+        expectDeepEqual(result, [1, 2, 3]);
+        expectDeepEqual(items, [1, 2]);
+        expectTruthy(result !== items);
+      } },
+  ],
+
+  solution: `type Settings = { theme: string; fontSize: number };
+
+function sum(...nums: number[]): number {
+  return nums.reduce((total, n) => total + n, 0);
+}
+
+function mergeSettings(defaults: Settings, overrides: { theme?: string; fontSize?: number }): Settings {
+  return { ...defaults, ...overrides };
+}
+
+function appendItem<T>(items: T[], item: T): T[] {
+  return [...items, item];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Variadic declaration</td><td><code>func Sum(nums ...int)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td>Spread a slice into a call</td><td><code>Sum(values...)</code></td><td><code>sum(...values)</code></td></tr>
+  <tr><td>Concatenate</td><td><code>append(a, b...)</code> (may alias <code>a</code>)</td><td><code>[...a, ...b]</code> (always fresh)</td></tr>
+  <tr><td>Copy a collection</td><td><code>copy(dst, src)</code> + <code>make</code></td><td><code>[...src]</code></td></tr>
+  <tr><td>Copy-with-changes</td><td>Value copy, then field assignments</td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+  <tr><td>Collect trailing args</td><td>Variadic param only</td><td>Rest also in destructuring: <code>const [head, ...tail] = xs;</code></td></tr>
+</table>
+<p>The mnemonic: in Go the dots always sit <em>after</em> the thing being
+spread; in TypeScript they always sit <em>before</em> it — declaration and
+call site alike. The deeper win is the aliasing story. Every Go programmer
+has debugged an <code>append</code> that silently shared a backing array
+with the caller's slice. Spread has no such mode: <code>[...a, ...b]</code>
+and <code>{ ...obj }</code> allocate a new (shallow) copy every time, which
+is why they are the standard tools for the return-new-values style the
+mutation tests above enforce.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

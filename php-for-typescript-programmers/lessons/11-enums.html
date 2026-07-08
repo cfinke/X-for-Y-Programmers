@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums",
+
+  intro: `
+<p>TypeScript's <code>enum</code> is famously awkward — half the community
+avoids it in favor of literal unions like <code>"pending" | "shipped"</code>.
+PHP 8.1 shipped enums and got them right: <code>enum OrderStatus: string</code>
+declares a <em>backed enum</em> whose cases are real singleton objects, each
+carrying a string payload in <code>-&gt;value</code>. There is no structural
+sneaking-in: a plain <code>"pending"</code> string is <em>not</em> an
+<code>OrderStatus</code> until you convert it.</p>
+<table>
+  <tr><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td><code>enum OrderStatus { Pending = "pending" }</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td></tr>
+  <tr><td><code>OrderStatus.Pending</code></td><td><code>OrderStatus::Pending</code></td></tr>
+  <tr><td><code>OrderStatus.Pending</code> (is the string)</td><td><code>OrderStatus::Pending-&gt;value</code> (object carries the string)</td></tr>
+  <tr><td><code>value as OrderStatus</code> (unchecked cast)</td><td><code>OrderStatus::from('pending')</code> (throws on miss)</td></tr>
+  <tr><td>hand-rolled lookup + <code>null</code></td><td><code>OrderStatus::tryFrom($value)</code> (returns <code>null</code> on miss)</td></tr>
+  <tr><td><code>Object.values(OrderStatus)</code></td><td><code>OrderStatus::cases()</code></td></tr>
+</table>
+<p>The conversion pair is the killer feature. <code>::from()</code> is a
+<em>checked</em> cast that throws a <code>ValueError</code> for unknown input;
+<code>::tryFrom()</code> is its gentle sibling, returning <code>null</code>
+instead — pair it with a <code>?OrderStatus</code> return type and you've
+rebuilt <code>OrderStatus | null</code>. Enums also work beautifully with
+<code>match</code>: because cases are singletons, <code>match($status)</code>
+compares identity, and (with PHPStan/Psalm) you even get exhaustiveness
+checking. Enums can declare methods too — they're classes at heart.</p>`,
+
+  typescript: `enum OrderStatus {
+  Pending = "pending",
+  Shipped = "shipped",
+  Delivered = "delivered",
+}
+
+function statusLabel(status: OrderStatus): string {
+  switch (status) {
+    case OrderStatus.Pending:   return "Order received";
+    case OrderStatus.Shipped:   return "On its way";
+    case OrderStatus.Delivered: return "Delivered";
+  }
+}
+
+function parseStatus(value: string): OrderStatus | null {
+  const all = Object.values(OrderStatus) as string[];
+  return all.includes(value) ? (value as OrderStatus) : null;
+}`,
+
+  task: `
+<p>Port the TypeScript enum to a PHP 8.1 backed enum:</p>
+<ol>
+  <li>Declare <code>enum OrderStatus: string</code> with three cases:
+      <code>Pending = 'pending'</code>, <code>Shipped = 'shipped'</code>,
+      <code>Delivered = 'delivered'</code> (already in the starter — cases are
+      data, leave them be).</li>
+  <li>Implement <code>status_label(OrderStatus $status): string</code> using a
+      <code>match ($status)</code> expression over the cases. Return exactly
+      <code>"Order received"</code> for <code>Pending</code>,
+      <code>"On its way"</code> for <code>Shipped</code>, and
+      <code>"Delivered"</code> for <code>Delivered</code>.</li>
+  <li>Implement <code>parse_status(string $value): ?OrderStatus</code> with
+      <code>OrderStatus::tryFrom()</code> — the whole body is one line.
+      Unknown strings come back as <code>null</code>, no exceptions.</li>
+</ol>`,
+
+  starter: `<?php
+
+// A backed enum: every case carries a string payload in ->value.
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+// match ($status) { OrderStatus::Pending => ..., ... } — cases are
+// singletons, so match compares them by identity.
+function status_label(OrderStatus $status): string {
+    throw new Exception("TODO: implement status_label");
+}
+
+// tryFrom: the checked cast that returns null instead of throwing.
+function parse_status(string $value): ?OrderStatus {
+    throw new Exception("TODO: implement parse_status");
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus\s*:\s*string/, message: "Declare a string-backed enum: enum OrderStatus: string" },
+    { pattern: /case\s+\w+\s*=/, message: "Give each case a backing value with case Name = '...'" },
+    { pattern: /::tryFrom|::from/, message: "Convert the raw string with OrderStatus::tryFrom() (or ::from())" },
+    { pattern: /match\s*\(/, message: "Use a match expression in status_label" },
+  ],
+
+  tests: [
+    { name: 'status_label(OrderStatus::Pending) returns "Order received"',
+      code: 'expect_eq(status_label(OrderStatus::Pending), "Order received");' },
+    { name: 'status_label(OrderStatus::Shipped) returns "On its way"',
+      code: 'expect_eq(status_label(OrderStatus::Shipped), "On its way");' },
+    { name: 'status_label(OrderStatus::Delivered) returns "Delivered"',
+      code: 'expect_eq(status_label(OrderStatus::Delivered), "Delivered");' },
+    { name: "parse_status('shipped') returns the OrderStatus::Shipped case",
+      code: "expect_eq(parse_status('shipped'), OrderStatus::Shipped);" },
+    { name: "parse_status('bogus') returns null (tryFrom, not from)",
+      code: "expect_eq(parse_status('bogus'), null);" },
+    { name: "the enum is backed: ->value works and cases() lists all three",
+      code: "expect_eq(OrderStatus::Pending->value, 'pending');\nexpect_eq(count(OrderStatus::cases()), 3);" },
+  ],
+
+  solution: `<?php
+
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+function status_label(OrderStatus $status): string {
+    return match ($status) {
+        OrderStatus::Pending => "Order received",
+        OrderStatus::Shipped => "On its way",
+        OrderStatus::Delivered => "Delivered",
+    };
+}
+
+function parse_status(string $value): ?OrderStatus {
+    return OrderStatus::tryFrom($value);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>Declare</td><td><code>enum Status { A = "a" }</code></td><td><code>enum Status: string { case A = 'a'; }</code></td></tr>
+  <tr><td>Pure (no payload)</td><td><code>enum Dir { Up, Down }</code> (numeric!)</td><td><code>enum Dir { case Up; case Down; }</code></td></tr>
+  <tr><td>Get the raw value</td><td>the case <em>is</em> the string</td><td><code>Status::A-&gt;value</code></td></tr>
+  <tr><td>Case name</td><td>reverse mapping (numeric only)</td><td><code>Status::A-&gt;name</code> → <code>"A"</code></td></tr>
+  <tr><td>String → case, strict</td><td><code>as Status</code> (no runtime check!)</td><td><code>Status::from($s)</code> — throws <code>ValueError</code></td></tr>
+  <tr><td>String → case, safe</td><td>hand-rolled guard</td><td><code>Status::tryFrom($s)</code> — <code>?Status</code></td></tr>
+  <tr><td>List cases</td><td><code>Object.values(Status)</code></td><td><code>Status::cases()</code></td></tr>
+</table>
+<p>PHP enums are nominal, not structural: no string ever passes for an
+<code>OrderStatus</code> parameter, so illegal states are unrepresentable once
+data crosses <code>tryFrom</code> at the boundary. And because enums are
+classes, you could fold <code>status_label</code> into the enum itself as
+<code>public function label(): string</code> with the same <code>match($this)</code>
+inside — a pattern you'll see everywhere in modern PHP codebases.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

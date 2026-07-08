@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits & Derive</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>Go gives every type a bundle of free capabilities: <code>==</code> works
+on any comparable struct, <code>%+v</code> prints anything,
+<code>b := a</code> copies implicitly, and <code>var p Point</code> hands
+you a zero value whether you asked for one or not. Rust hands out
+<em>none</em> of that by default. Each capability is a trait, and a bare
+<code>struct Point</code> can't be compared, printed, copied, or
+zero-initialized — until you opt in.</p>
+<table>
+  <tr><th>Go (always on)</th><th>Rust (opt-in trait)</th></tr>
+  <tr><td><code>fmt.Printf("%+v", p)</code></td><td><code>Debug</code> → <code>format!("{:?}", p)</code></td></tr>
+  <tr><td><code>b := a</code> — implicit struct copy</td><td><code>Clone</code> → <code>a.clone()</code>, spelled out</td></tr>
+  <tr><td><code>a == b</code> on comparable types</td><td><code>PartialEq</code> → <code>a == b</code></td></tr>
+  <tr><td><code>var p Point</code> — the zero value</td><td><code>Default</code> → <code>Point::default()</code></td></tr>
+</table>
+<p>The opt-in costs one line: <code>#[derive(Debug, Clone, PartialEq)]</code>
+above the struct asks the compiler to <em>generate</em> the obvious
+field-by-field implementations — the same code Go's runtime reflection or
+compiler would produce, but visible and chosen. It sounds like busywork
+until you remember the Go bugs it prevents: the accidental struct copy that
+silently forked your data, the zero value that was never valid but
+compiled anyway. In Rust, copying is always a visible <code>.clone()</code>,
+and a type without <code>Default</code> simply can't be conjured empty.</p>`,
+
+  go: `type Point struct {
+	X, Y int
+}
+
+func main() {
+	a := Point{X: 1, Y: 2}
+
+	b := a                    // implicit copy — just happens
+	b.X = 99                  // and quietly diverges from a
+
+	fmt.Printf("%+v\n", a)    // printing: free ({X:1 Y:2})
+	fmt.Println(a == b)       // ==: free on comparable structs
+
+	var zero Point            // zero value: free, wanted or not
+	fmt.Println(zero)         // {0 0}
+}`,
+
+  task: `
+<p>The starter defines <code>Point</code> with <em>no</em> derives, so none
+of the three functions can be written yet. Opt in, then use what you
+derived:</p>
+<ol>
+  <li>Add <code>#[derive(Debug, Clone, PartialEq)]</code> above
+      <code>struct Point</code>.</li>
+  <li><code>points_equal</code> takes <code>a: &amp;Point</code> and
+      <code>b: &amp;Point</code> and returns <code>bool</code> — just
+      <code>a == b</code>, which <code>PartialEq</code> unlocked.</li>
+  <li><code>debug_string</code> takes <code>p: &amp;Point</code> and returns
+      <code>String</code> — <code>format!("{:?}", p)</code>, Rust's
+      <code>%+v</code>, which <code>Debug</code> unlocked.</li>
+  <li><code>duplicate</code> takes <code>p: &amp;Point</code> and returns an
+      owned <code>Point</code> — <code>p.clone()</code>, the explicit copy
+      that <code>Clone</code> unlocked.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Add #[derive(...)] here — as written, Point can't be
+// compared, printed, or cloned.
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// 1. points_equal: a == b (needs PartialEq derived).
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// 2. debug_string: format!("{:?}", p) (needs Debug derived).
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// 3. duplicate: p.clone() (needs Clone derived).
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Use a #[derive(...)] attribute on Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == works on Point" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} can print a Point" },
+    { pattern: /Clone/, message: "Derive Clone so Points can be explicitly copied" },
+  ],
+
+  tests: [
+    { name: "points_equal on two identical points returns true",
+      code: "let a = Point { x: 1, y: 2 };\nlet b = Point { x: 1, y: 2 };\nassert!(points_equal(&a, &b));" },
+    { name: "points_equal on different points returns false",
+      code: "let a = Point { x: 1, y: 2 };\nlet b = Point { x: 1, y: 3 };\nassert!(!points_equal(&a, &b));" },
+    { name: 'debug_string(&Point { x: 3, y: 4 }) returns "Point { x: 3, y: 4 }"',
+      code: 'let p = Point { x: 3, y: 4 };\nassert_eq!(debug_string(&p), "Point { x: 3, y: 4 }");' },
+    { name: "duplicate returns a Point with the same fields",
+      code: "let p = Point { x: 7, y: -1 };\nlet d = duplicate(&p);\nassert_eq!(d.x, 7);\nassert_eq!(d.y, -1);" },
+    { name: "duplicate is a real copy — the original is untouched",
+      code: "let p = Point { x: 5, y: 6 };\nlet mut d = duplicate(&p);\nd.x = 100;\nassert_eq!(p.x, 5);" },
+  ],
+
+  solution: `#[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Capability</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Print for debugging</td><td><code>%v</code> / <code>%+v</code>, free</td><td><code>#[derive(Debug)]</code> + <code>{:?}</code> (<code>{:#?}</code> pretty-prints)</td></tr>
+  <tr><td>Copy a struct</td><td><code>b := a</code>, implicit</td><td><code>#[derive(Clone)]</code> + <code>a.clone()</code>, explicit</td></tr>
+  <tr><td>Equality</td><td><code>==</code> on comparable types</td><td><code>#[derive(PartialEq)]</code> + <code>==</code></td></tr>
+  <tr><td>Zero value</td><td>always exists</td><td><code>#[derive(Default)]</code> + <code>T::default()</code> — opt-in!</td></tr>
+  <tr><td>Cheap bitwise copy</td><td>—</td><td><code>#[derive(Copy)]</code>: assignment copies instead of moving (small types only)</td></tr>
+</table>
+<p>Deriving is the same trait system from lesson 12 — <code>Debug</code>,
+<code>Clone</code>, and <code>PartialEq</code> are ordinary traits, and
+<code>derive</code> just writes the <code>impl</code> blocks for you when
+the field-by-field version is what you want. The philosophical flip is
+worth sitting with: Go says every struct is printable, copyable, and has a
+zero value, then leaves you to discover the cases where that was a lie
+(a zero <code>sync.Mutex</code> is fine; a zero <code>*os.File</code> is
+not). Rust asks each type to declare what's actually true of it — and one
+<code>derive</code> line is the whole cost of honesty.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

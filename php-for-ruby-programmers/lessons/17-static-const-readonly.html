@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Static, Constants &amp; readonly</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Static, Constants & readonly",
+
+  intro: `
+<p>Three kinds of "don't change this / this belongs to the class" — and PHP
+enforces all of them harder than Ruby does. Ruby constants merely <em>warn</em>
+on reassignment; <code>const MAX = 10;</code> in a PHP class is actually
+constant, and you read it exactly the way you'd read a namespaced Ruby
+constant: <code>Config::MAX</code>. Ruby's <code>@@class_vars</code> and
+<code>def self.method</code> become <code>static</code> properties and methods,
+accessed with <code>::</code> from outside and <code>self::</code> from
+inside.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>MAX = 10</code> (warns on reassign)</td><td><code>const MAX = 10;</code> (actually constant)</td></tr>
+  <tr><td><code>Config::MAX</code></td><td><code>Config::MAX</code> (same!)</td></tr>
+  <tr><td><code>@@count = 0</code></td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td><code>def self.increment</code></td><td><code>public static function increment(): int</code></td></tr>
+  <tr><td><code>@@count += 1</code> (inside)</td><td><code>self::$count += 1;</code></td></tr>
+  <tr><td><code>Counter.increment</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td><code>@name = name.freeze</code></td><td><code>public readonly string $name</code></td></tr>
+</table>
+<p>The third piece is the interesting one. Where Ruby reaches for
+<code>.freeze</code> (which freezes the <em>object</em>, politely, at
+runtime), PHP 8.1's <code>readonly</code> freezes the <em>property</em>:
+it may be written exactly once — in the constructor — and any later
+assignment throws an engine-level <code>Error</code>, the kind from last
+lesson that you don't catch. Combined with constructor promotion,
+<code>public function __construct(public readonly string $name) {}</code>
+is a one-line immutable value object: declared, assigned, and locked in a
+single signature.</p>`,
+
+  ruby: `class Counter
+  @@count = 0
+
+  def self.increment
+    @@count += 1
+  end
+
+  def self.current
+    @@count
+  end
+end
+
+class Config
+  DEFAULT_NAME = "guest"  # constant-by-convention: Ruby only warns
+  attr_reader :name
+
+  def initialize(name)
+    @name = name.freeze   # freeze the value; @name itself stays writable
+  end
+end
+
+Counter.increment          # 1
+Counter.increment          # 2
+Counter.current            # 2
+Config::DEFAULT_NAME       # "guest"
+Config.new("admin").name   # "admin"`,
+
+  task: `
+<p>Port the Ruby to PHP:</p>
+<ol>
+  <li><code>class Counter</code> — a <code>private static int $count = 0;</code>
+      property (the <code>@@count</code>), plus
+      <code>public static function increment(): int</code> which adds 1 to
+      <code>self::$count</code> and returns it, and
+      <code>public static function current(): int</code> which returns it.</li>
+  <li><code>class Config</code> — a class constant
+      <code>const DEFAULT_NAME = "guest";</code> and a one-line constructor
+      that promotes a <code>public readonly string $name</code> property:
+      <code>public function __construct(public readonly string $name) {}</code>.
+      No <code>attr_reader</code>, no <code>freeze</code> — <code>readonly</code>
+      gives you both, and a test proves the engine rejects a write.</li>
+</ol>`,
+
+  starter: `<?php
+
+class Counter {
+    // @@count = 0
+    private static int $count = 0;
+
+    // def self.increment — bump self::$count and return the new value
+    public static function increment(): int {
+        throw new Exception("TODO: implement increment");
+    }
+
+    // def self.current
+    public static function current(): int {
+        throw new Exception("TODO: implement current");
+    }
+}
+
+class Config {
+    // TODO: add  const DEFAULT_NAME = "guest";
+
+    // TODO: promote a public readonly string $name property in the
+    //       constructor signature (and delete this body).
+    public function __construct(string $name) {
+        throw new Exception("TODO: promote \\$name to public readonly");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+/, message: "Use static members (Ruby's @@vars / def self.)" },
+    { pattern: /const\s+[A-Z_]+/, message: "Declare a class constant with const" },
+    { pattern: /readonly/, message: "Make $name a readonly property (the engine-enforced .freeze)" },
+  ],
+
+  tests: [
+    { name: "Counter::increment() returns the new count and current() agrees",
+      code: "$before = Counter::current();\n$returned = Counter::increment();\nexpect_eq($returned, $before + 1);\nexpect_eq(Counter::current(), $before + 1);" },
+    { name: "two increments raise the shared count by 2",
+      code: "$before = Counter::current();\nCounter::increment();\nCounter::increment();\nexpect_eq(Counter::current(), $before + 2);" },
+    { name: "Config::DEFAULT_NAME is \"guest\"",
+      code: "expect_eq(Config::DEFAULT_NAME, \"guest\");" },
+    { name: "new Config(\"admin\")->name reads the promoted property",
+      code: "$c = new Config(\"admin\");\nexpect_eq($c->name, \"admin\");" },
+    { name: "writing to the readonly property throws an Error",
+      code: "$c = new Config(\"admin\");\ntry { $c->name = \"hacked\"; throw new Exception(\"no error\"); } catch (Error $e) {}\nexpect_eq($c->name, \"admin\");" },
+  ],
+
+  solution: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        self::$count += 1;   // @@count += 1
+        return self::$count;
+    }
+
+    public static function current(): int {
+        return self::$count;
+    }
+}
+
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Class constant</td><td><code>MAX = 10</code> (warning only)</td><td><code>const MAX = 10;</code> (enforced)</td></tr>
+  <tr><td>Read a constant</td><td><code>Config::MAX</code></td><td><code>Config::MAX</code></td></tr>
+  <tr><td>Class-level state</td><td><code>@@count</code></td><td><code>private static int $count</code></td></tr>
+  <tr><td>Class-level method</td><td><code>def self.current</code></td><td><code>public static function current()</code></td></tr>
+  <tr><td>Access from inside</td><td><code>@@count</code>, <code>self.method</code></td><td><code>self::$count</code>, <code>self::method()</code></td></tr>
+  <tr><td>Access from outside</td><td><code>Counter.current</code></td><td><code>Counter::current()</code></td></tr>
+  <tr><td>Immutability</td><td><code>value.freeze</code>, runtime</td><td><code>readonly</code> property, engine-enforced</td></tr>
+  <tr><td>Violation raises</td><td><code>FrozenError</code> (on the value)</td><td><code>Error</code> (on the property write)</td></tr>
+</table>
+<p>Notice which side of the object the guarantees sit on. Ruby's
+<code>.freeze</code> protects a <em>value</em> — the string can't mutate, but
+<code>@name</code> can still be pointed somewhere else.
+PHP's <code>readonly</code> protects the <em>slot</em>: after the constructor,
+<code>$config-&gt;name = ...</code> throws no matter what you assign. That's why
+promoted-readonly constructors have become the default idiom for PHP value
+objects — the same role frozen <code>Struct</code>s and <code>Data.define</code>
+play in modern Ruby, but checked by the engine on every write.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

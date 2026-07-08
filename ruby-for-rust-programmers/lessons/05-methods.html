@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods & Implicit Return</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods & Implicit Return",
+
+  intro: `
+<p><code>fn f(x: i32) -&gt; String { … }</code> becomes
+<code>def f(x) … end</code> — the signature loses its types and its arrow and
+keeps only the names. What it <em>keeps</em> is the part of Rust you already
+love: the <strong>last expression is the return value</strong>. Rust's
+no-semicolon-on-the-final-line convention is Ruby's universal rule;
+<code>return</code> exists only for early exits, and idiomatic code almost
+never writes it.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>fn greet(name: &amp;str) -&gt; String</code></td><td><code>def greet(name)</code></td></tr>
+  <tr><td>last expression, no semicolon</td><td>last expression — same convention, kept</td></tr>
+  <tr><td>no default params (builders, <code>Option</code> args)</td><td><code>def greet(name, greeting = "Hello")</code></td></tr>
+  <tr><td>struct literal: <code>User { name, age }</code></td><td>keyword args: <code>create(name: "Ada", age: 36)</code></td></tr>
+  <tr><td><code>fn is_adult(age: u32) -&gt; bool</code></td><td><code>def adult?(age)</code></td></tr>
+</table>
+<p>Ruby also has two things Rust deliberately lacks. <strong>Default
+parameters</strong>: where Rust pushes you toward a builder, a second
+function, or an <code>Option</code> argument, Ruby writes
+<code>greeting = "Hello"</code> in the signature and moves on. And
+<strong>keyword arguments</strong>: <code>def create(name:, age: 0)</code>
+gives function calls the self-documenting shape of a Rust struct literal —
+<code>create(name: "Ada", age: 36)</code> — with required
+(<code>name:</code>, no default) and optional (<code>age: 0</code>) fields.
+Finally, names themselves carry convention: predicates end in
+<code>?</code> (<code>adult?</code> instead of <code>is_adult</code>), and
+dangerous/mutating variants end in <code>!</code>.</p>`,
+
+  rust: `// Rust has no default parameters: a wrapper fn (or a
+// builder) stands in for one.
+fn greet(name: &str) -> String {
+    greet_with(name, "Hello")
+}
+
+fn greet_with(name: &str, greeting: &str) -> String {
+    format!("{greeting}, {name}!")
+}
+
+// Optional pieces arrive as Option<...> and get matched.
+fn full_name(first: &str, last: Option<&str>) -> String {
+    match last {
+        Some(l) => format!("{first} {l}"),
+        None => first.to_string(),
+    }
+}
+
+fn is_adult(age: u32) -> bool {
+    age >= 18 // last expression — the habit Ruby keeps
+}`,
+
+  task: `
+<p>Collapse the Rust on the left into three Ruby methods:</p>
+<ol>
+  <li><code>greet(name, greeting = "Hello")</code> — one method replaces the
+      <code>greet</code>/<code>greet_with</code> pair: a default parameter
+      does the wrapper's job. Body: the interpolated
+      <code>"#{greeting}, #{name}!"</code> as the last expression.</li>
+  <li><code>full_name(first:, last: nil)</code> — keyword arguments:
+      <code>first:</code> is required (no default), <code>last:</code>
+      defaults to <code>nil</code>. If <code>last</code> is present, produce
+      <code>"First Last"</code>; otherwise just <code>first</code>. An
+      <code>if</code>/<code>else</code> is an expression in Ruby, so it can
+      be the method's last expression — your <code>match</code>
+      instinct.</li>
+  <li><code>adult?(age)</code> — <code>is_adult</code> becomes
+      <code>adult?</code>; the comparison <code>age &gt;= 18</code> is the
+      whole body.</li>
+</ol>
+<p>No <code>return</code> keyword anywhere — the last expression rule you
+already live by covers every method here.</p>`,
+
+  starter: `# 1. greet: the greet/greet_with pair collapses into one method
+#    with a default parameter: greeting = "Hello".
+def greet(name, greeting = "Hello")
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 2. full_name: keyword args — first: required, last: defaults to nil.
+#    if/else is an expression: let it be the method's value.
+def full_name(first:, last: nil)
+  raise NotImplementedError, "TODO: implement full_name"
+end
+
+# 3. adult?: is_adult -> adult? — the ? is part of the name.
+def adult?(age)
+  raise NotImplementedError, "TODO: implement adult?"
+end
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give greeting a default value: greeting = "Hello"' },
+    { pattern: /\w+:/, message: "Use keyword arguments in full_name (first:, last:)" },
+    { pattern: /def\s+adult\?/, message: "Name the predicate adult? — with the question mark" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+  ],
+
+  tests: [
+    { name: 'greet("Ferris") returns "Hello, Ferris!" — the default kicks in',
+      code: '  expect_eq(greet("Ferris"), "Hello, Ferris!")' },
+    { name: 'greet("Ferris", "Howdy") returns "Howdy, Ferris!"',
+      code: '  expect_eq(greet("Ferris", "Howdy"), "Howdy, Ferris!")' },
+    { name: 'full_name(first: "Grace", last: "Hopper") returns "Grace Hopper"',
+      code: '  expect_eq(full_name(first: "Grace", last: "Hopper"), "Grace Hopper")' },
+    { name: 'full_name(first: "Ada") returns "Ada"',
+      code: '  expect_eq(full_name(first: "Ada"), "Ada")' },
+    { name: "adult?(18) is true",
+      code: "  expect_true(adult?(18))" },
+    { name: "adult?(12) is false",
+      code: "  expect_eq(adult?(12), false)" },
+  ],
+
+  solution: `def greet(name, greeting = "Hello")
+  "#{greeting}, #{name}!"
+end
+
+def full_name(first:, last: nil)
+  if last
+    "#{first} #{last}"
+  else
+    first
+  end
+end
+
+def adult?(age)
+  age >= 18
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>Define</td><td><code>fn f(x: i32) -&gt; String { … }</code></td><td><code>def f(x) … end</code></td></tr>
+  <tr><td>Result</td><td>last expression (no semicolon)</td><td>last expression — <code>return</code> only for early exit</td></tr>
+  <tr><td>Default params</td><td>none — builders, wrappers, <code>Option</code> args</td><td><code>def greet(name, greeting = "Hello")</code></td></tr>
+  <tr><td>Named call syntax</td><td>struct literals only: <code>User { name, age }</code></td><td>keyword args: <code>def create(name:, age: 0)</code></td></tr>
+  <tr><td>Required keyword</td><td>—</td><td><code>name:</code> with no default — raises if missing</td></tr>
+  <tr><td>Predicate naming</td><td><code>fn is_adult(…) -&gt; bool</code></td><td><code>def adult?(…)</code></td></tr>
+  <tr><td>Danger naming</td><td><code>unsafe</code>, <code>_mut</code> suffixes</td><td><code>!</code> suffix: <code>sort!</code> mutates, <code>sort</code> copies</td></tr>
+</table>
+<p>Keyword arguments are the struct-literal ergonomics you know, applied to
+every call site: <code>full_name(first: "Grace", last: "Hopper")</code>
+reads like <code>User { first, last }</code> and is order-independent.
+Forgetting a required keyword raises an <code>ArgumentError</code> — at
+runtime, of course, not at compile time; that is the standing trade. And
+what Rust expresses through a builder struct, three <code>impl</code> blocks
+and a <code>build()</code> method, Ruby expresses in the signature:
+<code>greeting = "Hello"</code>. What took ceremony now takes a line.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

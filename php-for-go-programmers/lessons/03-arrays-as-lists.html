@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays as Lists</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays as Lists",
+
+  intro: `
+<p>PHP has one collection type, the <code>array</code>, and it plays the role
+of both your slices <em>and</em> your maps. This lesson covers the slice
+half: <code>[]int{1, 2, 3}</code> becomes <code>[1, 2, 3]</code>. Growing one
+is where habits diverge — Go's <code>s = append(s, x)</code> dance (with its
+reassignment and capacity bookkeeping) becomes <code>$arr[] = $x;</code>,
+which pushes in place. No reallocation to think about, no
+<code>cap()</code>, no forgetting to assign the result back.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>s := []int{1, 2, 3}</code></td><td><code>$s = [1, 2, 3];</code></td></tr>
+  <tr><td><code>s = append(s, 4)</code></td><td><code>$s[] = 4;</code> (in place, no reassignment)</td></tr>
+  <tr><td><code>len(s)</code></td><td><code>count($s)</code></td></tr>
+  <tr><td><code>slices.Contains(s, x)</code></td><td><code>in_array($x, $s, true)</code></td></tr>
+  <tr><td>sum with a <code>for range</code> loop</td><td><code>array_sum($s)</code></td></tr>
+</table>
+<p>The deeper difference is <em>value semantics</em>. A Go slice is a header
+pointing at a shared backing array — pass it to a function, append inside,
+and you're in aliasing-gotcha territory. PHP arrays copy on assignment and
+on function call (lazily, via copy-on-write, so it's cheap): the caller's
+array is never mutated behind its back. Modify-and-return, Go-style
+<code>append</code> shape, is therefore a natural PHP pattern too — the
+function works on its own copy. One quirk to note: <code>in_array</code>
+wants the needle <em>first</em>, and you should pass <code>true</code> as the
+third argument for a strict <code>===</code> comparison.</p>`,
+
+  go: `scores := []int{90, 85, 72}
+
+// Reassign, or the append is lost:
+scores = append(scores, 68)
+
+fmt.Println(len(scores)) // 4
+
+if slices.Contains(scores, 90) {
+    fmt.Println("has a 90")
+}
+
+total := 0
+for _, n := range scores {
+    total += n
+}
+fmt.Println(total) // 315`,
+
+  task: `
+<p>Port the slice workflow:</p>
+<ol>
+  <li><code>make_scores(): array</code> — return the list
+      <code>[90, 85, 72]</code> using an array literal.</li>
+  <li><code>append(array $arr, int $x): array</code> — push
+      <code>$x</code> onto <code>$arr</code> with the <code>$arr[] = $x;</code>
+      syntax and return the result. Because PHP passed you a <em>copy</em>,
+      returning it is how the caller sees the change — the same
+      modify-and-return shape as Go's <code>append</code>, without the shared
+      backing array.</li>
+  <li><code>total(array $nums): int</code> — sum the list with
+      <code>array_sum</code> instead of a manual loop.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. []int{90, 85, 72} -> an array literal
+function make_scores(): array {
+    throw new Exception("TODO: implement make_scores");
+}
+
+// 2. s = append(s, x) -> $arr[] = $x; then return $arr
+//    ($arr is already a copy - the caller's array is safe)
+function append(array $arr, int $x): array {
+    throw new Exception("TODO: implement append");
+}
+
+// 3. the for-range accumulator loop -> array_sum
+function total(array $nums): int {
+    throw new Exception("TODO: implement total");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\]\s*=/, message: "Use the $arr[] = $x push syntax in append" },
+    { pattern: /count\(|array_sum\(/, message: "Use array_sum (or count) instead of a manual loop" },
+    { pattern: /:\s*array/, message: "Declare : array return types on the functions that return lists" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [90, 85, 72]",
+      code: "expect_eq(make_scores(), [90, 85, 72]);" },
+    { name: "append([1, 2], 3) returns [1, 2, 3]",
+      code: "expect_eq(append([1, 2], 3), [1, 2, 3]);" },
+    { name: "append leaves the caller's array untouched (value semantics)",
+      code: "$a = [1, 2];\n$b = append($a, 3);\nexpect_eq($a, [1, 2]);\nexpect_eq($b, [1, 2, 3]);" },
+    { name: "total([90, 85, 72]) returns 247",
+      code: "expect_eq(total([90, 85, 72]), 247);" },
+    { name: "total([]) returns 0",
+      code: "expect_eq(total([]), 0);" },
+  ],
+
+  solution: `<?php
+
+function make_scores(): array {
+    return [90, 85, 72];
+}
+
+function append(array $arr, int $x): array {
+    $arr[] = $x;
+    return $arr;
+}
+
+function total(array $nums): int {
+    return array_sum($nums);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Literal</td><td><code>[]int{1, 2, 3}</code></td><td><code>[1, 2, 3]</code></td></tr>
+  <tr><td>Append</td><td><code>s = append(s, x)</code></td><td><code>$s[] = $x;</code></td></tr>
+  <tr><td>Length</td><td><code>len(s)</code></td><td><code>count($s)</code></td></tr>
+  <tr><td>Membership</td><td><code>slices.Contains(s, x)</code></td><td><code>in_array($x, $s, true)</code></td></tr>
+  <tr><td>Sum</td><td><code>for range</code> loop</td><td><code>array_sum($s)</code></td></tr>
+  <tr><td>Index</td><td><code>s[0]</code></td><td><code>$s[0]</code></td></tr>
+  <tr><td>Semantics</td><td>slice header, shared backing array</td><td>value: copies on assign/pass (copy-on-write)</td></tr>
+</table>
+<p>Value semantics are the headline. In Go, two slices can silently share
+memory and an append through one can clobber the other. A PHP array assigned
+to a new variable or passed to a function behaves as an independent copy —
+the engine only physically copies when one side actually mutates, so it stays
+fast. The aliasing bugs you've learned to watch for simply don't exist here
+(unless you explicitly opt in with <code>&amp;</code> references — don't).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

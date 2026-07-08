@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Vectors</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Vectors",
+
+  intro: `
+<p>A Ruby array is a bag: <code>[1, "two", nil, User.new]</code> is perfectly
+legal, and whether that ever blows up depends on what the code downstream
+does with each element. Rust's growable list is <code>Vec&lt;T&gt;</code>,
+and the <code>&lt;T&gt;</code> is doing real work: a <code>Vec&lt;i32&gt;</code>
+holds <code>i32</code>s and nothing else. Try to push a string and the program
+doesn't compile. In exchange, when you pull an element out, you already know
+exactly what it is — no <code>respond_to?</code> paranoia required.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>scores = [10, 20, 30]</code></td><td><code>let scores = vec![10, 20, 30];</code></td></tr>
+  <tr><td><code>arr &lt;&lt; x</code> (any array, anytime)</td><td><code>v.push(x)</code> — only if <code>v</code> is <code>let mut</code></td></tr>
+  <tr><td><code>arr.size</code> / <code>arr.length</code></td><td><code>v.len()</code></td></tr>
+  <tr><td><code>arr[100]</code> → <code>nil</code></td><td><code>v.get(100)</code> → <code>None</code>; <code>v[100]</code> panics</td></tr>
+  <tr><td><code>arr.first</code> / <code>arr.last</code> → maybe <code>nil</code></td><td><code>v.first()</code> / <code>v.last()</code> → <code>Option</code></td></tr>
+</table>
+<p>Indexing is where the philosophies meet. Ruby's <code>arr[100]</code>
+quietly hands you <code>nil</code> — honest, but untracked, and the
+<code>NoMethodError</code> lands three methods later. Rust gives you both
+options explicitly: <code>v[100]</code> panics on the spot, while
+<code>v.get(100)</code> returns an <code>Option</code> — the same "maybe
+nothing" honesty as Ruby's <code>nil</code>, except the type system makes the
+caller deal with it. <code>.first()</code> and <code>.last()</code> return
+<code>Option</code> too, for the same reason. And note the mutation rule from
+Lesson 1 carries over: <code>&lt;&lt;</code>-style appending needs
+<code>let mut</code>.</p>`,
+
+  ruby: `def make_scores
+  [10, 20, 30]
+end
+
+def append(arr, x)
+  arr << x       # any array is mutable, always
+end
+
+def total(arr)
+  arr.sum
+end
+
+scores = make_scores
+append(scores, 40)
+puts scores.size       # 4
+puts scores[100].inspect  # nil -- quietly
+puts total(scores)     # 100`,
+
+  task: `
+<p>Rewrite the Ruby on the left as Rust:</p>
+<ol>
+  <li>Write <code>make_scores</code> taking no arguments and returning
+      <code>Vec&lt;i32&gt;</code>. Return <code>vec![10, 20, 30]</code> —
+      the <code>vec!</code> macro is Rust's <code>[...]</code> literal.</li>
+  <li>Write <code>append</code> taking <code>v: &amp;mut Vec&lt;i32&gt;</code>
+      and <code>x: i32</code>, returning nothing. Ruby's <code>arr &lt;&lt; x</code>
+      becomes <code>v.push(x)</code> — and the <code>&amp;mut</code> in the
+      signature is the price of admission for mutating.</li>
+  <li>Write <code>total</code> taking <code>v: &amp;[i32]</code> (a borrowed
+      slice — it accepts a <code>&amp;Vec&lt;i32&gt;</code> too) and returning
+      <code>i32</code>. Use <code>v.iter().sum()</code>, the equivalent of
+      Ruby's <code>.sum</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. make_scores: return vec![10, 20, 30].
+//    Ruby: [10, 20, 30]  ->  Rust: vec![10, 20, 30]
+fn make_scores() -> Vec<i32> {
+    todo!()
+}
+
+// 2. append: Ruby's arr << x. The &mut is what lets you push.
+fn append(v: &mut Vec<i32>, x: i32) {
+    todo!()
+}
+
+// 3. total: Ruby's arr.sum  ->  v.iter().sum()
+fn total(v: &[i32]) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /vec!\s*\[/, message: "Use the vec! macro to build the vector" },
+    { pattern: /\.push\(/, message: "Use .push() inside append (Ruby's <<)" },
+    { pattern: /Vec<i32>/, message: "Use the Vec<i32> type in your signatures" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns vec![10, 20, 30]",
+      code: "assert_eq!(make_scores(), vec![10, 20, 30]);" },
+    { name: "append(&mut v, 40) pushes onto the end",
+      code: "let mut v = make_scores();\nappend(&mut v, 40);\nassert_eq!(v, vec![10, 20, 30, 40]);" },
+    { name: "append works on an empty vector too",
+      code: "let mut v: Vec<i32> = Vec::new();\nappend(&mut v, 7);\nassert_eq!(v, vec![7]);" },
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total of make_scores() is 60",
+      code: "assert_eq!(total(&make_scores()), 60);" },
+    { name: "total of an empty slice is 0",
+      code: "assert_eq!(total(&[]), 0);" },
+  ],
+
+  solution: `fn make_scores() -> Vec<i32> {
+    vec![10, 20, 30]
+}
+
+fn append(v: &mut Vec<i32>, x: i32) {
+    v.push(x);
+}
+
+fn total(v: &[i32]) -> i32 {
+    v.iter().sum()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Literal</td><td><code>[10, 20, 30]</code></td><td><code>vec![10, 20, 30]</code></td></tr>
+  <tr><td>What it holds</td><td>anything, mixed freely</td><td>one type: <code>Vec&lt;i32&gt;</code>, <code>Vec&lt;String&gt;</code>…</td></tr>
+  <tr><td>Append</td><td><code>arr &lt;&lt; x</code></td><td><code>v.push(x)</code> (requires <code>let mut</code> / <code>&amp;mut</code>)</td></tr>
+  <tr><td>Length</td><td><code>arr.size</code>, <code>arr.length</code></td><td><code>v.len()</code></td></tr>
+  <tr><td>Out-of-bounds read</td><td><code>arr[100]</code> → <code>nil</code></td><td><code>v.get(100)</code> → <code>None</code>; <code>v[100]</code> panics</td></tr>
+  <tr><td>First / last</td><td><code>arr.first</code> → maybe <code>nil</code></td><td><code>v.first()</code> → <code>Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td>Sum</td><td><code>arr.sum</code></td><td><code>v.iter().sum()</code></td></tr>
+</table>
+<p>Notice <code>total</code> takes <code>&amp;[i32]</code>, not
+<code>&amp;Vec&lt;i32&gt;</code>. A slice is a borrowed view of "some
+contiguous i32s" — a <code>&amp;Vec&lt;i32&gt;</code> coerces into one
+automatically, and so does <code>&amp;[1, 2, 3]</code>. It's the Rust
+equivalent of writing a Ruby method against "anything that acts like an
+array" — duck typing's flexibility, but declared in the signature and
+checked before the program runs.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

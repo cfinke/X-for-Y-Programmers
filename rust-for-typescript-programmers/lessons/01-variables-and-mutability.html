@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables, Mutability & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables, Mutability & Types",
+
+  intro: `
+<p>You already live by <code>const</code>-by-default in TypeScript; Rust takes
+the same idea one step further. <code>let</code> bindings are immutable —
+not just the binding, the <em>contents</em> — and mutation is an explicit
+opt-in with <code>let mut</code>. Where TypeScript's <code>const user</code>
+still lets you do <code>user.name = "..."</code>, Rust's <code>let user</code>
+does not.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>const name = "Ada";</code></td><td><code>let name = "Ada";</code></td></tr>
+  <tr><td><code>let age = 36;</code> (reassignable)</td><td><code>let mut age = 36;</code></td></tr>
+  <tr><td><code>let price: number = 9.99;</code></td><td><code>let price: f64 = 9.99;</code></td></tr>
+  <tr><td><code>number</code> (one type for all)</td><td><code>i32</code>, <code>u64</code>, <code>f64</code>… (pick precisely)</td></tr>
+</table>
+<p>The single <code>number</code> type splits back apart: <code>i32</code> is
+the default integer, <code>f64</code> the default float, and they never mix
+silently — <code>age + price</code> is a compile error until you convert with
+<code>as f64</code>. Annotations look familiar (<code>name: &str</code>,
+colon after the name), but inference is strong enough that idiomatic Rust
+writes them about as rarely as idiomatic TypeScript does.</p>`,
+
+  typescript: `const name = "Ada";
+let age = 36;
+const price: number = 9.99;
+
+// TS: const stops reassignment, but not mutation of contents.
+age = 37;               // fine: let
+// name = "Grace";      // error: const
+
+function describeUser(name: string, age: number): string {
+  return \`\${name} is \${age} years old\`;
+}
+
+console.log(describeUser(name, age));`,
+
+  task: `
+<p>Rewrite the TypeScript on the left as Rust:</p>
+<ol>
+  <li>Write a function <code>describe_user</code> that takes
+      <code>name: &amp;str</code> and <code>age: u32</code> and returns a
+      <code>String</code> like <code>"Ada is 36 years old"</code>
+      (use <code>format!</code> — the <code>\${}</code> of Rust).
+      Note the convention change: <code>snake_case</code>, not camelCase.</li>
+  <li>Write a function <code>birthday</code> that takes <code>age: u32</code>
+      and returns <code>u32</code>, using a <code>let mut</code> binding
+      inside: bind the argument to a mutable local, add 1 to it with
+      <code>+=</code>, and return it.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. describe_user: takes name: &str and age: u32, returns String.
+//    TS: \`\${name} is \${age} years old\`  ->  Rust: format!("{} is {} years old", ...)
+fn describe_user(name: &str, age: u32) -> String {
+    todo!()
+}
+
+// 2. birthday: bind age to a \`let mut\`, increment it with +=, return it.
+fn birthday(age: u32) -> u32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s+describe_user\s*\(\s*name\s*:\s*&str\s*,\s*age\s*:\s*u32\s*\)\s*->\s*String/, message: "Define describe_user(name: &str, age: u32) -> String" },
+    { pattern: /format!\s*\(/, message: "Use the format! macro to build the string" },
+    { pattern: /let\s+mut\b/, message: "Use a let mut binding inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: 'assert_eq!(describe_user("Ada", 36), "Ada is 36 years old");' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: 'assert_eq!(describe_user("Grace", 52), "Grace is 52 years old");' },
+    { name: "birthday(36) returns 37",
+      code: "assert_eq!(birthday(36), 37);" },
+    { name: "birthday(0) returns 1",
+      code: "assert_eq!(birthday(0), 1);" },
+  ],
+
+  solution: `fn describe_user(name: &str, age: u32) -> String {
+    format!("{} is {} years old", name, age)
+}
+
+fn birthday(age: u32) -> u32 {
+    let mut next = age;
+    next += 1;
+    next
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Immutable binding</td><td><code>const x = 1;</code> (contents still mutable)</td><td><code>let x = 1;</code> (contents immutable too)</td></tr>
+  <tr><td>Mutable binding</td><td><code>let x = 1;</code></td><td><code>let mut x = 1;</code></td></tr>
+  <tr><td>Numbers</td><td><code>number</code> for everything</td><td><code>i32</code>/<code>u32</code>/<code>i64</code>/<code>f64</code>… never silently mixed</td></tr>
+  <tr><td>String interpolation</td><td><code>\`\${name} is \${age}\`</code></td><td><code>format!("{} is {} years old", name, age)</code></td></tr>
+  <tr><td>Naming</td><td><code>camelCase</code></td><td><code>snake_case</code> (the compiler will nag you)</td></tr>
+</table>
+<p>Notice <code>birthday</code>'s last line has no <code>return</code> and no
+semicolon: a block's final expression is its value. Rust shares TypeScript's
+inference philosophy — annotate function signatures, let the compiler figure
+out the locals.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

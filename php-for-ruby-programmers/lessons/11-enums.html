@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums",
+
+  intro: `
+<p>Ruby has no enum type, so you fake one: a handful of symbols
+(<code>:pending</code>, <code>:shipped</code>) plus a frozen constant array to
+list the legal values. It works — until someone types <code>:pnding</code> and
+nothing complains until (maybe) runtime. PHP 8.1 gave PHP <em>real</em> enums:
+a closed, typo-proof set of cases that the engine itself enforces.
+<code>OrderStatus::Pnding</code> isn't a subtle bug, it's an immediate error.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>:pending</code> (any symbol, anywhere)</td><td><code>OrderStatus::Pending</code> — must be a declared case</td></tr>
+  <tr><td><code>STATUSES = %i[pending shipped].freeze</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; … }</code></td></tr>
+  <tr><td><code>status.to_s</code></td><td><code>$status-&gt;value</code> — the backing string</td></tr>
+  <tr><td><code>STATUSES.include?(sym) ? sym : nil</code></td><td><code>OrderStatus::tryFrom($str)</code> — returns <code>null</code> on a miss</td></tr>
+  <tr><td>(no equivalent — raise yourself)</td><td><code>OrderStatus::from($str)</code> — throws on a miss</td></tr>
+  <tr><td><code>STATUSES</code></td><td><code>OrderStatus::cases()</code></td></tr>
+</table>
+<p>This is a <em>backed</em> enum: <code>: string</code> after the name says
+every case carries a string value, read with <code>-&gt;value</code>. Parsing
+goes the other way — <code>OrderStatus::from('pending')</code> returns the
+case or throws, and <code>OrderStatus::tryFrom('pnding')</code> returns
+<code>null</code> instead, which is usually what you want at an input
+boundary. Enums are real classes underneath: they can declare methods and
+implement interfaces, and each case is a singleton, so <code>===</code>
+comparisons just work — including inside <code>match</code>, which pairs with
+enums beautifully.</p>`,
+
+  ruby: `STATUSES = %i[pending shipped delivered].freeze
+
+def status_label(status)
+  case status
+  when :pending   then "Order received"
+  when :shipped   then "On the way"
+  when :delivered then "Delivered"
+  else raise ArgumentError, "unknown status: #{status}"
+  end
+end
+
+def parse_status(value)
+  sym = value.to_sym
+  STATUSES.include?(sym) ? sym : nil
+end
+
+status_label(:pending)   # "Order received"
+status_label(:pnding)    # 💥 raises — but only at runtime
+parse_status("shipped")  # :shipped
+parse_status("bogus")    # nil`,
+
+  task: `
+<p>Port the Ruby symbol-and-frozen-array setup to a real enum:</p>
+<ol>
+  <li><code>OrderStatus</code> — a string-backed enum
+      (<code>enum OrderStatus: string</code>) with three cases:
+      <code>Pending = 'pending'</code>, <code>Shipped = 'shipped'</code>,
+      <code>Delivered = 'delivered'</code>. (Already written in the
+      starter.)</li>
+  <li><code>status_label(OrderStatus $status): string</code> — the
+      <code>case/when</code> becomes <code>match($status)</code>. Return
+      <code>"Order received"</code> for <code>Pending</code>,
+      <code>"On the way"</code> for <code>Shipped</code>, and
+      <code>"Delivered"</code> for <code>Delivered</code>. No
+      <code>else</code>-raise arm needed: the parameter type already
+      guarantees a valid case.</li>
+  <li><code>parse_status(string $value): ?OrderStatus</code> — the whole
+      <code>include?</code> dance is one call:
+      <code>OrderStatus::tryFrom($value)</code>, which returns
+      <code>null</code> for unknown strings.</li>
+</ol>`,
+
+  starter: `<?php
+
+// The enum replaces STATUSES — a closed set the engine enforces.
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+// 2. case/when on a symbol  ->  match() on the enum case.
+function status_label(OrderStatus $status): string {
+    throw new Exception("TODO: implement status_label");
+}
+
+// 3. STATUSES.include?(sym) ? sym : nil  ->  OrderStatus::tryFrom($value)
+function parse_status(string $value): ?OrderStatus {
+    throw new Exception("TODO: implement parse_status");
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus\s*:\s*string/, message: "Declare a string-backed enum OrderStatus: string" },
+    { pattern: /case\s+\w+\s*=/, message: "Give each case a backing value (case Pending = 'pending')" },
+    { pattern: /::tryFrom|::from/, message: "Parse strings with OrderStatus::tryFrom (or ::from)" },
+    { pattern: /match\s*\(/, message: "Use a match expression in status_label" },
+  ],
+
+  tests: [
+    { name: "status_label(OrderStatus::Pending) returns 'Order received'",
+      code: "expect_eq(status_label(OrderStatus::Pending), 'Order received');" },
+    { name: "status_label covers Shipped and Delivered",
+      code: "expect_eq(status_label(OrderStatus::Shipped), 'On the way');\nexpect_eq(status_label(OrderStatus::Delivered), 'Delivered');" },
+    { name: "OrderStatus::Pending->value is the backing string 'pending'",
+      code: "expect_eq(OrderStatus::Pending->value, 'pending');" },
+    { name: "parse_status('shipped') returns the OrderStatus::Shipped case",
+      code: "expect_true(parse_status('shipped') === OrderStatus::Shipped);" },
+    { name: "parse_status('pnding') returns null — the typo can't slip through",
+      code: "expect_eq(parse_status('pnding'), null);" },
+    { name: "OrderStatus::cases() lists all three cases",
+      code: "expect_eq(count(OrderStatus::cases()), 3);" },
+  ],
+
+  solution: `<?php
+
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+function status_label(OrderStatus $status): string {
+    return match($status) {
+        OrderStatus::Pending => "Order received",
+        OrderStatus::Shipped => "On the way",
+        OrderStatus::Delivered => "Delivered",
+    };
+}
+
+function parse_status(string $value): ?OrderStatus {
+    return OrderStatus::tryFrom($value);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Define the set</td><td><code>STATUSES = %i[pending shipped].freeze</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td></tr>
+  <tr><td>A value</td><td><code>:pending</code></td><td><code>OrderStatus::Pending</code></td></tr>
+  <tr><td>To string</td><td><code>status.to_s</code></td><td><code>$status-&gt;value</code></td></tr>
+  <tr><td>Parse (lenient)</td><td>hand-rolled <code>include?</code> check</td><td><code>OrderStatus::tryFrom($s)</code> → case or <code>null</code></td></tr>
+  <tr><td>Parse (strict)</td><td>hand-rolled raise</td><td><code>OrderStatus::from($s)</code> → case or throws <code>ValueError</code></td></tr>
+  <tr><td>List all</td><td><code>STATUSES</code></td><td><code>OrderStatus::cases()</code></td></tr>
+  <tr><td>Behavior</td><td>methods live elsewhere</td><td>methods declared right on the enum</td></tr>
+</table>
+<p>Because enums are classes, <code>status_label</code> doesn't have to be a
+free function at all — you could declare
+<code>public function label(): string { return match($this) { … }; }</code>
+inside the enum and call <code>$status-&gt;label()</code>. That's the idiomatic
+end state: the data and its behavior in one closed type, something the
+symbols-plus-constants pattern never quite gave you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

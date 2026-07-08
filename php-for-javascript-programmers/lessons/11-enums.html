@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums",
+
+  intro: `
+<p>JavaScript has no enums. You fake them — a frozen object of string
+constants, a handful of exported strings, maybe a Symbol trick — and nothing
+stops a typo'd <code>"shiped"</code> from flowing through your program.
+PHP 8.1 added the real thing: <code>enum OrderStatus: string</code> declares
+a <em>closed set</em> of cases, each one a singleton object, and a function
+typed <code>OrderStatus $status</code> can never receive anything else.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>const OrderStatus = Object.freeze({ Pending: "pending", ... })</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; ... }</code></td></tr>
+  <tr><td><code>OrderStatus.Pending</code> (just a string)</td><td><code>OrderStatus::Pending</code> (a real case object)</td></tr>
+  <tr><td>the value <em>is</em> the string</td><td><code>OrderStatus::Pending-&gt;value</code> gives <code>'pending'</code></td></tr>
+  <tr><td><code>Object.values(OS).includes(v) ? v : null</code></td><td><code>OrderStatus::tryFrom($v)</code> — built in</td></tr>
+  <tr><td><code>Object.values(OrderStatus)</code></td><td><code>OrderStatus::cases()</code></td></tr>
+</table>
+<p>The <code>: string</code> makes this a <em>backed</em> enum: every case
+carries a backing string, read with <code>-&gt;value</code>. Going the other
+way, <code>OrderStatus::from($s)</code> parses a string or throws, while
+<code>OrderStatus::tryFrom($s)</code> returns <code>null</code> on unknown
+input — a checked parse, perfect at the boundary where user or API data
+enters your typed world. Enums can even carry methods, so behavior can live
+on the type itself.</p>`,
+
+  javascript: `// The classic JS fake: a frozen object of string constants.
+const OrderStatus = Object.freeze({
+  Pending: "pending",
+  Shipped: "shipped",
+  Delivered: "delivered",
+});
+
+function statusLabel(status) {
+  switch (status) {
+    case OrderStatus.Pending: return "Order received";
+    case OrderStatus.Shipped: return "On the way";
+    case OrderStatus.Delivered: return "Delivered";
+    default: throw new Error("unknown status: " + status);
+  }
+}
+
+function parseStatus(value) {
+  return Object.values(OrderStatus).includes(value) ? value : null;
+}`,
+
+  task: `
+<p>Build the real enum and two helpers around it:</p>
+<ol>
+  <li>Declare <code>enum OrderStatus: string</code> with three cases:
+      <code>Pending = 'pending'</code>, <code>Shipped = 'shipped'</code>,
+      <code>Delivered = 'delivered'</code> (already in the starter — the
+      tests construct these cases directly).</li>
+  <li><code>status_label(OrderStatus $status): string</code> — return a human
+      label via <code>match($status)</code>: <code>'Order received'</code>,
+      <code>'On the way'</code>, <code>'Delivered'</code>. No
+      <code>default</code> arm needed — the enum is a closed set, so three
+      arms cover everything.</li>
+  <li><code>parse_status(string $value): ?OrderStatus</code> — turn a raw
+      string into a case with <code>OrderStatus::tryFrom($value)</code>,
+      which hands back <code>null</code> for anything unknown.</li>
+</ol>`,
+
+  starter: `<?php
+
+// The enum is complete — the tests construct these cases directly.
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+// 1. match($status) each case to its label. No default arm needed.
+function status_label(OrderStatus $status): string {
+    throw new Exception("TODO: implement status_label");
+}
+
+// 2. ::from throws on unknown input; ::tryFrom returns null. You want tryFrom.
+function parse_status(string $value): ?OrderStatus {
+    throw new Exception("TODO: implement parse_status");
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus\s*:\s*string/, message: "Declare a string-backed enum: enum OrderStatus: string" },
+    { pattern: /case\s+\w+\s*=/, message: "Give each case a backing value: case Pending = 'pending';" },
+    { pattern: /::tryFrom|::from/, message: "Parse the raw string with OrderStatus::tryFrom (or ::from)" },
+    { pattern: /match\s*\(/, message: "Use a match($status) expression inside status_label" },
+  ],
+
+  tests: [
+    { name: "OrderStatus::Pending->value is 'pending' (backed enum)",
+      code: "expect_eq(OrderStatus::Pending->value, 'pending');" },
+    { name: "status_label covers all three cases",
+      code: "expect_eq(status_label(OrderStatus::Pending), 'Order received');\nexpect_eq(status_label(OrderStatus::Shipped), 'On the way');\nexpect_eq(status_label(OrderStatus::Delivered), 'Delivered');" },
+    { name: "parse_status('shipped') returns OrderStatus::Shipped",
+      code: "expect_eq(parse_status('shipped'), OrderStatus::Shipped);" },
+    { name: "parse_status('teleported') returns null — a checked parse",
+      code: "expect_eq(parse_status('teleported'), null);" },
+    { name: "round trip: parse_status(case->value) gets the case back",
+      code: "foreach (OrderStatus::cases() as $case) {\n    expect_eq(parse_status($case->value), $case);\n}" },
+  ],
+
+  solution: `<?php
+
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+function status_label(OrderStatus $status): string {
+    return match ($status) {
+        OrderStatus::Pending => 'Order received',
+        OrderStatus::Shipped => 'On the way',
+        OrderStatus::Delivered => 'Delivered',
+    };
+}
+
+function parse_status(string $value): ?OrderStatus {
+    return OrderStatus::tryFrom($value);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Declare</td><td><code>Object.freeze({ Pending: "pending" })</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td></tr>
+  <tr><td>Reference a case</td><td><code>OrderStatus.Pending</code></td><td><code>OrderStatus::Pending</code></td></tr>
+  <tr><td>Backing string</td><td>the constant itself</td><td><code>$case-&gt;value</code></td></tr>
+  <tr><td>Parse, throw on bad input</td><td>hand-rolled</td><td><code>OrderStatus::from($s)</code></td></tr>
+  <tr><td>Parse, null on bad input</td><td><code>values().includes(v) ? v : null</code></td><td><code>OrderStatus::tryFrom($s)</code></td></tr>
+  <tr><td>All cases</td><td><code>Object.values(OrderStatus)</code></td><td><code>OrderStatus::cases()</code></td></tr>
+  <tr><td>Methods on the type</td><td>separate functions</td><td><code>public function label(): string</code> inside the enum</td></tr>
+</table>
+<p>The payoff is the type declaration: once <code>status_label</code> takes
+<code>OrderStatus $status</code>, an invalid status simply cannot reach it —
+the messy strings of the outside world get converted exactly once, at the
+edge, by <code>tryFrom</code>. And because <code>match</code> on an enum has
+a known, finite set of cases, forgetting one throws an
+<code>UnhandledMatchError</code> at the call instead of silently falling
+through like a <code>switch</code> with a missing <code>case</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

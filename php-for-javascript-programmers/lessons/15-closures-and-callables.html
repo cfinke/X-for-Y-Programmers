@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Closures &amp; Callables</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Closures & Callables",
+
+  intro: `
+<p>This is the lesson where PHP most aggressively refuses to be JavaScript.
+A JS function closes over every variable in scope, automatically, as live
+bindings — it's so fundamental you never think about it. A PHP
+<code>function () {}</code> closes over <em>nothing</em>. You opt in per
+variable with a <code>use</code> clause — and even then you get a
+<strong>snapshot, by value</strong>, taken at the moment the closure is
+created. If the outer variable changes later, your closure doesn't care.
+Want the live binding you're used to? Ask for a reference:
+<code>use (&amp;$count)</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>function () { return n; }</code> — captures <code>n</code> automatically</td><td><code>function () use ($n) { return $n; }</code> — explicit, by value</td></tr>
+  <tr><td>captures are live bindings</td><td><code>use ($x)</code> is a snapshot; <code>use (&amp;$x)</code> is live</td></tr>
+  <tr><td><code>(x) =&gt; x * n</code></td><td><code>fn($x) =&gt; $x * $n</code> — auto-captures, by value, one expression only</td></tr>
+  <tr><td>functions are values already</td><td><code>callable</code>/<code>Closure</code> types; <code>strlen(...)</code> lifts a named function</td></tr>
+</table>
+<p>PHP 7.4's arrow functions, <code>fn($x) =&gt; $x * $n</code>, restore the
+auto-capture you expect (still by value) but allow only a single expression —
+no statement bodies. For passing functions around there are two type
+declarations: <code>callable</code> accepts anything invokable (closures,
+<code>'strlen'</code>-style name strings, method references) while
+<code>Closure</code> means a genuine closure object; and PHP 8.1's
+first-class callable syntax <code>strlen(...)</code> converts any named
+function into one.</p>`,
+
+  javascript: `function makeMultiplier(n) {
+  return (x) => x * n;      // n captured automatically
+}
+
+function applyTwice(f, x) {
+  return f(f(x));           // functions are just values
+}
+
+function makeCounter() {
+  let count = 0;
+  return () => ++count;     // the closure SEES count change:
+}                           // captures are live bindings
+
+const double = makeMultiplier(2);
+const c = makeCounter();
+console.log(applyTwice(double, 5)); // 20
+console.log(c(), c(), c());         // 1 2 3`,
+
+  task: `
+<p>Port the three factories:</p>
+<ol>
+  <li><code>make_multiplier(int $n): Closure</code> — return
+      <code>fn(int $x) =&gt; $x * $n</code>. The arrow function captures
+      <code>$n</code> by value automatically — the JS feel, snapshot
+      semantics.</li>
+  <li><code>apply_twice(callable $f, int $x): int</code> — call
+      <code>$f</code> on <code>$x</code>, then on the result. A variable
+      holding a callable is invoked like any function:
+      <code>$f($x)</code>.</li>
+  <li><code>make_counter(): Closure</code> — a local
+      <code>$count = 0;</code> and a returned
+      <code>function () use (&amp;$count)</code> that increments and returns
+      it: <code>1, 2, 3, ...</code> A by-value <code>use ($count)</code>
+      would snapshot <code>0</code> forever and return <code>1</code> every
+      time — the <code>&amp;</code> is the whole exercise.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. fn(int $x) => ... auto-captures $n by value — no use clause needed.
+function make_multiplier(int $n): Closure {
+    throw new Exception("TODO: implement make_multiplier");
+}
+
+// 2. $f is callable — invoke it directly: $f($x).
+function apply_twice(callable $f, int $x): int {
+    throw new Exception("TODO: implement apply_twice");
+}
+
+// 3. use (&$count) captures by REFERENCE — without the &, the closure
+//    keeps a snapshot of 0 and every call returns 1.
+function make_counter(): Closure {
+    throw new Exception("TODO: implement make_counter");
+}
+`,
+
+  requirements: [
+    { pattern: /use\s*\(\s*&/, message: "Capture the counter state by reference: use (&$count)" },
+    { pattern: /fn\s*\(/, message: "Use an arrow function fn($x) => ... in make_multiplier" },
+    { pattern: /callable|Closure/, message: "Keep the callable / Closure type declarations on your functions" },
+  ],
+
+  tests: [
+    { name: "make_multiplier(2) returns a closure that doubles",
+      code: "$double = make_multiplier(2);\nexpect_eq($double(5), 10);\nexpect_eq($double(0), 0);" },
+    { name: "each multiplier keeps its own captured $n",
+      code: "$double = make_multiplier(2);\n$triple = make_multiplier(3);\nexpect_eq($triple(7), 21);\nexpect_eq($double(7), 14);" },
+    { name: "apply_twice(fn($x) => $x + 3, 10) returns 16",
+      code: "expect_eq(apply_twice(fn($x) => $x + 3, 10), 16);" },
+    { name: "apply_twice(make_multiplier(2), 5) returns 20 — closures are values",
+      code: "expect_eq(apply_twice(make_multiplier(2), 5), 20);" },
+    { name: "make_counter() counts 1, 2, 3 — the & keeps the capture live",
+      code: "$c = make_counter();\nexpect_eq($c(), 1);\nexpect_eq($c(), 2);\nexpect_eq($c(), 3);" },
+    { name: "two counters are independent",
+      code: "$a = make_counter();\n$b = make_counter();\nexpect_eq($a(), 1);\nexpect_eq($a(), 2);\nexpect_eq($b(), 1);" },
+  ],
+
+  solution: `<?php
+
+function make_multiplier(int $n): Closure {
+    return fn(int $x) => $x * $n;
+}
+
+function apply_twice(callable $f, int $x): int {
+    return $f($f($x));
+}
+
+function make_counter(): Closure {
+    $count = 0;
+    return function () use (&$count): int {
+        $count += 1;
+        return $count;
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Anonymous function</td><td><code>function (x) { ... }</code></td><td><code>function ($x) { ... }</code> — captures nothing</td></tr>
+  <tr><td>Capture a variable</td><td>automatic, live</td><td><code>use ($x)</code> — explicit, by-value snapshot</td></tr>
+  <tr><td>Live capture</td><td>automatic</td><td><code>use (&amp;$x)</code> — by reference</td></tr>
+  <tr><td>Arrow function</td><td><code>(x) =&gt; x * n</code></td><td><code>fn($x) =&gt; $x * $n</code> — auto-capture by value, expression only</td></tr>
+  <tr><td>Function type</td><td>none needed</td><td><code>callable</code> (anything invokable) / <code>Closure</code> (closure objects)</td></tr>
+  <tr><td>Named fn as value</td><td><code>const f = strlen;</code></td><td><code>$f = strlen(...);</code> (8.1) or <code>$f = 'strlen';</code></td></tr>
+  <tr><td>Call it</td><td><code>f(x)</code></td><td><code>$f($x)</code></td></tr>
+</table>
+<p>The snapshot rule bites hardest in loops: the JS classic where every
+callback sees the loop's final value <em>cannot happen</em> with
+<code>use ($i)</code> or <code>fn() =&gt; $i</code> — each closure freezes
+<code>$i</code> as it was, which is usually what you wanted anyway. So the
+defaults trade places: JS makes shared mutable capture the default and you
+opt out (IIFEs, <code>let</code> scoping); PHP makes isolation the default
+and you opt <em>in</em> with <code>&amp;</code>, precisely where shared
+state is the point — as in <code>make_counter</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

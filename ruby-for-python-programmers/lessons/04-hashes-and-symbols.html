@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Hashes & Symbols</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Hashes & Symbols",
+
+  intro: `
+<p>Python dicts are Ruby Hashes, and the API maps almost one-to-one — but
+Ruby adds a type Python simply doesn't have: the <strong>symbol</strong>.
+A symbol is an interned identifier written <code>:apples</code> — lightweight,
+immutable, and the idiomatic choice for fixed keys. The literal
+<code>{ apples: 3 }</code> is shorthand that creates the <em>symbol</em> key
+<code>:apples</code>; string keys use the older "hash rocket" syntax:
+<code>{ "apples" =&gt; 3 }</code>.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>{"apples": 3}</code></td><td><code>{ apples: 3 }</code> — key is the symbol <code>:apples</code></td></tr>
+  <tr><td><code>d["apples"]</code> (KeyError if missing)</td><td><code>h.fetch(:apples)</code> (KeyError if missing)</td></tr>
+  <tr><td><code>d.get(k, 0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+  <tr><td><code>d[k]</code> missing → raises</td><td><code>h[k]</code> missing → <code>nil</code> (!)</td></tr>
+  <tr><td><code>for k, v in d.items():</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td><code>{**d, k: v}</code></td><td><code>h.merge(k =&gt; v)</code></td></tr>
+</table>
+<p>The safe/strict split you know from <code>d[k]</code> vs
+<code>d.get(k, 0)</code> exists in Ruby with the roles shuffled:
+<code>h.fetch(:k)</code> without a default <em>raises</em> like Python's
+<code>d[k]</code>, <code>h.fetch(:k, 0)</code> is exactly
+<code>d.get(k, 0)</code> — while bare <code>h[:k]</code> quietly returns
+<code>nil</code> for missing keys. And <em>the</em> gotcha to tattoo somewhere
+visible: <code>h[:name]</code> and <code>h["name"]</code> are different keys.
+A hash built with symbol keys returns <code>nil</code> when you ask with a
+string, and vice versa.</p>`,
+
+  python: `inventory = {"apples": 3, "bananas": 5}
+
+print(inventory["apples"])        # 3
+print(inventory.get("pears", 0))  # 0   (missing -> default)
+# inventory["pears"]              # KeyError!
+
+for name, count in inventory.items():
+    print(f"{name}: {count}")
+
+print(list(inventory.keys()))     # ['apples', 'bananas']
+
+
+def add_stock(inv, name, n):
+    # Non-mutating update: build a new dict.
+    return {**inv, name: inv.get(name, 0) + n}
+
+
+print(add_stock(inventory, "apples", 2))  # {'apples': 5, 'bananas': 5}
+print(inventory)                          # unchanged`,
+
+  task: `
+<p>Rewrite the Python on the left as Ruby, using <em>symbol</em> keys:</p>
+<ol>
+  <li><code>build_inventory</code> — return <code>{ apples: 3, bananas: 5 }</code>.
+      That shorthand makes the keys the symbols <code>:apples</code> and
+      <code>:bananas</code>.</li>
+  <li><code>apple_count(inv)</code> — read the <code>:apples</code> key with
+      <code>inv[:apples]</code>. Remember: it must be the symbol —
+      <code>inv["apples"]</code> would find nothing.</li>
+  <li><code>get_count(inv, name)</code> — Python's <code>inv.get(name, 0)</code>
+      becomes <code>inv.fetch(name, 0)</code>.</li>
+  <li><code>add_stock(inv, name, n)</code> — non-mutating, like Python's
+      <code>{**inv, name: ...}</code>: return
+      <code>inv.merge(name =&gt; inv.fetch(name, 0) + n)</code>. The hash
+      rocket is needed because <code>name</code> is a variable, not a literal
+      key.</li>
+  <li><code>item_names(inv)</code> — Python's <code>list(inv.keys())</code>
+      is just <code>inv.keys</code> (it already returns an Array).</li>
+</ol>`,
+
+  starter: `# 1. build_inventory: {"apples": 3, "bananas": 5} -> { apples: 3, bananas: 5 }
+#    (symbol keys via the shorthand).
+def build_inventory
+  raise NotImplementedError, "TODO: implement build_inventory"
+end
+
+# 2. apple_count: read the :apples key — inv[:apples], not inv["apples"].
+def apple_count(inv)
+  raise NotImplementedError, "TODO: implement apple_count"
+end
+
+# 3. get_count: inv.get(name, 0) -> inv.fetch(name, 0).
+def get_count(inv, name)
+  raise NotImplementedError, "TODO: implement get_count"
+end
+
+# 4. add_stock: {**inv, name: ...} -> inv.merge(name => ...) — non-mutating.
+def add_stock(inv, name, n)
+  raise NotImplementedError, "TODO: implement add_stock"
+end
+
+# 5. item_names: list(inv.keys()) -> inv.keys.
+def item_names(inv)
+  raise NotImplementedError, "TODO: implement item_names"
+end
+`,
+
+  requirements: [
+    { pattern: /fetch\s*\(/, message: "Use fetch with a default, like Python's d.get(k, 0)" },
+    { pattern: /merge/, message: "Build the updated hash with merge (non-mutating)" },
+    { pattern: /:\w+/, message: "Use a symbol key like :apples" },
+    { pattern: /\.each|\.keys/, message: "Use .keys (or .each) to work with the entries" },
+  ],
+
+  tests: [
+    { name: "build_inventory returns { apples: 3, bananas: 5 }",
+      code: "  expect_eq(build_inventory, { apples: 3, bananas: 5 })" },
+    { name: "apple_count({ apples: 7, bananas: 2 }) returns 7",
+      code: "  expect_eq(apple_count({ apples: 7, bananas: 2 }), 7)" },
+    { name: "get_count returns the count, or 0 for a missing key",
+      code: "  expect_eq(get_count({ apples: 3 }, :apples), 3)\n  expect_eq(get_count({ apples: 3 }, :pears), 0)" },
+    { name: "add_stock bumps an existing key without mutating the original",
+      code: "  inv = { apples: 3 }\n  expect_eq(add_stock(inv, :apples, 2), { apples: 5 })\n  expect_eq(inv, { apples: 3 })" },
+    { name: "add_stock adds a brand-new key",
+      code: "  expect_eq(add_stock({ apples: 3 }, :pears, 4), { apples: 3, pears: 4 })" },
+    { name: "item_names({ apples: 3, bananas: 5 }) returns [:apples, :bananas]",
+      code: "  expect_eq(item_names({ apples: 3, bananas: 5 }), [:apples, :bananas])" },
+  ],
+
+  solution: `def build_inventory
+  { apples: 3, bananas: 5 }
+end
+
+def apple_count(inv)
+  inv[:apples]
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  inv.merge(name => inv.fetch(name, 0) + n)
+end
+
+def item_names(inv)
+  inv.keys
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Literal, fixed keys</td><td><code>{"apples": 3}</code></td><td><code>{ apples: 3 }</code> (symbol keys)</td></tr>
+  <tr><td>Literal, string keys</td><td><code>{"apples": 3}</code></td><td><code>{ "apples" =&gt; 3 }</code></td></tr>
+  <tr><td>Lookup, strict</td><td><code>d[k]</code> (raises)</td><td><code>h.fetch(k)</code> (raises)</td></tr>
+  <tr><td>Lookup, with default</td><td><code>d.get(k, 0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+  <tr><td>Lookup, forgiving</td><td>—</td><td><code>h[k]</code> → <code>nil</code> if missing</td></tr>
+  <tr><td>Iterate pairs</td><td><code>for k, v in d.items():</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td>Non-mutating update</td><td><code>{**d, k: v}</code></td><td><code>h.merge(k =&gt; v)</code></td></tr>
+  <tr><td>Keys</td><td><code>list(d.keys())</code></td><td><code>h.keys</code></td></tr>
+</table>
+<p>Why symbols at all? Every <code>"apples"</code> literal in Python (and
+Ruby) can be a distinct string object, but <code>:apples</code> is interned —
+one object, everywhere, compared by identity. That makes symbols the natural
+currency for fixed names: hash keys, keyword arguments (next lesson), method
+references. Rule of thumb: symbols for <em>labels</em> your code knows about,
+strings for <em>data</em> that came from outside.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

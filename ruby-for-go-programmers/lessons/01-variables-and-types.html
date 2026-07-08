@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Ruby is Go's philosophical opposite, and it announces that in the very
+first line you write. Go's <code>x := 36</code> declares, types, and
+initializes in one carefully specified ceremony; Ruby's version is
+<code>x = 36</code> — even the colon goes. A variable exists the moment you
+assign to it, carries no declared type, and will happily hold a string today
+and an integer tomorrow. There is no compiler pass at all: no unused-variable
+errors, no type checking, nothing between you and running the script. Types
+live in the objects themselves, and you ask <em>them</em> at runtime:
+<code>x.class</code> instead of <code>reflect.TypeOf(x)</code>,
+<code>x.is_a?(Integer)</code> instead of a type switch.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>x := 36</code></td><td><code>x = 36</code></td></tr>
+  <tr><td><code>int</code>, <code>int64</code>, <code>uint32</code>…</td><td><code>Integer</code> — one class, arbitrary precision</td></tr>
+  <tr><td><code>reflect.TypeOf(x)</code></td><td><code>x.class</code>, <code>x.is_a?(Integer)</code></td></tr>
+  <tr><td><code>fmt.Sprintf("%s is %d", name, age)</code></td><td><code>"#{name} is #{age}"</code></td></tr>
+  <tr><td><code>camelCase</code></td><td><code>snake_case</code></td></tr>
+</table>
+<p>That is a real trade: Go catches a wrong-type argument before the program
+runs; Ruby raises a <code>NoMethodError</code> at the moment something
+doesn't respond. In exchange you get a language where <em>everything</em> is
+an expression. Which brings us to the habit to build first: a method's
+<strong>last expression is its return value</strong>. Go makes every
+<code>return</code> explicit; idiomatic Ruby almost never writes the keyword
+at all.</p>`,
+
+  go: `package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func describeUser(name string, age int) string {
+	return fmt.Sprintf("%s is %d years old", name, age)
+}
+
+func birthday(age int) int {
+	next := age
+	next += 1
+	return next
+}
+
+func main() {
+	name := "Ada"
+	age := 36
+	fmt.Println(describeUser(name, age))
+	fmt.Println(reflect.TypeOf(age)) // int
+}`,
+
+  task: `
+<p>Rewrite the Go on the left as Ruby (note the rename:
+<code>describeUser</code> becomes <code>describe_user</code> — Ruby is
+snake_case all the way down):</p>
+<ol>
+  <li>Write a method <code>describe_user(name, age)</code> that produces
+      <code>"Ada is 36 years old"</code>-style text. No <code>%s</code> /
+      <code>%d</code> verbs — interpolate directly with
+      <code>"#{name} is #{age} years old"</code>. And make that string the
+      method's <em>last expression</em>: no <code>return</code> keyword
+      anywhere in your solution.</li>
+  <li>Write a method <code>birthday(age)</code> that copies <code>age</code>
+      into a local variable, bumps it with <code>+=</code>, and lets the
+      result be the last expression.</li>
+</ol>
+<p>No <code>package main</code>, no imports, no <code>func main()</code> —
+the script just runs.</p>`,
+
+  starter: `# 1. describe_user: interpolate with #{} — the last expression is the value.
+#    Go: fmt.Sprintf("%s is %d years old", name, age)
+#    Ruby: "#{name} is #{age} years old"
+def describe_user(name, age)
+  raise NotImplementedError, "TODO: implement describe_user"
+end
+
+# 2. birthday: bump a local with += and let it be the last expression.
+def birthday(age)
+  raise NotImplementedError, "TODO: implement birthday"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+describe_user\s*\(\s*name\s*,\s*age\s*\)/, message: "Define describe_user(name, age) with def" },
+    { pattern: /#\{\s*name\s*\}/, message: "Build the string with #{} interpolation" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: '  expect_eq(describe_user("Ada", 36), "Ada is 36 years old")' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: '  expect_eq(describe_user("Grace", 52), "Grace is 52 years old")' },
+    { name: "birthday(36) returns 37",
+      code: "  expect_eq(birthday(36), 37)" },
+    { name: "birthday(0) returns 1",
+      code: "  expect_eq(birthday(0), 1)" },
+  ],
+
+  solution: `def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Declare a variable</td><td><code>x := 1</code> (once; then <code>=</code>)</td><td><code>x = 1</code> (assignment is declaration, always)</td></tr>
+  <tr><td>Change its type</td><td>compile error</td><td><code>x = "one"</code> — variables rebind to anything</td></tr>
+  <tr><td>Integers</td><td><code>int</code>, <code>int8</code>…<code>int64</code>, overflow wraps</td><td><code>Integer</code> — arbitrary precision, never overflows</td></tr>
+  <tr><td>Ask the type</td><td><code>reflect.TypeOf(x)</code>, type switch</td><td><code>x.class</code>, <code>x.is_a?(Integer)</code></td></tr>
+  <tr><td>Format a string</td><td><code>fmt.Sprintf("%s is %d", n, a)</code></td><td><code>"#{n} is #{a}"</code></td></tr>
+  <tr><td>Unused variable</td><td>compile error</td><td>nobody checks (no compiler exists)</td></tr>
+  <tr><td>Return a value</td><td><code>return</code> required</td><td>last expression; <code>return</code> only for early exit</td></tr>
+</table>
+<p>Ruby's <code>Integer</code> is arbitrary precision — <code>2 ** 100</code>
+just works, with no <code>math/big</code> and no overflow to reason about.
+The wider trade runs through this whole course: Go moves errors to compile
+time and makes you spell everything out; Ruby deletes the ceremony and defers
+every check to the moment the code actually runs.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

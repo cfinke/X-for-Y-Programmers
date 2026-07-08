@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Duck Typing &amp; respond_to?</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Duck Typing & respond_to?",
+
+  intro: `
+<p>You already duck type. Every time you wrote
+<code>typeof x.speak === "function"</code> instead of checking a class, you
+were practicing it — JavaScript just never gave the habit a name or much
+support. Ruby made it the culture: <em>if it walks like a duck and quacks
+like a duck, it's a duck</em>. No interfaces exist to declare, and the
+<code>instanceof</code> reflex is considered a smell — you don't ask what
+something <em>is</em>, you ask what it can <em>do</em>, or you just call the
+method and let the object answer.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>typeof x.speak === "function"</code></td><td><code>x.respond_to?(:speak)</code></td></tr>
+  <tr><td><code>x instanceof Dog</code></td><td><code>x.is_a?(Dog)</code> — exists, rarely idiomatic</td></tr>
+  <tr><td><code>interface Speaker { ... }</code> (TS)</td><td>nothing to declare — quacking is the interface</td></tr>
+  <tr><td>call it and hope</td><td>call it — <code>NoMethodError</code> if it can't</td></tr>
+</table>
+<p>The formal tool is <code>respond_to?(:speak)</code> — your
+<code>typeof</code> check, but first-class: every object can be asked whether
+it answers a message, by name, as a symbol. Because it's a real method it
+composes with everything from lesson 12:
+<code>things.select { |t| t.respond_to?(:speak) }</code> filters a mixed
+collection down to the ducks. <code>is_a?</code> is still there for the
+genuinely nominal moments (is this an <code>Integer</code>?), but reaching
+for it about behavior usually means you wanted <code>respond_to?</code> —
+or no check at all.</p>`,
+
+  javascript: `class Dog {
+  speak() { return "Woof"; }
+}
+class Robot {
+  speak() { return "Beep"; }
+}
+class Rock {}                    // no speak()
+
+function makeSpeak(thing) {
+  // The JS duck-typing check, hand-rolled:
+  if (typeof thing.speak === "function") {
+    return thing.speak();
+  }
+  return "...";
+}
+
+function allSpeakers(things) {
+  return things
+    .filter((t) => typeof t.speak === "function")
+    .map((t) => t.speak());
+}`,
+
+  task: `
+<p>Build a mixed menagerie and treat it uniformly:</p>
+<ol>
+  <li>Class <code>Dog</code> — <code>speak</code> returns
+      <code>"Woof"</code>.</li>
+  <li>Class <code>Robot</code> — <code>speak</code> returns
+      <code>"Beep"</code>. No shared parent, no interface: they merely both
+      quack.</li>
+  <li>Class <code>Rock</code> — no <code>speak</code> method at all (leave
+      the class body empty).</li>
+  <li><code>make_speak(thing)</code> — if
+      <code>thing.respond_to?(:speak)</code>, return
+      <code>thing.speak</code>; otherwise return <code>"..."</code>. No
+      <code>is_a?</code>, no class checks.</li>
+  <li><code>all_speakers(things)</code> — from a mixed array, collect what
+      the speakers say: <code>select</code> the things that respond to
+      <code>:speak</code>, then <code>map</code> to their
+      <code>speak</code>.</li>
+</ol>`,
+
+  starter: `class Dog
+  def speak
+    raise NotImplementedError, "TODO: return Woof"
+  end
+end
+
+class Robot
+  def speak
+    raise NotImplementedError, "TODO: return Beep"
+  end
+end
+
+class Rock
+  # Rocks have nothing to say. Leave this empty -- no speak method.
+end
+
+# respond_to?(:speak) is the typeof-check, first-class. Fall back to "...".
+def make_speak(thing)
+  raise NotImplementedError, "TODO: implement make_speak"
+end
+
+# select the ducks, then map(&:speak).
+def all_speakers(things)
+  raise NotImplementedError, "TODO: implement all_speakers"
+end
+`,
+
+  requirements: [
+    { pattern: /respond_to\?/, message: "Ask with respond_to?(:speak) — not is_a? or instance_of?" },
+    { pattern: /class\s+Dog/, message: "Define a Dog class" },
+    { pattern: /class\s+Robot/, message: "Define a Robot class" },
+    { pattern: /\.speak/, message: "Actually call .speak on the things that respond to it" },
+  ],
+
+  tests: [
+    { name: 'make_speak(Dog.new) returns "Woof"',
+      code: '  expect_eq(make_speak(Dog.new), "Woof")' },
+    { name: 'make_speak(Robot.new) returns "Beep"',
+      code: '  expect_eq(make_speak(Robot.new), "Beep")' },
+    { name: 'make_speak(Rock.new) returns "..." — no NoMethodError',
+      code: '  expect_eq(make_speak(Rock.new), "...")' },
+    { name: 'all_speakers([Dog.new, Rock.new, Robot.new]) returns ["Woof", "Beep"]',
+      code: '  expect_eq(all_speakers([Dog.new, Rock.new, Robot.new]), ["Woof", "Beep"])' },
+    { name: "all_speakers([Rock.new, Rock.new]) returns []",
+      code: "  expect_eq(all_speakers([Rock.new, Rock.new]), [])" },
+  ],
+
+  solution: `class Dog
+  def speak
+    "Woof"
+  end
+end
+
+class Robot
+  def speak
+    "Beep"
+  end
+end
+
+class Rock
+end
+
+def make_speak(thing)
+  thing.respond_to?(:speak) ? thing.speak : "..."
+end
+
+def all_speakers(things)
+  things.select { |t| t.respond_to?(:speak) }.map(&:speak)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Can it do X?</td><td><code>typeof x.speak === "function"</code></td><td><code>x.respond_to?(:speak)</code></td></tr>
+  <tr><td>Is it a Y?</td><td><code>x instanceof Dog</code></td><td><code>x.is_a?(Dog)</code> (also matches subclasses)</td></tr>
+  <tr><td>Exact class</td><td><code>x.constructor === Dog</code></td><td><code>x.instance_of?(Dog)</code></td></tr>
+  <tr><td>Declared interface</td><td>TS <code>interface</code>; JS: nothing</td><td>nothing — responding IS the interface</td></tr>
+  <tr><td>Wrong duck</td><td><code>TypeError: x.speak is not a function</code></td><td><code>NoMethodError: undefined method 'speak'</code></td></tr>
+  <tr><td>List its methods</td><td><code>Object.getOwnPropertyNames(...)</code></td><td><code>x.methods</code></td></tr>
+</table>
+<p>Duck typing is why idiomatic Ruby often skips even the
+<code>respond_to?</code> guard: if every caller passes something that quacks,
+just call <code>speak</code> and let a <code>NoMethodError</code> surface the
+programming error early. Reserve <code>respond_to?</code> for genuinely
+heterogeneous collections — like <code>all_speakers</code> — and
+<code>is_a?</code> for the rare nominal question. The whole standard library
+runs on this bargain: any object with <code>each</code> can mix in
+Enumerable, any object with <code>&lt;=&gt;</code> can be sorted — nobody
+ever asks what class you are.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

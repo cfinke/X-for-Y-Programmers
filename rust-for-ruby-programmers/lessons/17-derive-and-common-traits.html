@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits & Derive</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>In Ruby, every object inherits <code>==</code>, <code>inspect</code>, and
+<code>dup</code> from <code>Object</code>, and you override them when the
+defaults are wrong — or reach for <code>Struct.new</code> and
+<code>Comparable</code> to have them generated. Rust has no
+<code>Object</code>, so none of that comes for free: each capability is a
+separate trait, and a bare <code>struct</code> has <em>none</em> of them.
+You can't print it, compare it, or copy it until you say so.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>p point</code> / <code>point.inspect</code></td><td><code>Debug</code> trait → <code>format!("{:?}", point)</code></td></tr>
+  <tr><td><code>point.dup</code></td><td><code>Clone</code> trait → <code>point.clone()</code></td></tr>
+  <tr><td><code>a == b</code> (identity unless overridden)</td><td><code>PartialEq</code> trait → <code>a == b</code> (by value)</td></tr>
+  <tr><td><code>Struct.new(:x, :y)</code> generates them</td><td><code>#[derive(Debug, Clone, PartialEq)]</code> generates them</td></tr>
+  <tr><td>Sensible blank object</td><td><code>Default</code> trait → <code>Point::default()</code></td></tr>
+</table>
+<p>The saving grace is <code>#[derive(...)]</code>: one attribute above the
+struct definition and the compiler writes the obvious field-by-field
+implementation for you — <code>Debug</code> gives an <code>inspect</code>-style
+dump for the <code>{:?}</code> format specifier, <code>PartialEq</code> gives
+a field-wise <code>==</code>, <code>Clone</code> gives an explicit deep copy,
+and <code>Default</code> gives a "new with all defaults" constructor. It's
+Ruby's <code>Struct.new</code> convenience, à la carte: you list exactly
+which behaviors your type gets, and anything not listed simply doesn't
+exist — the compiler stops you at the call site instead of surprising you
+with <code>Object</code>'s identity-based defaults at runtime.</p>`,
+
+  ruby: `# Struct generates ==, inspect, and more:
+Point = Struct.new(:x, :y)
+
+a = Point.new(1, 2)
+b = Point.new(1, 2)
+
+a == b        # true  — compared by value
+a.inspect     # "#<struct Point x=1, y=2>"
+copy = a.dup  # explicit copy
+
+# With a plain class you'd write them by hand:
+class RawPoint
+  attr_reader :x, :y
+  def initialize(x, y) = (@x, @y = x, y)
+  def ==(other) = x == other.x && y == other.y
+  def inspect = "#<RawPoint x=#{x} y=#{y}>"
+end`,
+
+  task: `
+<p>The starter defines <code>struct Point</code> with <em>no</em> derives —
+so it can't be compared, printed, or cloned yet. Fix that with one
+<code>#[derive(...)]</code> attribute, then implement three functions:</p>
+<ol>
+  <li>Add <code>#[derive(Debug, Clone, PartialEq)]</code> above
+      <code>struct Point</code>.</li>
+  <li><code>points_equal</code> takes <code>a: &amp;Point</code> and
+      <code>b: &amp;Point</code> and returns <code>bool</code> — just
+      <code>a == b</code>, which only compiles once <code>PartialEq</code>
+      is derived.</li>
+  <li><code>debug_string</code> takes <code>p: &amp;Point</code> and returns
+      <code>String</code> — the <code>Debug</code> rendering via
+      <code>format!("{:?}", p)</code>, e.g.
+      <code>"Point { x: 3, y: 4 }"</code>.</li>
+  <li><code>duplicate</code> takes <code>p: &amp;Point</code> and returns an
+      owned <code>Point</code> — Ruby's <code>dup</code>, spelled
+      <code>p.clone()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// A bare struct has NO ==, no inspect, no dup. Add one line above it:
+// #[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// 1. points_equal: a == b (needs PartialEq derived).
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// 2. debug_string: format!("{:?}", p) (needs Debug derived).
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// 3. duplicate: p.clone() — Ruby's .dup (needs Clone derived).
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Add a #[derive(...)] attribute above struct Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == works on Point" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} works on Point" },
+    { pattern: /Clone/, message: "Derive Clone so .clone() works on Point" },
+  ],
+
+  tests: [
+    { name: "points_equal on two identical points returns true",
+      code: "let a = Point { x: 1, y: 2 };\nlet b = Point { x: 1, y: 2 };\nassert!(points_equal(&a, &b));" },
+    { name: "points_equal on different points returns false",
+      code: "let a = Point { x: 1, y: 2 };\nlet b = Point { x: 1, y: 3 };\nassert!(!points_equal(&a, &b));" },
+    { name: 'debug_string(&Point { x: 3, y: 4 }) returns "Point { x: 3, y: 4 }"',
+      code: 'let p = Point { x: 3, y: 4 };\nassert_eq!(debug_string(&p), "Point { x: 3, y: 4 }");' },
+    { name: "duplicate returns an independent copy with the same fields",
+      code: "let p = Point { x: 5, y: -6 };\nlet copy = duplicate(&p);\nassert_eq!(copy.x, 5);\nassert_eq!(copy.y, -6);\nassert_eq!(p.x, 5);" },
+  ],
+
+  solution: `#[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Capability</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Inspect / debug print</td><td><code>obj.inspect</code>, <code>p obj</code></td><td><code>Debug</code> → <code>format!("{:?}", obj)</code>, <code>println!("{:?}", ...)</code></td></tr>
+  <tr><td>Copy</td><td><code>obj.dup</code></td><td><code>Clone</code> → <code>obj.clone()</code></td></tr>
+  <tr><td>Equality by value</td><td>override <code>==</code>, or <code>Struct</code> gives it</td><td><code>PartialEq</code> → <code>a == b</code></td></tr>
+  <tr><td>Blank instance</td><td>write <code>initialize</code> defaults</td><td><code>Default</code> → <code>Point::default()</code></td></tr>
+  <tr><td>Generate the boilerplate</td><td><code>Struct.new(:x, :y)</code>, <code>Comparable</code></td><td><code>#[derive(Debug, Clone, PartialEq, Default)]</code></td></tr>
+</table>
+<p>The mental flip: Ruby gives every object every capability and lets you
+override the wrong defaults; Rust gives a new type <em>nothing</em> and lets
+you opt in. That sounds like more work, but derives make it one line, and
+the payoff is that the type system knows exactly what your type can do —
+a function requiring <code>T: Clone</code> simply won't accept a type that
+can't be copied. In practice almost every struct you write starts with
+<code>#[derive(Debug)]</code> at minimum, because <code>{:?}</code> is your
+<code>p</code>-debugging lifeline, and you append <code>Clone</code>,
+<code>PartialEq</code>, or <code>Default</code> the first time the compiler
+asks for them.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

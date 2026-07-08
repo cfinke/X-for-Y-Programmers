@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Enumerable: map, select &amp; Friends</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Enumerable: map, select & Friends",
+
+  intro: `
+<p>Ruby's <code>Enumerable</code> module is LINQ with the names shuffled — and
+one rename is genuinely treacherous. <code>.Select</code> becomes
+<code>.map</code>, fine. But <code>.Where</code> becomes
+<code>.select</code>: in Ruby, <strong><code>select</code> filters</strong>.
+Where is select, Select is map. Say it three times before writing any Ruby,
+because <code>products.select { |p| p[:name] }</code> compiles happily and
+returns every product whose name is truthy — i.e. all of them.</p>
+<table>
+  <tr><th>C# (LINQ)</th><th>Ruby (Enumerable)</th></tr>
+  <tr><td><code>.Select(x =&gt; ...)</code></td><td><code>.map { |x| ... }</code></td></tr>
+  <tr><td><code>.Where(x =&gt; ...)</code></td><td><code>.select { |x| ... }</code> ⚠️ the treacherous rename</td></tr>
+  <tr><td><code>.Sum(x =&gt; x.Price)</code></td><td><code>.sum { |x| x[:price] }</code></td></tr>
+  <tr><td><code>.OrderBy(x =&gt; k)</code></td><td><code>.sort_by { |x| k }</code></td></tr>
+  <tr><td><code>.MinBy(x =&gt; k)</code></td><td><code>.min_by { |x| k }</code></td></tr>
+  <tr><td><code>.ToList()</code></td><td>— nothing; the result is already an array</td></tr>
+</table>
+<p>The other big shift: no <code>ToList()</code>, ever. LINQ builds a deferred
+<code>IEnumerable&lt;T&gt;</code> you must materialize; Ruby's methods are
+<strong>eager</strong> — each step runs immediately and hands back a real
+<code>Array</code>, ready to chain or return. (Lazy pipelines exist —
+<code>.lazy</code>, lesson 18 — but eager is the default and the idiom.)</p>`,
+
+  csharp: `record Product(string Name, int PriceCents, bool InStock);
+
+static List<string> InStockNames(List<Product> products) =>
+    products.Where(p => p.InStock)      // Where filters...
+            .Select(p => p.Name)        // ...Select transforms...
+            .ToList();                  // ...ToList materializes.
+
+static int TotalValue(List<Product> products) =>
+    products.Sum(p => p.PriceCents);
+
+static string CheapestName(List<Product> products) =>
+    products.MinBy(p => p.PriceCents)!.Name;`,
+
+  task: `
+<p>The products are symbol-keyed hashes like
+<code>{ name: "Widget", price_cents: 250, in_stock: true }</code>. Rewrite the
+LINQ pipeline on the left:</p>
+<ol>
+  <li><code>in_stock_names(products)</code> — filter with
+      <code>.select { |p| p[:in_stock] }</code>, then transform with
+      <code>.map { |p| p[:name] }</code>. No <code>ToList()</code> — the chain
+      already ends in an array.</li>
+  <li><code>total_value(products)</code> — <code>Sum(p =&gt; p.PriceCents)</code>
+      becomes <code>.sum { |p| p[:price_cents] }</code>.</li>
+  <li><code>cheapest_name(products)</code> — find the cheapest product with
+      <code>.min_by { |p| p[:price_cents] }</code>, then take its
+      <code>[:name]</code>.</li>
+</ol>
+<p>Remember: <code>select</code> is your <code>Where</code>. If a test hands
+back whole hashes where you expected names, you reached for the wrong
+twin.</p>`,
+
+  starter: `# 1. in_stock_names: Where -> select, Select -> map. (Yes, really.)
+def in_stock_names(products)
+  raise NotImplementedError, "TODO: implement in_stock_names"
+end
+
+# 2. total_value: .sum { |p| p[:price_cents] }
+def total_value(products)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 3. cheapest_name: .min_by { ... } returns the whole hash — then [:name] it.
+def cheapest_name(products)
+  raise NotImplementedError, "TODO: implement cheapest_name"
+end
+`,
+
+  requirements: [
+    { pattern: /\.select/, message: "Filter with .select (Ruby's Where)" },
+    { pattern: /\.map/, message: "Transform with .map (Ruby's Select)" },
+    { pattern: /\.sum/, message: "Total the prices with .sum" },
+    { pattern: /min_by|sort_by/, message: "Find the cheapest with min_by (or sort_by)" },
+  ],
+
+  tests: [
+    { name: 'in_stock_names returns ["Widget", "Doodad"]',
+      code: `  products = [
+    { name: "Widget", price_cents: 250, in_stock: true },
+    { name: "Gadget", price_cents: 990, in_stock: false },
+    { name: "Doodad", price_cents: 120, in_stock: true }
+  ]
+  expect_eq(in_stock_names(products), ["Widget", "Doodad"])` },
+    { name: "in_stock_names returns [] when nothing is in stock",
+      code: '  expect_eq(in_stock_names([{ name: "Gadget", price_cents: 990, in_stock: false }]), [])' },
+    { name: "total_value sums price_cents (250 + 990 + 120 = 1360)",
+      code: `  products = [
+    { name: "Widget", price_cents: 250, in_stock: true },
+    { name: "Gadget", price_cents: 990, in_stock: false },
+    { name: "Doodad", price_cents: 120, in_stock: true }
+  ]
+  expect_eq(total_value(products), 1360)` },
+    { name: "total_value of an empty list is 0",
+      code: "  expect_eq(total_value([]), 0)" },
+    { name: 'cheapest_name returns "Doodad"',
+      code: `  products = [
+    { name: "Widget", price_cents: 250, in_stock: true },
+    { name: "Gadget", price_cents: 990, in_stock: false },
+    { name: "Doodad", price_cents: 120, in_stock: true }
+  ]
+  expect_eq(cheapest_name(products), "Doodad")` },
+  ],
+
+  solution: `def in_stock_names(products)
+  products.select { |p| p[:in_stock] }.map { |p| p[:name] }
+end
+
+def total_value(products)
+  products.sum { |p| p[:price_cents] }
+end
+
+def cheapest_name(products)
+  products.min_by { |p| p[:price_cents] }[:name]
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>LINQ</th><th>Ruby</th><th>Note</th></tr>
+  <tr><td><code>.Select(f)</code></td><td><code>.map { }</code></td><td>transform each element</td></tr>
+  <tr><td><code>.Where(f)</code></td><td><code>.select { }</code></td><td>keep matching elements — the false friend</td></tr>
+  <tr><td><code>.Where(x =&gt; !f(x))</code></td><td><code>.reject { }</code></td><td>inverse filter, no negation needed</td></tr>
+  <tr><td><code>.Sum(f)</code> / <code>.Count(f)</code></td><td><code>.sum { }</code> / <code>.count { }</code></td><td></td></tr>
+  <tr><td><code>.OrderBy(f)</code></td><td><code>.sort_by { }</code></td><td>returns a new sorted array</td></tr>
+  <tr><td><code>.MinBy(f)</code> / <code>.MaxBy(f)</code></td><td><code>.min_by { }</code> / <code>.max_by { }</code></td><td>returns the element (or nil if empty)</td></tr>
+  <tr><td><code>.Any(f)</code> / <code>.All(f)</code></td><td><code>.any? { }</code> / <code>.all? { }</code></td><td></td></tr>
+  <tr><td><code>.ToList()</code></td><td>—</td><td>eager: every step is already an array</td></tr>
+</table>
+<p>Because evaluation is eager, each link in
+<code>select.map.sum</code> allocates an intermediate array — for typical
+collection sizes nobody cares, and the payoff is that there is no
+deferred-execution ambush: no query that silently re-runs each time you
+enumerate it, no <code>ToList()</code> ritual. What you chain is what already
+happened.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: array_map, array_filter &amp; Friends</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "array_map, array_filter & Friends",
+
+  intro: `
+<p>The <code>&lt;algorithm&gt;</code> header taught you to think in
+transforms, filters, and folds — then made you spell every one as an iterator
+pair plus a destination you prepared in advance
+(<code>std::back_inserter</code>, <code>reserve</code>, the erase-remove
+idiom). PHP's array functions are the same three verbs operating on whole
+arrays: pass an array in, get a fresh array out. No iterators, no output
+container to set up, no <code>begin()</code>/<code>end()</code> ceremony.</p>
+<table>
+  <tr><th>C++17 <code>&lt;algorithm&gt;</code>/<code>&lt;numeric&gt;</code></th><th>PHP</th></tr>
+  <tr><td><code>std::transform(b, e, back_inserter(out), f)</code></td><td><code>array_map($f, $arr)</code></td></tr>
+  <tr><td><code>std::copy_if(b, e, back_inserter(out), pred)</code></td><td><code>array_filter($arr, $pred)</code></td></tr>
+  <tr><td><code>std::accumulate(b, e, init, op)</code></td><td><code>array_reduce($arr, $op, $init)</code></td></tr>
+  <tr><td><code>std::accumulate(b, e, 0)</code></td><td><code>array_sum($arr)</code></td></tr>
+  <tr><td>erase-remove idiom to compact</td><td><code>array_values($arr)</code> to reindex</td></tr>
+</table>
+<p>Two gotchas, both cheap to learn now. First, the argument order is
+inconsistent: <code>array_map(<em>callback</em>, $arr)</code> but
+<code>array_filter($arr, <em>callback</em>)</code> — a historical wart you
+just memorize. Second, <code>array_filter</code> <strong>preserves keys</strong>:
+filtering <code>[10, 20, 30]</code> down to two survivors leaves keys
+<code>0</code> and <code>2</code> with a hole at <code>1</code> — remember,
+every PHP array is secretly an ordered map. You don't need erase-remove to
+compact it, but you do need <code>array_values()</code> to get a clean
+<code>0, 1, 2...</code> list back, and strict <code>===</code> comparisons
+will notice if you forget.</p>`,
+
+  cpp: `#include <algorithm>
+#include <numeric>
+#include <string>
+#include <vector>
+
+struct Product { std::string name; int price_cents; bool in_stock; };
+
+std::vector<std::string> in_stock_names(const std::vector<Product>& ps) {
+    std::vector<Product> kept;
+    std::copy_if(ps.begin(), ps.end(), std::back_inserter(kept),
+                 [](const Product& p) { return p.in_stock; });
+    std::vector<std::string> names;
+    std::transform(kept.begin(), kept.end(), std::back_inserter(names),
+                   [](const Product& p) { return p.name; });
+    return names;
+}
+
+int total_value(const std::vector<Product>& ps) {
+    return std::accumulate(ps.begin(), ps.end(), 0,
+        [](int acc, const Product& p) { return acc + p.price_cents; });
+}`,
+
+  task: `
+<p>Products are associative arrays:
+<code>['name' =&gt; 'Widget', 'price_cents' =&gt; 250, 'in_stock' =&gt; true]</code>.
+Write three functions:</p>
+<ol>
+  <li><code>in_stock_names(array $products): array</code> — filter to the
+      in-stock products, map each to its <code>'name'</code>, and
+      <strong>reindex with <code>array_values()</code></strong> so the result
+      is a clean list. (The tests compare with <code>===</code>, which sees
+      the keys.)</li>
+  <li><code>total_value(array $products): int</code> — sum every product's
+      <code>'price_cents'</code>. Map to the prices then
+      <code>array_sum</code>, or fold directly with
+      <code>array_reduce</code> — your call.</li>
+  <li><code>evens_doubled(array $nums): array</code> — keep the even numbers,
+      double them, reindex. Note which argument slot the callback occupies in
+      <code>array_filter</code> versus <code>array_map</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. copy_if + transform, without the back_inserters.
+//    Careful: array_filter($arr, $fn) but array_map($fn, $arr).
+//    Then array_values(...) to reindex — filter leaves key holes.
+function in_stock_names(array $products): array {
+    throw new Exception("TODO: implement in_stock_names");
+}
+
+// 2. std::accumulate — array_sum covers the common case.
+function total_value(array $products): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// 3. Filter evens, double them, reindex. fn(int $n) => ... keeps it short.
+function evens_doubled(array $nums): array {
+    throw new Exception("TODO: implement evens_doubled");
+}
+`,
+
+  requirements: [
+    { pattern: /array_map/, message: "Use array_map (the std::transform of PHP)" },
+    { pattern: /array_filter/, message: "Use array_filter (the std::copy_if of PHP)" },
+    { pattern: /array_values/, message: "Reindex filtered results with array_values" },
+    { pattern: /array_reduce|array_sum/, message: "Total the prices with array_sum or array_reduce" },
+  ],
+
+  tests: [
+    { name: "in_stock_names picks only in-stock product names",
+      code: "$products = [\n  ['name' => 'Widget', 'price_cents' => 250, 'in_stock' => true],\n  ['name' => 'Gadget', 'price_cents' => 1000, 'in_stock' => false],\n  ['name' => 'Gizmo', 'price_cents' => 75, 'in_stock' => true],\n];\nexpect_eq(in_stock_names($products), ['Widget', 'Gizmo']);" },
+    { name: "in_stock_names is reindexed 0,1,... (array_values applied)",
+      code: "$products = [\n  ['name' => 'Gadget', 'price_cents' => 1000, 'in_stock' => false],\n  ['name' => 'Gizmo', 'price_cents' => 75, 'in_stock' => true],\n];\nexpect_true(array_keys(in_stock_names($products)) === [0]);" },
+    { name: "total_value sums price_cents (250 + 1000 + 75 = 1325)",
+      code: "$products = [\n  ['name' => 'Widget', 'price_cents' => 250, 'in_stock' => true],\n  ['name' => 'Gadget', 'price_cents' => 1000, 'in_stock' => false],\n  ['name' => 'Gizmo', 'price_cents' => 75, 'in_stock' => true],\n];\nexpect_eq(total_value($products), 1325);" },
+    { name: "total_value of no products is 0",
+      code: "expect_eq(total_value([]), 0);" },
+    { name: "evens_doubled([1,2,3,4,5]) returns [4, 8] with clean keys",
+      code: "expect_eq(evens_doubled([1, 2, 3, 4, 5]), [4, 8]);" },
+    { name: "evens_doubled([]) returns []",
+      code: "expect_eq(evens_doubled([]), []);" },
+  ],
+
+  solution: `<?php
+
+function in_stock_names(array $products): array {
+    $in_stock = array_filter($products, fn(array $p) => $p['in_stock']);
+    return array_values(array_map(fn(array $p) => $p['name'], $in_stock));
+}
+
+function total_value(array $products): int {
+    return array_sum(array_map(fn(array $p) => $p['price_cents'], $products));
+}
+
+function evens_doubled(array $nums): array {
+    $evens = array_filter($nums, fn(int $n) => $n % 2 === 0);
+    return array_values(array_map(fn(int $n) => $n * 2, $evens));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+  <tr><td>Transform</td><td><code>std::transform(b, e, out, f)</code></td><td><code>array_map($f, $arr)</code> — callback <em>first</em></td></tr>
+  <tr><td>Filter</td><td><code>std::copy_if(b, e, out, pred)</code></td><td><code>array_filter($arr, $pred)</code> — array <em>first</em></td></tr>
+  <tr><td>Fold</td><td><code>std::accumulate(b, e, init, op)</code></td><td><code>array_reduce($arr, $op, $init)</code></td></tr>
+  <tr><td>Sum</td><td><code>std::accumulate(b, e, 0)</code></td><td><code>array_sum($arr)</code></td></tr>
+  <tr><td>Compact after removal</td><td>erase-remove idiom</td><td><code>array_values($arr)</code> — filter keeps keys!</td></tr>
+  <tr><td>Output container</td><td>you prepare it (<code>back_inserter</code>)</td><td>returned fresh; input never mutated</td></tr>
+  <tr><td>Sort with comparator</td><td><code>std::sort(b, e, cmp)</code></td><td><code>usort($arr, $cmp)</code> — in place, by reference</td></tr>
+</table>
+<p>The insight: these functions are value-semantics pipelines — each returns a
+new array and leaves the input untouched, so chaining
+<code>array_values(array_map(..., array_filter(...)))</code> is the idiom
+where C++ needed three named intermediates. The key-preservation of
+<code>array_filter</code> stops feeling like a wart once you recall that a PHP
+"list" is just an ordered map whose keys happen to be <code>0..n-1</code>:
+filtering keeps each element's identity, and <code>array_values</code> is the
+explicit step that says "renumber, I only care about order."</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

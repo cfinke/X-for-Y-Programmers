@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Basic Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Basic Types",
+
+  intro: `
+<p>Your Go instincts mostly transfer intact. Go's <code>var age int = 36</code>
+becomes <code>let age: number = 36</code> — the type still sits after the name,
+TypeScript just adds a colon. And Go's beloved <code>age := 36</code>? That is
+exactly <code>let age = 36</code>: declare-and-infer in one move. TypeScript's
+inference is as sharp as Go's, so idiomatic code skips the annotation whenever
+the right-hand side makes it obvious.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>var name string = "Ada"</code></td><td><code>const name: string = "Ada";</code></td></tr>
+  <tr><td><code>age := 36</code></td><td><code>let age = 36;</code> (same inference)</td></tr>
+  <tr><td><code>int</code>, <code>int64</code>, <code>float64</code>, <code>float32</code></td><td><code>number</code> — one type for all of them</td></tr>
+  <tr><td><code>const maxRetries = 3</code></td><td><code>const maxRetries = 3;</code> (works for any value, not just constants)</td></tr>
+  <tr><td><code>var s string</code> → <code>""</code> (zero value)</td><td><code>let s: string;</code> → <code>undefined</code>, not <code>""</code>!</td></tr>
+</table>
+<p>Two adjustments. First, Go's whole numeric zoo — <code>int</code>,
+<code>int64</code>, <code>float64</code>, <code>float32</code> — collapses into
+a single <code>number</code>. Simpler, but you lose the int/float distinction
+the compiler used to police for you. Second, TypeScript has <em>no zero
+values</em>: a declared-but-unassigned variable is <code>undefined</code>, not
+<code>0</code> or <code>""</code>. The compiler will stop you from using it
+before assignment, but don't expect Go's silent initialization.</p>
+<p>One habit upgrade: in Go, <code>const</code> is a niche tool for
+compile-time constants. In TypeScript, <code>const</code> works for any value
+and is the <em>default</em> declaration — reach for <code>let</code> only when
+you genuinely reassign.</p>`,
+
+  go: `var userName string = "Ada"
+age := 36 // := declares and infers — Go's favorite move
+
+var big int64 = 9000000000
+var ratio float64 = 0.25
+var precise float32 = 1.5
+
+const maxRetries = 3 // compile-time constants only
+
+// Zero values: Go silently initializes for you
+var count int    // 0
+var label string // ""
+
+func describeUser(name string, age int) string {
+	return fmt.Sprintf("%s is %d years old", name, age)
+}`,
+
+  task: `
+<p>Rewrite the Go on the left as TypeScript:</p>
+<ol>
+  <li>Declare a constant <code>userName</code> with an explicit
+      <code>: string</code> annotation and the value <code>"Ada"</code>,
+      and a variable <code>userAge</code> (use <code>let</code>, since it may
+      be reassigned) with an explicit <code>: number</code> annotation and the
+      value <code>36</code>.</li>
+  <li>Write a function <code>describeUser</code> that takes
+      <code>name: string</code> and <code>age: number</code> and returns a
+      <code>string</code> like <code>"Ada is 36 years old"</code>. Note how
+      the types swap sides: Go's <code>name string</code> becomes
+      <code>name: string</code>, and the return type moves after a colon.</li>
+</ol>
+<p>Go would let <code>int64</code> and <code>float64</code> versions of this
+disagree; in TypeScript they are all just <code>number</code>.</p>`,
+
+  starter: `// 1. Declare userName (const, : string) = "Ada" and userAge (let, : number) = 36.
+//    Go: var userName string = "Ada"   age := 36
+//    Here, write the annotations out explicitly.
+
+
+// 2. describeUser — Go: func describeUser(name string, age int) string
+//    TypeScript adds a colon before each type and after the parameter list.
+function describeUser(name, age) {
+  // TODO: return "<name> is <age> years old"
+  return "";
+}
+`,
+
+  exportNames: ["userName", "userAge", "describeUser"],
+
+  requirements: [
+    { pattern: /const\s+userName\s*:\s*string/, message: "Declare userName as a const with an explicit : string annotation" },
+    { pattern: /let\s+userAge\s*:\s*number/, message: "Declare userAge with let and an explicit : number annotation" },
+    { pattern: /describeUser\s*\(\s*name\s*:\s*string\s*,\s*age\s*:\s*number\s*\)\s*:\s*string/, message: "Give describeUser typed parameters (name: string, age: number) and a : string return type" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', run: (x) => expectEqual(x.userName, "Ada") },
+    { name: "userAge is 36", run: (x) => expectEqual(x.userAge, 36) },
+    { name: 'describeUser("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.describeUser("Ada", 36), "Ada is 36 years old") },
+    { name: 'describeUser("Rob", 68) returns "Rob is 68 years old"', run: (x) => expectEqual(x.describeUser("Rob", 68), "Rob is 68 years old") },
+  ],
+
+  solution: `const userName: string = "Ada";
+let userAge: number = 36;
+
+function describeUser(name: string, age: number): string {
+  return \`\${name} is \${age} years old\`;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Typed declaration</td><td><code>var x int = 1</code></td><td><code>let x: number = 1;</code></td></tr>
+  <tr><td>Declare + infer</td><td><code>x := 1</code></td><td><code>let x = 1;</code></td></tr>
+  <tr><td>Constant</td><td><code>const</code> (compile-time values only)</td><td><code>const</code> (any value; your default)</td></tr>
+  <tr><td>Numeric types</td><td><code>int</code>, <code>int64</code>, <code>float64</code>, <code>float32</code>…</td><td><code>number</code></td></tr>
+  <tr><td>Return type</td><td><code>func f() string</code></td><td><code>function f(): string { }</code></td></tr>
+  <tr><td>Unassigned variable</td><td>Zero value (<code>0</code>, <code>""</code>, <code>false</code>)</td><td><code>undefined</code> — no zero values</td></tr>
+</table>
+<p>Here's the anchor to hang <code>number</code> on: every TypeScript
+<code>number</code> is exactly a Go <code>float64</code> under the hood. That
+means integers are exact only up to 2<sup>53</sup> − 1 — there is no
+<code>int64</code> to reach for. It trades Go's careful numeric taxonomy for
+one less decision, which is the TypeScript bargain in miniature: less
+ceremony, fewer guarantees at the edges.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

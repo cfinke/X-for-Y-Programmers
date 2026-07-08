@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Threads & Channels</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Threads & Channels",
+
+  intro: `
+<p>You've written the checklist yourself: every shared variable behind a
+<code>std::mutex</code>, every lambda capture audited (<code>[&amp;]</code>
+into a detached thread — never again), every <code>join()</code> accounted
+for. Miss once and it's a data race: undefined behavior that
+ThreadSanitizer catches only if the racy schedule happens to occur under
+the sanitizer. Rust's threads are the same OS threads with the same
+<code>spawn</code>/<code>join</code> shape — but the checklist is run by
+the compiler. A closure that touches data it doesn't own must say
+<code>move</code>; data that isn't safe to share fails the
+<code>Send</code>/<code>Sync</code> traits and the program doesn't build.
+It's ThreadSanitizer at compile time, with 100% schedule coverage.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>std::thread t(fn); t.join();</code></td><td><code>let h = thread::spawn(move || ...); h.join()</code></td></tr>
+  <tr><td><code>[&amp;]</code> capture — you audit the lifetime</td><td><code>move</code> closure — the thread owns its data</td></tr>
+  <tr><td>Data race = UB, maybe caught by TSan at runtime</td><td>Data race = compile error (<code>Send</code>/<code>Sync</code>)</td></tr>
+  <tr><td>Forgotten <code>join()</code> → <code>std::terminate</code></td><td><code>join()</code> returns a <code>Result</code> you handle</td></tr>
+  <tr><td>Hand-rolled queue + mutex + condvar</td><td><code>mpsc::channel()</code> — typed, safe, in std</td></tr>
+</table>
+<p>For producer/consumer work you'd normally build a queue out of a
+<code>std::mutex</code>, a <code>std::condition_variable</code>, and
+caution. Rust ships it: <code>mpsc::channel()</code> returns a typed
+<code>(Sender, Receiver)</code> pair — send on one end, <code>recv()</code>
+blocks on the other, and sending a value <em>moves</em> it, so the producer
+can't touch what the consumer now owns. The discipline "transfer ownership
+across the boundary, don't share" stops being a design pattern and becomes
+the type signature.</p>`,
+
+  cpp: `#include <numeric>
+#include <thread>
+#include <vector>
+
+int parallel_sum(std::vector<int> a, std::vector<int> b) {
+    int sum_b = 0;
+    std::thread t([&] {              // [&]: shared mutable state — audit it
+        sum_b = std::accumulate(b.begin(), b.end(), 0);
+    });
+    int sum_a = std::accumulate(a.begin(), a.end(), 0);
+    t.join();                        // forget this: std::terminate
+    return sum_a + sum_b;            // read sum_b before join(): data race, UB
+}
+
+// Producer/consumer? That's a mutex + condition_variable + a queue
+// you write yourself, and TSan only catches the races it happens to see.`,
+
+  task: `
+<p>Same shapes, checked sharing:</p>
+<ol>
+  <li><code>parallel_sum(a: Vec&lt;i32&gt;, b: Vec&lt;i32&gt;) -&gt; i32</code> —
+      spawn a thread with <code>thread::spawn(move || ...)</code> that sums
+      <code>b</code> (the <code>move</code> hands <code>b</code> to the
+      thread), sum <code>a</code> on the current thread, then
+      <code>.join()</code> and add the two. <code>join()</code> returns a
+      <code>Result</code>; <code>.unwrap()</code> it to get the thread's
+      return value. Hint: <code>b.iter().sum::&lt;i32&gt;()</code>.</li>
+  <li><code>channel_double(vals: Vec&lt;i32&gt;) -&gt; Vec&lt;i32&gt;</code> —
+      make a channel with <code>mpsc::channel()</code>, record
+      <code>vals.len()</code> <em>before</em> the move, then spawn a thread
+      that sends each value doubled. Receive exactly that many values with
+      <code>rx.recv().unwrap()</code> into a <code>Vec</code> (channel order
+      is send order), join the thread, and return the Vec.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::thread;
+use std::sync::mpsc;
+
+// 1. parallel_sum: spawn a thread to sum b (move!), sum a here,
+//    then join and add. join() returns Result — unwrap it.
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    todo!()
+}
+
+// 2. channel_double: let (tx, rx) = mpsc::channel();
+//    Grab vals.len() BEFORE moving vals into the thread.
+//    The thread sends each value * 2; receive exactly len values in order.
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /thread::spawn/, message: "Spawn a worker with thread::spawn(move || ...)" },
+    { pattern: /\.join\(\)/, message: "Join the spawned thread before using its result" },
+    { pattern: /mpsc/, message: "Use an mpsc channel for the producer/consumer exercise" },
+  ],
+
+  tests: [
+    { name: "parallel_sum(vec![1, 2, 3], vec![4, 5, 6]) returns 21",
+      code: 'assert_eq!(parallel_sum(vec![1, 2, 3], vec![4, 5, 6]), 21);' },
+    { name: "parallel_sum handles an empty first vector",
+      code: 'assert_eq!(parallel_sum(vec![], vec![10, -3]), 7);' },
+    { name: "channel_double(vec![1, 2, 3]) returns vec![2, 4, 6] in order",
+      code: 'assert_eq!(channel_double(vec![1, 2, 3]), vec![2, 4, 6]);' },
+    { name: "channel_double handles negatives: vec![-5, 0] -> vec![-10, 0]",
+      code: 'assert_eq!(channel_double(vec![-5, 0]), vec![-10, 0]);' },
+    { name: "channel_double(vec![]) returns an empty Vec",
+      code: 'assert_eq!(channel_double(vec![]), Vec::<i32>::new());' },
+  ],
+
+  solution: `use std::thread;
+use std::sync::mpsc;
+
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    let handle = thread::spawn(move || b.iter().sum::<i32>());
+    let sum_a: i32 = a.iter().sum();
+    sum_a + handle.join().unwrap()
+}
+
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    let (tx, rx) = mpsc::channel();
+    let n = vals.len();
+    let handle = thread::spawn(move || {
+        for v in vals {
+            tx.send(v * 2).unwrap();
+        }
+    });
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        out.push(rx.recv().unwrap());
+    }
+    handle.join().unwrap();
+    out
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Spawn</td><td><code>std::thread t(fn);</code></td><td><code>let h = thread::spawn(move || ...);</code></td></tr>
+  <tr><td>Join</td><td><code>t.join();</code> (void; forget → terminate)</td><td><code>h.join().unwrap()</code> — returns the closure's value</td></tr>
+  <tr><td>Give data to a thread</td><td>Capture by value / <code>std::move</code>, audited by you</td><td><code>move</code> closure, checked by the compiler</td></tr>
+  <tr><td>Data race</td><td>UB — TSan finds it if the schedule cooperates</td><td>Rejected at compile time (<code>Send</code>/<code>Sync</code>)</td></tr>
+  <tr><td>Producer/consumer queue</td><td>mutex + condvar + your own ring buffer</td><td><code>mpsc::channel()</code>, typed and ordered</td></tr>
+  <tr><td>Shared mutable state</td><td><code>std::mutex</code> + discipline</td><td><code>Arc&lt;Mutex&lt;T&gt;&gt;</code> — the lock owns the data</td></tr>
+</table>
+<p><code>Send</code> and <code>Sync</code> are ordinary traits the compiler
+checks at the <code>spawn</code> boundary: <code>Send</code> means a type
+may cross into another thread, <code>Sync</code> means <code>&amp;T</code>
+may be shared between threads. You never implement them by hand — they're
+inferred from a type's contents — but they're why the racy version of the
+C++ on the left simply doesn't type-check here. The invariant you enforce
+by convention ("this thread owns that data now") is what <code>move</code>
+plus the borrow checker prove.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>JSON in Ruby lives in a standard library you opt into with
+<code>require "json"</code>. Once loaded, it grafts <code>to_json</code> onto
+your data — <code>data.to_json</code> is <code>json_encode($data)</code> — and
+gives you <code>JSON.parse(str)</code> for the reverse trip. The parse side
+holds a pleasant surprise for PHP developers: <code>JSON.parse</code> returns
+plain <code>Hash</code>es by default. There is no <code>stdClass</code> to
+dodge and no <code>true</code> second argument to remember — associative is the
+default, not an opt-in.</p>
+<p>Two knobs matter. Pass <code>symbolize_names: true</code> and keys come back
+as <code>:symbols</code> instead of strings, which is what idiomatic Ruby wants
+so you can write <code>user[:name]</code> and reach deep with
+<code>data.dig(:a, :b)</code>. And where <code>json_decode("bad")</code>
+quietly hands you <code>null</code>, <code>JSON.parse("bad")</code>
+<em>raises</em> <code>JSON::ParserError</code> — so you rescue it instead of
+null-checking the result.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>always available</td><td><code>require "json"</code> once</td></tr>
+  <tr><td><code>json_encode($data)</code></td><td><code>data.to_json</code></td></tr>
+  <tr><td><code>json_decode($s, true)</code></td><td><code>JSON.parse(s)</code> (Hash by default)</td></tr>
+  <tr><td>string keys always</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+  <tr><td><code>$data['a']['b'] ?? null</code></td><td><code>data.dig(:a, :b)</code></td></tr>
+  <tr><td>bad JSON =&gt; <code>null</code> silently</td><td>bad JSON =&gt; <code>JSON::ParserError</code> raised</td></tr>
+</table>
+<p>The trade you are making: PHP's decoder never throws, so bad input leaks
+through as <code>null</code> until something downstream trips over it. Ruby
+makes the failure loud and local — you handle it right at the
+<code>JSON.parse</code> call with a <code>rescue</code>.</p>`,
+
+  php: `<?php
+$data = ["name" => "Ada", "age" => 36];
+$json = json_encode($data);        // {"name":"Ada","age":36}
+
+// Second arg true => associative arrays, not stdClass objects:
+$user = json_decode('{"name":"Ada","age":36}', true);
+echo $user["name"];                // Ada
+
+// Missing keys => you supply ?? defaults yourself:
+$name = $user["nickname"] ?? "unknown";
+
+// Bad JSON returns null silently — no exception unless you configure it:
+$bad = json_decode("not json", true);
+var_dump($bad);                    // NULL
+
+$names = array_map(
+    fn($u) => $u["name"],
+    json_decode('[{"name":"Ada"},{"name":"Linus"}]', true)
+);`,
+
+  task: `
+<p>The starter already has <code>require "json"</code>. Fill in:</p>
+<ol>
+  <li><code>to_json_string(data)</code> — return <code>data.to_json</code>.</li>
+  <li><code>parse_user(json)</code> — parse with
+      <code>JSON.parse(json, symbolize_names: true)</code>, then return a hash
+      <code>{ name: ..., age: ... }</code> using <code>fetch(:name,
+      "unknown")</code> and <code>fetch(:age, 0)</code> so missing keys get
+      defaults.</li>
+  <li><code>pluck_names(json)</code> — parse an array of user hashes (symbolize
+      the names) and <code>map</code> each to its <code>:name</code>.</li>
+  <li><code>safe_parse(json)</code> — return <code>JSON.parse(json)</code>, but
+      <code>rescue JSON::ParserError</code> and return <code>{}</code> on bad
+      input.</li>
+</ol>`,
+
+  starter: `require "json"
+
+# 1. to_json_string: serialize any data with to_json.
+def to_json_string(data)
+  raise NotImplementedError, "TODO: implement to_json_string"
+end
+
+# 2. parse_user: JSON.parse(json, symbolize_names: true), then fetch with
+#    defaults for :name ("unknown") and :age (0).
+def parse_user(json)
+  raise NotImplementedError, "TODO: implement parse_user"
+end
+
+# 3. pluck_names: parse an array of user hashes and map to each :name.
+def pluck_names(json)
+  raise NotImplementedError, "TODO: implement pluck_names"
+end
+
+# 4. safe_parse: JSON.parse, but rescue JSON::ParserError and return {}.
+def safe_parse(json)
+  raise NotImplementedError, "TODO: implement safe_parse"
+end
+`,
+
+  requirements: [
+    { pattern: /require\s+["']json["']/, message: "Load the library with require \"json\"" },
+    { pattern: /to_json/, message: "Serialize with to_json" },
+    { pattern: /symbolize_names:\s*true/, message: "Parse with symbolize_names: true" },
+    { pattern: /JSON::ParserError|rescue/, message: "Rescue JSON::ParserError in safe_parse" },
+  ],
+
+  tests: [
+    { name: "to_json_string([1, 2, 3]) => \"[1,2,3]\"",
+      code: '  expect_eq(to_json_string([1, 2, 3]), "[1,2,3]")' },
+    { name: "parse_user reads name and age with symbol keys",
+      code: '  expect_eq(parse_user(\'{"name":"Ada","age":36}\'), { name: "Ada", age: 36 })' },
+    { name: "parse_user fills defaults for missing keys",
+      code: '  expect_eq(parse_user("{}"), { name: "unknown", age: 0 })' },
+    { name: "pluck_names maps each user to its name",
+      code: '  expect_eq(pluck_names(\'[{"name":"Ada"},{"name":"Linus"}]\'), ["Ada", "Linus"])' },
+    { name: "safe_parse returns the parsed Hash on valid JSON",
+      code: '  expect_eq(safe_parse(\'{"x":1}\'), { "x" => 1 })' },
+    { name: "safe_parse returns {} on bad JSON (ParserError rescued)",
+      code: '  expect_eq(safe_parse("not json"), {})' },
+  ],
+
+  solution: `require "json"
+
+def to_json_string(data)
+  data.to_json
+end
+
+def parse_user(json)
+  user = JSON.parse(json, symbolize_names: true)
+  {
+    name: user.fetch(:name, "unknown"),
+    age: user.fetch(:age, 0),
+  }
+end
+
+def pluck_names(json)
+  users = JSON.parse(json, symbolize_names: true)
+  users.map { |u| u[:name] }
+end
+
+def safe_parse(json)
+  JSON.parse(json)
+rescue JSON::ParserError
+  {}
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Enable</td><td>built in</td><td><code>require "json"</code></td></tr>
+  <tr><td>Encode</td><td><code>json_encode($d)</code></td><td><code>d.to_json</code></td></tr>
+  <tr><td>Decode</td><td><code>json_decode($s, true)</code></td><td><code>JSON.parse(s)</code></td></tr>
+  <tr><td>Symbol keys</td><td>n/a</td><td><code>symbolize_names: true</code></td></tr>
+  <tr><td>Deep access</td><td><code>$d['a']['b'] ?? null</code></td><td><code>d.dig(:a, :b)</code></td></tr>
+  <tr><td>Key with default</td><td><code>$d['k'] ?? $def</code></td><td><code>d.fetch(:k, def)</code></td></tr>
+  <tr><td>Bad input</td><td>returns <code>null</code></td><td>raises <code>JSON::ParserError</code></td></tr>
+</table>
+<p>The behavioural difference worth internalizing is failure handling.
+<code>json_decode</code> is total — it always returns something, so malformed
+input silently becomes <code>null</code> and the bug surfaces far from its
+cause. <code>JSON.parse</code> is partial and honest: it raises at the point of
+failure, and the idiomatic response is a targeted
+<code>rescue JSON::ParserError</code> that decides on a fallback right there.
+Same data, opposite defaults — Ruby fails loud, PHP fails quiet.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

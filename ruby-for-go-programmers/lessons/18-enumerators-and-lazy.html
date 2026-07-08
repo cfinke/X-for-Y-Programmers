@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Enumerators & Lazy</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Enumerators & Lazy",
+
+  intro: `
+<p>Go 1.23 finally gave you iterators: range-over-func, where a sequence is a
+<code>func(yield func(T) bool)</code> and you write the protocol yourself —
+check <code>yield</code>'s return value, remember to stop, wire up the
+break-propagation. Ruby's <code>Enumerator</code> is the same idea with the
+protocol hidden: <code>Enumerator.new { |y| ... y &lt;&lt; value ... }</code>
+hands you a <em>yielder</em> object, you shovel values into it, and the
+consumer's demand drives the block. No bool to check, no channels, no
+goroutine to leak if the consumer stops early.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>func(yield func(int) bool)</code></td><td><code>Enumerator.new { |y| ... }</code></td></tr>
+  <tr><td><code>if !yield(v) { return }</code></td><td><code>y &lt;&lt; v</code> (suspension is automatic)</td></tr>
+  <tr><td><code>for v := range seq { ... break }</code></td><td><code>seq.first(n)</code>, <code>seq.take(5)</code></td></tr>
+  <tr><td>infinite loop + manual <code>break</code></td><td><code>(1..Float::INFINITY).lazy</code></td></tr>
+  <tr><td>chunking: index arithmetic</td><td><code>arr.each_slice(2)</code></td></tr>
+</table>
+<p>For infinite sequences you often don't even need an Enumerator:
+<code>(1..Float::INFINITY).lazy.select { ... }.first(5)</code> chains
+<code>map</code>/<code>select</code> over an endless range, <em>demand-driven</em>
+— <code>.lazy</code> makes each stage pull one element at a time instead of
+materializing arrays, and <code>.first(n)</code> stops the whole pipeline
+after n results. It's the pull-based iterator pattern you'd hand-build with
+range-over-func (or, worse, channels), as a one-liner.</p>`,
+
+  go: `// Go 1.23 range-over-func: the iterator protocol, visible.
+func Fib(yield func(int) bool) {
+	a, b := 0, 1
+	for {
+		if !yield(a) { // consumer said stop — our job to notice
+			return
+		}
+		a, b = b, a+b
+	}
+}
+
+func main() {
+	fibs := []int{}
+	for f := range Fib {
+		fibs = append(fibs, f)
+		if len(fibs) == 8 {
+			break
+		}
+	}
+	fmt.Println(fibs) // [0 1 1 2 3 5 8 13]
+}`,
+
+  task: `
+<p>Rewrite the Go on the left as Ruby:</p>
+<ol>
+  <li><code>multiples_of(k, count)</code> — the first <code>count</code>
+      positive multiples of <code>k</code>, via an infinite lazy chain:
+      <code>(1..Float::INFINITY).lazy.select { |n| n % k == 0 }.first(count)</code>.</li>
+  <li><code>fibonacci(count)</code> — the first <code>count</code> Fibonacci
+      numbers starting from 0, via <code>Enumerator.new</code>: inside the
+      block, set <code>a, b = 0, 1</code>, then <code>loop</code> forever
+      shoveling <code>y &lt;&lt; a</code> and stepping
+      <code>a, b = b, a + b</code>. Call <code>.first(count)</code> on the
+      enumerator — the infinite loop only runs as far as demanded.</li>
+  <li><code>pairs(arr)</code> — chunk an array into pairs with
+      <code>arr.each_slice(2).to_a</code> (a leftover element rides alone in
+      the final slice).</li>
+</ol>`,
+
+  starter: `# 1. multiples_of: an infinite range, filtered lazily, cut with first.
+#    (1..Float::INFINITY).lazy.select { ... }.first(count)
+def multiples_of(k, count)
+  raise NotImplementedError, "TODO: implement multiples_of"
+end
+
+# 2. fibonacci: Enumerator.new gives you a yielder — shovel values in.
+#    Enumerator.new do |y|
+#      a, b = 0, 1
+#      loop do
+#        y << a
+#        a, b = b, a + b
+#      end
+#    end
+def fibonacci(count)
+  raise NotImplementedError, "TODO: implement fibonacci"
+end
+
+# 3. pairs: each_slice(2) chunks; .to_a materializes.
+def pairs(arr)
+  raise NotImplementedError, "TODO: implement pairs"
+end
+`,
+
+  requirements: [
+    { pattern: /\.lazy/, message: "Use .lazy on the infinite range in multiples_of" },
+    { pattern: /Enumerator\.new/, message: "Build fibonacci with Enumerator.new" },
+    { pattern: /first\(/, message: "Cut infinite sequences with first(n)" },
+    { pattern: /each_slice/, message: "Chunk with each_slice in pairs" },
+  ],
+
+  tests: [
+    { name: "multiples_of(3, 4) returns [3, 6, 9, 12]",
+      code: "  expect_eq(multiples_of(3, 4), [3, 6, 9, 12])" },
+    { name: "multiples_of(7, 3) returns [7, 14, 21]",
+      code: "  expect_eq(multiples_of(7, 3), [7, 14, 21])" },
+    { name: "fibonacci(8) returns [0, 1, 1, 2, 3, 5, 8, 13]",
+      code: "  expect_eq(fibonacci(8), [0, 1, 1, 2, 3, 5, 8, 13])" },
+    { name: "fibonacci(1) returns [0] — demand-driven, no runaway loop",
+      code: "  expect_eq(fibonacci(1), [0])" },
+    { name: "pairs([1, 2, 3, 4, 5]) returns [[1, 2], [3, 4], [5]]",
+      code: "  expect_eq(pairs([1, 2, 3, 4, 5]), [[1, 2], [3, 4], [5]])\n  expect_eq(pairs([]), [])" },
+  ],
+
+  solution: `def multiples_of(k, count)
+  (1..Float::INFINITY).lazy.select { |n| n % k == 0 }.first(count)
+end
+
+def fibonacci(count)
+  fibs = Enumerator.new do |y|
+    a, b = 0, 1
+    loop do
+      y << a
+      a, b = b, a + b
+    end
+  end
+  fibs.first(count)
+end
+
+def pairs(arr)
+  arr.each_slice(2).to_a
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Custom iterator</td><td><code>func(yield func(T) bool)</code></td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+  <tr><td>Stop signal</td><td><code>if !yield(v) { return }</code>, by hand</td><td>automatic — the yielder suspends</td></tr>
+  <tr><td>Infinite source</td><td><code>for { ... }</code> + <code>break</code></td><td><code>(1..Float::INFINITY)</code>, <code>loop do</code></td></tr>
+  <tr><td>Demand-driven pipeline</td><td>hand-rolled, or channels + goroutines</td><td><code>.lazy.map { }.select { }.first(n)</code></td></tr>
+  <tr><td>Take n</td><td>counter + <code>break</code></td><td><code>.first(n)</code> / <code>.take(n)</code></td></tr>
+  <tr><td>Chunking</td><td>index arithmetic over a slice</td><td><code>each_slice(n)</code>, <code>each_cons(n)</code></td></tr>
+</table>
+<p>Without <code>.lazy</code>, each Enumerable stage eagerly builds a whole
+array before the next begins — mapping an infinite range would hang. With it,
+one element flows through the entire chain at a time, and <code>first(n)</code>
+shuts the pipeline down — the same early-exit guarantee that range-over-func
+encodes in <code>yield</code>'s bool, with none of the plumbing. Every
+<code>each_*</code> method called without a block returns an Enumerator, so
+<code>arr.each_slice(2)</code> is itself a lazy-ish sequence you can chain
+before materializing with <code>.to_a</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

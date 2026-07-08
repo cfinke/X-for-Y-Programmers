@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>C# has one answer to "share an implementation across unrelated classes
+without a base class": default interface methods (C# 8). They work, but with
+real limits — no instance state, and the method is only reachable through the
+interface type, so <code>new Dog().Describe()</code> won't even compile
+without a cast. PHP's answer is the <strong>trait</strong>: a genuine mixin.
+A trait is a bundle of methods (and, unlike DIMs, properties too) that gets
+<em>copied into</em> any class that says <code>use TraitName;</code> — as if
+you'd written the code there yourself.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>string Describe() =&gt; ...</code> in an interface (C# 8 DIM)</td><td><code>trait Describable { public function describe(): string {...} }</code></td></tr>
+  <tr><td><code>class Dog : IDescribable</code></td><td><code>class Dog { use Describable; }</code></td></tr>
+  <tr><td>Stateless — no instance fields in the interface</td><td>Traits may declare properties (state travels with the mixin)</td></tr>
+  <tr><td>Callable only via the interface type</td><td><code>$dog-&gt;describe()</code> — a first-class method of the class</td></tr>
+  <tr><td>Diamond conflicts: compile error, re-implement</td><td>Conflicts resolved explicitly with <code>insteadof</code> / <code>as</code></td></tr>
+</table>
+<p>Inside a trait, <code>$this</code> means the eventual host object — so a
+trait method can freely call methods the host class is expected to provide,
+like the <code>$this-&gt;name()</code> below. A class can <code>use</code>
+several traits; if two supply the same method name, the class picks a winner
+with <code>insteadof</code> (or renames one with <code>as</code>) instead of
+inheriting an ambiguity. And note what traits are <em>not</em>: they aren't
+types. You can't type-hint a parameter as <code>Describable</code> — pair a
+trait with an interface when you need the contract too.</p>`,
+
+  csharp: `interface IDescribable
+{
+    string Name();
+
+    // Default interface method: shared behavior, but no
+    // state, and only visible through the interface type.
+    string Describe() => $"This is {Name()}";
+}
+
+class Dog : IDescribable
+{
+    public string Name() => "Rex";
+}
+
+class Robot : IDescribable
+{
+    public string Name() => "Unit 734";
+}
+
+// new Dog().Describe() does not compile; you must cast:
+Console.WriteLine(((IDescribable)new Dog()).Describe());`,
+
+  task: `
+<p>Build the same shape with a real mixin:</p>
+<ol>
+  <li>In the trait <code>Describable</code>, implement
+      <code>describe(): string</code> so it returns
+      <code>"This is "</code> concatenated (with <code>.</code>) to
+      <code>$this-&gt;name()</code> — the trait leans on a method the host
+      class provides.</li>
+  <li>Implement <code>name(): string</code> in <code>Dog</code> to return
+      <code>"Rex"</code>, and in <code>Robot</code> to return
+      <code>"Unit 734"</code>. Both classes already mix the trait in with
+      <code>use Describable;</code>.</li>
+</ol>
+<p>No cast needed anywhere: after <code>use</code>, <code>describe()</code>
+is as much a method of <code>Dog</code> as <code>name()</code> is.</p>`,
+
+  starter: `<?php
+
+// 1. The trait: describe() builds on the host class's name().
+//    Inside a trait, $this is the object of whatever class uses it.
+trait Describable {
+    public function describe(): string {
+        throw new Exception("TODO: return 'This is ' . \$this->name()");
+    }
+}
+
+// 2. Two unrelated classes — no common base — mix it in.
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return the string Rex");
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return the string Unit 734");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describable/, message: "Keep the trait Describable declaration" },
+    { pattern: /use\s+Describable/, message: "Mix the trait into the classes with use Describable;" },
+  ],
+
+  tests: [
+    { name: '(new Dog())->name() returns "Rex"',
+      code: 'expect_eq((new Dog())->name(), "Rex");' },
+    { name: '(new Robot())->name() returns "Unit 734"',
+      code: 'expect_eq((new Robot())->name(), "Unit 734");' },
+    { name: '(new Dog())->describe() returns "This is Rex" — the trait method calls Dog\'s name()',
+      code: 'expect_eq((new Dog())->describe(), "This is Rex");' },
+    { name: '(new Robot())->describe() returns "This is Unit 734" — same trait, different host',
+      code: 'expect_eq((new Robot())->describe(), "This is Unit 734");' },
+  ],
+
+  solution: `<?php
+
+trait Describable {
+    public function describe(): string {
+        return "This is " . $this->name();
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        return "Rex";
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        return "Unit 734";
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Share behavior without a base class</td><td>default interface methods (C# 8)</td><td><code>trait X { ... }</code> + <code>use X;</code></td></tr>
+  <tr><td>State in the shared code</td><td>not allowed (no fields in interfaces)</td><td>traits may declare properties</td></tr>
+  <tr><td>Visibility of shared method</td><td>through the interface type only</td><td>a normal method of the class</td></tr>
+  <tr><td>Name collision between two sources</td><td>compile error; class must re-implement</td><td><code>use A, B { A::hello insteadof B; }</code></td></tr>
+  <tr><td>Rename on the way in</td><td>—</td><td><code>use A { hello as greet; }</code></td></tr>
+  <tr><td>Use as a type hint</td><td>the interface is a type</td><td>traits are <em>not</em> types — pair with an interface</td></tr>
+</table>
+<p>Think of <code>use Describable;</code> as compiler-assisted copy-paste:
+the methods land in the class as if written inline, <code>$this</code> and
+all. That's both the power (state, host-method calls, no casting) and the
+caution — a trait is an implementation detail, invisible to the type system.
+Idiomatic PHP pairs them: an interface declares <em>what</em>
+(<code>Describable</code>-the-contract), a trait supplies a reusable
+<em>how</em>, and classes opt into either or both.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

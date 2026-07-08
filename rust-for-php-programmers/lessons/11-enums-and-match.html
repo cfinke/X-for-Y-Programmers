@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Pattern Matching</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Pattern Matching",
+
+  intro: `
+<p>PHP 8.1 enums were a great addition, but the cases are <em>fieldless</em>:
+<code>case Circle;</code> can't carry a radius. When a case needs data you
+bolt it on from outside — a <code>['type' =&gt; 'circle', 'radius' =&gt; 1.0]</code>
+array, or a class hierarchy with the enum as a tag. Rust enums close that gap:
+each variant carries its own payload, with its own shape.
+<code>enum Shape { Circle { radius: f64 }, Rectangle { width: f64, height: f64 } }</code>
+is that tagged array formalized — the tag and the data travel together, and
+the compiler knows which fields exist for which tag.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>enum ShapeKind { case Circle; }</code> — no payload allowed</td><td><code>enum Shape { Circle { radius: f64 } }</code> — payload per variant</td></tr>
+  <tr><td><code>['type' =&gt; 'circle', 'radius' =&gt; 1.0]</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+  <tr><td><code>match ($shape['type']) { 'circle' =&gt; ... }</code></td><td><code>match shape { Shape::Circle { radius } =&gt; ... }</code></td></tr>
+  <tr><td>Forgotten case → <code>UnhandledMatchError</code> at runtime</td><td>Forgotten variant → compile error</td></tr>
+</table>
+<p>Rust's <code>match</code> is PHP 8's <code>match</code> expression grown up.
+It's still an expression that produces a value with no fall-through — but each
+arm can also <em>destructure</em> the variant's payload, binding
+<code>radius</code> or <code>width</code> right in the pattern. And where PHP
+throws <code>UnhandledMatchError</code> when a value slips past every arm at
+runtime, Rust's <code>match</code> must be exhaustive at <em>compile time</em>:
+add a variant to the enum and every <code>match</code> that doesn't handle it
+stops compiling until you do.</p>`,
+
+  php: `<?php
+enum ShapeKind {
+    case Circle;       // cases are just labels —
+    case Rectangle;    // they can't carry a radius or a width
+}
+
+// so the data rides along in an untyped array next to the tag:
+function area(array $shape): float {
+    return match ($shape['type']) {
+        'circle'    => M_PI * $shape['radius'] ** 2,
+        'rectangle' => $shape['width'] * $shape['height'],
+        // forget a case: UnhandledMatchError — but only at runtime
+    };
+}
+
+echo area(['type' => 'circle', 'radius' => 1.0]);   // 3.1415926...`,
+
+  task: `
+<p>The tagged-array version, formalized:</p>
+<ol>
+  <li>Keep the <code>enum Shape</code> definition in the starter as-is — it is
+      already complete, with <code>Circle</code> carrying a
+      <code>radius</code> and <code>Rectangle</code> carrying
+      <code>width</code> and <code>height</code>. The tests construct values
+      like <code>Shape::Circle { radius: 1.0 }</code>.</li>
+  <li>Write <code>area(shape: &amp;Shape) -&gt; f64</code> as a single
+      <code>match</code> expression that destructures each variant's payload:
+      <code>std::f64::consts::PI * radius * radius</code> for a circle,
+      <code>width * height</code> for a rectangle. Leave out an arm and watch
+      the compiler — not a runtime exception — complain.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Complete — each variant carries exactly the data it needs.
+// This is ['type' => 'circle', 'radius' => 1.0] with the compiler watching.
+enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+// area: match on the shape and destructure the payload in each arm.
+//   Shape::Circle { radius }          => PI * radius * radius
+//   Shape::Rectangle { width, height } => width * height
+// PI lives at std::f64::consts::PI.
+fn area(shape: &Shape) -> f64 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+Shape/, message: "Keep the enum Shape definition" },
+    { pattern: /match\b/, message: "Use a match expression in area" },
+    { pattern: /Circle\s*\{/, message: "Destructure the Circle variant's payload" },
+  ],
+
+  tests: [
+    { name: "area of a circle with radius 1.0 is PI",
+      code: "let a = area(&Shape::Circle { radius: 1.0 });\nassert!((a - std::f64::consts::PI).abs() < 0.001, \"expected about 3.14159 but got {}\", a);" },
+    { name: "area of a circle with radius 2.0 is 4 * PI",
+      code: "let a = area(&Shape::Circle { radius: 2.0 });\nlet expected = 4.0 * std::f64::consts::PI;\nassert!((a - expected).abs() < 0.001, \"expected about {} but got {}\", expected, a);" },
+    { name: "area of a 3.0 x 4.0 rectangle is exactly 12.0",
+      code: "assert_eq!(area(&Shape::Rectangle { width: 3.0, height: 4.0 }), 12.0);" },
+    { name: "area of a 2.5 x 2.0 rectangle is exactly 5.0",
+      code: "assert_eq!(area(&Shape::Rectangle { width: 2.5, height: 2.0 }), 5.0);" },
+  ],
+
+  solution: `enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
+        Shape::Rectangle { width, height } => width * height,
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Enum case</td><td><code>case Circle;</code> — fieldless</td><td><code>Circle { radius: f64 }</code> — carries data</td></tr>
+  <tr><td>Constructing</td><td><code>['type' =&gt; 'circle', 'radius' =&gt; 1.0]</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+  <tr><td>Branch on it</td><td><code>match ($shape['type'])</code> — string tag</td><td><code>match shape</code> — the variant itself</td></tr>
+  <tr><td>Get at the data</td><td><code>$shape['radius']</code> — hope it's there</td><td><code>Shape::Circle { radius } =&gt;</code> — bound by the pattern</td></tr>
+  <tr><td>Missing case</td><td><code>UnhandledMatchError</code> at runtime</td><td>compile error: "non-exhaustive patterns"</td></tr>
+</table>
+<p>The exhaustiveness check is the payoff. In PHP, adding
+<code>'triangle'</code> to your shape arrays means grepping for every
+<code>match</code> and <code>switch</code> that handles shapes and hoping
+your test suite covers the ones you missed. In Rust, add a
+<code>Triangle</code> variant and the compiler hands you the complete list of
+every <code>match</code> to update — you cannot ship the forgotten one.
+You've already met this machinery, by the way: <code>Option</code> and
+<code>Result</code> from earlier lessons are just enums with payloads —
+<code>Some(T)</code> is a variant carrying data.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

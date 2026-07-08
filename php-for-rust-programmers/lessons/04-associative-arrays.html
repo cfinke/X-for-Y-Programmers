@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Associative Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Associative Arrays",
+
+  intro: `
+<p>Here is the twist: PHP doesn't have a separate map type. The same
+<code>array</code> from last lesson is also the <code>HashMap</code> — give
+it string keys and it becomes one: <code>['apples' =&gt; 3]</code>. No
+<code>HashMap::new()</code>, no <code>.insert()</code> chain, no
+<code>.to_string()</code> on every key — a literal, like the map literal
+Rust never shipped.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>HashMap::from([("apples".into(), 3)])</code></td><td><code>['apples' =&gt; 3]</code></td></tr>
+  <tr><td><code>m.get(&amp;k).copied().unwrap_or(0)</code></td><td><code>$m[$k] ?? 0</code></td></tr>
+  <tr><td><code>*m.entry(k).or_insert(0) += n;</code></td><td><code>$m[$k] = ($m[$k] ?? 0) + $n;</code></td></tr>
+  <tr><td><code>for (k, v) in &amp;m { … }</code></td><td><code>foreach ($m as $k =&gt; $v) { … }</code></td></tr>
+  <tr><td><code>m.contains_key(&amp;k)</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+  <tr><td>Iteration order: arbitrary</td><td>Iteration order: <strong>insertion order, guaranteed</strong></td></tr>
+</table>
+<p>Lookup with a default is an <em>operator</em>: <code>$m[$k] ?? 0</code>
+is <code>.get().unwrap_or(0)</code> without the <code>Option</code>
+ceremony — a missing key short-circuits to the right-hand side instead of
+returning <code>None</code>. The upsert idiom
+<code>$m[$k] = ($m[$k] ?? 0) + $n</code> is your
+<code>.entry().or_insert()</code>. And one genuine upgrade over
+<code>HashMap</code>: PHP arrays are ordered maps — they remember insertion
+order, always, something <code>HashMap</code> explicitly never promised
+(you'd reach for <code>indexmap</code> to get it).</p>`,
+
+  rust: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    HashMap::from([("apples".to_string(), 3), ("pears".to_string(), 5)])
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(
+    mut inv: HashMap<String, u32>,
+    name: &str,
+    n: u32,
+) -> HashMap<String, u32> {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+    inv
+}
+
+fn total_stock(inv: &HashMap<String, u32>) -> u32 {
+    inv.values().sum() // in no particular order
+}`,
+
+  task: `
+<p>Port the inventory helpers:</p>
+<ol>
+  <li><code>build_inventory(): array</code> — return the literal
+      <code>['apples' =&gt; 3, 'pears' =&gt; 5]</code>, in that order (the
+      tests check key order — PHP keeps it).</li>
+  <li><code>get_count(array $inv, string $name): int</code> — look up with a
+      default of <code>0</code> using <code>??</code>. No
+      <code>Option</code>, no <code>unwrap_or</code> — the operator does
+      both jobs.</li>
+  <li><code>add_stock(array $inv, string $name, int $n): array</code> — the
+      <code>entry().or_insert()</code> upsert:
+      <code>$inv[$name] = ($inv[$name] ?? 0) + $n;</code>, then return the
+      copy.</li>
+  <li><code>total_stock(array $inv): int</code> — sum the values with
+      <code>foreach ($inv as $name =&gt; $qty)</code> into an accumulator
+      (yes, <code>array_sum</code> exists; write the loop once to learn the
+      <code>=&gt;</code> form).</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. A map is just an array with string keys: ['apples' => 3, ...]
+function build_inventory(): array {
+    throw new Exception("TODO: implement build_inventory");
+}
+
+// 2. .get(&k).copied().unwrap_or(0)  ->  $inv[$name] ?? 0
+function get_count(array $inv, string $name): int {
+    throw new Exception("TODO: implement get_count");
+}
+
+// 3. *inv.entry(k).or_insert(0) += n  ->  $inv[$name] = ($inv[$name] ?? 0) + $n
+//    $inv is a copy — return it, the caller's array is untouched.
+function add_stock(array $inv, string $name, int $n): array {
+    throw new Exception("TODO: implement add_stock");
+}
+
+// 4. for (k, v) in &inv  ->  foreach ($inv as $name => $qty)
+function total_stock(array $inv): int {
+    throw new Exception("TODO: implement total_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /=>/, message: "Build the inventory with ['key' => value] literal syntax" },
+    { pattern: /\?\?/, message: "Use the ?? null-coalescing operator for the default lookup" },
+    { pattern: /foreach\s*\(|array_keys/, message: "Iterate with foreach ($m as $k => $v) in total_stock" },
+  ],
+
+  tests: [
+    { name: "build_inventory() returns ['apples' => 3, 'pears' => 5]",
+      code: "expect_eq(build_inventory(), ['apples' => 3, 'pears' => 5]);" },
+    { name: "build_inventory() preserves insertion order (apples first)",
+      code: "expect_eq(array_keys(build_inventory()), ['apples', 'pears']);" },
+    { name: "get_count on a present key returns its count",
+      code: "expect_eq(get_count(['apples' => 3], 'apples'), 3);" },
+    { name: "get_count on a missing key returns 0",
+      code: "expect_eq(get_count(['apples' => 3], 'plums'), 0);" },
+    { name: "add_stock upserts and leaves the original alone",
+      code: "$inv = ['apples' => 3];\nexpect_eq(add_stock($inv, 'apples', 2), ['apples' => 5]);\nexpect_eq(add_stock($inv, 'figs', 4), ['apples' => 3, 'figs' => 4]);\nexpect_eq($inv, ['apples' => 3]);" },
+    { name: "total_stock(['apples' => 3, 'pears' => 5]) returns 8",
+      code: "expect_eq(total_stock(['apples' => 3, 'pears' => 5]), 8);\nexpect_eq(total_stock([]), 0);" },
+  ],
+
+  solution: `<?php
+
+function build_inventory(): array {
+    return ['apples' => 3, 'pears' => 5];
+}
+
+function get_count(array $inv, string $name): int {
+    return $inv[$name] ?? 0;
+}
+
+function add_stock(array $inv, string $name, int $n): array {
+    $inv[$name] = ($inv[$name] ?? 0) + $n;
+    return $inv;
+}
+
+function total_stock(array $inv): int {
+    $total = 0;
+    foreach ($inv as $name => $qty) {
+        $total += $qty;
+    }
+    return $total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Map type</td><td><code>HashMap&lt;K, V&gt;</code></td><td><code>array</code> — same type as lists</td></tr>
+  <tr><td>Literal</td><td>none (<code>HashMap::from([...])</code>)</td><td><code>['k' =&gt; v]</code></td></tr>
+  <tr><td>Lookup w/ default</td><td><code>m.get(&amp;k).copied().unwrap_or(0)</code></td><td><code>$m[$k] ?? 0</code></td></tr>
+  <tr><td>Upsert</td><td><code>*m.entry(k).or_insert(0) += n</code></td><td><code>$m[$k] = ($m[$k] ?? 0) + $n</code></td></tr>
+  <tr><td>Has key?</td><td><code>m.contains_key(&amp;k)</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (k, v) in &amp;m</code></td><td><code>foreach ($m as $k =&gt; $v)</code></td></tr>
+  <tr><td>Order</td><td>arbitrary (use <code>indexmap</code>/<code>BTreeMap</code>)</td><td>insertion order, guaranteed</td></tr>
+</table>
+<p>One map-vs-list subtlety to file away: <code>[0 =&gt; 'a', 1 =&gt; 'b']</code>
+and <code>['a', 'b']</code> are the <em>same value</em> — lists are just
+arrays whose keys happen to be 0, 1, 2… This is wonderfully uniform and
+occasionally treacherous (delete an element and the keys keep their gaps).
+Also mind <code>??</code> vs <code>array_key_exists</code>: a key holding
+<code>null</code> looks absent to <code>??</code> but present to
+<code>array_key_exists</code> — the difference between
+<code>unwrap_or</code> on the value and <code>contains_key</code> on the
+slot.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

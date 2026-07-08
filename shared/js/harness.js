@@ -16,7 +16,15 @@
  *   cheatSheetTitle: "PHP ⇄ TypeScript cheat sheet",
  *   storageKey: "tsphp-completed",              // localStorage progress key
  *   accent: "#7a6fb0",                          // source-panel accent color (optional)
+ *   target: "typescript",                       // language being taught: "typescript"
+ *                                               // (default, runs in-browser) or "rust"
+ *                                               // (runs via the Rust Playground API)
+ *   targetName: "TypeScript",                   // editor heading: "Write your <targetName>"
  * }
+ *
+ * For target "rust", LESSON.tests entries are { name, code } where `code` is
+ * Rust statements (typically assert_eq!/assert!) run against the learner's
+ * code, and there is no exportNames field. Learner code must not define main.
  *
  * LESSON schema:
  * {
@@ -142,6 +150,136 @@ function fmtArgs(args) {
   }).join(" ");
 }
 
+/* ---------- Rust runner (target: "rust") ---------- */
+
+/*
+ * Builds one Rust program from the learner's code plus the lesson's tests.
+ * Each test becomes its own fn run under catch_unwind, so one failing
+ * assert doesn't hide the others. Results are printed as ::PASS::<i> /
+ * ::FAIL::<i>::<message> lines and parsed back out of stdout.
+ */
+function buildRustProgram(userCode, tests) {
+  let out = "#![allow(unused)]\n" + userCode + "\n\n";
+  tests.forEach(function (t, i) {
+    out += "fn __lesson_test_" + i + "() {\n" + t.code + "\n}\n\n";
+  });
+  out += "fn main() {\n";
+  out += "    std::panic::set_hook(Box::new(|_| {}));\n";
+  out += "    let tests: &[fn()] = &[" + tests.map(function (_, i) { return "__lesson_test_" + i; }).join(", ") + "];\n";
+  out += "    for (i, t) in tests.iter().enumerate() {\n";
+  out += "        match std::panic::catch_unwind(*t) {\n";
+  out += "            Ok(_) => println!(\"::PASS::{}\", i),\n";
+  out += "            Err(e) => {\n";
+  out += "                let msg = if let Some(s) = e.downcast_ref::<&str>() { s.to_string() }\n";
+  out += "                    else if let Some(s) = e.downcast_ref::<String>() { s.clone() }\n";
+  out += "                    else { String::from(\"panicked\") };\n";
+  out += "                println!(\"::FAIL::{}::{}\", i, msg.replace('\\n', \" \"));\n";
+  out += "            }\n";
+  out += "        }\n";
+  out += "    }\n";
+  out += "}\n";
+  return out;
+}
+
+async function runRustProgram(program) {
+  const resp = await fetch("https://play.rust-lang.org/execute", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      channel: "stable",
+      mode: "debug",
+      edition: "2021",
+      crateType: "bin",
+      tests: false,
+      code: program,
+      backtrace: false,
+    }),
+  });
+  if (!resp.ok) {
+    throw new Error("The Rust Playground returned HTTP " + resp.status + ". Try again in a moment.");
+  }
+  return resp.json(); // { success, stdout, stderr }
+}
+
+function rustCompileErrors(stderr) {
+  const lines = (stderr || "").split("\n").filter(function (l) {
+    return !/^\s*(Compiling|Finished|Running|warning: unused)/.test(l);
+  });
+  const text = lines.join("\n").trim();
+  return text.length > 4000 ? text.slice(0, 4000) + "\n…" : text;
+}
+
+/* ---------- PHP runner (target: "php") ---------- */
+
+/*
+ * Same shape as the Rust runner: one PHP program from the learner's code
+ * plus the lesson's tests, each test isolated in a closure with Throwable
+ * caught, results printed as ::PASS::<i> / ::FAIL::<i>::<message> lines.
+ * Lesson code starts with <?php (stripped here); tests use the expect_eq /
+ * expect_true helpers defined below. Executed on wandbox.org.
+ */
+function buildPhpProgram(userCode, tests) {
+  const user = userCode.replace(/^\s*<\?php\s*/, "");
+  let out = "<?php\n";
+  out += "function expect_eq($actual, $expected) { if ($actual !== $expected) { throw new Exception('expected ' . var_export($expected, true) . ' but got ' . var_export($actual, true)); } }\n";
+  out += "function expect_true($cond) { if (!$cond) { throw new Exception('expected a truthy value'); } }\n\n";
+  out += user + "\n\n";
+  tests.forEach(function (t, i) {
+    out += "try { (function () {\n" + t.code + "\n})(); echo \"::PASS::" + i + "\\n\"; } catch (Throwable $e) { echo \"::FAIL::" + i + "::\" . str_replace(\"\\n\", \" \", $e->getMessage()) . \"\\n\"; }\n";
+  });
+  return out;
+}
+
+async function runWandbox(compiler, program) {
+  const resp = await fetch("https://wandbox.org/api/compile.json", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: program, compiler: compiler }),
+  });
+  if (!resp.ok) {
+    throw new Error("Wandbox returned HTTP " + resp.status + ". Try again in a moment.");
+  }
+  const data = await resp.json();
+  // Normalize to the { stdout, stderr } shape the marker parser expects.
+  return {
+    stdout: data.program_output || "",
+    stderr: (data.compiler_error || "") + (data.program_error || ""),
+  };
+}
+
+function runPhpProgram(program) {
+  return runWandbox("php-8.3.12", program);
+}
+
+/* ---------- Ruby runner (target: "ruby") ---------- */
+
+/*
+ * Same shape as the PHP runner: one Ruby program from the learner's code
+ * plus the lesson's tests, each test isolated in a begin/rescue that catches
+ * Exception (so NotImplementedError TODO stubs fail gracefully), results
+ * printed as ::PASS::<i> / ::FAIL::<i>::<message> lines. Tests use the
+ * expect_eq / expect_true helpers defined below. Executed on wandbox.org.
+ */
+function buildRubyProgram(userCode, tests) {
+  let out = "";
+  out += "def expect_eq(actual, expected)\n";
+  out += "  raise \"expected #{expected.inspect} but got #{actual.inspect}\" unless actual == expected\n";
+  out += "end\n\n";
+  out += "def expect_true(cond)\n";
+  out += "  raise \"expected a truthy value\" unless cond\n";
+  out += "end\n\n";
+  out += userCode + "\n\n";
+  tests.forEach(function (t, i) {
+    out += "begin\n" + t.code + "\n  puts \"::PASS::" + i + "\"\n";
+    out += "rescue Exception => e\n  puts \"::FAIL::" + i + "::\" + e.message.to_s.split(\"\\n\").join(\" \")\nend\n";
+  });
+  return out;
+}
+
+function runRubyProgram(program) {
+  return runWandbox("ruby-3.4.9", program);
+}
+
 /* ---------- rendering ---------- */
 
 function el(tag, className, html) {
@@ -176,17 +314,9 @@ function renderLesson() {
   app.appendChild(taskPanel);
 
   const compare = el("section", "compare");
-  const srcPanel = el("div", "panel source-panel");
-  srcPanel.appendChild(el("h2", null, escapeHtml(COURSE.sourceHeading)));
-  const srcPre = el("pre", "code-block source-code");
-  const srcCode = document.createElement("code");
-  srcCode.textContent = LESSON[COURSE.sourceField];
-  srcPre.appendChild(srcCode);
-  srcPanel.appendChild(srcPre);
-  compare.appendChild(srcPanel);
 
   const editorPanel = el("div", "panel editor-panel");
-  editorPanel.appendChild(el("h2", null, "Write your TypeScript"));
+  editorPanel.appendChild(el("h2", null, "Write your " + escapeHtml(COURSE.targetName || "TypeScript")));
   const editor = document.createElement("textarea");
   editor.id = "editor";
   editor.spellcheck = false;
@@ -210,6 +340,19 @@ function renderLesson() {
   controls.appendChild(el("span", "hint-key", "Tip: Ctrl/Cmd+Enter runs the tests"));
   editorPanel.appendChild(controls);
   compare.appendChild(editorPanel);
+
+  // The source language the reader already knows sits below the editor,
+  // collapsed by default — a reference to reach for, not the main event.
+  const srcPanel = document.createElement("details");
+  srcPanel.className = "panel source-panel";
+  srcPanel.appendChild(el("summary", null, escapeHtml(COURSE.sourceHeading)));
+  const srcPre = el("pre", "code-block source-code");
+  const srcCode = document.createElement("code");
+  srcCode.textContent = LESSON[COURSE.sourceField];
+  srcPre.appendChild(srcCode);
+  srcPanel.appendChild(srcPre);
+  compare.appendChild(srcPanel);
+
   app.appendChild(compare);
 
   const workspace = el("section", "workspace results-area");
@@ -288,28 +431,78 @@ async function runTests(editor, runBtn) {
     items.push({ ok: ok, label: req.message, detail: ok ? "" : "not found in your code yet" });
   });
 
-  // 2. Compile & execute
+  // 2 & 3. Compile & execute, then behavior tests (per target language)
   let runResult = null;
-  try {
-    runResult = compileAndRun(source, LESSON.exportNames);
-  } catch (e) {
-    allPassed = false;
-    items.push({
-      ok: false,
-      label: e.isCompileError ? "Your code must compile" : "Your code must run without crashing",
-      detail: e.message,
-    });
-  }
-
-  // 3. Behavior tests
-  if (runResult) {
-    for (const test of LESSON.tests) {
-      try {
-        await test.run(runResult.exported);
-        items.push({ ok: true, label: test.name, detail: "" });
-      } catch (e) {
+  const target = COURSE.target || "typescript";
+  if (target === "rust" || target === "php" || target === "ruby") {
+    const service = target === "rust" ? "the Rust Playground" : "Wandbox";
+    const status = el("p", "run-status", "Compiling and running on " + service + "…");
+    results.appendChild(status);
+    try {
+      const program = target === "rust" ? buildRustProgram(source, LESSON.tests)
+        : target === "php" ? buildPhpProgram(source, LESSON.tests)
+        : buildRubyProgram(source, LESSON.tests);
+      const data = target === "rust" ? await runRustProgram(program)
+        : target === "php" ? await runPhpProgram(program)
+        : await runRubyProgram(program);
+      const outcomes = {};
+      const logs = [];
+      (data.stdout || "").split("\n").forEach(function (line) {
+        let m = line.match(/^::PASS::(\d+)$/);
+        if (m) { outcomes[m[1]] = { ok: true }; return; }
+        m = line.match(/^::FAIL::(\d+)::(.*)$/);
+        if (m) { outcomes[m[1]] = { ok: false, detail: m[2] }; return; }
+        if (line.trim()) logs.push(line);
+      });
+      if (Object.keys(outcomes).length === 0) {
         allPassed = false;
-        items.push({ ok: false, label: test.name, detail: e.message });
+        const errText = target === "rust" ? rustCompileErrors(data.stderr) : (data.stderr || "").trim();
+        items.push({
+          ok: false,
+          label: target === "rust" ? "Your code must compile" : "Your code must parse and run",
+          detail: errText || "The program produced no test output.",
+        });
+      } else {
+        LESSON.tests.forEach(function (test, i) {
+          const o = outcomes[i];
+          if (o && o.ok) {
+            items.push({ ok: true, label: test.name, detail: "" });
+          } else {
+            allPassed = false;
+            items.push({ ok: false, label: test.name, detail: (o && o.detail) || "did not run" });
+          }
+        });
+      }
+      if (logs.length) runResult = { logs: logs };
+    } catch (e) {
+      allPassed = false;
+      items.push({
+        ok: false,
+        label: "Could not reach " + service,
+        detail: e.message + " — running these lessons requires an internet connection.",
+      });
+    }
+    results.removeChild(status);
+  } else {
+    try {
+      runResult = compileAndRun(source, LESSON.exportNames);
+    } catch (e) {
+      allPassed = false;
+      items.push({
+        ok: false,
+        label: e.isCompileError ? "Your code must compile" : "Your code must run without crashing",
+        detail: e.message,
+      });
+    }
+    if (runResult) {
+      for (const test of LESSON.tests) {
+        try {
+          await test.run(runResult.exported);
+          items.push({ ok: true, label: test.name, detail: "" });
+        } catch (e) {
+          allPassed = false;
+          items.push({ ok: false, label: test.name, detail: e.message });
+        }
       }
     }
   }

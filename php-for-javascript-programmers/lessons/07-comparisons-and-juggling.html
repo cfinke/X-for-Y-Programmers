@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Comparisons &amp; Type Juggling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Comparisons & Type Juggling",
+
+  intro: `
+<p>You know this dance. JavaScript's <code>==</code> taught you that loose
+equality is a minefield, and you reach for <code>===</code> on reflex. PHP
+has the exact same split — <code>==</code> juggles types, <code>===</code>
+compares value <em>and</em> type — but the juggling follows <em>different
+rules</em>, so your JS instincts will betray you in specific places.
+<code>"1" == 1</code> is true, as you'd expect. But <code>"0"</code> is
+<strong>falsy</strong> in PHP (in JS any non-empty string is truthy!), and an
+empty array <code>[]</code> is <strong>falsy</strong> too (in JS every object
+is truthy!). One place PHP 8 got saner than both old PHP and JS:
+<code>"abc" == 0</code> is now <code>false</code> — strings are no longer
+mangled to numbers unless they actually look numeric.</p>
+<table>
+  <tr><th>Expression</th><th>JavaScript</th><th>PHP 8</th></tr>
+  <tr><td><code>"1" == 1</code></td><td><code>true</code></td><td><code>true</code> (familiar)</td></tr>
+  <tr><td><code>"abc" == 0</code></td><td><code>false</code></td><td><code>false</code> (was true before PHP 8!)</td></tr>
+  <tr><td>truthiness of <code>"0"</code></td><td>truthy</td><td><strong>falsy</strong></td></tr>
+  <tr><td>truthiness of <code>[]</code></td><td>truthy</td><td><strong>falsy</strong></td></tr>
+  <tr><td><code>1 === "1"</code></td><td><code>false</code></td><td><code>false</code> (same reflex applies)</td></tr>
+  <tr><td>comparator helper</td><td><code>a - b</code> by hand</td><td><code>$a &lt;=&gt; $b</code> spaceship</td></tr>
+</table>
+<p>The advice transfers unchanged: <strong>use <code>===</code> always</strong>,
+and treat <code>==</code> as a code smell. To force a value through PHP's
+truthiness rules explicitly, cast with <code>(bool)</code> — the moral
+equivalent of JS's <code>Boolean(x)</code> or <code>!!x</code>. And PHP has
+one comparison operator JS lacks: the spaceship <code>&lt;=&gt;</code>, which
+returns <code>-1</code>, <code>0</code>, or <code>1</code> — exactly the
+contract of a sort comparator, no <code>a - b</code> arithmetic tricks
+needed.</p>`,
+
+  javascript: `// You already know this minefield:
+console.log(1 == "1");     // true  — loose equality juggles
+console.log(1 === "1");    // false — strict: value AND type
+console.log("abc" == 0);   // false in JS (old PHP said true!)
+
+// Truthiness, JS edition:
+console.log(Boolean("0")); // true  — any non-empty string
+console.log(Boolean([]));  // true  — every object is truthy
+console.log(!!"");         // false
+
+// Comparators are hand-rolled arithmetic:
+const nums = [3, 1, 2];
+nums.sort((a, b) => a - b);          // -1 / 0 / 1 by subtraction
+console.log(nums);                   // [1, 2, 3]
+
+// JS has no spaceship operator — a - b is the idiom.`,
+
+  task: `
+<p>Implement three small functions that pin down PHP's comparison semantics:</p>
+<ol>
+  <li><code>same_value_and_type(mixed $a, mixed $b): bool</code> — strict
+      equality, exactly your JS <code>===</code> reflex. One line.</li>
+  <li><code>is_truthy(mixed $v): bool</code> — run any value through PHP's
+      truthiness rules with an explicit <code>(bool)</code> cast. The tests
+      will prove that <code>"0"</code> and <code>[]</code> come out falsy —
+      the two spots where PHP disagrees with JavaScript.</li>
+  <li><code>compare_nums(int $a, int $b): int</code> — return <code>-1</code>,
+      <code>0</code>, or <code>1</code> using the spaceship
+      <code>&lt;=&gt;</code>. This is the comparator you'd hand to
+      <code>usort()</code>, PHP's <code>Array.prototype.sort</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Your === reflex, formalized. mixed is PHP's "any".
+function same_value_and_type(mixed $a, mixed $b): bool {
+    throw new Exception("TODO: implement same_value_and_type");
+}
+
+// 2. Explicit truthiness: cast with (bool), like JS's Boolean(v).
+//    Careful: PHP's rules differ from JS for "0" and [].
+function is_truthy(mixed $v): bool {
+    throw new Exception("TODO: implement is_truthy");
+}
+
+// 3. The spaceship <=> returns -1, 0, or 1. JS makes you write a - b.
+function compare_nums(int $a, int $b): int {
+    throw new Exception("TODO: implement compare_nums");
+}
+`,
+
+  requirements: [
+    { pattern: /===/, message: "Use strict equality === in same_value_and_type" },
+    { pattern: /<=>/, message: "Use the spaceship operator <=> in compare_nums" },
+    { pattern: /\(bool\)/, message: "Use an explicit (bool) cast in is_truthy" },
+  ],
+
+  tests: [
+    { name: "same_value_and_type: 1 === 1 is true, 1 === \"1\" is false",
+      code: 'expect_true(same_value_and_type(1, 1));\nexpect_true(!same_value_and_type(1, "1"));\nexpect_true(!same_value_and_type(0, false));' },
+    { name: '"0" is falsy in PHP (truthy in JS!)',
+      code: 'expect_true(!is_truthy("0"));' },
+    { name: "[] is falsy in PHP (truthy in JS!)",
+      code: "expect_true(!is_truthy([]));" },
+    { name: 'ordinary truthy values still work: "false", "0.0", 1, [0]',
+      code: 'expect_true(is_truthy("false"));\nexpect_true(is_truthy("0.0"));\nexpect_true(is_truthy(1));\nexpect_true(is_truthy([0]));' },
+    { name: "compare_nums returns -1 / 0 / 1",
+      code: "expect_eq(compare_nums(1, 2), -1);\nexpect_eq(compare_nums(5, 5), 0);\nexpect_eq(compare_nums(9, 2), 1);" },
+  ],
+
+  solution: `<?php
+
+function same_value_and_type(mixed $a, mixed $b): bool {
+    return $a === $b;
+}
+
+function is_truthy(mixed $v): bool {
+    return (bool) $v;
+}
+
+function compare_nums(int $a, int $b): int {
+    return $a <=> $b;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Loose equality</td><td><code>==</code> (avoid)</td><td><code>==</code> (avoid — different juggling rules)</td></tr>
+  <tr><td>Strict equality</td><td><code>===</code></td><td><code>===</code> (use always)</td></tr>
+  <tr><td><code>"0"</code></td><td>truthy</td><td>falsy — but <code>"0.0"</code> and <code>" "</code> are truthy</td></tr>
+  <tr><td><code>[]</code></td><td>truthy (object)</td><td>falsy (empty array)</td></tr>
+  <tr><td>To boolean</td><td><code>Boolean(v)</code> / <code>!!v</code></td><td><code>(bool) $v</code></td></tr>
+  <tr><td>Comparator</td><td><code>(a, b) =&gt; a - b</code></td><td><code>fn($a, $b) =&gt; $a &lt;=&gt; $b</code></td></tr>
+  <tr><td>String vs number <code>==</code></td><td>string coerced to number, always</td><td>PHP 8: only if the string is numeric</td></tr>
+</table>
+<p>The deep insight: both languages made loose equality a trap, but they dug
+the traps in different places, so knowing JS's edge cases doesn't immunize
+you — <code>if ($count)</code> misfires when <code>$count</code> is the
+string <code>"0"</code> fresh from a database, a bug JS could never produce.
+The cure is the same in both worlds (<code>===</code> everywhere, explicit
+casts when you mean truthiness), and PHP sweetens the deal with
+<code>&lt;=&gt;</code>: a real three-way comparison operator that works on
+strings, arrays, and floats too — not just the subtraction hack.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

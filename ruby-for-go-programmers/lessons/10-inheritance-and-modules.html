@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Modules</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Modules",
+
+  intro: `
+<p>Go famously chose composition over inheritance: you embed a struct, its
+methods get promoted, and interfaces glue the rest together. Ruby has real
+(single) inheritance — <code>class Circle &lt; Shape</code> — and inside an
+overriding method, bare <code>super</code> calls the parent's version,
+forwarding <em>all</em> your arguments automatically (<code>super()</code>
+with empty parens forwards none).</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td>embedding: <code>type Circle struct { Shape }</code></td><td>inheritance: <code>class Circle &lt; Shape</code></td></tr>
+  <tr><td>no super — call the embedded field explicitly</td><td>bare <code>super</code> forwards all args to the parent</td></tr>
+  <tr><td>abstract method → interface + separate types</td><td>base method raises <code>NotImplementedError</code></td></tr>
+  <tr><td>promoted method can't reach the outer struct</td><td>a mixin's methods run on the host: <code>self</code> is the host</td></tr>
+</table>
+<p>There is no <code>abstract</code> keyword; the convention is a base method
+that raises <code>NotImplementedError</code>. That unlocks the template-method
+pattern Go embedding cannot express: <code>Shape#describe</code> can call
+<code>area</code>, and at runtime it dispatches to the <em>subclass's</em>
+implementation — an embedded Go struct can never call back "down" into its
+embedder without interface gymnastics. Modules push the same idea sideways:
+<code>include Greetable</code> mixes methods into any class, and because those
+methods execute with <code>self</code> bound to the host object, they can call
+the host's own methods, like <code>self.name</code>. It is embedding that can
+see its embedder.</p>`,
+
+  go: `// Embedding promotes methods, but Shape can never
+// call back into Circle — there is no "subclass".
+type Shape struct{}
+
+type Circle struct {
+	Shape
+	Radius float64
+}
+
+func (c Circle) Area() float64 {
+	return math.Pi * c.Radius * c.Radius
+}
+
+// An "abstract method" needs an interface instead,
+// and describe must live outside every type:
+type Sized interface{ Area() float64 }
+
+func describe(s Sized) string {
+	return fmt.Sprintf("area: %v", s.Area())
+}`,
+
+  task: `
+<p>Build the hierarchy Go's embedding can't:</p>
+<ol>
+  <li><code>class Shape</code> — <code>area</code> raises
+      <code>NotImplementedError</code> (already given: that IS the "abstract
+      method"); implement <code>describe</code> to return
+      <code>"area: #{area}"</code> — the template method that calls whatever
+      <code>area</code> the subclass provides.</li>
+  <li><code>class Circle &lt; Shape</code> — <code>initialize(radius)</code> is
+      given; implement <code>area</code> as
+      <code>(Math::PI * @radius ** 2).round(2)</code>.</li>
+  <li><code>class Rectangle &lt; Shape</code> — implement <code>area</code> as
+      width × height.</li>
+  <li><code>module Greetable</code> — implement <code>greet</code> to return
+      <code>"Hi, I am #{self.name}"</code>. It calls a method the module does
+      not define — the host will.</li>
+  <li><code>class Robot</code> — already <code>include</code>s
+      <code>Greetable</code> and has a <code>name</code>; nothing more to
+      write, just watch the mixin find it.</li>
+</ol>`,
+
+  starter: `class Shape
+  # Given: Ruby's "abstract method" — no keyword, just the convention.
+  def area
+    raise NotImplementedError, "subclasses must implement area"
+  end
+
+  # 1. Template method: return "area: #{area}" — it calls the subclass's
+  #    area at runtime, something Go embedding cannot do.
+  def describe
+    raise NotImplementedError, "TODO: implement describe"
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    @radius = radius
+  end
+
+  # 2. (Math::PI * @radius ** 2).round(2)
+  def area
+    raise NotImplementedError, "TODO: implement Circle#area"
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    @width = width
+    @height = height
+  end
+
+  # 3. width times height.
+  def area
+    raise NotImplementedError, "TODO: implement Rectangle#area"
+  end
+end
+
+module Greetable
+  # 4. "Hi, I am #{self.name}" — name comes from whatever class includes us.
+  def greet
+    raise NotImplementedError, "TODO: implement greet"
+  end
+end
+
+class Robot
+  include Greetable
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /<\s*Shape/, message: "Inherit with < Shape" },
+    { pattern: /NotImplementedError/, message: "The abstract area raises NotImplementedError" },
+    { pattern: /module\s+Greetable/, message: "Define module Greetable" },
+    { pattern: /include\s+Greetable/, message: "Mix it in with include Greetable" },
+  ],
+
+  tests: [
+    { name: "Circle.new(2).area returns 12.57 (and radius 1 gives 3.14)",
+      code: "  expect_eq(Circle.new(2).area, 12.57)\n  expect_eq(Circle.new(1).area, 3.14)" },
+    { name: "Rectangle.new(3, 4).area returns 12",
+      code: "  expect_eq(Rectangle.new(3, 4).area, 12)" },
+    { name: 'describe is inherited and calls the subclass area: Circle.new(1).describe returns "area: 3.14"',
+      code: '  expect_eq(Circle.new(1).describe, "area: 3.14")\n  expect_eq(Rectangle.new(2, 5).describe, "area: 10")' },
+    { name: "Shape.new.area raises NotImplementedError (the abstract-method convention)",
+      code: '  begin\n    Shape.new.area\n    raise "expected NotImplementedError, but area returned"\n  rescue NotImplementedError\n    expect_true(true)\n  end' },
+    { name: 'Robot.new("R2-D2").greet returns "Hi, I am R2-D2" — the mixin calls the host\'s name',
+      code: '  expect_eq(Robot.new("R2-D2").greet, "Hi, I am R2-D2")' },
+  ],
+
+  solution: `class Shape
+  def area
+    raise NotImplementedError, "subclasses must implement area"
+  end
+
+  def describe
+    "area: #{area}"
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    @radius = radius
+  end
+
+  def area
+    (Math::PI * @radius ** 2).round(2)
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    @width = width
+    @height = height
+  end
+
+  def area
+    @width * @height
+  end
+end
+
+module Greetable
+  def greet
+    "Hi, I am #{self.name}"
+  end
+end
+
+class Robot
+  include Greetable
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Reuse mechanism</td><td>embedding + interfaces</td><td>single inheritance + modules</td></tr>
+  <tr><td>Subtype</td><td><code>type Circle struct { Shape }</code></td><td><code>class Circle &lt; Shape</code></td></tr>
+  <tr><td>Call the parent</td><td><code>c.Shape.Method()</code>, explicit</td><td><code>super</code> (bare = forwards all args)</td></tr>
+  <tr><td>Abstract method</td><td>interface with no default body</td><td><code>raise NotImplementedError</code> in the base</td></tr>
+  <tr><td>Mixin</td><td>embedding (can't see the outer type)</td><td><code>include Module</code> — <code>self</code> is the host</td></tr>
+  <tr><td>Multiple reuse</td><td>embed several structs</td><td>one superclass, but include many modules</td></tr>
+  <tr><td>Check ancestry</td><td>type assertion / <code>ok</code></td><td><code>obj.is_a?(Shape)</code>, <code>Robot.ancestors</code></td></tr>
+</table>
+<p>The pivotal difference is late binding of <code>self</code>. When
+<code>describe</code> (defined in <code>Shape</code>) calls <code>area</code>,
+or <code>greet</code> (defined in <code>Greetable</code>) calls
+<code>self.name</code>, the lookup starts at the <em>actual object's</em>
+class and walks up its ancestor chain — subclass first, then mixed-in modules,
+then the superclass. Go's method promotion is resolved at compile time on the
+embedded type, which is exactly why it can't express the template method;
+Ruby resolves every call on whoever <code>self</code> turns out to be.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Generics & Trait Bounds</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Generics & Trait Bounds",
+
+  intro: `
+<p>How do you write one PHP function that works on an array of ints
+<em>and</em> an array of strings? You take <code>array</code> (of
+<code>mixed</code>) and hope, or you write <code>@template T</code> docblocks
+so Psalm or PHPStan can check what the language itself won't. The types are
+comments; PHP runs the same dynamic code either way, and a bad call fails at
+runtime. Rust generics are that <code>@template</code> annotation promoted to
+real syntax: <code>fn first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code>
+works for any element type, and the compiler — not a bolt-on static analyzer —
+checks every call site.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>function first(array $items)</code> — mixed in, mixed out</td><td><code>fn first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td><code>/** @template T */</code> — checked by Psalm, if you run it</td><td><code>&lt;T&gt;</code> — checked by the compiler, always</td></tr>
+  <tr><td><code>/** @param array&lt;T&gt; ... */</code> with hopes about <code>&gt;</code></td><td><code>&lt;T: PartialOrd&gt;</code> — "T must be comparable", enforced</td></tr>
+  <tr><td><code>$items[0] ?? null</code> — absent means null</td><td><code>Option&lt;&amp;T&gt;</code> — absent means <code>None</code>, by type</td></tr>
+</table>
+<p>The second half is <em>trait bounds</em>. A bare <code>T</code> promises
+nothing, so the body can't even compare two elements — <code>item &gt; max</code>
+won't compile. Writing <code>fn largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code>
+declares "any T, as long as it's comparable" — the trait from last lesson,
+used as a capability requirement. It's exactly what Psalm's
+<code>@template T of ...</code> gestures at, except a caller passing
+uncomparable elements gets a compile error instead of a 3&nbsp;a.m. fatal.</p>`,
+
+  php: `<?php
+/**
+ * @template T
+ * @param array<T> $items
+ * @return T|null
+ */
+function first(array $items) {
+    return $items[0] ?? null;  // Psalm reads the docblock; PHP ignores it
+}
+
+function largest(array $items) {   // array of... anything, really
+    $max = $items[0];
+    foreach ($items as $item) {
+        if ($item > $max) {        // hope everything in here compares
+            $max = $item;
+        }
+    }
+    return $max;
+}
+
+echo largest([3, 41, 7]);          // 41 — today, with these inputs`,
+
+  task: `
+<p>Make the docblocks load-bearing:</p>
+<ol>
+  <li>Write <code>first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code>:
+      <code>Some</code> of a reference to the first element, or
+      <code>None</code> for an empty slice. No bound needed — handing back a
+      reference works for <em>any</em> T.</li>
+  <li>Write <code>largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code>
+      returning a reference to the largest element. The
+      <code>PartialOrd</code> bound is what lets the body use
+      <code>&gt;</code> — delete it and watch the compile error. Assume the
+      slice is non-empty.</li>
+</ol>
+<p>The tests call both functions with <code>i32</code> slices <em>and</em>
+<code>&amp;str</code> slices — one definition, checked for each. Don't write
+<code>fn main</code> — the lesson's tests call your functions directly.</p>`,
+
+  starter: `// first: works for ANY element type — no bound required just to
+// hand back a reference. items.is_empty(), or match items.first()...
+fn first<T>(items: &[T]) -> Option<&T> {
+    todo!()
+}
+
+// largest: the body needs \`>\`, so the signature must demand
+// comparability: <T: PartialOrd>. Assume the slice is non-empty.
+// Start with a reference to items[0] and walk the slice.
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<T>/, message: "Declare first with a bare <T> type parameter" },
+    { pattern: /Option<&T>/, message: "first should return Option<&T>" },
+    { pattern: /<T\s*:\s*PartialOrd>/, message: "Give largest a <T: PartialOrd> bound" },
+  ],
+
+  tests: [
+    { name: "first(&[10, 20, 30]) returns Some(&10)",
+      code: "assert_eq!(first(&[10, 20, 30]), Some(&10));" },
+    { name: "first of an empty i32 slice returns None",
+      code: "let empty: &[i32] = &[];\nassert_eq!(first(empty), None);" },
+    { name: 'first(&["alpha", "beta"]) returns Some of "alpha" — same fn, different T',
+      code: 'assert_eq!(first(&["alpha", "beta"]), Some(&"alpha"));' },
+    { name: "largest(&[3, 41, 7]) returns &41",
+      code: "assert_eq!(largest(&[3, 41, 7]), &41);" },
+    { name: "largest(&[-5, -2, -9]) returns &-2",
+      code: "assert_eq!(largest(&[-5, -2, -9]), &-2);" },
+    { name: 'largest(&["apple", "pear", "banana"]) returns &"pear" — strings compare too',
+      code: 'assert_eq!(largest(&["apple", "pear", "banana"]), &"pear");' },
+  ],
+
+  solution: `fn first<T>(items: &[T]) -> Option<&T> {
+    if items.is_empty() {
+        None
+    } else {
+        Some(&items[0])
+    }
+}
+
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    let mut max = &items[0];
+    for item in items {
+        if item > max {
+            max = item;
+        }
+    }
+    max
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Generic function</td><td><code>/** @template T */</code> docblock</td><td><code>fn first&lt;T&gt;(...)</code> — real syntax</td></tr>
+  <tr><td>Generic collection</td><td><code>@param array&lt;T&gt; $items</code></td><td><code>items: &amp;[T]</code></td></tr>
+  <tr><td>Capability constraint</td><td><code>@template T of Comparable</code> (analyzer-only)</td><td><code>&lt;T: PartialOrd&gt;</code> (compiler-enforced)</td></tr>
+  <tr><td>Multiple constraints</td><td>more docblock</td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+  <tr><td>Who checks it</td><td>Psalm/PHPStan, if configured</td><td>rustc, every build</td></tr>
+</table>
+<p>Note which function needed a bound and which didn't. <code>first</code>
+never looks <em>inside</em> a T, so bare <code>&lt;T&gt;</code> suffices;
+<code>largest</code> compares elements, so it must say so. That's the
+discipline generics impose: the signature lists every capability the body
+uses, nothing more. And unlike <code>mixed</code>, there's no runtime cost —
+Rust compiles a specialized copy per concrete type (monomorphization), so
+<code>largest::&lt;i32&gt;</code> runs as fast as a hand-written i32
+version.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

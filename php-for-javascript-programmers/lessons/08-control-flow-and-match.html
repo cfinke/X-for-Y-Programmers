@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; match</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & match",
+
+  intro: `
+<p>PHP's <code>if</code> is JavaScript's <code>if</code> — same parentheses,
+same braces, same <code>else</code>. The one spelling change is
+<code>elseif</code> as a single word (the two-word <code>else if</code> also
+works; the fused form is the PHP convention). <code>switch</code> transfers
+too, warts and all: it compares cases <em>loosely</em> (PHP's <code>==</code>,
+with all of last lesson's juggling) and it falls through without
+<code>break</code>, exactly like the JS switch you've been double-checking
+for years.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>if / else if / else</code></td><td><code>if / elseif / else</code></td></tr>
+  <tr><td><code>switch</code> — loose <code>==</code>, falls through</td><td><code>switch</code> — same two hazards</td></tr>
+  <tr><td>(no equivalent)</td><td><code>match</code> — strict <code>===</code>, no fallthrough</td></tr>
+  <tr><td><code>case "a": case "b": ...</code></td><td><code>"a", "b" =&gt; ...</code> grouped arms</td></tr>
+  <tr><td>unmatched: silently does nothing</td><td>unmatched <code>match</code>: throws <code>UnhandledMatchError</code></td></tr>
+</table>
+<p>Then PHP 8 hands you <code>match</code> — the switch you always wished JS
+had. It compares with strict <code>===</code>, it cannot fall through (each
+arm is one expression, no <code>break</code> to forget), it <em>is an
+expression</em> so you can assign or return it directly, and if nothing
+matches it throws instead of silently continuing. Arms group with commas
+(<code>"Saturday", "Sunday" =&gt;</code>), and a <code>default =&gt;</code>
+arm catches the rest. For range logic there's a beloved idiom:
+<code>match (true)</code> turns each arm's condition into the subject —
+<code>$score &gt;= 90 =&gt; "A"</code> — giving you an if/else chain that
+reads like a table and returns a value.</p>`,
+
+  javascript: `// switch compares with == and falls through without break:
+let kind;
+switch (day) {
+  case "Saturday":
+  case "Sunday":
+    kind = "Weekend";
+    break;         // forget this and you fall into default
+  default:
+    kind = "Weekday";
+}
+
+// Ranges force a statement-based if/else chain — switch can't help,
+// and none of this is an expression you can assign directly:
+let grade;
+if (score >= 90) grade = "A";
+else if (score >= 80) grade = "B";
+else if (score >= 70) grade = "C";
+else if (score >= 60) grade = "D";
+else grade = "F";`,
+
+  task: `
+<p>Rewrite both JavaScript patterns as single <code>return match (...)</code>
+expressions:</p>
+<ol>
+  <li><code>grade(int $score): string</code> — use the
+      <code>match (true)</code> idiom with range arms: 90 and up is
+      <code>"A"</code>, 80–89 <code>"B"</code>, 70–79 <code>"C"</code>,
+      60–69 <code>"D"</code>, and a <code>default =&gt;</code> arm returns
+      <code>"F"</code>. Arms are checked top to bottom, so
+      <code>$score &gt;= 90</code> first, then <code>&gt;= 80</code>, and so
+      on — no upper bounds needed.</li>
+  <li><code>day_type(string $day): string</code> — match on the day name:
+      group <code>"Saturday", "Sunday"</code> into one arm returning
+      <code>"Weekend"</code>, and let <code>default =&gt;</code> return
+      <code>"Weekday"</code>. Note what you're <em>not</em> writing:
+      <code>case</code>, <code>break</code>, or a temp variable.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. match (true) turns each arm into a condition — an if/else chain
+//    that IS an expression. Arms run top to bottom; default catches F.
+function grade(int $score): string {
+    throw new Exception("TODO: implement grade with match (true)");
+}
+
+// 2. Plain match on a value, with a grouped arm:
+//    "Saturday", "Sunday" => "Weekend", default => "Weekday"
+function day_type(string $day): string {
+    throw new Exception("TODO: implement day_type with match");
+}
+`,
+
+  requirements: [
+    { pattern: /match\s*\(/, message: "Use a match expression" },
+    { pattern: /match\s*\(\s*true\s*\)/, message: "Use the match (true) idiom for the grade ranges" },
+    { pattern: /default\s*=>/, message: "Include a default => arm" },
+  ],
+
+  tests: [
+    { name: "grade covers every band: 95→A, 85→B, 75→C, 65→D, 30→F",
+      code: 'expect_eq(grade(95), "A");\nexpect_eq(grade(85), "B");\nexpect_eq(grade(75), "C");\nexpect_eq(grade(65), "D");\nexpect_eq(grade(30), "F");' },
+    { name: "grade boundaries land on the higher band: 90→A, 60→D, 59→F",
+      code: 'expect_eq(grade(90), "A");\nexpect_eq(grade(60), "D");\nexpect_eq(grade(59), "F");' },
+    { name: 'day_type("Saturday") and day_type("Sunday") are "Weekend"',
+      code: 'expect_eq(day_type("Saturday"), "Weekend");\nexpect_eq(day_type("Sunday"), "Weekend");' },
+    { name: 'weekdays fall through to the default arm',
+      code: 'expect_eq(day_type("Monday"), "Weekday");\nexpect_eq(day_type("Friday"), "Weekday");' },
+  ],
+
+  solution: `<?php
+
+function grade(int $score): string {
+    return match (true) {
+        $score >= 90 => "A",
+        $score >= 80 => "B",
+        $score >= 70 => "C",
+        $score >= 60 => "D",
+        default => "F",
+    };
+}
+
+function day_type(string $day): string {
+    return match ($day) {
+        "Saturday", "Sunday" => "Weekend",
+        default => "Weekday",
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Chained conditions</td><td><code>else if</code></td><td><code>elseif</code> (one word, by convention)</td></tr>
+  <tr><td><code>switch</code> comparison</td><td>strict-ish (<code>===</code>)</td><td>loose <code>==</code> — juggling applies!</td></tr>
+  <tr><td><code>switch</code> fallthrough</td><td>yes, needs <code>break</code></td><td>yes, needs <code>break</code></td></tr>
+  <tr><td><code>match</code> comparison</td><td>—</td><td>strict <code>===</code></td></tr>
+  <tr><td><code>match</code> fallthrough</td><td>—</td><td>impossible — one expression per arm</td></tr>
+  <tr><td>Grouped cases</td><td>stacked <code>case</code> labels</td><td>comma-separated arm: <code>"a", "b" =&gt;</code></td></tr>
+  <tr><td>Nothing matches</td><td>silent no-op</td><td><code>match</code> throws <code>UnhandledMatchError</code></td></tr>
+  <tr><td>Range dispatch</td><td>if/else chain</td><td><code>match (true)</code></td></tr>
+</table>
+<p>The deep insight: <code>match</code> fixes all four of switch's design
+flaws at once — loose comparison becomes strict, fallthrough becomes
+impossible, the statement becomes an expression, and silent non-matches
+become loud errors. Interestingly, PHP's <code>switch</code> is more
+dangerous than the JS one you know (JS at least compares cases strictly;
+PHP's uses <code>==</code>), which makes the rule of thumb easy: in new PHP
+code, reach for <code>match</code> first and let <code>switch</code> retire
+with honors.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

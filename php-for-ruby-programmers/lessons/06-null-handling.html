@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null, ?? &amp; ?-></title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null, ?? & ?->",
+
+  intro: `
+<p>Ruby's <code>nil</code> is PHP's <code>null</code>, and the tools around
+it map almost one-to-one. The safe navigation operator <code>&amp;.</code>
+becomes <code>?-></code> — same idea, same short-circuit: if the left side
+is <code>null</code>, the whole chain evaluates to <code>null</code> instead
+of exploding. Where you'd write <code>user&amp;.address&amp;.city</code>,
+you write <code>$user?->address?->city</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>nil</code></td><td><code>null</code></td></tr>
+  <tr><td><code>user&amp;.address&amp;.city</code></td><td><code>$user?->address?->city</code></td></tr>
+  <tr><td><code>h.fetch(:k, default)</code></td><td><code>$m[$k] ?? $default</code></td></tr>
+  <tr><td><code>value || default</code></td><td><code>$value ?? $default</code> — but see below!</td></tr>
+  <tr><td><code>x.nil?</code></td><td><code>$x === null</code> (or <code>isset($x)</code> for the inverse)</td></tr>
+</table>
+<p>The null coalescing operator <code>??</code> deserves special attention,
+because it is <em>better</em> than the Ruby idiom it replaces. Ruby's
+<code>value || default</code> has a famous footgun: it also swallows
+<code>false</code>. PHP's <code>??</code> only falls back when the left side
+is <code>null</code> or the key is missing entirely — <code>false</code>,
+<code>0</code>, and <code>"0"</code> all pass through untouched. It even
+suppresses the undefined-key warning, so <code>$m[$k] ?? $default</code> is
+a complete, safe replacement for <code>fetch</code> with a default.</p>`,
+
+  ruby: `Address = Struct.new(:city)
+User = Struct.new(:address)
+
+def get_city(user)
+  user&.address&.city || "Unknown"
+end
+
+def pick(data, key, default)
+  data.fetch(key, default)
+end
+
+get_city(User.new(Address.new("Paris"))) # "Paris"
+get_city(User.new)                       # "Unknown" — nil address
+get_city(nil)                            # "Unknown" — &. saved us
+pick({ theme: "dark" }, :theme, "light") # "dark"
+pick({}, :theme, "light")                # "light"`,
+
+  task: `
+<p>The starter already defines <code>Address</code> and <code>User</code>
+(with a nullable <code>?Address</code> property). Port the two functions:</p>
+<ol>
+  <li><code>get_city(?User $user): string</code> — chain
+      <code>$user?->address?->city</code> exactly like
+      <code>user&amp;.address&amp;.city</code>, then coalesce the possible
+      <code>null</code> into <code>"Unknown"</code> with <code>??</code>.
+      One line.</li>
+  <li><code>pick(array $data, string $key, string $default): string</code> —
+      Ruby's <code>fetch</code> with a default becomes
+      <code>$data[$key] ?? $default</code>. A test hands you the value
+      <code>"0"</code> to prove <code>??</code> doesn't swallow falsy values
+      the way <code>||</code> would.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Constructor property promotion (more on this in the classes lesson):
+// each parameter declares and assigns a public property in one stroke.
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+// 1. user&.address&.city || "Unknown"
+//    ->  $user?->address?->city ?? "Unknown"
+function get_city(?User $user): string {
+    throw new Exception("TODO: implement get_city");
+}
+
+// 2. data.fetch(key, default)  ->  $data[$key] ?? $default
+function pick(array $data, string $key, string $default): string {
+    throw new Exception("TODO: implement pick");
+}
+`,
+
+  requirements: [
+    { pattern: /\?\?/, message: "Use the null coalescing operator ??" },
+    { pattern: /\?->/, message: "Use the nullsafe operator ?-> (Ruby's &.)" },
+    { pattern: /\?User|\?Address/, message: "Keep the nullable ?User / ?Address type declarations" },
+  ],
+
+  tests: [
+    { name: "get_city returns the city when the whole chain is present",
+      code: "expect_eq(get_city(new User(new Address('Paris'))), 'Paris');" },
+    { name: "get_city returns 'Unknown' when the address is null",
+      code: "expect_eq(get_city(new User()), 'Unknown');" },
+    { name: "get_city returns 'Unknown' when the user itself is null",
+      code: "expect_eq(get_city(null), 'Unknown');" },
+    { name: "pick returns the value when the key exists",
+      code: "expect_eq(pick(['theme' => 'dark'], 'theme', 'light'), 'dark');" },
+    { name: "pick returns the default when the key is missing",
+      code: "expect_eq(pick([], 'theme', 'light'), 'light');" },
+    { name: "?? keeps the falsy value '0' — the || footgun, fixed",
+      code: "expect_eq(pick(['mode' => '0'], 'mode', 'on'), '0');" },
+  ],
+
+  solution: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+function get_city(?User $user): string {
+    return $user?->address?->city ?? "Unknown";
+}
+
+function pick(array $data, string $key, string $default): string {
+    return $data[$key] ?? $default;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>The nothing value</td><td><code>nil</code></td><td><code>null</code></td></tr>
+  <tr><td>Safe navigation</td><td><code>obj&amp;.method</code></td><td><code>$obj?->method()</code> / <code>$obj?->prop</code></td></tr>
+  <tr><td>Hash default</td><td><code>h.fetch(:k, d)</code> / <code>h[:k] || d</code></td><td><code>$m[$k] ?? $d</code></td></tr>
+  <tr><td>Falls back on <code>false</code>?</td><td><code>||</code> does (footgun)</td><td><code>??</code> does not — only <code>null</code>/missing</td></tr>
+  <tr><td>Nil check</td><td><code>x.nil?</code></td><td><code>$x === null</code></td></tr>
+  <tr><td>"Is it set?"</td><td><code>defined?(x)</code> / <code>h.key?(:k)</code></td><td><code>isset($x)</code> / <code>isset($m[$k])</code></td></tr>
+  <tr><td>Assign if nil</td><td><code>x ||= d</code></td><td><code>$x ??= $d;</code></td></tr>
+</table>
+<p>One subtlety: <code>isset()</code> answers "is this set <em>and</em> not
+null?" — a key holding <code>null</code> reports as not set, which is also
+why <code>?? </code> treats it as missing. When you truly need to
+distinguish "absent" from "present but null" (Ruby's
+<code>h.key?(:k)</code>), reach for <code>array_key_exists($k, $m)</code>.
+For everything else, <code>??</code> and <code>?-></code> cover the daily
+nil-wrangling you're used to — with one less footgun than <code>||</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

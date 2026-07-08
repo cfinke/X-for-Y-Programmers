@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Structs & Comparable</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Structs & Comparable",
+
+  intro: `
+<p>Java 16's records were a big deal: accessors, <code>equals</code>,
+<code>hashCode</code>, and <code>toString</code> from one declaration. Ruby
+has had that for decades: <code>Point = Struct.new(:x, :y)</code> is one line
+that gives you accessors, <strong>value equality</strong>, and destructuring
+(<code>x, y = *point</code>). Pass <code>Struct.new</code> a block and you can
+add methods to it, exactly like a record body.</p>
+<table>
+  <tr><th>Java</th><th>Ruby</th></tr>
+  <tr><td><code>record Point(int x, int y) {}</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td><code>new Point(1, 2)</code></td><td><code>Point.new(1, 2)</code></td></tr>
+  <tr><td><code>p.x()</code></td><td><code>p.x</code></td></tr>
+  <tr><td><code>implements Comparable&lt;Version&gt;</code></td><td><code>include Comparable</code></td></tr>
+  <tr><td><code>public int compareTo(Version o)</code></td><td><code>def &lt;=&gt;(other)</code></td></tr>
+  <tr><td><code>a.compareTo(b) &lt; 0</code></td><td><code>a &lt; b</code></td></tr>
+</table>
+<p>The <code>Comparable</code> story is where Ruby pulls ahead. In Java,
+implementing <code>compareTo</code> earns you… the right to call
+<code>compareTo</code>. Sorting works, but comparisons are still
+<code>a.compareTo(b) &lt; 0</code>, because operators aren't methods. In Ruby
+they are — so <code>include Comparable</code> plus one
+<code>&lt;=&gt;</code> (the "spaceship operator", Ruby's
+<code>compareTo</code>: -1, 0, or 1) hands you <code>&lt;</code>,
+<code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>==</code>,
+<code>between?</code>, <code>clamp</code>, and sorting, all for free.
+Bonus trick: arrays already compare element by element, so
+<code>[major, minor] &lt;=&gt; [other.major, other.minor]</code> is a complete
+multi-field comparison — no <code>Comparator.comparing(...).thenComparing(...)</code>
+chain.</p>`,
+
+  java: `record Point(int x, int y) {
+    double distanceTo(Point other) {
+        return Math.sqrt(Math.pow(x - other.x(), 2)
+                       + Math.pow(y - other.y(), 2));
+    }
+}
+
+class Version implements Comparable<Version> {
+    final int major, minor;
+    Version(int major, int minor) { this.major = major; this.minor = minor; }
+
+    @Override
+    public int compareTo(Version o) {
+        int byMajor = Integer.compare(major, o.major);
+        return byMajor != 0 ? byMajor : Integer.compare(minor, o.minor);
+    }
+    // And still: v1.compareTo(v2) < 0 — compareTo gives you no operators.
+}`,
+
+  task: `
+<p>Build both types from the Java on the left:</p>
+<ol>
+  <li>Define <code>Point = Struct.new(:x, :y)</code> using the
+      <strong>block form</strong>, and inside the block implement
+      <code>distance_to(other)</code> — the usual
+      <code>Math.sqrt((x - other.x) ** 2 + (y - other.y) ** 2)</code>. Note
+      you refer to <code>x</code> and <code>y</code> bare: they are the
+      struct's accessor methods.</li>
+  <li>Write <code>class Version</code> with
+      <code>include Comparable</code>, <code>attr_reader :major, :minor</code>,
+      an <code>initialize(major, minor)</code> that assigns both ivars, and
+      <code>def &lt;=&gt;(other)</code> that compares
+      <code>[major, minor] &lt;=&gt; [other.major, other.minor]</code>. That
+      single method must make <code>&lt;</code>, <code>sort</code>, and
+      <code>between?</code> all work.</li>
+</ol>`,
+
+  starter: `# 1. Point: Struct.new writes the constructor, accessors, ==, and
+#    destructuring for you. The block form lets you add methods.
+Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    raise NotImplementedError, "TODO: implement distance_to"
+  end
+end
+
+# 2. Version: include Comparable, then define <=> comparing
+#    [major, minor] arrays — Array compares element by element.
+class Version
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    raise NotImplementedError, "TODO: assign @major and @minor"
+  end
+
+  def <=>(other)
+    raise NotImplementedError, "TODO: implement <=>"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /Struct\.new/, message: "Define Point with Struct.new" },
+    { pattern: /def\s+distance_to/, message: "Implement distance_to inside the Struct.new block" },
+    { pattern: /include\s+Comparable/, message: "include Comparable in Version" },
+    { pattern: /<=>/, message: "Define the spaceship operator <=>" },
+  ],
+
+  tests: [
+    { name: "Point.new(0, 0).distance_to(Point.new(3, 4)) is 5.0",
+      code: "  expect_eq(Point.new(0, 0).distance_to(Point.new(3, 4)), 5.0)" },
+    { name: "Points have value equality and destructure with *",
+      code: `  expect_true(Point.new(1, 2) == Point.new(1, 2))
+  x, y = *Point.new(3, 4)
+  expect_eq([x, y], [3, 4])` },
+    { name: "Version.new(1, 2) < Version.new(1, 10) — a free operator",
+      code: "  expect_true(Version.new(1, 2) < Version.new(1, 10))" },
+    { name: "Versions sort correctly (1.9 < 1.10 < 2.0)",
+      code: `  sorted = [Version.new(2, 0), Version.new(1, 10), Version.new(1, 9)].sort
+  expect_eq(sorted.map { |v| [v.major, v.minor] }, [[1, 9], [1, 10], [2, 0]])` },
+    { name: "Version.new(1, 5).between?(1.0, 2.0) — also free",
+      code: "  expect_true(Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0)))" },
+  ],
+
+  solution: `Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    Math.sqrt((x - other.x) ** 2 + (y - other.y) ** 2)
+  end
+end
+
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  def <=>(other)
+    [major, minor] <=> [other.major, other.minor]
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Ruby</th></tr>
+  <tr><td>Value type</td><td><code>record Point(int x, int y) {}</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td>Extra methods</td><td>record body</td><td><code>Struct.new(:x, :y) do ... end</code></td></tr>
+  <tr><td>Value equality</td><td>generated <code>equals</code>/<code>hashCode</code></td><td><code>==</code> for free from Struct</td></tr>
+  <tr><td>Destructuring</td><td>record patterns (Java 21)</td><td><code>x, y = *point</code></td></tr>
+  <tr><td>Comparable</td><td><code>implements Comparable&lt;T&gt;</code> + <code>compareTo</code></td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td></tr>
+  <tr><td>Multi-field compare</td><td><code>Comparator.comparing(...).thenComparing(...)</code></td><td><code>[a, b] &lt;=&gt; [other.a, other.b]</code></td></tr>
+  <tr><td>What you get</td><td><code>compareTo</code>, <code>sort</code></td><td><code>&lt; &gt; &lt;= &gt;= == between? clamp min max sort</code></td></tr>
+  <tr><td>Immutable version</td><td>records (always)</td><td><code>Data.define(:x, :y)</code> (Ruby 3.2+; Struct is mutable)</td></tr>
+</table>
+<p>The reason Comparable can be so generous is the lesson-7 principle:
+operators in Ruby are just method calls, so a module can define
+<code>&lt;</code> in terms of your <code>&lt;=&gt;</code> and mix it in.
+Java's <code>compareTo</code> could never hand you operators because operators
+aren't dispatchable there. One caveat for the record-minded: classic
+<code>Struct</code> members are mutable (<code>p.x = 9</code> works); when you
+want real record semantics, reach for <code>Data.define</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

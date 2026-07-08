@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null, ?? & ?-></title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null, ?? & ?->",
+
+  intro: `
+<p>The <code>NullPointerException</code> lives in PHP too — dereference
+<code>null</code> with <code>-></code> and you get a fatal
+<code>Error</code>. The difference is the tooling. Java gave you
+<code>Optional</code>, a wrapper type you thread through
+<code>map</code>/<code>orElse</code> chains; PHP builds the same safety into
+two operators. The <em>nullsafe</em> operator <code>?-></code> short-circuits
+a property or method chain to <code>null</code> the moment any link is
+<code>null</code>, and the <em>null coalescing</em> operator <code>??</code>
+supplies the fallback. Your whole
+<code>Optional.ofNullable(user).map(User::address).map(Address::city).orElse("Unknown")</code>
+pipeline collapses to one expression:
+<code>$user?->address?->city ?? "Unknown"</code>.</p>
+<table>
+  <tr><th>Java</th><th>PHP</th></tr>
+  <tr><td><code>Optional.ofNullable(u).map(U::addr).map(A::city).orElse(d)</code></td><td><code>$u?->addr?->city ?? $d</code></td></tr>
+  <tr><td><code>map.getOrDefault(key, def)</code></td><td><code>$data[$key] ?? $def</code></td></tr>
+  <tr><td><code>if (x == null) x = def;</code></td><td><code>$x ??= $def;</code></td></tr>
+  <tr><td><code>@Nullable User</code> / <code>Optional&lt;User&gt;</code></td><td><code>?User</code> (nullable type declaration)</td></tr>
+  <tr><td><code>u != null &amp;&amp; u.getAddress() != null</code></td><td><code>isset($u->address)</code></td></tr>
+</table>
+<p><code>??</code> is <code>getOrDefault</code> for <em>everything</em>: it
+works on array keys, properties, and plain variables, and it treats "missing"
+and "null" identically without warnings. <code>??=</code> assigns only when
+the left side is null. And <code>isset($x)</code> answers Java's
+double-barreled question — "is it defined <em>and</em> not null?" — in one
+call. A nullable parameter is spelled by prefixing the type with a question
+mark: <code>?User $user</code> is your <code>@Nullable User user</code>.</p>`,
+
+  java: `record Address(String city) {}
+record User(Address address) {}
+
+String getCity(User user) {
+    // The Optional dance: wrap, map, map, unwrap-with-default.
+    return Optional.ofNullable(user)
+        .map(User::address)
+        .map(Address::city)
+        .orElse("Unknown");
+}
+
+String pick(Map<String, String> data, String key, String def) {
+    return data.getOrDefault(key, def);
+}
+
+getCity(new User(new Address("Paris")));  // "Paris"
+getCity(new User(null));                  // "Unknown"
+getCity(null);                            // "Unknown"`,
+
+  task: `
+<p>The starter defines <code>Address</code> and <code>User</code> for you
+(note <code>?Address</code> — the address may be null). Implement:</p>
+<ol>
+  <li><code>get_city(?User $user): string</code> — return the user's city, or
+      <code>"Unknown"</code> if the user, the address, or the city is missing.
+      This is a one-liner: chain <code>?-></code> through
+      <code>$user?->address?->city</code> and finish with
+      <code>?? "Unknown"</code>. No <code>if</code>, no <code>Optional</code>
+      boilerplate.</li>
+  <li><code>pick(array $data, string $key, string $default): string</code> —
+      look up <code>$key</code> in the array, falling back to
+      <code>$default</code> when the key is absent <em>or its value is
+      null</em>. That is exactly what <code>$data[$key] ?? $default</code>
+      does — PHP's <code>getOrDefault</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Given: constructor property promotion (Lesson 9 covers it in depth).
+// ?Address means "Address or null" — like @Nullable Address.
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+// 1. One expression: nullsafe chain + null coalescing fallback.
+function get_city(?User $user): string {
+    throw new Exception("TODO: implement get_city with ?-> and ??");
+}
+
+// 2. getOrDefault, PHP-style: $data[$key] ?? $default.
+function pick(array $data, string $key, string $default): string {
+    throw new Exception("TODO: implement pick with ??");
+}
+`,
+
+  requirements: [
+    { pattern: /\?\?/, message: "Use the null coalescing operator ??" },
+    { pattern: /\?->/, message: "Use the nullsafe operator ?-> to chain through possibly-null objects" },
+    { pattern: /\?User|\?Address/, message: "Keep the nullable type declarations (?User / ?Address)" },
+  ],
+
+  tests: [
+    { name: 'get_city(new User(new Address("Paris"))) returns "Paris"',
+      code: 'expect_eq(get_city(new User(new Address("Paris"))), "Paris");' },
+    { name: "get_city(new User()) — null address — returns \"Unknown\"",
+      code: 'expect_eq(get_city(new User()), "Unknown");' },
+    { name: "get_city(null) — null user — returns \"Unknown\"",
+      code: 'expect_eq(get_city(null), "Unknown");' },
+    { name: 'pick(["name" => "Ada"], "name", "n/a") returns "Ada"',
+      code: 'expect_eq(pick(["name" => "Ada"], "name", "n/a"), "Ada");' },
+    { name: 'pick([], "name", "n/a") — missing key — returns "n/a"',
+      code: 'expect_eq(pick([], "name", "n/a"), "n/a");' },
+    { name: 'pick(["name" => null], "name", "n/a") — null value — returns "n/a"',
+      code: 'expect_eq(pick(["name" => null], "name", "n/a"), "n/a");' },
+  ],
+
+  solution: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+function get_city(?User $user): string {
+    return $user?->address?->city ?? "Unknown";
+}
+
+function pick(array $data, string $key, string $default): string {
+    return $data[$key] ?? $default;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>PHP</th></tr>
+  <tr><td>Safe navigation</td><td><code>Optional.ofNullable(x).map(...)</code></td><td><code>$x?->prop?->deeper</code></td></tr>
+  <tr><td>Default value</td><td><code>.orElse(def)</code> / <code>getOrDefault</code></td><td><code>?? $def</code></td></tr>
+  <tr><td>Assign if null</td><td><code>if (x == null) x = def;</code></td><td><code>$x ??= $def;</code></td></tr>
+  <tr><td>Nullable type</td><td><code>@Nullable T</code> / <code>Optional&lt;T&gt;</code></td><td><code>?T</code></td></tr>
+  <tr><td>Defined and not null?</td><td><code>x != null</code> (after existence check)</td><td><code>isset($x)</code></td></tr>
+  <tr><td>Deref null anyway</td><td><code>NullPointerException</code></td><td><code>Error: Call to a member function ... on null</code></td></tr>
+</table>
+<p>One habit to unlearn: <code>Optional</code> is a type you return;
+<code>?-></code> and <code>??</code> are operators you use at the call site.
+PHP code returns plain nullable values (<code>?Address</code>) and lets the
+<em>caller</em> decide the fallback — so there is no wrapper object to
+allocate, no <code>.get()</code> to forget, and the happy path reads exactly
+like the unsafe version with two extra characters.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

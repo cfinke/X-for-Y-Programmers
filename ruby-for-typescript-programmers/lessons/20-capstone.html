@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>No new concepts this time — just the course's toolkit pointed at one small
+problem: an inventory of <code>Item</code> objects (a class with
+<code>attr_reader</code> and <code>initialize</code>, from lesson 9) queried
+and transformed with Enumerable and blocks (lessons 11–13). Every TS array
+method you reached for has its Ruby name by now: <code>reduce</code> with a
+seed becomes <code>sum</code> with a block, <code>find</code> keeps its name
+and its returns-<code>nil</code>-on-miss behavior (Ruby's whole
+"Option story" is <code>nil</code> plus <code>&amp;.</code> from lesson 6),
+and <code>filter().map()</code> is <code>select.map</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>items.reduce((s, i) =&gt; s + ..., 0)</code></td><td><code>items.sum { |i| ... }</code></td></tr>
+  <tr><td><code>items.find(...)</code> → <code>Item | undefined</code></td><td><code>items.find { }</code> → the item or <code>nil</code></td></tr>
+  <tr><td><code>{ ...i, count: i.count + n }</code></td><td><code>Item.new(i.name, i.price_cents, i.count + n)</code></td></tr>
+  <tr><td><code>items.filter(...).map(...)</code></td><td><code>items.select { }.map { }</code></td></tr>
+</table>
+<p>One thing deserves the same care it gets in TS: <strong>objects are
+references in Ruby too</strong>. An array of Items shares those Items with
+every other array that holds them, so "return a new array" is not enough —
+mutating a matched item's count would leak the change into the caller's
+array. The immutable-update move is the same as the spread idiom: keep the
+untouched items, and build a <em>new</em> <code>Item</code> for the one that
+changed. Ruby has no spread-for-objects, but the constructor is right
+there.</p>`,
+
+  typescript: `interface Item { name: string; priceCents: number; count: number; }
+
+const totalValue = (items: Item[]): number =>
+  items.reduce((sum, i) => sum + i.priceCents * i.count, 0);
+
+const findItem = (items: Item[], name: string): Item | undefined =>
+  items.find((i) => i.name === name);
+
+// Immutable update: fresh array, fresh object for the match.
+const restock = (items: Item[], name: string, amount: number): Item[] =>
+  items.map((i) =>
+    i.name === name ? { ...i, count: i.count + amount } : i
+  );
+
+const namesInStock = (items: Item[]): string[] =>
+  items.filter((i) => i.count > 0).map((i) => i.name);`,
+
+  task: `
+<p>The <code>Item</code> class is complete in the starter. Write the four
+functions:</p>
+<ol>
+  <li><code>total_value(items)</code> — the inventory's total worth:
+      <code>items.sum { |i| i.price_cents * i.count }</code>.</li>
+  <li><code>find_item(items, name)</code> — the first item whose
+      <code>name</code> matches, via <code>.find</code>; naturally
+      <code>nil</code> when nothing matches.</li>
+  <li><code>restock(items, name, amount)</code> — a <strong>new</strong>
+      array where the matching item is replaced by a <strong>new</strong>
+      <code>Item.new(i.name, i.price_cents, i.count + amount)</code> and all
+      others pass through unchanged. Do <em>not</em> mutate any existing
+      Item — the tests check the original is untouched.</li>
+  <li><code>names_in_stock(items)</code> — names of items with
+      <code>count &gt; 0</code>, via <code>select</code> then
+      <code>map</code>.</li>
+</ol>`,
+
+  starter: `# Item is complete — attr_reader only, so Items have no setters at all.
+class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+# 1. Total worth in cents: sum with a block.
+def total_value(items)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 2. First matching item, or nil — .find is TS .find, undefined -> nil.
+def find_item(items, name)
+  raise NotImplementedError, "TODO: implement find_item"
+end
+
+# 3. NEW array; matched item replaced by a NEW Item with a bigger count.
+#    (Item.new(...) is your { ...i, count: ... } spread.)
+def restock(items, name, amount)
+  raise NotImplementedError, "TODO: implement restock"
+end
+
+# 4. Names of items with count > 0: select, then map.
+def names_in_stock(items)
+  raise NotImplementedError, "TODO: implement names_in_stock"
+end
+`,
+
+  requirements: [
+    { pattern: /\.find\b/, message: "Locate the item with .find" },
+    { pattern: /\.select/, message: "Filter in-stock items with .select" },
+    { pattern: /\.sum/, message: "Total the value with .sum" },
+    { pattern: /Item\.new/, message: "Build a fresh Item.new in restock — no mutation" },
+  ],
+
+  tests: [
+    { name: "total_value sums price * count across the inventory",
+      code: '  items = [Item.new("apple", 150, 10), Item.new("banana", 75, 0), Item.new("cherry", 300, 5)]\n  expect_eq(total_value(items), 3000)\n  expect_eq(total_value([]), 0)' },
+    { name: 'find_item(items, "banana") returns the banana Item',
+      code: '  items = [Item.new("apple", 150, 10), Item.new("banana", 75, 0)]\n  expect_eq(find_item(items, "banana").price_cents, 75)' },
+    { name: 'find_item(items, "kiwi") returns nil on a miss',
+      code: '  items = [Item.new("apple", 150, 10), Item.new("banana", 75, 0)]\n  expect_true(find_item(items, "kiwi").nil?)' },
+    { name: "restock returns a new array with the matched count increased",
+      code: '  items = [Item.new("apple", 150, 10), Item.new("banana", 75, 0), Item.new("cherry", 300, 5)]\n  restocked = restock(items, "banana", 12)\n  expect_eq(restocked.map { |i| [i.name, i.count] }, [["apple", 10], ["banana", 12], ["cherry", 5]])' },
+    { name: "restock does NOT mutate the original items",
+      code: '  items = [Item.new("apple", 150, 10), Item.new("banana", 75, 0)]\n  restocked = restock(items, "banana", 12)\n  expect_eq(items[1].count, 0)\n  expect_true(!restocked[1].equal?(items[1]))' },
+    { name: 'restock with an unknown name leaves everything as-is; names_in_stock selects and maps',
+      code: '  items = [Item.new("apple", 150, 10), Item.new("banana", 75, 0), Item.new("cherry", 300, 5)]\n  expect_eq(restock(items, "kiwi", 5).map { |i| i.count }, [10, 0, 5])\n  expect_eq(names_in_stock(items), ["apple", "cherry"])\n  expect_eq(names_in_stock([]), [])' },
+  ],
+
+  solution: `class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+def total_value(items)
+  items.sum { |i| i.price_cents * i.count }
+end
+
+def find_item(items, name)
+  items.find { |i| i.name == name }
+end
+
+def restock(items, name, amount)
+  items.map do |i|
+    if i.name == name
+      Item.new(i.name, i.price_cents, i.count + amount)
+    else
+      i
+    end
+  end
+end
+
+def names_in_stock(items)
+  items.select { |i| i.count > 0 }.map(&:name)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Sum a projection</td><td><code>reduce((s, i) =&gt; s + f(i), 0)</code></td><td><code>sum { |i| f(i) }</code></td></tr>
+  <tr><td>First match</td><td><code>find</code> → <code>T | undefined</code></td><td><code>find</code> → item or <code>nil</code></td></tr>
+  <tr><td>Handle the miss</td><td><code>found?.name</code></td><td><code>found&amp;.name</code></td></tr>
+  <tr><td>Immutable update</td><td><code>map</code> + <code>{ ...i, count: n }</code></td><td><code>map</code> + <code>Item.new(...)</code></td></tr>
+  <tr><td>Filter + project</td><td><code>filter().map()</code></td><td><code>select { }.map(&amp;:name)</code></td></tr>
+  <tr><td>Same object?</td><td><code>a === b</code> (references)</td><td><code>a.equal?(b)</code> (<code>==</code> is value equality)</td></tr>
+</table>
+<p>That's the course. The through-line to keep: Ruby trades TypeScript's
+compile-time guarantees for expressiveness at runtime — implicit returns,
+blocks everywhere, one <code>each</code> (or one <code>&lt;=&gt;</code>)
+unlocking a whole module of behavior — while the disciplines you brought
+from TS still apply verbatim: treat shared objects as immutable, handle the
+<code>nil</code> the way you handled <code>undefined</code>, and let
+<code>find</code>/<code>select</code>/<code>sum</code> say what a loop would
+only imply.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

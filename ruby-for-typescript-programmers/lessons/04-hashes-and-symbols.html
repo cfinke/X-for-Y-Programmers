@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Hashes & Symbols</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Hashes & Symbols",
+
+  intro: `
+<p>Where TypeScript reaches for an object or a <code>Record&lt;string, T&gt;</code>,
+Ruby reaches for a <strong>Hash</strong> — and here you meet Ruby's most
+TS-foreign idea: the <strong>symbol</strong>. <code>:apples</code> is a
+lightweight, immutable, interned name — think of it as "the identifier
+<code>apples</code>, as a value". Symbols are the idiomatic choice for
+<em>fixed, known</em> keys (the ones TS would list in an interface), and the
+literal <code>{ apples: 3 }</code> is sugar for
+<code>{ :apples =&gt; 3 }</code>. It looks exactly like a JS object literal,
+but the keys are symbols, not strings. Keys that are <em>data</em> — user
+input, words with spaces — stay strings and use the arrow:
+<code>{ "user input" =&gt; 1 }</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>const inv = { apples: 3 };</code></td><td><code>inv = { apples: 3 }</code> (key is the symbol <code>:apples</code>)</td></tr>
+  <tr><td><code>inv["apples"]</code> / <code>inv.apples</code></td><td><code>inv[:apples]</code></td></tr>
+  <tr><td><code>inv["cherries"] ?? 0</code></td><td><code>inv.fetch(:cherries, 0)</code></td></tr>
+  <tr><td><code>{ ...inv, apples: 10 }</code></td><td><code>inv.merge(apples: 10)</code></td></tr>
+  <tr><td><code>Object.entries(inv)</code> loop</td><td><code>inv.each { |name, count| ... }</code></td></tr>
+  <tr><td><code>Object.keys(inv)</code> / <code>"k" in inv</code></td><td><code>inv.keys</code> / <code>inv.key?(:k)</code></td></tr>
+</table>
+<p>The gotcha that bites every TS developer once: <code>h[:name]</code> and
+<code>h["name"]</code> are <strong>different keys</strong>. A hash built with
+symbol keys returns <code>nil</code> when you ask with a string, and vice
+versa — there is no coercion. (JSON parsing gives you string keys by default;
+lesson 19 deals with that.) Meanwhile <code>fetch</code> with a default is
+your <code>?? 0</code> idiom, and without a default it <em>raises</em> on a
+missing key — often exactly what you want instead of a silent
+<code>nil</code>.</p>`,
+
+  typescript: `type Inventory = Record<string, number>;
+
+const inventory: Inventory = { apples: 3, bananas: 5 };
+
+const apples = inventory["apples"];        // 3
+const cherries = inventory["cherries"] ?? 0; // 0
+
+// non-mutating update: spread into a fresh object
+const restocked = { ...inventory, apples: inventory["apples"] + 7 };
+
+for (const [name, count] of Object.entries(inventory)) {
+  console.log(\`\${name}: \${count}\`);
+}
+
+console.log(Object.keys(inventory));  // ["apples", "bananas"]
+console.log("apples" in inventory);   // true`,
+
+  task: `
+<p>Rewrite the TypeScript on the left as four Ruby methods:</p>
+<ol>
+  <li><code>build_inventory</code> — produce <code>{ apples: 3, bananas: 5 }</code>.
+      Same characters as the TS literal; the keys are the symbols
+      <code>:apples</code> and <code>:bananas</code>.</li>
+  <li><code>get_count(inv, name)</code> — look up <code>name</code> (a symbol)
+      with <code>inv.fetch(name, 0)</code> so missing items count as 0 — the
+      <code>?? 0</code> idiom.</li>
+  <li><code>add_stock(inv, name, n)</code> — <em>without mutating</em>
+      <code>inv</code>, produce a new hash where <code>name</code> is increased
+      by <code>n</code>: <code>inv.merge(name =&gt; inv.fetch(name, 0) + n)</code>.
+      (The arrow form is needed because <code>name</code> is a variable, not a
+      literal key.) This is your <code>{ ...inv, [name]: ... }</code>.</li>
+  <li><code>apples?(inv)</code> — a predicate: does the inventory track apples?
+      Check whether <code>:apples</code> is among <code>inv.keys</code> using
+      <code>.include?</code>. (Direct route: <code>inv.key?(:apples)</code> —
+      but touch <code>.keys</code> here to meet it.)</li>
+</ol>`,
+
+  starter: `# 1. build_inventory: { apples: 3, bananas: 5 } — sugar for
+#    { :apples => 3, :bananas => 5 }. Symbol keys, not strings.
+def build_inventory
+  raise NotImplementedError, "TODO: implement build_inventory"
+end
+
+# 2. get_count: fetch(key, default) is the ?? 0 idiom.
+def get_count(inv, name)
+  raise NotImplementedError, "TODO: implement get_count"
+end
+
+# 3. add_stock: do NOT mutate inv — merge builds a new hash, like a spread.
+#    inv.merge(name => old_count_plus_n); use the arrow since name is a variable.
+def add_stock(inv, name, n)
+  raise NotImplementedError, "TODO: implement add_stock"
+end
+
+# 4. apples?: is :apples among inv.keys?
+def apples?(inv)
+  raise NotImplementedError, "TODO: implement apples?"
+end
+`,
+
+  requirements: [
+    { pattern: /fetch\s*\(/, message: "Use fetch(key, default) for lookups with a fallback" },
+    { pattern: /merge/, message: "Build the updated hash with merge (non-mutating)" },
+    { pattern: /:\w+/, message: "Use a symbol literal like :apples" },
+    { pattern: /\.each|\.keys/, message: "Use .keys (or .each) on the hash" },
+  ],
+
+  tests: [
+    { name: "build_inventory returns { apples: 3, bananas: 5 }",
+      code: "  expect_eq(build_inventory, { apples: 3, bananas: 5 })" },
+    { name: 'inv[:apples] is 3 but inv["apples"] is nil — different keys!',
+      code: '  inv = build_inventory\n  expect_eq(inv[:apples], 3)\n  expect_eq(inv["apples"], nil)' },
+    { name: "get_count(inv, :bananas) returns 5",
+      code: "  expect_eq(get_count(build_inventory, :bananas), 5)" },
+    { name: "get_count(inv, :cherries) returns 0 for a missing key",
+      code: "  expect_eq(get_count(build_inventory, :cherries), 0)" },
+    { name: "add_stock(inv, :apples, 7) returns a NEW hash and leaves inv alone",
+      code: "  inv = build_inventory\n  restocked = add_stock(inv, :apples, 7)\n  expect_eq(restocked[:apples], 10)\n  expect_eq(inv[:apples], 3)" },
+    { name: "apples?({ apples: 1 }) is true; apples?({ pears: 2 }) is false",
+      code: "  expect_true(apples?({ apples: 1 }))\n  expect_eq(apples?({ pears: 2 }), false)" },
+  ],
+
+  solution: `def build_inventory
+  { apples: 3, bananas: 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  inv.merge(name => inv.fetch(name, 0) + n)
+end
+
+def apples?(inv)
+  inv.keys.include?(:apples)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Literal, fixed keys</td><td><code>{ apples: 3 }</code></td><td><code>{ apples: 3 }</code> — keys are symbols</td></tr>
+  <tr><td>Literal, string keys</td><td><code>{ "user input": 1 }</code></td><td><code>{ "user input" =&gt; 1 }</code></td></tr>
+  <tr><td>Access</td><td><code>obj.k</code> / <code>obj["k"]</code></td><td><code>h[:k]</code> (<code>nil</code> if missing)</td></tr>
+  <tr><td>Default on missing</td><td><code>obj["k"] ?? 0</code></td><td><code>h.fetch(:k, 0)</code></td></tr>
+  <tr><td>Fail loudly on missing</td><td>manual check</td><td><code>h.fetch(:k)</code> raises <code>KeyError</code></td></tr>
+  <tr><td>Non-mutating update</td><td><code>{ ...obj, k: v }</code></td><td><code>h.merge(k: v)</code></td></tr>
+  <tr><td>Iterate entries</td><td><code>Object.entries(obj)</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td>Keys / membership</td><td><code>Object.keys(obj)</code> / <code>"k" in obj</code></td><td><code>h.keys</code> / <code>h.key?(:k)</code></td></tr>
+</table>
+<p>Why symbols at all? Every <code>:apples</code> in a program is the <em>same
+object</em> — comparing symbols is an identity check, not a character-by-character
+string compare — so they make perfect hash keys and enum-ish values. The rule
+of thumb: if TypeScript would put the key in an interface, use a symbol; if
+the key arrives at runtime as data, use a string. Just never mix them up:
+<code>h[:name]</code> and <code>h["name"]</code> live side by side without
+complaint, and the wrong one simply returns <code>nil</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

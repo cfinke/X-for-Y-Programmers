@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Structs &amp; Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Structs & Methods",
+
+  intro: `
+<p>Structs barely need translation: <code>type BankAccount struct</code>
+becomes <code>struct BankAccount</code>, fields and all. Methods move
+house, though. Go attaches each method to its receiver one function at a
+time — <code>func (a *BankAccount) Deposit(...)</code> — and they can be
+scattered across any file in the package. Rust groups them in an
+<code>impl BankAccount</code> block: all of a type's behavior in one
+place, with the receiver spelled <code>self</code>.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>type BankAccount struct { ... }</code></td><td><code>struct BankAccount { ... }</code></td></tr>
+  <tr><td><code>func (a *BankAccount) Deposit(...)</code> (scattered)</td><td><code>impl BankAccount { fn deposit(&amp;mut self, ...) }</code> (grouped)</td></tr>
+  <tr><td><code>func NewBankAccount(...) *BankAccount</code> (convention)</td><td><code>BankAccount::new(...)</code> (associated function)</td></tr>
+  <tr><td>pointer receiver <code>(a *BankAccount)</code></td><td><code>&amp;mut self</code></td></tr>
+  <tr><td>value receiver <code>(a BankAccount)</code></td><td><code>&amp;self</code> (borrow, don't copy)</td></tr>
+</table>
+<p>Your two Go habits map directly. The <code>NewBankAccount</code>
+constructor convention becomes an <em>associated function</em> — a function
+in the <code>impl</code> block with no <code>self</code>, called as
+<code>BankAccount::new("Ada")</code>; same idea, but living on the type
+instead of floating in the package. And the pointer-vs-value receiver
+decision becomes <code>&amp;mut self</code> vs <code>&amp;self</code>:
+mutates vs reads, the distinction you already make — except the compiler
+enforces it consistently. Mix receivers in Go and you get subtle
+"mutation didn't stick" bugs; in Rust, calling a <code>&amp;mut self</code>
+method on an account you didn't declare <code>mut</code> is a compile
+error.</p>`,
+
+  go: `type BankAccount struct {
+	owner   string
+	balance int64
+}
+
+func NewBankAccount(owner string) *BankAccount {
+	return &BankAccount{owner: owner} // balance: zero value 0
+}
+
+func (a *BankAccount) Deposit(amount int64) {
+	a.balance += amount
+}
+
+func (a *BankAccount) Withdraw(amount int64) error {
+	if amount > a.balance {
+		return fmt.Errorf("insufficient funds")
+	}
+	a.balance -= amount
+	return nil
+}
+
+func (a *BankAccount) Balance() int64 {
+	return a.balance
+}`,
+
+  task: `
+<p>The <code>BankAccount</code> struct is already defined in the starter.
+Fill in its <code>impl</code> block:</p>
+<ol>
+  <li><code>new(owner: &amp;str) -&gt; BankAccount</code> — the
+      <code>NewBankAccount</code> constructor as an associated function
+      (no <code>self</code>): owner from the argument
+      (<code>.to_string()</code>), balance 0 — spelled out, since Rust has
+      no zero values.</li>
+  <li><code>deposit(&amp;mut self, amount: i64)</code> — add to the
+      balance. <code>&amp;mut self</code> is the pointer receiver.</li>
+  <li><code>withdraw(&amp;mut self, amount: i64) -&gt; Result&lt;(), String&gt;</code>
+      — Go's <code>error</code> return, Rust-style: if <code>amount</code>
+      exceeds the balance, return an <code>Err</code> with a message and
+      leave the balance untouched; otherwise subtract and return
+      <code>Ok(())</code>.</li>
+  <li><code>balance(&amp;self) -&gt; i64</code> — a read-only getter:
+      <code>&amp;self</code>, the value receiver that borrows instead of
+      copying.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The struct: field syntax is nearly identical to Go's.
+struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+// The impl block: every method for BankAccount lives here,
+// instead of scattered func (a *BankAccount) declarations.
+impl BankAccount {
+    // 1. Associated function (no self) — Go's NewBankAccount convention.
+    //    Called as BankAccount::new("Ada").
+    fn new(owner: &str) -> BankAccount {
+        todo!()
+    }
+
+    // 2. &mut self — the pointer receiver (a *BankAccount).
+    fn deposit(&mut self, amount: i64) {
+        todo!()
+    }
+
+    // 3. The error return: Err(...) if amount > balance, else Ok(()).
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        todo!()
+    }
+
+    // 4. &self — read-only access, like a value receiver without the copy.
+    fn balance(&self) -> i64 {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /struct\s+BankAccount/, message: "Define the BankAccount struct" },
+    { pattern: /impl\s+BankAccount/, message: "Group the methods in an impl BankAccount block" },
+    { pattern: /&mut\s+self/, message: "Use &mut self (the pointer receiver) for deposit and withdraw" },
+  ],
+
+  tests: [
+    { name: 'BankAccount::new("Ada") starts with balance 0',
+      code: `let acct = BankAccount::new("Ada");
+assert_eq!(acct.owner, "Ada");
+assert_eq!(acct.balance(), 0);` },
+    { name: "deposit(250) raises the balance to 250",
+      code: `let mut acct = BankAccount::new("Ada");
+acct.deposit(250);
+assert_eq!(acct.balance(), 250);` },
+    { name: "withdraw within the balance returns Ok and subtracts",
+      code: `let mut acct = BankAccount::new("Grace");
+acct.deposit(100);
+assert!(acct.withdraw(40).is_ok());
+assert_eq!(acct.balance(), 60);` },
+    { name: "overdrawing returns an Err",
+      code: `let mut acct = BankAccount::new("Grace");
+assert!(acct.withdraw(100).is_err());` },
+    { name: "a failed withdraw leaves the balance untouched",
+      code: `let mut acct = BankAccount::new("Rob");
+acct.deposit(50);
+let _ = acct.withdraw(80);
+assert_eq!(acct.balance(), 50);` },
+  ],
+
+  solution: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: &str) -> BankAccount {
+        BankAccount {
+            owner: owner.to_string(),
+            balance: 0,
+        }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        if amount > self.balance {
+            return Err(format!("insufficient funds: balance is {}", self.balance));
+        }
+        self.balance -= amount;
+        Ok(())
+    }
+
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Struct</td><td><code>type BankAccount struct { ... }</code></td><td><code>struct BankAccount { ... }</code></td></tr>
+  <tr><td>Methods</td><td><code>func (a *BankAccount) Deposit(...)</code>, anywhere in the package</td><td>grouped in <code>impl BankAccount { ... }</code></td></tr>
+  <tr><td>Constructor</td><td><code>NewBankAccount(...)</code> (naming convention)</td><td><code>BankAccount::new(...)</code> (associated function, no <code>self</code>)</td></tr>
+  <tr><td>Mutating receiver</td><td><code>(a *BankAccount)</code></td><td><code>&amp;mut self</code></td></tr>
+  <tr><td>Read-only receiver</td><td><code>(a BankAccount)</code> — copies the struct</td><td><code>&amp;self</code> — borrows it</td></tr>
+  <tr><td>Zero-value fields</td><td><code>&amp;BankAccount{owner: o}</code> → balance 0 implicitly</td><td>every field written out explicitly</td></tr>
+  <tr><td>Fallible method</td><td><code>func (...) Withdraw(...) error</code></td><td><code>fn withdraw(...) -&gt; Result&lt;(), String&gt;</code></td></tr>
+</table>
+<p>The receiver rules are Go's pointer-vs-value advice with the compiler as
+enforcer: a <code>&amp;self</code> method physically cannot assign to a
+field, and a <code>&amp;mut self</code> method can only be called on a
+binding declared <code>mut</code> — mutation is visible in the signature
+<em>and</em> at the declaration site. The one habit to unlearn is field
+shorthand: no zero values means <code>new</code> spells out
+<code>balance: 0</code>. In exchange, adding a field later makes every
+constructor that forgot it a compile error instead of a silent
+zero.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

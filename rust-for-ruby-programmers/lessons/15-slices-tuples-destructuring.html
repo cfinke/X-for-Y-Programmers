@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Slices, Tuples & Destructuring</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Slices, Tuples & Destructuring",
+
+  intro: `
+<p>Ruby has no tuple type, so you've spent years using arrays as pairs:
+<code>point = [3.0, 4.0]</code>, <code>a, b = pair</code>, and the beloved
+one-line swap <code>a, b = b, a</code>. Rust gives that habit a real type:
+<code>(3.0, 4.0)</code> is a <code>(f64, f64)</code> — fixed length, each
+position with its own type (an <code>(i32, String)</code> is fine), accessed
+by position with <code>.0</code> and <code>.1</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>point = [3.0, 4.0]</code> (array as pair)</td><td><code>let point: (f64, f64) = (3.0, 4.0);</code></td></tr>
+  <tr><td><code>x, y = point</code></td><td><code>let (x, y) = point;</code></td></tr>
+  <tr><td><code>a, b = b, a</code></td><td><code>(a, b) = (b, a);</code> — works identically</td></tr>
+  <tr><td><code>point[0]</code>, <code>point[1]</code></td><td><code>point.0</code>, <code>point.1</code></td></tr>
+  <tr><td><code>arr[1..]</code> (copies into a new Array)</td><td><code>&amp;arr[1..]</code> (borrowed view, no copy)</td></tr>
+</table>
+<p>Destructuring is Ruby's parallel assignment with the pattern spelled out:
+<code>let (x, y) = point;</code> <em>is</em> <code>x, y = point</code>, and
+returning "multiple values" from a function is just returning a tuple. The
+second half of this lesson names something you've been passing all along:
+<code>&amp;[i32]</code>, the <strong>slice</strong> — a borrowed view of a run
+of elements. Where Ruby's <code>arr[1..]</code> allocates a fresh Array,
+<code>&amp;arr[1..]</code> is just a pointer and a length into the original —
+which is why every function in this course took <code>&amp;[i32]</code>
+rather than <code>&amp;Vec&lt;i32&gt;</code>: it accepts a whole Vec, part of
+one, or a plain array, all without copying.</p>`,
+
+  ruby: `def swap(pair)
+  a, b = pair          # parallel assignment
+  [b, a]
+end
+
+def distance(p, q)
+  x1, y1 = p
+  x2, y2 = q
+  Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+end
+
+def ends(arr)
+  [arr.first, arr.last]
+end
+
+swap([1, 2])                 # => [2, 1]
+distance([0, 0], [3, 4])     # => 5.0
+ends([10, 20, 30])           # => [10, 30]
+# and the classic:  a, b = b, a`,
+
+  task: `
+<p>Rewrite the array-as-pair helpers with real tuples and a slice:</p>
+<ol>
+  <li><code>swap(pair: (i32, i32)) -&gt; (i32, i32)</code> — return the pair
+      reversed. Destructure with <code>let (a, b) = pair;</code> and return
+      <code>(b, a)</code> — Ruby's swap, verbatim.</li>
+  <li><code>distance(p: (f64, f64), q: (f64, f64)) -&gt; f64</code> — the
+      straight-line distance between two points. Destructure both with
+      <code>let (x, y) = ...;</code> patterns, then
+      <code>Math.sqrt(...)</code> becomes a method call:
+      <code>(dx * dx + dy * dy).sqrt()</code>.</li>
+  <li><code>ends(v: &amp;[i32]) -&gt; (i32, i32)</code> — the first and last
+      elements as a tuple (assume the slice is non-empty). Index with
+      <code>v[0]</code> and <code>v[v.len() - 1]</code> — this is Ruby's
+      <code>[arr.first, arr.last]</code>, but the pair-ness is in the return
+      type.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. Ruby:  a, b = pair; [b, a]
+//    Rust:  let (a, b) = pair;  then return the tuple (b, a).
+fn swap(pair: (i32, i32)) -> (i32, i32) {
+    todo!()
+}
+
+// 2. Destructure both points with \`let (x, y) = ...\`.
+//    Math.sqrt(n)  ->  n.sqrt()   (a method on f64)
+fn distance(p: (f64, f64), q: (f64, f64)) -> f64 {
+    todo!()
+}
+
+// 3. First and last of a borrowed view. v[0] and v[v.len() - 1].
+//    Assume non-empty.
+fn ends(v: &[i32]) -> (i32, i32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\(\s*f64\s*,\s*f64\s*\)/, message: "Use the (f64, f64) tuple type for points" },
+    { pattern: /let\s*\(/, message: "Destructure a tuple with let (x, y) = ..." },
+    { pattern: /&\[i32\]/, message: "Take a borrowed slice: &[i32]" },
+  ],
+
+  tests: [
+    { name: "swap((1, 2)) returns (2, 1)",
+      code: "assert_eq!(swap((1, 2)), (2, 1));" },
+    { name: "swap((-5, 0)) returns (0, -5)",
+      code: "assert_eq!(swap((-5, 0)), (0, -5));" },
+    { name: "distance((0.0, 0.0), (3.0, 4.0)) is exactly 5.0 — the 3-4-5 triangle",
+      code: "assert_eq!(distance((0.0, 0.0), (3.0, 4.0)), 5.0);" },
+    { name: "distance((1.0, 1.0), (4.0, 5.0)) is exactly 5.0 — same triangle, shifted",
+      code: "assert_eq!(distance((1.0, 1.0), (4.0, 5.0)), 5.0);" },
+    { name: "ends(&[10, 20, 30]) returns (10, 30)",
+      code: "assert_eq!(ends(&[10, 20, 30]), (10, 30));" },
+    { name: "ends(&[7]) returns (7, 7) — first and last coincide",
+      code: "assert_eq!(ends(&[7]), (7, 7));" },
+  ],
+
+  solution: `fn swap(pair: (i32, i32)) -> (i32, i32) {
+    let (a, b) = pair;
+    (b, a)
+}
+
+fn distance(p: (f64, f64), q: (f64, f64)) -> f64 {
+    let (x1, y1) = p;
+    let (x2, y2) = q;
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    (dx * dx + dy * dy).sqrt()
+}
+
+fn ends(v: &[i32]) -> (i32, i32) {
+    let first = v[0];
+    let last = v[v.len() - 1];
+    (first, last)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Pair / tuple</td><td><code>[3.0, 4.0]</code> (just an Array)</td><td><code>(3.0, 4.0)</code> : <code>(f64, f64)</code></td></tr>
+  <tr><td>Unpack</td><td><code>x, y = point</code></td><td><code>let (x, y) = point;</code></td></tr>
+  <tr><td>Swap two variables</td><td><code>a, b = b, a</code></td><td><code>(a, b) = (b, a);</code></td></tr>
+  <tr><td>By position</td><td><code>pair[0]</code></td><td><code>pair.0</code></td></tr>
+  <tr><td>"Multiple return values"</td><td><code>return a, b</code></td><td>return a tuple: <code>-&gt; (i32, i32)</code></td></tr>
+  <tr><td>Sub-view of an array</td><td><code>arr[1..]</code> — copies</td><td><code>&amp;arr[1..]</code> — borrowed, zero-copy</td></tr>
+  <tr><td>Function taking "a list"</td><td><code>def f(arr)</code></td><td><code>fn f(v: &amp;[i32])</code> — Vec, array, or slice all fit</td></tr>
+</table>
+<p>Mixed types are where tuples beat Ruby's pair-arrays: an
+<code>(i32, String)</code> knows position 0 is a number and position 1 a
+string, so <code>pair.1.len()</code> type-checks — no
+"<code>NoMethodError</code> because the elements were in the other order."
+And <code>let (x, y) = ...</code> is the same pattern language as
+<code>match</code> from Lesson 11 — patterns work in <code>let</code>,
+function parameters, and match arms alike. One habit to unlearn: slices index
+with <code>v[0]</code>, but out-of-bounds panics rather than returning
+<code>nil</code> — when the index might miss, use <code>v.first()</code> /
+<code>v.get(i)</code> and get an <code>Option</code> back, absence in the
+type as always.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

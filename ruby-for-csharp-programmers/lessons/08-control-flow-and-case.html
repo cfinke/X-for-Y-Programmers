@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; case</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & case",
+
+  intro: `
+<p>Ruby's <code>if</code> drops the parentheses and braces:
+<code>if cond ... end</code>. But the habit worth acquiring first is the
+<strong>modifier form</strong> — <code>return x if cond</code> puts the
+condition <em>after</em> the statement, perfect for one-line guard clauses.
+Ruby also gives you <code>unless</code>, an <code>if !</code> that reads like
+English: <code>raise "no funds" unless balance.positive?</code>. And since
+everything is an expression, <code>if/else</code> itself returns a value —
+your ternary <code>?:</code> often just becomes an <code>if</code>.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>if (cond) { return x; }</code></td><td><code>return x if cond</code></td></tr>
+  <tr><td><code>if (!done) { ... }</code></td><td><code>unless done ... end</code></td></tr>
+  <tr><td><code>n &gt; 0 ? "pos" : "neg"</code></td><td><code>if n &gt; 0 then "pos" else "neg" end</code> (an expression)</td></tr>
+  <tr><td><code>score switch { &gt;= 90 =&gt; "A", ... }</code></td><td><code>case score when 90.. then "A" ... end</code></td></tr>
+  <tr><td><code>"sat" or "sun" =&gt;</code></td><td><code>when "sat", "sun"</code></td></tr>
+</table>
+<p>Your <code>switch</code> expression maps to <code>case/when</code> — and
+Ruby had the good parts decades earlier. Range arms like
+<code>when 90..</code> are C#'s relational patterns
+(<code>&gt;= 90 =&gt;</code>); grouped values are a comma
+(<code>when "sat", "sun"</code> for <code>"sat" or "sun"</code>); there is
+no <code>break</code> and no fall-through, ever; and the whole
+<code>case</code> is an expression whose value you can return or assign —
+exactly like a C# switch <em>expression</em>, not the old statement.</p>`,
+
+  csharp: `string Grade(int score) => score switch
+{
+    >= 90 => "A",
+    >= 80 => "B",
+    >= 70 => "C",
+    _ => "F",
+};
+
+string DayType(string day) => day switch
+{
+    "sat" or "sun" => "weekend",
+    _ => "weekday",
+};
+
+string DescribeNumber(int n)
+{
+    if (n == 0) return "zero";
+    return n > 0 ? "positive" : "negative";
+}`,
+
+  task: `
+<p>Port all three methods to Ruby:</p>
+<ol>
+  <li><code>grade(score)</code> — a <code>case score</code> with
+      <em>range arms</em>: <code>when 90..</code> for "A",
+      <code>when 80..</code> for "B", <code>when 70..</code> for "C", and an
+      <code>else</code> of "F". Arms are checked top to bottom, first match
+      wins — no <code>break</code> to write.</li>
+  <li><code>day_type(day)</code> — a <code>case day</code> with one
+      <em>grouped</em> arm: <code>when "sat", "sun"</code> returns
+      <code>"weekend"</code>, <code>else</code> <code>"weekday"</code>.</li>
+  <li><code>describe_number(n)</code> — start with a modifier-if guard
+      (<code>return "zero" if n.zero?</code>), then use a plain
+      <code>if/else</code> <em>as the method's final expression</em> to
+      return <code>"positive"</code> or <code>"negative"</code>.</li>
+</ol>
+<p>Remember: <code>case</code> and <code>if</code> are expressions — let
+them be the last line and their value is the return value.</p>`,
+
+  starter: `# 1. C#'s relational patterns (>= 90 =>) become range arms (when 90..).
+#    Make the case expression itself the method body's last expression.
+def grade(score)
+  raise NotImplementedError, "TODO: implement grade with case/when range arms"
+end
+
+# 2. C#'s "sat" or "sun" pattern becomes a comma: when "sat", "sun"
+def day_type(day)
+  raise NotImplementedError, "TODO: implement day_type"
+end
+
+# 3. Guard first: return "zero" if n.zero?
+#    Then an if/else expression supplies "positive" or "negative".
+def describe_number(n)
+  raise NotImplementedError, "TODO: implement describe_number"
+end
+`,
+
+  requirements: [
+    { pattern: /case\b/, message: "Use a case expression" },
+    { pattern: /when\s+/, message: "Use when arms (ranges like 90.., and grouped values)" },
+    { pattern: /if\s+\w|unless/, message: "Use a modifier if (or unless) guard clause" },
+  ],
+
+  tests: [
+    { name: 'grade: 95 and 90 are "A" (the 90.. range arm)',
+      code: '  expect_eq(grade(95), "A")\n  expect_eq(grade(90), "A")' },
+    { name: 'grade: 83 is "B" and 70 is "C"',
+      code: '  expect_eq(grade(83), "B")\n  expect_eq(grade(70), "C")' },
+    { name: 'grade: 42 falls through to "F"',
+      code: '  expect_eq(grade(42), "F")' },
+    { name: 'day_type: "sat" and "sun" are "weekend"',
+      code: '  expect_eq(day_type("sat"), "weekend")\n  expect_eq(day_type("sun"), "weekend")' },
+    { name: 'day_type: "mon" is "weekday"',
+      code: '  expect_eq(day_type("mon"), "weekday")' },
+    { name: 'describe_number: 0 -> "zero", 5 -> "positive", -3 -> "negative"',
+      code: '  expect_eq(describe_number(0), "zero")\n  expect_eq(describe_number(5), "positive")\n  expect_eq(describe_number(-3), "negative")' },
+  ],
+
+  solution: `def grade(score)
+  case score
+  when 90.. then "A"
+  when 80.. then "B"
+  when 70.. then "C"
+  else "F"
+  end
+end
+
+def day_type(day)
+  case day
+  when "sat", "sun" then "weekend"
+  else "weekday"
+  end
+end
+
+def describe_number(n)
+  return "zero" if n.zero?
+
+  if n.positive?
+    "positive"
+  else
+    "negative"
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Guard clause</td><td><code>if (cond) return x;</code></td><td><code>return x if cond</code></td></tr>
+  <tr><td>Negated if</td><td><code>if (!done)</code></td><td><code>unless done</code></td></tr>
+  <tr><td>Switch on ranges</td><td><code>&gt;= 90 =&gt; "A"</code></td><td><code>when 90.. then "A"</code></td></tr>
+  <tr><td>Grouped cases</td><td><code>"sat" or "sun" =&gt;</code></td><td><code>when "sat", "sun"</code></td></tr>
+  <tr><td>Fall-through</td><td><code>break</code> not needed in expressions</td><td>never happens — no <code>break</code> exists</td></tr>
+  <tr><td>Result as a value</td><td>switch <em>expression</em> only</td><td><code>case</code> and <code>if</code> are always expressions</td></tr>
+</table>
+<p>Under the hood, each <code>when</code> arm calls the arm's
+<code>===</code> (case-equality) operator against the subject — a Range
+tests inclusion, a Regexp tests matching, a Class tests
+<code>is_a?</code> — so <code>when 90..</code>, <code>when /^s/</code>, and
+<code>when Integer</code> all work in the same construct. That's why Ruby's
+<code>case</code> was doing "pattern matching" long before C# 8 caught up
+(and Ruby 3 added a full <code>case/in</code> pattern matcher on top).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

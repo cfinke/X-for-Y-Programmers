@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Modules</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Modules",
+
+  intro: `
+<p>Python's <code>class Circle(Shape):</code> is Ruby's
+<code>class Circle &lt; Shape</code>. Calling up the chain,
+<code>super().__init__(x)</code> becomes just <code>super(x)</code> — no
+method name needed, it always means "the same method in the superclass".
+One gotcha worth flagging: a <em>bare</em> <code>super</code> with no
+parentheses forwards <strong>all</strong> of the current method's arguments
+automatically; write <code>super()</code> if you mean "pass nothing".
+For abstract methods, Ruby skips <code>abc.ABC</code> and
+<code>@abstractmethod</code> in favor of a convention — the base method just
+raises <code>NotImplementedError</code>. Sound familiar? It's the very same
+error-class name Python uses.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>class Circle(Shape):</code></td><td><code>class Circle &lt; Shape</code></td></tr>
+  <tr><td><code>super().__init__(x)</code></td><td><code>super(x)</code></td></tr>
+  <tr><td><code>@abstractmethod</code> (abc)</td><td><code>raise NotImplementedError</code> convention</td></tr>
+  <tr><td><code>class Robot(Greetable, Base):</code> + MRO</td><td><code>include Greetable</code> (mixin module)</td></tr>
+</table>
+<p>The bigger difference: Ruby has <strong>single inheritance only</strong> —
+one superclass, ever. Where Python reaches for multiple inheritance and the
+MRO, Ruby reaches for <strong>modules as mixins</strong>: a module holds
+methods, and <code>include Greetable</code> splices them into a class as if
+written there. The module's methods can call <code>self.name</code> and
+simply trust the including class to provide it — duck typing across the
+mixin boundary. No diamond problem, no MRO puzzles: if two included modules
+define the same method, the one included <em>last</em> wins. That's the
+entire conflict-resolution rule.</p>`,
+
+  python: `import math
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    def __init__(self, name):
+        self.name = name
+
+    @abstractmethod
+    def area(self): ...
+
+    def describe(self):
+        return f"{self.name} with area {self.area()}"
+
+class Circle(Shape):
+    def __init__(self, radius):
+        super().__init__("circle")
+        self.radius = radius
+
+    def area(self):
+        return round(math.pi * self.radius ** 2, 2)`,
+
+  task: `
+<p>Port the hierarchy, then go beyond it with a mixin:</p>
+<ol>
+  <li><code>Shape#area</code> — already done for you: it raises
+      <code>NotImplementedError</code>. In Ruby, that raise <em>is</em> the
+      abstract-method convention. Implement <code>describe</code> to return
+      <code>"circle with area 3.14"</code>-style text via
+      <code>"#{name} with area #{area}"</code>.</li>
+  <li><code>Circle &lt; Shape</code> — <code>initialize(radius)</code> calls
+      <code>super("circle")</code> then stores <code>@radius</code>;
+      <code>area</code> returns <code>(Math::PI * @radius ** 2).round(2)</code>.</li>
+  <li><code>Rectangle &lt; Shape</code> — <code>initialize(width, height)</code>
+      calls <code>super("rectangle")</code>; <code>area</code> returns
+      width × height.</li>
+  <li><code>module Greetable</code> — a <code>greet</code> method returning
+      <code>"Hello, I am #{self.name}"</code>. It has no <code>name</code> of
+      its own; it trusts the includer. <code>class Robot</code> already
+      says <code>include Greetable</code> and provides <code>name</code>.</li>
+</ol>`,
+
+  starter: `class Shape
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+
+  # This raise IS the Ruby abstract-method convention — leave it as is.
+  def area
+    raise NotImplementedError, "subclasses must implement area"
+  end
+
+  def describe
+    raise NotImplementedError, "TODO: interpolate name and area"
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    raise NotImplementedError, "TODO: super('circle') then store @radius"
+  end
+
+  def area
+    raise NotImplementedError, "TODO: (Math::PI * @radius ** 2).round(2)"
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    raise NotImplementedError, "TODO: super('rectangle') then store both sides"
+  end
+
+  def area
+    raise NotImplementedError, "TODO: width times height"
+  end
+end
+
+module Greetable
+  def greet
+    raise NotImplementedError, "TODO: use self.name from the including class"
+  end
+end
+
+class Robot
+  include Greetable
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /<\s*Shape/, message: "Subclass with < Shape (Ruby's class Circle(Shape))" },
+    { pattern: /NotImplementedError/, message: "Keep the raise NotImplementedError abstract-method convention in Shape#area" },
+    { pattern: /module\s+Greetable/, message: "Define the Greetable mixin as a module" },
+    { pattern: /include\s+Greetable/, message: "Mix Greetable into Robot with include" },
+  ],
+
+  tests: [
+    { name: "Circle.new(2).area returns 12.57",
+      code: "  expect_eq(Circle.new(2).area, 12.57)" },
+    { name: "Rectangle.new(3, 4).area returns 12",
+      code: "  expect_eq(Rectangle.new(3, 4).area, 12)" },
+    { name: 'Circle.new(1).describe returns "circle with area 3.14"',
+      code: '  expect_eq(Circle.new(1).describe, "circle with area 3.14")' },
+    { name: 'Rectangle.new(2, 5).describe returns "rectangle with area 10"',
+      code: '  expect_eq(Rectangle.new(2, 5).describe, "rectangle with area 10")' },
+    { name: "Shape#area still raises NotImplementedError (the abstract convention)",
+      code: '  raised = begin\n    Shape.new("blob").area\n    false\n  rescue NotImplementedError\n    true\n  end\n  expect_true(raised)' },
+    { name: 'Robot.new("R2-D2").greet returns "Hello, I am R2-D2"',
+      code: '  expect_eq(Robot.new("R2-D2").greet, "Hello, I am R2-D2")' },
+  ],
+
+  solution: `class Shape
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+
+  def area
+    raise NotImplementedError, "subclasses must implement area"
+  end
+
+  def describe
+    "#{name} with area #{area}"
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    super("circle")
+    @radius = radius
+  end
+
+  def area
+    (Math::PI * @radius ** 2).round(2)
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    super("rectangle")
+    @width = width
+    @height = height
+  end
+
+  def area
+    @width * @height
+  end
+end
+
+module Greetable
+  def greet
+    "Hello, I am #{self.name}"
+  end
+end
+
+class Robot
+  include Greetable
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Inherit</td><td><code>class Circle(Shape):</code></td><td><code>class Circle &lt; Shape</code></td></tr>
+  <tr><td>Call parent method</td><td><code>super().__init__(x)</code></td><td><code>super(x)</code></td></tr>
+  <tr><td>Forward all args up</td><td><code>super().m(*args, **kw)</code></td><td>bare <code>super</code> (no parens!)</td></tr>
+  <tr><td>Pass nothing up</td><td><code>super().m()</code></td><td><code>super()</code></td></tr>
+  <tr><td>Abstract method</td><td><code>@abstractmethod</code> + <code>abc.ABC</code></td><td><code>raise NotImplementedError</code></td></tr>
+  <tr><td>Share behavior sideways</td><td>multiple inheritance + MRO</td><td><code>module</code> + <code>include</code></td></tr>
+  <tr><td>Which method wins?</td><td>C3 linearization</td><td>last module included wins</td></tr>
+</table>
+<p>Mixins are Ruby's answer to almost everything Python does with multiple
+inheritance — and the standard library leans on them hard: the next lessons'
+<code>map</code>/<code>select</code>/<code>sort_by</code> all come from one
+module, <code>Enumerable</code>, that any class can <code>include</code> by
+defining a single <code>each</code> method. One nuance to file away: Python's
+<code>NotImplementedError</code> inherits from <code>RuntimeError</code>, but
+Ruby's is a <code>ScriptError</code> — a bare <code>rescue</code> won't catch
+it, which is exactly what you want from a "you forgot to implement this"
+signal.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

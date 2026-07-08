@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>In C++ you may work on a codebase that builds with
+<code>-fno-exceptions</code>, and every <code>throw</code> is a design-review
+argument. Ruby has no such debate: exceptions are <em>the</em> error channel,
+used freely by the standard library and your own code alike. The shape maps
+directly — <code>begin/rescue/ensure/end</code> is
+<code>try/catch</code> plus the cleanup job RAII destructors do for you:
+<code>ensure</code> runs whether the block raised or not.</p>
+<table>
+  <tr><th>C++</th><th>Ruby</th></tr>
+  <tr><td><code>try { ... } catch (...) { ... }</code></td><td><code>begin ... rescue ... end</code></td></tr>
+  <tr><td><code>catch (const std::invalid_argument&amp; e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td><code>throw std::invalid_argument("bad");</code></td><td><code>raise ArgumentError, "bad"</code></td></tr>
+  <tr><td><code>struct my_error : std::runtime_error {...};</code></td><td><code>class MyError &lt; StandardError; end</code></td></tr>
+  <tr><td>RAII destructor / <code>scope_exit</code></td><td><code>ensure</code> block</td></tr>
+</table>
+<p>Two idioms with no C++ equivalent: a method body can <em>be</em> the try
+block — put <code>rescue</code> at the <code>def</code> level and skip
+<code>begin/end</code> entirely. And a bare <code>rescue</code> (no class
+named) catches <code>StandardError</code> and its subclasses only — not
+<code>Exception</code> — so signals, out-of-memory, and syntax-level
+disasters still propagate. Best of all, there are no exception-safety
+guarantees to hand-verify: nothing leaks when the stack unwinds, because the
+GC owns every object. Basic exception safety is simply the ambient
+condition.</p>`,
+
+  cpp: `#include <algorithm>
+#include <cctype>
+#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+int parse_age(const std::string& s) {
+    std::string t = s;                       // trim left as an exercise...
+    if (t.empty() || !std::all_of(t.begin(), t.end(),
+                                  [](unsigned char c) { return std::isdigit(c); }))
+        throw std::invalid_argument("not a number: " + s);
+    return std::stoi(t);
+}
+
+int safe_parse_age(const std::string& s, int fallback) {
+    try { return parse_age(s); }
+    catch (const std::invalid_argument&) { return fallback; }
+}
+
+struct empty_cart_error : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+int checkout(const std::vector<int>& items) {
+    if (items.empty()) throw empty_cart_error("cart is empty");
+    return std::accumulate(items.begin(), items.end(), 0);
+}`,
+
+  task: `
+<p>Port the error handling on the left:</p>
+<ol>
+  <li><code>parse_age(s)</code> — <code>raise ArgumentError, "..."</code>
+      unless <code>s.strip.match?(/\\A\\d+\\z/)</code> says the string is all
+      digits; otherwise return <code>s.to_i</code>. (<code>\\A</code> and
+      <code>\\z</code> anchor the whole string, like <code>^$</code> without
+      multiline surprises.)</li>
+  <li><code>safe_parse_age(s, default)</code> — call <code>parse_age</code>
+      and return <code>default</code> on <code>ArgumentError</code>. Use a
+      <em>def-level rescue</em>: no <code>begin/end</code>, just
+      <code>rescue ArgumentError</code> between the body and
+      <code>end</code>.</li>
+  <li><code>EmptyCartError</code> — the starter already shows the whole
+      custom-exception ceremony: <code>class EmptyCartError &lt;
+      StandardError</code>. Then write <code>checkout(items)</code>: raise
+      <code>EmptyCartError</code> if <code>items.empty?</code>, else return
+      <code>items.sum</code>.</li>
+</ol>`,
+
+  starter: `# 1. parse_age: validate with s.strip.match?(/\\A\\d+\\z/), then s.to_i.
+#    On bad input: raise ArgumentError, "not a number"
+def parse_age(s)
+  raise NotImplementedError, "TODO: implement parse_age"
+end
+
+# 2. safe_parse_age: def-level rescue — the method body IS the try block.
+#    def ... / body / rescue ArgumentError / default / end
+def safe_parse_age(s, default)
+  raise NotImplementedError, "TODO: implement safe_parse_age"
+end
+
+# 3. This one line is the entire custom-exception ceremony.
+class EmptyCartError < StandardError
+end
+
+# 4. checkout: raise EmptyCartError if items.empty?, else items.sum.
+def checkout(items)
+  raise NotImplementedError, "TODO: implement checkout"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+\w*Error/, message: "Rescue a specific exception class (rescue ArgumentError)" },
+    { pattern: /raise\s+/, message: "Raise an exception with raise" },
+    { pattern: /<\s*StandardError/, message: "EmptyCartError must subclass StandardError" },
+    { pattern: /match\?|to_i/, message: "Validate with match? and convert with to_i" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42',
+      code: '  expect_eq(parse_age("42"), 42)' },
+    { name: 'parse_age("  7  ") tolerates surrounding whitespace',
+      code: '  expect_eq(parse_age("  7  "), 7)' },
+    { name: 'parse_age("abc") raises ArgumentError',
+      code: `  begin
+    parse_age("abc")
+    raise "did not raise"
+  rescue ArgumentError
+  end` },
+    { name: 'safe_parse_age("abc", 18) returns the default 18',
+      code: '  expect_eq(safe_parse_age("abc", 18), 18)' },
+    { name: 'safe_parse_age("30", 0) returns 30',
+      code: '  expect_eq(safe_parse_age("30", 0), 30)' },
+    { name: "checkout([]) raises EmptyCartError; checkout([500, 250]) returns 750",
+      code: `  begin
+    checkout([])
+    raise "did not raise"
+  rescue EmptyCartError
+  end
+  expect_eq(checkout([500, 250]), 750)` },
+  ],
+
+  solution: `def parse_age(s)
+  raise ArgumentError, "not a number: #{s.inspect}" unless s.strip.match?(/\\A\\d+\\z/)
+  s.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise EmptyCartError, "cart is empty" if items.empty?
+  items.sum
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Try / catch</td><td><code>try { } catch (const E&amp; e) { }</code></td><td><code>begin ... rescue E =&gt; e ... end</code></td></tr>
+  <tr><td>Throw</td><td><code>throw std::invalid_argument("msg");</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+  <tr><td>Custom exception</td><td>subclass + constructor forwarding</td><td><code>class MyError &lt; StandardError; end</code></td></tr>
+  <tr><td>Cleanup on unwind</td><td>RAII destructors</td><td><code>ensure</code> (runs raise or no raise)</td></tr>
+  <tr><td>Catch-all</td><td><code>catch (...)</code></td><td>bare <code>rescue</code> — StandardError only</td></tr>
+  <tr><td>Whole method as try</td><td>function-try-block (rare)</td><td>def-level <code>rescue</code> (idiomatic)</td></tr>
+  <tr><td>Re-throw</td><td><code>throw;</code></td><td>bare <code>raise</code> inside a rescue</td></tr>
+</table>
+<p>Ruby's exception tree matters: <code>Exception</code> is the root, but
+almost everything you should catch lives under <code>StandardError</code> —
+which is why bare <code>rescue</code> stops there and why custom errors
+subclass it. Rescuing <code>Exception</code> itself is the Ruby equivalent of
+<code>catch (...)</code> swallowing <code>std::bad_alloc</code>: technically
+legal, socially frowned upon. And note what you did <em>not</em> have to
+think about while writing this lesson: strong vs. basic exception guarantees,
+leaks on partially-constructed objects, <code>noexcept</code> on move
+constructors. The GC unwinds safely; you just decide what to rescue.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

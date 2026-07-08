@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Structs &amp; Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A JavaScript <code>class</code> bundles data and behavior in one block.
+Rust splits them: a <code>struct</code> declares the data — just named,
+typed fields — and an <code>impl</code> block attaches the methods.
+There's no special <code>constructor</code> keyword either; by convention
+you write an associated function called <code>new</code> and call it as
+<code>BankAccount::new("Ada")</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>class BankAccount { ... }</code></td><td><code>struct BankAccount { ... }</code> + <code>impl BankAccount { ... }</code></td></tr>
+  <tr><td><code>constructor(owner) { ... }</code></td><td><code>fn new(owner: &amp;str) -&gt; BankAccount</code> (a convention, not a keyword)</td></tr>
+  <tr><td><code>new BankAccount("Ada")</code></td><td><code>BankAccount::new("Ada")</code></td></tr>
+  <tr><td><code>this.balance</code></td><td><code>self.balance</code></td></tr>
+  <tr><td>every method can mutate, silently</td><td><code>&amp;self</code> reads, <code>&amp;mut self</code> mutates — declared up front</td></tr>
+</table>
+<p>The first parameter of a method is where Rust says something JavaScript
+never does: <code>&amp;self</code> means "I only read the object," and
+<code>&amp;mut self</code> means "I change it." A JS method signature
+tells you nothing about whether calling it mutates the instance;
+in Rust it's part of the contract, and calling a <code>&amp;mut self</code>
+method on a non-<code>mut</code> binding is a compile error. As a bonus,
+<code>self</code> is just the first parameter — not a context resolved at
+call time — so the whole family of <code>this</code>-binding footguns
+(<code>.bind(this)</code>, callbacks losing their receiver, arrow-vs-function
+rules) has no Rust equivalent.</p>`,
+
+  javascript: `class BankAccount {
+  constructor(owner) {
+    this.owner = owner;
+    this.balance = 0;
+  }
+  deposit(amount) {
+    this.balance += amount;   // mutates — nothing in the signature says so
+  }
+  withdraw(amount) {
+    if (amount > this.balance) {
+      throw new Error("insufficient funds");
+    }
+    this.balance -= amount;
+  }
+  getBalance() {
+    return this.balance;      // read-only — also looks identical
+  }
+}
+
+const acct = new BankAccount("Ada");
+acct.deposit(100);
+acct.withdraw(30);
+console.log(acct.getBalance()); // 70`,
+
+  task: `
+<p>The <code>struct BankAccount</code> definition is already complete in the
+starter. Fill in the <code>impl</code> block:</p>
+<ol>
+  <li><code>new(owner: &amp;str) -&gt; BankAccount</code> — build an account
+      for <code>owner</code> (an owned <code>String</code>, so
+      <code>owner.to_string()</code>) with a <code>balance</code> of 0.</li>
+  <li><code>deposit(&amp;mut self, amount: i64)</code> — add
+      <code>amount</code> to the balance. Note the <code>&amp;mut self</code>:
+      this method declares that it mutates.</li>
+  <li><code>withdraw(&amp;mut self, amount: i64) -&gt; Result&lt;(), String&gt;</code>
+      — if <code>amount</code> is more than the balance, return an
+      <code>Err</code> with any message (last lesson's errors-as-values, no
+      <code>throw</code>); otherwise subtract it and return
+      <code>Ok(())</code>.</li>
+  <li><code>balance(&amp;self) -&gt; i64</code> — return the balance. Plain
+      <code>&amp;self</code>: reading requires no mutation rights.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your methods
+directly.</p>`,
+
+  starter: `// The struct is only the data — no methods live here.
+struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+// The behavior lives in an impl block.
+impl BankAccount {
+    // 1. new: the constructor-by-convention. Owner from &str, balance 0.
+    fn new(owner: &str) -> BankAccount {
+        todo!()
+    }
+
+    // 2. deposit: &mut self — this method changes the account and says so.
+    fn deposit(&mut self, amount: i64) {
+        todo!()
+    }
+
+    // 3. withdraw: Err(...) if amount > balance, else subtract and Ok(()).
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        todo!()
+    }
+
+    // 4. balance: &self — read-only access is enough.
+    fn balance(&self) -> i64 {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /struct\s+BankAccount/, message: "Keep the struct BankAccount data definition" },
+    { pattern: /impl\s+BankAccount/, message: "Put the methods in an impl BankAccount block" },
+    { pattern: /&mut\s+self/, message: "Mutating methods must take &mut self" },
+  ],
+
+  tests: [
+    { name: 'BankAccount::new("Ada") starts with owner "Ada" and balance 0',
+      code: 'let acct = BankAccount::new("Ada");\nassert_eq!(acct.owner, "Ada");\nassert_eq!(acct.balance(), 0);' },
+    { name: "deposit(100) raises the balance to 100",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert_eq!(acct.balance(), 100);' },
+    { name: "withdraw within the balance returns Ok and subtracts",
+      code: 'let mut acct = BankAccount::new("Grace");\nacct.deposit(200);\nassert!(acct.withdraw(50).is_ok());\nassert_eq!(acct.balance(), 150);' },
+    { name: "withdraw beyond the balance returns Err",
+      code: 'let mut acct = BankAccount::new("Grace");\nassert!(acct.withdraw(100).is_err());' },
+    { name: "a failed withdraw leaves the balance untouched",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(40);\nassert!(acct.withdraw(100).is_err());\nassert_eq!(acct.balance(), 40);' },
+  ],
+
+  solution: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: &str) -> BankAccount {
+        BankAccount {
+            owner: owner.to_string(),
+            balance: 0,
+        }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        if amount > self.balance {
+            return Err(format!("insufficient funds: balance is {}", self.balance));
+        }
+        self.balance -= amount;
+        Ok(())
+    }
+
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Data + behavior</td><td>one <code>class</code> block</td><td><code>struct</code> (data) + <code>impl</code> (methods)</td></tr>
+  <tr><td>Constructor</td><td><code>constructor()</code>, called via <code>new X()</code></td><td><code>fn new()</code> by convention, called via <code>X::new()</code></td></tr>
+  <tr><td>Instance access</td><td><code>this.field</code></td><td><code>self.field</code></td></tr>
+  <tr><td>Does it mutate?</td><td>unknowable from the signature</td><td><code>&amp;self</code> = read-only, <code>&amp;mut self</code> = mutates</td></tr>
+  <tr><td>Losing <code>this</code></td><td><code>.bind(this)</code>, arrow functions, sorrow</td><td>can't happen — <code>self</code> is an ordinary parameter</td></tr>
+</table>
+<p>The <code>&amp;self</code> / <code>&amp;mut self</code> distinction is
+last lesson's borrowing rules applied to methods: <code>balance()</code>
+borrows the account immutably, <code>deposit()</code> borrows it mutably,
+and the compiler enforces both at every call site. That's why the tests
+need <code>let mut acct</code> before they can deposit — the "who is
+allowed to change this object?" question JavaScript leaves to discipline
+is answered in the types.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

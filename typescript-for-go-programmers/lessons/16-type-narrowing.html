@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Type Narrowing & Guards</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Type Narrowing & Guards",
+
+  intro: `
+<p>In Go, getting a concrete type out of an <code>interface{}</code> means a
+type assertion — and you have learned the hard way to always take the comma-ok
+form, because <code>s := v.(string)</code> panics when you guess wrong. For
+more than one candidate type you reach for <code>switch v := x.(type)</code>,
+which binds a <em>new</em> variable per case. TypeScript folds all of that
+into ordinary control flow: an <code>if (typeof x === "string")</code> check
+<em>narrows the original variable</em> inside the branch. There is no second
+variable, no <code>ok</code> to check, and no panic path — the assertion is
+the branch condition itself, so it cannot be wrong.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>s, ok := v.(string)</code> — comma-ok, or panic without it</td><td><code>if (typeof v === "string")</code> — v <em>is</em> a string inside; no panic possible</td></tr>
+  <tr><td><code>switch t := v.(type) { case int: ... }</code></td><td>Chained <code>typeof</code> / <code>instanceof</code> / <code>Array.isArray</code> checks</td></tr>
+  <tr><td><code>interface{}</code> / <code>any</code> — compiler lets you call anything on it</td><td><code>unknown</code> — compiler blocks every use until you narrow</td></tr>
+  <tr><td>Helper returning <code>bool</code> — the type info is lost at the call site</td><td>Predicate <code>isUser(x): x is User</code> — the compiler trusts it and narrows</td></tr>
+</table>
+<p>The type to hold untrusted data is <code>unknown</code>: it accepts
+anything, like <code>interface{}</code>, but you cannot touch the value until
+a check proves what it is — <code>interface{}</code> done safely. And when a
+shape check gets long, wrap it in a <em>type predicate</em>: a function whose
+return type is <code>value is User</code> instead of <code>boolean</code>.
+It is a reusable, compiler-trusted comma-ok — every caller that calls it in
+an <code>if</code> gets the narrowing for free.</p>`,
+
+  go: `type User struct {
+	Name string
+	Age  int
+}
+
+func Describe(v interface{}) string {
+	// One-off assertion: take the comma-ok or risk a panic.
+	if s, ok := v.(string); ok {
+		return fmt.Sprintf("string of length %d", len(s))
+	}
+	// The general tool: a type switch binding a fresh variable.
+	switch t := v.(type) {
+	case int:
+		return fmt.Sprintf("number %d", t)
+	case []int:
+		return fmt.Sprintf("array of %d items", len(t))
+	case User:
+		return "user " + t.Name
+	}
+	return "unknown value"
+}`,
+
+  task: `
+<p>Port <code>Describe</code> to TypeScript, narrowing an <code>unknown</code>
+instead of asserting on an <code>interface{}</code>:</p>
+<ol>
+  <li>Turn <code>isUser</code> into a type predicate: change its return type
+      from <code>boolean</code> to <code>value is User</code>, and return
+      whether <code>value</code> is a non-null object whose <code>name</code>
+      is a string and whose <code>age</code> is a number. (Inside the check
+      you may cast with <code>value as User</code> to read the fields.)</li>
+  <li>Implement <code>describeValue(value: unknown): string</code>:
+      <ul>
+        <li>string → <code>"string of length 5"</code> (its length)</li>
+        <li>number → <code>"number 42"</code></li>
+        <li>array (use <code>Array.isArray</code>) → <code>"array of 3 items"</code></li>
+        <li>passes <code>isUser</code> → <code>"user Ada"</code> (its name)</li>
+        <li>anything else → <code>"unknown value"</code></li>
+      </ul></li>
+</ol>
+<p>Note the order: check <code>Array.isArray</code> before <code>isUser</code>
+— an array is also an object. After each check, hover-level magic: the same
+<code>value</code> variable simply has the narrower type in that branch.</p>`,
+
+  starter: `interface User {
+  name: string;
+  age: number;
+}
+
+// 1. TODO: make this a type predicate — the reusable, compiler-trusted
+//    comma-ok. Go: u, ok := v.(User)  ->  TS: if (isUser(v)) { ... }
+//    Change ": boolean" to ": value is User" and check the shape.
+function isUser(value: unknown): boolean {
+  return false; // TODO: object, not null, string .name, number .age
+}
+
+// 2. TODO: narrow the unknown step by step. Each check is a case of
+//    Go's switch v := x.(type) — but it narrows value itself.
+function describeValue(value: unknown): string {
+  // TODO: typeof for string and number, Array.isArray for arrays,
+  //       isUser(value) for users, "unknown value" otherwise.
+  return "";
+}
+`,
+
+  exportNames: ["isUser", "describeValue"],
+
+  requirements: [
+    { pattern: /:\s*unknown/, message: "Accept untrusted input as unknown — interface{} the compiler makes you check" },
+    { pattern: /\bis\s+\w+/, message: "Give isUser a type-predicate return type (value is User)" },
+    { pattern: /typeof/, message: "Narrow with typeof checks — the type switch that narrows in place" },
+    { pattern: /Array\.isArray/, message: "Use Array.isArray to detect arrays (typeof reports them as \"object\")" },
+  ],
+
+  tests: [
+    { name: 'describeValue("hello") returns "string of length 5"', run: (x) => expectEqual(x.describeValue("hello"), "string of length 5") },
+    { name: 'describeValue(42) returns "number 42"', run: (x) => expectEqual(x.describeValue(42), "number 42") },
+    { name: 'describeValue([1, 2, 3]) returns "array of 3 items"', run: (x) => expectEqual(x.describeValue([1, 2, 3]), "array of 3 items") },
+    { name: 'describeValue({ name: "Ada", age: 36 }) returns "user Ada"', run: (x) => expectEqual(x.describeValue({ name: "Ada", age: 36 }), "user Ada") },
+    { name: 'describeValue(true) falls through to "unknown value"', run: (x) => expectEqual(x.describeValue(true), "unknown value") },
+    { name: "isUser accepts a valid user, rejects a partial one and null", run: (x) => {
+        expectEqual(x.isUser({ name: "Ada", age: 36 }), true);
+        expectEqual(x.isUser({ name: "Ada" }), false);
+        expectEqual(x.isUser(null), false);
+      } },
+  ],
+
+  solution: `interface User {
+  name: string;
+  age: number;
+}
+
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as User).name === "string" &&
+    typeof (value as User).age === "number"
+  );
+}
+
+function describeValue(value: unknown): string {
+  if (typeof value === "string") {
+    // value is a string here — .length is legal, no cast, no ok.
+    return "string of length " + value.length;
+  }
+  if (typeof value === "number") {
+    return "number " + value;
+  }
+  if (Array.isArray(value)) {
+    return "array of " + value.length + " items";
+  }
+  if (isUser(value)) {
+    // The predicate narrowed value to User for us.
+    return "user " + value.name;
+  }
+  return "unknown value";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Assert one type</td><td><code>s, ok := v.(string)</code></td><td><code>if (typeof v === "string")</code> — narrows v itself</td></tr>
+  <tr><td>Branch over types</td><td><code>switch t := v.(type)</code></td><td>Chained <code>typeof</code> / <code>instanceof</code> / <code>Array.isArray</code></td></tr>
+  <tr><td>Failure mode</td><td>Panic (bare) or unchecked <code>ok</code></td><td>None — the check <em>is</em> the branch</td></tr>
+  <tr><td>Hold anything, safely</td><td><code>interface{}</code> (unsafe until asserted)</td><td><code>unknown</code> (unusable until narrowed)</td></tr>
+  <tr><td>Class instances</td><td><code>v.(*bytes.Buffer)</code></td><td><code>v instanceof Date</code></td></tr>
+  <tr><td>Reusable check</td><td><code>func IsUser(v interface{}) bool</code> — callers must re-assert</td><td><code>isUser(v): v is User</code> — callers get the narrowing</td></tr>
+</table>
+<p>The mental shift: in Go, proving a type and using the value are two steps —
+assert, then use the new variable. In TypeScript the compiler tracks control
+flow, so proof and use merge: any branch you can only reach when
+<code>typeof v === "string"</code> is a branch where <code>v</code>
+<em>is</em> a string. Type predicates extend that tracking across function
+boundaries — which is exactly what the next lesson's tagged unions do with a
+single <code>kind</code> field.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

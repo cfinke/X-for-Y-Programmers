@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Comparisons &amp; Type Juggling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Comparisons & Type Juggling",
+
+  intro: `
+<p>In C#, <code>==</code> is resolved at compile time against known operand
+types — <code>1 == "1"</code> is not a question the compiler will even let
+you ask (CS0019). PHP's <code>==</code> compiles fine and answers it at
+runtime by <em>type juggling</em>: it converts the operands toward each
+other first, so <code>"1" == 1</code> is <code>true</code>. This is the
+single biggest gotcha for a C# developer, and the fix is a habit: use
+<code>===</code>, which compares value <em>and</em> type with no conversion —
+in practice it behaves like C#'s <code>==</code> on same-typed operands.
+Its partner <code>!==</code> replaces <code>!=</code>.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>1 == "1"</code> → compile error CS0019</td><td><code>1 == "1"</code> → <code>true</code> (juggled!)</td></tr>
+  <tr><td><code>a == b</code> (same types)</td><td><code>$a === $b</code> — the one to use</td></tr>
+  <tr><td><code>if (s) {}</code> → compile error CS0029</td><td><code>if ($s) {}</code> → truthiness applies</td></tr>
+  <tr><td><code>a.CompareTo(b)</code></td><td><code>$a &lt;=&gt; $b</code> (spaceship operator)</td></tr>
+</table>
+<p>Two more runtime-typing consequences. PHP has <em>truthiness</em> — any
+value can sit in an <code>if</code>, and <code>""</code>, <code>0</code>,
+<code>0.0</code>, <code>null</code>, <code>[]</code>, and (surprisingly)
+the <em>string</em> <code>"0"</code> are all falsy; cast with
+<code>(bool)</code> when you need the explicit answer. And the spaceship
+operator <code>&lt;=&gt;</code> is exactly <code>CompareTo</code> promoted
+to an operator: negative, zero, or positive — for <code>int</code> operands,
+precisely <code>-1</code>, <code>0</code>, or <code>1</code>. You will meet
+it again in <code>usort</code> comparators.</p>`,
+
+  csharp: `int n = 1;
+string s = "1";
+// if (n == s) {}   // CS0019: operator '==' cannot be applied
+//                  // to operands of type 'int' and 'string'
+
+bool SameValueAndType(object a, object b) =>
+    a.GetType() == b.GetType() && a.Equals(b);
+
+// No truthiness in C#: a condition must be a bool.
+// if (s) {}        // CS0029: cannot convert 'string' to 'bool'
+bool IsTruthy(string v) => v.Length > 0;
+
+// CompareTo: negative / zero / positive.
+int CompareNums(int a, int b) => a.CompareTo(b);
+
+Console.WriteLine(CompareNums(3, 7));   // -1
+Console.WriteLine(CompareNums(5, 5));   //  0`,
+
+  task: `
+<p>Write three small functions that pin down PHP's comparison rules:</p>
+<ol>
+  <li><code>same_value_and_type(mixed $a, mixed $b): bool</code> — return
+      whether the two values are identical, using <code>===</code>. This is
+      the C# <code>==</code> you actually meant. (<code>mixed</code> is
+      PHP's <code>object?</code>-ish "anything" type.)</li>
+  <li><code>is_truthy(mixed $v): bool</code> — return the value's truthiness
+      with an explicit <code>(bool)</code> cast. The tests probe the weird
+      corners: <code>"0"</code> is falsy, <code>"false"</code> is truthy.</li>
+  <li><code>compare_nums(int $a, int $b): int</code> — return
+      <code>-1</code>, <code>0</code>, or <code>1</code> with the spaceship
+      operator <code>&lt;=&gt;</code>. One expression, no ifs.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. === compares value AND type — no juggling. mixed = "any type".
+function same_value_and_type(mixed $a, mixed $b): bool {
+    throw new Exception("TODO: implement same_value_and_type");
+}
+
+// 2. Cast with (bool). Falsy: "", 0, 0.0, null, [], and the string "0".
+function is_truthy(mixed $v): bool {
+    throw new Exception("TODO: implement is_truthy");
+}
+
+// 3. CompareTo as an operator: $a <=> $b.
+function compare_nums(int $a, int $b): int {
+    throw new Exception("TODO: implement compare_nums");
+}
+`,
+
+  requirements: [
+    { pattern: /===/, message: "Use the identity operator === (value and type, no juggling)" },
+    { pattern: /<=>/, message: "Use the spaceship operator <=> in compare_nums" },
+    { pattern: /\(bool\)/, message: "Use an explicit (bool) cast in is_truthy" },
+  ],
+
+  tests: [
+    { name: "same_value_and_type(1, 1) is true; with \"1\" and 1 it is false (== would say true!)",
+      code: 'expect_true(same_value_and_type(1, 1));\nexpect_true(!same_value_and_type("1", 1));' },
+    { name: 'same_value_and_type(0, false) is false — juggling would have equated them',
+      code: 'expect_true(!same_value_and_type(0, false));\nexpect_true(same_value_and_type("php", "php"));' },
+    { name: 'is_truthy: the string "0" is falsy, "" is falsy, [] is falsy',
+      code: 'expect_true(!is_truthy("0"));\nexpect_true(!is_truthy(""));\nexpect_true(!is_truthy([]));' },
+    { name: 'is_truthy: "false" is truthy (non-empty, non-"0" string), 1 is truthy',
+      code: 'expect_true(is_truthy("false"));\nexpect_true(is_truthy(1));\nexpect_true(!is_truthy(0));' },
+    { name: "compare_nums returns -1 / 0 / 1",
+      code: "expect_eq(compare_nums(3, 7), -1);\nexpect_eq(compare_nums(5, 5), 0);\nexpect_eq(compare_nums(9, 2), 1);" },
+  ],
+
+  solution: `<?php
+
+function same_value_and_type(mixed $a, mixed $b): bool {
+    return $a === $b;
+}
+
+function is_truthy(mixed $v): bool {
+    return (bool) $v;
+}
+
+function compare_nums(int $a, int $b): int {
+    return $a <=> $b;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Equality you want</td><td><code>==</code> (type-checked at compile time)</td><td><code>===</code> / <code>!==</code></td></tr>
+  <tr><td>Loose equality</td><td>— (does not exist)</td><td><code>==</code> / <code>!=</code> — juggles types; avoid</td></tr>
+  <tr><td>Three-way compare</td><td><code>a.CompareTo(b)</code></td><td><code>$a &lt;=&gt; $b</code></td></tr>
+  <tr><td>Condition type</td><td>must be <code>bool</code></td><td>anything — truthiness applies</td></tr>
+  <tr><td>Falsy values</td><td>only <code>false</code></td><td><code>false</code>, <code>0</code>, <code>0.0</code>, <code>""</code>, <code>"0"</code>, <code>[]</code>, <code>null</code></td></tr>
+  <tr><td>Explicit bool</td><td><code>Convert.ToBoolean(v)</code></td><td><code>(bool) $v</code></td></tr>
+</table>
+<p>The mental model: C# settles comparisons at compile time, PHP at runtime —
+and PHP's <code>==</code> "helpfully" converts before comparing. Treat
+<code>===</code> as the default and <code>==</code> as a code smell, exactly
+the way modern JavaScript treats it. The one falsy value that bites everyone
+eventually is the string <code>"0"</code>: a perfectly real-looking value
+that fails an <code>if</code> — one more reason to compare with
+<code>===</code> instead of relying on truthiness for data.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

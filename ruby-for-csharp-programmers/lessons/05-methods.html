@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods & Implicit Return</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods & Implicit Return",
+
+  intro: `
+<p>Strip a C# method of its class wrapper, its <code>static</code>, its
+return type, and its braces, and what's left is a Ruby method:
+<code>def greet(name) ... end</code>, at the top level of the file. The
+expression-bodied <code>=&gt;</code> member you reach for in modern C# is the
+<em>default</em> semantics here — every method's last expression is its
+return value, no arrow required, and idiomatic Ruby doesn't write
+<code>return</code> at all except for early exits.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>public static string Greet(string n) =&gt; $"Hi, {n}";</code></td><td><code>def greet(n)&nbsp; "Hi, #{n}"&nbsp; end</code></td></tr>
+  <tr><td><code>string greeting = "Hello"</code> (optional param)</td><td><code>greeting = "Hello"</code> — same idea, no type</td></tr>
+  <tr><td><code>Create(name: "Ada")</code> (named args)</td><td><code>create(name: "Ada")</code> (keyword args)</td></tr>
+  <tr><td><code>bool IsAdult(int age)</code></td><td><code>def adult?(age)</code></td></tr>
+</table>
+<p>Optional parameters carry over unchanged: <code>greeting = "Hello"</code>
+in the parameter list. And here's the best mapping of the lesson: C#'s
+<em>named arguments</em> are Ruby's <em>keyword arguments</em> — declare
+<code>def create(name:, age: 0)</code> and call it
+<code>create(name: "Ada")</code>, the exact call syntax you already use in
+C#. The difference: in Ruby the definition opts in, <code>name:</code> with
+no default is <em>required</em>, and callers must use the names. Round it
+out with the naming conventions: <code>?</code> for predicates,
+<code>!</code> for "the dangerous version" (mutates, or raises).</p>`,
+
+  csharp: `public class Greeter
+{
+    public static string Greet(string name, string greeting = "Hello")
+        => $"{greeting}, {name}!";
+
+    public static string FullName(string first, string? last = null)
+        => last is null ? first : $"{first} {last}";
+
+    public static bool IsAdult(int age) => age >= 18;
+}
+
+// Named arguments at the call site:
+Console.WriteLine(Greeter.Greet(name: "Ada"));                       // Hello, Ada!
+Console.WriteLine(Greeter.FullName(first: "Ada", last: "Lovelace")); // Ada Lovelace
+Console.WriteLine(Greeter.IsAdult(36));                              // True`,
+
+  task: `
+<p>Rewrite <code>Greeter</code> as three top-level Ruby methods — no class,
+no <code>static</code>, no return types, and no <code>return</code> keyword
+anywhere:</p>
+<ol>
+  <li><code>greet(name, greeting = "Hello")</code> —
+      <code>"Hello, Ada!"</code> by default, <code>"Howdy, Ada!"</code> when a
+      greeting is passed. The interpolated string is the last (only)
+      expression.</li>
+  <li><code>full_name(first:, last: nil)</code> — <em>keyword</em> arguments:
+      <code>first:</code> is required, <code>last:</code> defaults to
+      <code>nil</code>. When <code>last</code> is nil, just the first name;
+      otherwise <code>"first last"</code>. Callers write
+      <code>full_name(first: "Ada", last: "Lovelace")</code> — C# named-arg
+      syntax, now mandatory.</li>
+  <li><code>adult?(age)</code> — true from 18 up. The <code>?</code> replaces
+      both the <code>Is</code> prefix and the <code>bool</code> return
+      type.</li>
+</ol>`,
+
+  starter: `# 1. greet: optional param, same syntax as C# minus the type.
+#    The last expression is what the caller gets back.
+def greet(name, greeting = "Hello")
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 2. full_name: keyword arguments — first: required, last: defaults to nil.
+#    Call it like C# named args: full_name(first: "Ada", last: "Lovelace")
+def full_name(first:, last: nil)
+  raise NotImplementedError, "TODO: implement full_name"
+end
+
+# 3. adult?: the ? suffix marks a predicate.
+def adult?(age)
+  raise NotImplementedError, "TODO: implement adult?"
+end
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give greeting a default value of "Hello" in the parameter list' },
+    { pattern: /\w+:/, message: "Declare keyword arguments (first:, last:) in full_name" },
+    { pattern: /def\s+adult\?/, message: "Define the predicate as adult? — the ? is part of the name" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") returns "Hello, Ada!" (default greeting)',
+      code: '  expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'greet("Ada", "Howdy") returns "Howdy, Ada!"',
+      code: '  expect_eq(greet("Ada", "Howdy"), "Howdy, Ada!")' },
+    { name: 'full_name(first: "Ada", last: "Lovelace") returns "Ada Lovelace"',
+      code: '  expect_eq(full_name(first: "Ada", last: "Lovelace"), "Ada Lovelace")' },
+    { name: 'full_name(first: "Grace") returns "Grace"',
+      code: '  expect_eq(full_name(first: "Grace"), "Grace")' },
+    { name: "adult?(18) is true",
+      code: "  expect_true(adult?(18))" },
+    { name: "adult?(17) is false",
+      code: "  expect_eq(adult?(17), false)" },
+  ],
+
+  solution: `def greet(name, greeting = "Hello")
+  "#{greeting}, #{name}!"
+end
+
+def full_name(first:, last: nil)
+  last ? "#{first} #{last}" : first
+end
+
+def adult?(age)
+  age >= 18
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Definition</td><td><code>public static string F(...)</code> in a class</td><td><code>def f(...)</code> at the top level</td></tr>
+  <tr><td>Return value</td><td><code>return x;</code> or <code>=&gt; x</code></td><td>last expression, always; <code>return</code> only for early exit</td></tr>
+  <tr><td>Optional parameter</td><td><code>string g = "Hello"</code></td><td><code>g = "Hello"</code></td></tr>
+  <tr><td>Named / keyword args</td><td><code>F(name: "Ada")</code> — caller's choice</td><td><code>def f(name:, age: 0)</code> — definition opts in, names required</td></tr>
+  <tr><td>Required keyword</td><td>—</td><td><code>name:</code> with no default</td></tr>
+  <tr><td>Predicate</td><td><code>bool IsAdult(...)</code></td><td><code>def adult?(...)</code></td></tr>
+  <tr><td>Dangerous variant</td><td>—</td><td><code>!</code> suffix: <code>sort!</code> mutates, <code>save!</code> raises</td></tr>
+</table>
+<p>Keyword arguments are where a C# habit becomes a Ruby superpower: the
+call-site syntax you already sprinkle on for readability —
+<code>Create(name: "Ada", age: 36)</code> — is, in Ruby, a contract the
+method declares. A method with <code>name:</code> and no default simply
+cannot be called without it, argument order stops mattering, and the call
+site documents itself. Most Ruby APIs you'll meet lean on this heavily.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

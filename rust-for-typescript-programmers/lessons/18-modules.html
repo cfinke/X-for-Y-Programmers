@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules &amp; Visibility</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules & Visibility",
+
+  intro: `
+<p>You know this system already — it's <code>import</code>/<code>export</code>,
+flipped. In TypeScript the file is the module and <code>export</code> opts a
+symbol in, but "private" is soft: everything in the file is visible to the
+file, and plenty of tooling reaches around it. In Rust, <em>everything is
+private by default</em> — even to code in the same crate one module over —
+and <code>pub</code> is the single, compiler-enforced opt-in.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>module = the file</td><td><code>mod name { ... }</code> — carve namespaces inside one file (or split into files later)</td></tr>
+  <tr><td><code>export function f()</code></td><td><code>pub fn f()</code></td></tr>
+  <tr><td>no export = file-private (by convention)</td><td>no <code>pub</code> = module-private (compiler-enforced)</td></tr>
+  <tr><td><code>import { f } from "./inv"</code></td><td><code>use inventory::f;</code> — or just call <code>inventory::f()</code></td></tr>
+</table>
+<p>Two more differences worth noting. First, paths: calling into a module uses
+<code>::</code>, as in <code>inventory::item_count(...)</code>, and
+<code>use</code> exists only to shorten those paths — it's an alias, not a
+loader. Second, because <code>mod</code> is just a block, you can (and often
+do) declare several modules in one file; the file boundary and the module
+boundary are decoupled in a way TS's are not.</p>`,
+
+  typescript: `// inventory.ts — in TS the module IS the file,
+// and export opts each symbol in.
+export function itemCount(items: string[]): number {
+  return items.length;
+}
+
+export function describe(items: string[]): string {
+  return \`\${items.length} \${unit(items.length)}\`;
+}
+
+// Not exported: private to this file... by convention.
+function unit(count: number): string {
+  return count === 1 ? "item" : "items";
+}
+
+// main.ts
+// import { itemCount, describe } from "./inventory";
+// describe(["hammer", "nails"]); // "2 items"`,
+
+  task: `
+<p>Build the same module inside one file with <code>mod</code>:</p>
+<ol>
+  <li>Keep the <code>mod inventory { ... }</code> block from the starter —
+      the tests call into it with paths like
+      <code>inventory::item_count(...)</code>.</li>
+  <li><code>pub fn item_count(items: &amp;[&amp;str]) -&gt; usize</code> —
+      return how many items there are (<code>.len()</code>).</li>
+  <li><code>pub fn describe(items: &amp;[&amp;str]) -&gt; String</code> —
+      return <code>"2 items"</code>, <code>"1 item"</code>,
+      <code>"0 items"</code>… Use the private helper for the
+      singular/plural word.</li>
+  <li><code>fn unit(count: usize) -&gt; &amp;'static str</code> — the
+      <em>private</em> helper (no <code>pub</code>): <code>"item"</code> when
+      <code>count == 1</code>, otherwise <code>"items"</code>. Only
+      <code>describe</code> can reach it — the tests can't, and that's the
+      point.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `mod inventory {
+    // pub: callable from outside the module (the tests use
+    // inventory::item_count(...)).
+    pub fn item_count(items: &[&str]) -> usize {
+        todo!()
+    }
+
+    // pub, and should call the private helper below.
+    pub fn describe(items: &[&str]) -> String {
+        todo!()
+    }
+
+    // No pub: private. Only code inside mod inventory sees this.
+    fn unit(count: usize) -> &'static str {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /mod\s+inventory/, message: "Define a mod inventory { ... } block" },
+    { pattern: /pub\s+fn/, message: "Mark item_count and describe pub so the outside world can call them" },
+  ],
+
+  tests: [
+    { name: 'inventory::item_count(&["hammer", "nails"]) returns 2',
+      code: 'assert_eq!(inventory::item_count(&["hammer", "nails"]), 2);' },
+    { name: "inventory::item_count on an empty list returns 0",
+      code: "let empty: Vec<&str> = vec![];\nassert_eq!(inventory::item_count(&empty), 0);" },
+    { name: 'inventory::describe(&["hammer", "nails"]) returns "2 items"',
+      code: 'assert_eq!(inventory::describe(&["hammer", "nails"]), "2 items");' },
+    { name: 'inventory::describe(&["hammer"]) returns "1 item" (singular)',
+      code: 'assert_eq!(inventory::describe(&["hammer"]), "1 item");' },
+    { name: 'inventory::describe on an empty list returns "0 items"',
+      code: 'let empty: Vec<&str> = vec![];\nassert_eq!(inventory::describe(&empty), "0 items");' },
+  ],
+
+  solution: `mod inventory {
+    pub fn item_count(items: &[&str]) -> usize {
+        items.len()
+    }
+
+    pub fn describe(items: &[&str]) -> String {
+        let count = items.len();
+        format!("{} {}", count, unit(count))
+    }
+
+    // Private: only visible inside mod inventory.
+    fn unit(count: usize) -> &'static str {
+        if count == 1 { "item" } else { "items" }
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Module boundary</td><td>the file</td><td><code>mod name { ... }</code> — any number per file</td></tr>
+  <tr><td>Make something public</td><td><code>export</code></td><td><code>pub</code></td></tr>
+  <tr><td>Default visibility</td><td>file-visible; "private" is soft</td><td>private to the module — compiler-enforced</td></tr>
+  <tr><td>Call across the boundary</td><td><code>import { f } from "./m"; f()</code></td><td><code>m::f()</code>, or <code>use m::f;</code> then <code>f()</code></td></tr>
+  <tr><td>What <code>use</code> does</td><td><code>import</code> loads and binds</td><td>only shortens a path — nothing is "loaded"</td></tr>
+</table>
+<p>The flip to internalize: TypeScript asks "what do I share?" and hides
+nothing else particularly well; Rust asks the same question but means it —
+if <code>unit</code> isn't <code>pub</code>, code outside
+<code>mod inventory</code> literally cannot name it, and the compiler will say
+"function <code>unit</code> is private." That makes <code>pub</code> your API
+contract: everything else can be refactored freely, and you can prove nobody
+depended on it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

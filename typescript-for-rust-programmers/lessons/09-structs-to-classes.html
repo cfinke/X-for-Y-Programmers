@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes",
+
+  intro: `
+<p>Rust splits a type across a <code>struct</code> (the data), one or more
+<code>impl</code> blocks (the behavior), and a <code>fn new() -&gt; Self</code>
+that is a constructor by convention only. TypeScript's <code>class</code>
+merges all three: fields, a real <code>constructor</code>, and methods live
+in one block. The <code>&amp;self</code>/<code>&amp;mut self</code> receivers
+become an implicit <code>this</code> — and here is the honest part: there is
+no borrow discipline attached to it. Any method can mutate any field at any
+time, callers can hold as many aliasing references to the object as they
+like, and nothing is <code>mut</code>-marked. The compiler checks types, not
+aliasing.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>struct BankAccount { ... }</code> + <code>impl BankAccount { ... }</code></td><td><code>class BankAccount { ... }</code> — one block</td></tr>
+  <tr><td><code>fn new(owner: String) -&gt; Self</code> (convention)</td><td><code>constructor(owner: string)</code> (language feature)</td></tr>
+  <tr><td><code>Self { owner, id, balance }</code></td><td>parameter properties: <code>constructor(private balance: number)</code> declares <em>and</em> assigns</td></tr>
+  <tr><td><code>&amp;self</code> / <code>&amp;mut self</code></td><td><code>this</code>, implicit — any method may mutate</td></tr>
+  <tr><td>fields private by default, <code>pub</code> to expose</td><td>fields <strong>public by default</strong>, <code>private</code>/<code>readonly</code> to restrict</td></tr>
+  <tr><td><code>panic!("insufficient funds")</code></td><td><code>throw new Error("insufficient funds")</code> — catchable, routine</td></tr>
+</table>
+<p>The visibility default flips on you: where Rust makes you write
+<code>pub</code> to expose a field, TypeScript exposes everything unless you
+say <code>private</code> (compiler-enforced encapsulation) or
+<code>readonly</code> (assignable only in the constructor — a field-level
+<code>let</code> without <code>mut</code>, and the closest thing to Rust's
+immutability you get here). Parameter properties are the best ergonomic win:
+prefixing a constructor parameter with a visibility modifier declares the
+field, takes the argument, and assigns it — the whole
+<code>Self { owner, id, balance }</code> literal disappears.</p>`,
+
+  rust: `struct BankAccount {
+    owner: String,   // private outside the module by default
+    id: String,
+    balance: f64,
+}
+
+impl BankAccount {
+    fn new(owner: String, id: String, opening: f64) -> Self {
+        Self { owner, id, balance: opening }
+    }
+    fn deposit(&mut self, amount: f64) {
+        self.balance += amount;
+    }
+    fn withdraw(&mut self, amount: f64) {
+        if amount > self.balance { panic!("insufficient funds"); }
+        self.balance -= amount;
+    }
+    fn balance(&self) -> f64 { self.balance }
+}`,
+
+  task: `
+<p>Merge the struct and the impl block into one class:</p>
+<ol>
+  <li>Declare <code>class BankAccount</code> whose constructor takes
+      <code>(owner: string, id: string, openingBalance: number)</code>.
+      Use parameter properties: <code>owner</code> and <code>id</code> as
+      <code>public readonly</code>, and the balance as
+      <code>private balance: number</code> (name the parameter
+      <code>balance</code> so it becomes the field).</li>
+  <li>Add <code>deposit(amount: number): void</code> — adds to the balance.
+      No <code>&amp;mut self</code> needed; mutation is always allowed.</li>
+  <li>Add <code>withdraw(amount: number): void</code> — if
+      <code>amount</code> exceeds the balance,
+      <code>throw new Error("insufficient funds")</code> (the everyday
+      <code>panic!</code>, except callers routinely catch it); otherwise
+      subtract.</li>
+  <li>Add <code>getBalance(): number</code> — the accessor the
+      <code>private</code> field makes necessary, like your
+      <code>fn balance(&amp;self)</code>.</li>
+</ol>`,
+
+  starter: `// struct BankAccount + impl BankAccount + fn new() -> one class.
+class BankAccount {
+  // TODO: rewrite this constructor with parameter properties:
+  //   owner and id as public readonly, balance as private.
+  // The Self { owner, id, balance } literal disappears entirely.
+  constructor(owner: string, id: string, openingBalance: number) {
+  }
+
+  // TODO: deposit(amount: number): void
+
+  // TODO: withdraw(amount: number): void
+  //   panic!("insufficient funds") -> throw new Error("insufficient funds")
+
+  // TODO: getBalance(): number
+}
+`,
+
+  exportNames: ["BankAccount"],
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Declare class BankAccount" },
+    { pattern: /private/, message: "Make the balance private — TypeScript fields are public unless you say otherwise" },
+    { pattern: /readonly/, message: "Mark owner and id readonly — assignable only in the constructor" },
+  ],
+
+  tests: [
+    { name: "opening balance is stored", run: (x) => expectEqual(new x.BankAccount("Ada", "ACCT-001", 100).getBalance(), 100) },
+    { name: "deposit(50) raises the balance to 150", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-001", 100); a.deposit(50); expectEqual(a.getBalance(), 150); } },
+    { name: "withdraw(30) lowers the balance to 70", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-001", 100); a.withdraw(30); expectEqual(a.getBalance(), 70); } },
+    { name: "overdraft throws", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-001", 100); expectThrows(() => a.withdraw(500)); } },
+    { name: "a failed withdrawal leaves the balance unchanged", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-001", 100); expectThrows(() => a.withdraw(500)); expectEqual(a.getBalance(), 100); } },
+    { name: "owner and id are readable from outside", run: (x) => { const a = new x.BankAccount("Grace", "ACCT-002", 5); expectEqual(a.owner, "Grace"); expectEqual(a.id, "ACCT-002"); } },
+  ],
+
+  solution: `class BankAccount {
+  constructor(
+    public readonly owner: string,
+    public readonly id: string,
+    private balance: number
+  ) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("insufficient funds");
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Type definition</td><td><code>struct</code> + <code>impl</code>, separate</td><td><code>class</code> — fields, constructor, methods together</td></tr>
+  <tr><td>Constructor</td><td><code>fn new() -&gt; Self</code>, by convention</td><td><code>constructor(...)</code>, called via <code>new BankAccount(...)</code></td></tr>
+  <tr><td>Field init shorthand</td><td><code>Self { owner, id, balance }</code></td><td><code>constructor(private balance: number)</code> — parameter property</td></tr>
+  <tr><td>Receiver</td><td><code>&amp;self</code> / <code>&amp;mut self</code>, explicit</td><td><code>this</code>, implicit; no mut/aliasing discipline at all</td></tr>
+  <tr><td>Visibility default</td><td>private; opt in with <code>pub</code></td><td>public; opt out with <code>private</code></td></tr>
+  <tr><td>Immutable field</td><td>no <code>&amp;mut self</code> methods touch it</td><td><code>readonly</code> — constructor-only assignment</td></tr>
+  <tr><td>Fatal error</td><td><code>panic!</code> (unwinds, rarely caught)</td><td><code>throw new Error(...)</code> (caught with try/catch, routinely)</td></tr>
+</table>
+<p>One caveat worth knowing before you rely on <code>private</code>: it is a
+compile-time construct. After erasure the field is an ordinary JavaScript
+property, and untyped code (or a cast) can reach it. JavaScript's own
+<code>#balance</code> syntax gives true runtime privacy if you ever need the
+hard guarantee. And since there is no borrow checker: two variables pointing
+at the same account are silently aliased mutable references — the thing Rust
+spent years training you to never create. Design accordingly.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

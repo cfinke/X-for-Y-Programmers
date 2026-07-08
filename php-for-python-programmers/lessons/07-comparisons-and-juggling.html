@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Comparisons &amp; Type Juggling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Comparisons & Type Juggling",
+
+  intro: `
+<p>Here is the one habit you must break coming from Python. In Python,
+<code>==</code> never coerces across types: <code>1 == "1"</code> is simply
+<code>False</code>. PHP's <code>==</code> <em>juggles</em> — it converts the
+operands until they look comparable, so <code>"1" == 1</code> is
+<code>true</code> (and historically far weirder things were too). The fix is
+mechanical: <strong>always write <code>===</code></strong> (and
+<code>!==</code>), which compares value <em>and</em> type with no coercion.
+<code>===</code> is Python's <code>==</code>; PHP's <code>==</code> has no
+Python equivalent, and that's a compliment to Python.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>1 == "1"</code> → <code>False</code></td><td><code>1 == "1"</code> → <code>true</code> (juggled!)</td></tr>
+  <tr><td><code>a == b</code> (no coercion)</td><td><code>$a === $b</code></td></tr>
+  <tr><td><code>a != b</code></td><td><code>$a !== $b</code></td></tr>
+  <tr><td><code>bool(v)</code></td><td><code>(bool) $v</code></td></tr>
+  <tr><td><code>bool("0")</code> → <code>True</code></td><td><code>(bool) "0"</code> → <code>false</code> (landmine!)</td></tr>
+  <tr><td><code>cmp(a, b)</code> (Python 2)</td><td><code>$a &lt;=&gt; $b</code></td></tr>
+</table>
+<p>Truthiness mostly matches what you know: <code>""</code>, <code>0</code>,
+<code>0.0</code>, <code>[]</code>, and <code>null</code> are all falsy, just
+like their Python counterparts. One landmine: the <em>string</em>
+<code>"0"</code> is falsy in PHP, while any non-empty string is truthy in
+Python. Finally, PHP kept a three-way comparator Python 3 dropped: the
+spaceship <code>&lt;=&gt;</code> returns <code>-1</code>, <code>0</code>, or
+<code>1</code> — it's the old <code>cmp()</code>, and you'll meet it again
+writing sort callbacks for <code>usort</code>.</p>`,
+
+  python: `def same_value_and_type(a, b) -> bool:
+    # Python's == never coerces: 1 == "1" is False, no operator needed.
+    return a == b
+
+def is_truthy(v) -> bool:
+    # Falsy in Python: "", 0, 0.0, [], {}, None.
+    # Careful: "0" is a non-empty string, so bool("0") is True.
+    return bool(v)
+
+def compare_nums(a: int, b: int) -> int:
+    # Python 2's cmp() is gone; Python 3 makes you spell it out.
+    return (a > b) - (a < b)`,
+
+  task: `
+<p>Port the three helpers, using PHP's strict tools:</p>
+<ol>
+  <li><code>same_value_and_type(mixed $a, mixed $b): bool</code> — return
+      whether the two values are equal <em>without any juggling</em>. That's
+      one <code>===</code>, and it gives you Python's <code>==</code>
+      semantics back.</li>
+  <li><code>is_truthy(mixed $v): bool</code> — PHP's <code>bool(v)</code> is
+      a cast: <code>(bool) $v</code>. The tests probe the <code>"0"</code>
+      landmine, so don't try to hand-roll the rules.</li>
+  <li><code>compare_nums(int $a, int $b): int</code> — return
+      <code>-1</code>/<code>0</code>/<code>1</code> using the spaceship
+      operator <code>&lt;=&gt;</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. === compares value AND type — no juggling, Python semantics.
+function same_value_and_type(mixed $a, mixed $b): bool {
+    throw new Exception("TODO: implement same_value_and_type");
+}
+
+// 2. bool(v) in PHP is a cast: (bool) $v
+function is_truthy(mixed $v): bool {
+    throw new Exception("TODO: implement is_truthy");
+}
+
+// 3. The spaceship $a <=> $b is Python 2's cmp(a, b).
+function compare_nums(int $a, int $b): int {
+    throw new Exception("TODO: implement compare_nums");
+}
+`,
+
+  requirements: [
+    { pattern: /===/, message: "Use strict comparison === (never bare == in this course)" },
+    { pattern: /<=>/, message: "Use the spaceship operator <=> in compare_nums" },
+    { pattern: /\(bool\)/, message: "Use a (bool) cast in is_truthy" },
+  ],
+
+  tests: [
+    { name: 'same value, same type: same_value_and_type(1, 1) and ("php", "php")',
+      code: 'expect_true(same_value_and_type(1, 1)); expect_true(same_value_and_type("php", "php"));' },
+    { name: '1 and "1" are NOT the same under === (unlike ==)',
+      code: 'expect_true(!same_value_and_type(1, "1")); expect_true(!same_value_and_type(0, ""));' },
+    { name: 'the landmine: "0" is falsy in PHP',
+      code: 'expect_true(!is_truthy("0"));' },
+    { name: 'truthiness otherwise matches Python: "", 0, [] falsy; "hello", 1 truthy',
+      code: 'expect_true(!is_truthy("")); expect_true(!is_truthy(0)); expect_true(!is_truthy([])); expect_true(is_truthy("hello")); expect_true(is_truthy(1));' },
+    { name: 'compare_nums returns -1 / 1 like cmp()',
+      code: 'expect_eq(compare_nums(1, 2), -1); expect_eq(compare_nums(2, 1), 1);' },
+    { name: 'compare_nums returns 0 on a tie',
+      code: 'expect_eq(compare_nums(3, 3), 0);' },
+  ],
+
+  solution: `<?php
+
+function same_value_and_type(mixed $a, mixed $b): bool {
+    return $a === $b;
+}
+
+function is_truthy(mixed $v): bool {
+    return (bool) $v;
+}
+
+function compare_nums(int $a, int $b): int {
+    return $a <=> $b;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Equality, no coercion</td><td><code>a == b</code></td><td><code>$a === $b</code></td></tr>
+  <tr><td>Inequality, no coercion</td><td><code>a != b</code></td><td><code>$a !== $b</code></td></tr>
+  <tr><td>Juggling equality</td><td>(none — by design)</td><td><code>==</code> — avoid it</td></tr>
+  <tr><td>To boolean</td><td><code>bool(v)</code></td><td><code>(bool) $v</code></td></tr>
+  <tr><td>Falsy values</td><td><code>"", 0, 0.0, [], {}, None</code></td><td><code>"", 0, 0.0, [], null</code> — <strong>plus <code>"0"</code></strong></td></tr>
+  <tr><td>Three-way compare</td><td><code>(a &gt; b) - (a &lt; b)</code></td><td><code>$a &lt;=&gt; $b</code></td></tr>
+  <tr><td>Identity</td><td><code>a is b</code></td><td><code>===</code> on objects compares identity</td></tr>
+</table>
+<p>PHP 8 tamed the worst juggling (<code>0 == "abc"</code> is finally
+<code>false</code>), but <code>"1" == 1</code> is still <code>true</code>,
+so the rule stands: reach for <code>===</code> reflexively, the way you
+never think about coercion in Python. The <code>"0"</code>-is-falsy rule is
+a fossil of PHP's string-centric web origins — when a form field or database
+column hands you <code>"0"</code>, an innocent <code>if ($value)</code> will
+treat it as empty. When in doubt, compare explicitly:
+<code>if ($value !== "")</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

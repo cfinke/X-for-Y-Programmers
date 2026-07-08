@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Duck Typing & respond_to?</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Duck Typing & respond_to?",
+
+  intro: `
+<p>Go interfaces are the language's best idea: implicit, structural contracts.
+<code>Dog</code> never declares that it implements <code>Speaker</code> — it
+just has the right method, and the <em>compiler</em> checks satisfaction at the
+assignment. Ruby keeps the philosophy and drops the check. There is no
+interface type to name and no compile-time anything: polymorphism is simply
+whether the object has the method <em>at the moment you call it</em>. If it
+quacks, you may call quack — hence "duck typing." Go's structural matching,
+minus the compiler.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>type Speaker interface { Speak() string }</code></td><td>no declaration — the "interface" is just the method name</td></tr>
+  <tr><td>satisfaction checked at compile time</td><td>checked at call time: <code>NoMethodError</code> if absent</td></tr>
+  <tr><td><code>s, ok := thing.(Speaker)</code></td><td><code>thing.respond_to?(:speak)</code></td></tr>
+  <tr><td><code>_, ok := thing.(Dog)</code></td><td><code>thing.is_a?(Dog)</code> — nominal check</td></tr>
+  <tr><td><code>[]Speaker</code> — only speakers fit</td><td>arrays hold anything; filter with <code>respond_to?</code></td></tr>
+</table>
+<p>The comma-ok type assertion survives as a question:
+<code>thing.respond_to?(:speak)</code> asks "would this call work?" before you
+make it, exactly like <code>s, ok := thing.(Speaker)</code> without the
+<code>ok</code> branch ceremony. <code>is_a?(Dog)</code> exists for nominal
+checks, but idiomatic Ruby prefers asking about ability over ancestry. The
+honest framing: in Go the compiler <em>verified</em> that every value in a
+<code>[]Speaker</code> can speak. Here nothing does — your tests and your
+team's conventions carry that weight instead. That is the deal Ruby offers,
+and this lesson is where you feel it most directly.</p>`,
+
+  go: `type Speaker interface {
+	Speak() string
+}
+
+type Dog struct{}
+func (Dog) Speak() string { return "Woof" }
+
+type Robot struct{}
+func (Robot) Speak() string { return "Beep" }
+
+type Rock struct{} // satisfies nothing
+
+func makeSpeak(thing any) string {
+	if s, ok := thing.(Speaker); ok { // comma-ok, checked at runtime —
+		return s.Speak()          // but the contract was compiled in
+	}
+	return "..."
+}`,
+
+  task: `
+<p>Port the menagerie — with no interface to declare:</p>
+<ol>
+  <li>Class <code>Dog</code> with a <code>speak</code> method returning
+      <code>"Woof"</code>, and class <code>Robot</code> with <code>speak</code>
+      returning <code>"Beep"</code>. No <code>implements</code>, no interface
+      — having the method <em>is</em> the contract.</li>
+  <li>Class <code>Rock</code> — no <code>speak</code> at all.</li>
+  <li><code>make_speak(thing)</code> — the comma-ok assertion as a question:
+      if <code>thing.respond_to?(:speak)</code>, call <code>thing.speak</code>;
+      otherwise return <code>"..."</code>.</li>
+  <li><code>all_speakers(things)</code> — a mixed array stands in for Go's
+      <code>[]Speaker</code>: <code>.select</code> the things that respond to
+      <code>:speak</code>, then <code>.map</code> them to what they say.</li>
+</ol>`,
+
+  starter: `class Dog
+  def speak
+    raise NotImplementedError, "TODO: return 'Woof'"
+  end
+end
+
+class Robot
+  def speak
+    raise NotImplementedError, "TODO: return 'Beep'"
+  end
+end
+
+# Rock deliberately has no speak method.
+class Rock
+end
+
+# make_speak: respond_to?(:speak) is the comma-ok assertion as a question.
+def make_speak(thing)
+  raise NotImplementedError, "TODO: implement make_speak"
+end
+
+# all_speakers: select the responders, then map to their speak output.
+def all_speakers(things)
+  raise NotImplementedError, "TODO: implement all_speakers"
+end
+`,
+
+  requirements: [
+    { pattern: /respond_to\?/, message: "Probe for the method with respond_to?(:speak)" },
+    { pattern: /class\s+Dog/, message: "Define class Dog" },
+    { pattern: /class\s+Robot/, message: "Define class Robot" },
+    { pattern: /\.speak/, message: "Actually call .speak on the things that have it" },
+  ],
+
+  tests: [
+    { name: 'make_speak(Dog.new) returns "Woof"',
+      code: '  expect_eq(make_speak(Dog.new), "Woof")' },
+    { name: 'make_speak(Robot.new) returns "Beep"',
+      code: '  expect_eq(make_speak(Robot.new), "Beep")' },
+    { name: 'make_speak(Rock.new) returns "..."',
+      code: '  expect_eq(make_speak(Rock.new), "...")' },
+    { name: "Dog responds to :speak; Rock does not",
+      code: "  expect_true(Dog.new.respond_to?(:speak))\n  expect_true(!Rock.new.respond_to?(:speak))" },
+    { name: 'all_speakers([Dog.new, Rock.new, Robot.new]) returns ["Woof", "Beep"]',
+      code: '  expect_eq(all_speakers([Dog.new, Rock.new, Robot.new]), ["Woof", "Beep"])' },
+  ],
+
+  solution: `class Dog
+  def speak
+    "Woof"
+  end
+end
+
+class Robot
+  def speak
+    "Beep"
+  end
+end
+
+class Rock
+end
+
+def make_speak(thing)
+  thing.respond_to?(:speak) ? thing.speak : "..."
+end
+
+def all_speakers(things)
+  things.select { |t| t.respond_to?(:speak) }.map(&:speak)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>The contract</td><td><code>type Speaker interface { Speak() string }</code></td><td>unwritten — "responds to <code>speak</code>"</td></tr>
+  <tr><td>Satisfying it</td><td>implicit, verified by the compiler</td><td>implicit, verified by nothing</td></tr>
+  <tr><td>Comma-ok assertion</td><td><code>s, ok := thing.(Speaker)</code></td><td><code>thing.respond_to?(:speak)</code></td></tr>
+  <tr><td>Concrete-type check</td><td><code>thing.(Dog)</code>, type switch</td><td><code>thing.is_a?(Dog)</code></td></tr>
+  <tr><td>Wrong type at the call</td><td>compile error (or checked assertion)</td><td><code>NoMethodError</code> at runtime</td></tr>
+  <tr><td>List the methods</td><td>read the interface</td><td><code>thing.methods</code> at runtime</td></tr>
+  <tr><td>Who keeps it honest</td><td>the compiler</td><td>your tests and conventions</td></tr>
+</table>
+<p>Idiomatic Ruby leans on <code>respond_to?</code> over <code>is_a?</code> for
+the same reason Go prefers small interfaces over concrete types: caring about
+<em>ability</em> rather than <em>identity</em> keeps code open to types you
+haven't met yet — a test double, a decorator, tomorrow's new class. The cost is
+real and worth naming: Go proved every <code>Speaker</code> could speak before
+the program ran, and Ruby will only find out when the message is sent. Duck
+typing works at scale precisely because Ruby culture pairs it with a serious
+test suite — the tests are the compiler you gave up.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

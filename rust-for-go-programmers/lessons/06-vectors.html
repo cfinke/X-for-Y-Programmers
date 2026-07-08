@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Vectors</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Vectors",
+
+  intro: `
+<p>Go's <code>[]int</code> slice becomes Rust's <code>Vec&lt;i32&gt;</code> —
+a growable list that owns its elements. The big ergonomic upgrade is
+<code>append</code>: in Go you write <code>s = append(s, x)</code> and
+reassign, because <code>append</code> may or may not return a new backing
+array. In Rust, <code>v.push(x)</code> just mutates the vector in place.
+There's no reassignment dance, and no aliasing surprise where two slices
+share a backing array until one of them grows past capacity and silently
+stops sharing.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>s := []int{10, 20, 30}</code></td><td><code>let v = vec![10, 20, 30];</code></td></tr>
+  <tr><td><code>s = append(s, 40)</code> (reassign!)</td><td><code>v.push(40);</code> (needs <code>let mut v</code>)</td></tr>
+  <tr><td><code>len(s)</code></td><td><code>v.len()</code></td></tr>
+  <tr><td><code>s[i]</code> out of range → panic</td><td><code>v[i]</code> panics too, but <code>v.get(i)</code> returns <code>Option</code></td></tr>
+  <tr><td><code>cap(s)</code> bookkeeping</td><td>capacity managed for you — no <code>cap()</code> to think about</td></tr>
+</table>
+<p>Indexing behaves like home: <code>v[i]</code> out of bounds panics in
+both languages. But Rust also gives you <code>v.get(i)</code>, which returns
+an <code>Option</code> — the "check before you index" pattern as a method
+(much more on <code>Option</code> in lesson 8). And a Go function taking
+<code>[]int</code> maps to a Rust function taking <code>&amp;[i32]</code>,
+a borrowed slice view — a <code>Vec&lt;i32&gt;</code> coerces to it
+automatically when you pass <code>&amp;v</code>.</p>`,
+
+  go: `package main
+
+import "fmt"
+
+func makeScores() []int {
+	return []int{10, 20, 30}
+}
+
+func total(s []int) int {
+	sum := 0
+	for _, v := range s {
+		sum += v
+	}
+	return sum
+}
+
+func main() {
+	scores := makeScores()
+	scores = append(scores, 40) // forget to reassign and it's a no-op
+	fmt.Println(len(scores), total(scores))
+}`,
+
+  task: `
+<p>Rewrite the slice code on the left with a <code>Vec</code>:</p>
+<ol>
+  <li><code>make_scores() -&gt; Vec&lt;i32&gt;</code> — return the vector
+      <code>[10, 20, 30]</code> using the <code>vec!</code> macro (the
+      <code>[]int{...}</code> literal of Rust).</li>
+  <li><code>append(v: &amp;mut Vec&lt;i32&gt;, x: i32)</code> — push
+      <code>x</code> onto the vector with <code>.push</code>. Unlike Go's
+      <code>append</code>, nothing is returned and nothing is reassigned:
+      the vector mutates in place.</li>
+  <li><code>total(v: &amp;[i32]) -&gt; i32</code> — sum the elements. Skip
+      the <code>for _, v := range</code> loop: use
+      <code>v.iter().sum()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. make_scores: return vec![10, 20, 30] — Go's []int{10, 20, 30}.
+fn make_scores() -> Vec<i32> {
+    todo!()
+}
+
+// 2. append: Go's s = append(s, x) is just v.push(x) here.
+//    No return value — the Vec grows in place.
+fn append(v: &mut Vec<i32>, x: i32) {
+    todo!()
+}
+
+// 3. total: sum a borrowed slice with .iter().sum()
+//    (&[i32] is the "read-only view" that Go's []int parameter plays).
+fn total(v: &[i32]) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /vec!\s*\[/, message: "Build the vector with the vec! macro" },
+    { pattern: /\.push\(/, message: "Use .push to append in place (no reassignment)" },
+    { pattern: /Vec<i32>/, message: "Use the Vec<i32> type — Go's []int" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [10, 20, 30]",
+      code: "assert_eq!(make_scores(), vec![10, 20, 30]);" },
+    { name: "append pushes onto the vector in place",
+      code: `let mut v = make_scores();
+append(&mut v, 40);
+assert_eq!(v, vec![10, 20, 30, 40]);` },
+    { name: "append grows the length (len 3 -> 4)",
+      code: `let mut v = make_scores();
+assert_eq!(v.len(), 3);
+append(&mut v, 99);
+assert_eq!(v.len(), 4);` },
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total of make_scores() is 60",
+      code: "assert_eq!(total(&make_scores()), 60);" },
+  ],
+
+  solution: `fn make_scores() -> Vec<i32> {
+    vec![10, 20, 30]
+}
+
+fn append(v: &mut Vec<i32>, x: i32) {
+    v.push(x);
+}
+
+fn total(v: &[i32]) -> i32 {
+    v.iter().sum()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Literal</td><td><code>[]int{10, 20, 30}</code></td><td><code>vec![10, 20, 30]</code></td></tr>
+  <tr><td>Append</td><td><code>s = append(s, x)</code></td><td><code>v.push(x);</code> — in place</td></tr>
+  <tr><td>Length</td><td><code>len(s)</code></td><td><code>v.len()</code></td></tr>
+  <tr><td>Capacity</td><td><code>cap(s)</code>, sharing surprises</td><td>managed internally; no aliasing surprises</td></tr>
+  <tr><td>Index out of range</td><td><code>s[i]</code> panics</td><td><code>v[i]</code> panics; <code>v.get(i)</code> returns <code>Option</code></td></tr>
+  <tr><td>Read-only parameter</td><td><code>func total(s []int)</code></td><td><code>fn total(v: &amp;[i32])</code></td></tr>
+  <tr><td>Sum a list</td><td><code>for _, v := range s { sum += v }</code></td><td><code>v.iter().sum()</code></td></tr>
+</table>
+<p>The reason <code>append</code> returns a slice in Go is that growth may
+reallocate, and other slices aliasing the old array won't see it. Rust's
+ownership rules make that bug unrepresentable: while <code>&amp;mut v</code>
+exists, no other reference to the vector can — so <code>push</code> is free
+to reallocate and simply mutate. The <code>mut</code> in the signature is
+the honest version of "this function changes your slice."</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

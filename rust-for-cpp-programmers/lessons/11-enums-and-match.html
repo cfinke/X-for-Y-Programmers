@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Pattern Matching</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Pattern Matching",
+
+  intro: `
+<p>You already model "one of several shapes of data" with
+<code>std::variant</code>, and you already know the ritual:
+<code>holds_alternative</code> checks, <code>std::get&lt;1&gt;</code> by index
+or by type, and the <code>overloaded</code>-lambdas trick with
+<code>std::visit</code> to get the one thing you actually want — a compile
+error when you forget a case. Rust's <code>enum</code> is that whole stack as
+a single language feature. Each variant has a <em>name</em> and can carry its
+own named fields, so there is no <code>std::get&lt;1&gt;</code>, no
+index-vs-type ambiguity, and no helper struct to make exhaustiveness work.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>std::variant&lt;Circle, Rectangle&gt;</code></td><td><code>enum Shape { Circle {…}, Rectangle {…} }</code></td></tr>
+  <tr><td><code>holds_alternative&lt;Circle&gt;(s)</code></td><td>a <code>match</code> arm: <code>Shape::Circle { radius }</code></td></tr>
+  <tr><td><code>std::get&lt;Circle&gt;(s).radius</code></td><td>destructured for you, per arm</td></tr>
+  <tr><td><code>std::visit(overloaded{…}, s)</code></td><td><code>match</code> — exhaustive by definition</td></tr>
+  <tr><td>Forgot a case: template error novel</td><td>Forgot a case: one clear compile error</td></tr>
+</table>
+<p><code>match</code> is <code>std::visit</code>'s exhaustiveness guarantee
+built into the language: every variant must be handled (or explicitly
+swallowed with <code>_</code>), and each arm destructures the payload right in
+the pattern. Add a <code>Triangle</code> variant next year and every
+<code>match</code> in the codebase that doesn't handle it becomes a compile
+error — the exact property you built the <code>overloaded</code> trick to
+get, minus the trick.</p>`,
+
+  cpp: `#include <variant>
+#include <cmath>
+
+struct Circle    { double radius; };
+struct Rectangle { double width, height; };
+using Shape = std::variant<Circle, Rectangle>;
+
+// The classic trick to make std::visit exhaustive:
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+double area(const Shape& shape) {
+    return std::visit(overloaded{
+        [](const Circle& c)    { return M_PI * c.radius * c.radius; },
+        [](const Rectangle& r) { return r.width * r.height; },
+    }, shape);
+}`,
+
+  task: `
+<p>Port the variant to a Rust enum:</p>
+<ol>
+  <li>The starter already defines <code>enum Shape</code> with two struct-like
+      variants: <code>Circle { radius: f64 }</code> and
+      <code>Rectangle { width: f64, height: f64 }</code>. Leave the definition
+      as is — the tests construct values like
+      <code>Shape::Circle { radius: 1.0 }</code>.</li>
+  <li>Implement <code>area(shape: &amp;Shape) -&gt; f64</code> with a
+      <code>match</code>: destructure each variant's fields in its arm
+      (<code>Shape::Circle { radius } =&gt; …</code>). Use
+      <code>std::f64::consts::PI</code> for the circle — no
+      <code>M_PI</code> macro here.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The enum: one type, two named variants, each with its own fields.
+// (Complete — the tests construct Shape::Circle { radius: 1.0 } etc.)
+enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+// area: match on the shape, destructuring each variant's payload.
+// Circle -> PI * r * r (std::f64::consts::PI), Rectangle -> w * h.
+fn area(shape: &Shape) -> f64 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+Shape/, message: "Define (keep) enum Shape with its two variants" },
+    { pattern: /match\b/, message: "Use match to handle each variant" },
+    { pattern: /Circle\s*\{/, message: "Destructure the Circle variant's fields in a pattern" },
+  ],
+
+  tests: [
+    { name: "area of Circle { radius: 1.0 } is PI",
+      code: "assert!((area(&Shape::Circle { radius: 1.0 }) - std::f64::consts::PI).abs() < 0.001);" },
+    { name: "area of Circle { radius: 2.0 } is about 12.566",
+      code: "assert!((area(&Shape::Circle { radius: 2.0 }) - 12.566370).abs() < 0.001);" },
+    { name: "area of Rectangle { width: 3.0, height: 4.0 } is 12.0",
+      code: "assert_eq!(area(&Shape::Rectangle { width: 3.0, height: 4.0 }), 12.0);" },
+    { name: "area of Rectangle { width: 2.5, height: 2.0 } is 5.0",
+      code: "assert_eq!(area(&Shape::Rectangle { width: 2.5, height: 2.0 }), 5.0);" },
+  ],
+
+  solution: `enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
+        Shape::Rectangle { width, height } => width * height,
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Sum type</td><td><code>std::variant&lt;A, B&gt;</code></td><td><code>enum E { A {…}, B {…} }</code> — variants are named</td></tr>
+  <tr><td>Which one is it?</td><td><code>holds_alternative&lt;A&gt;(v)</code> / <code>v.index()</code></td><td>a <code>match</code> arm per variant</td></tr>
+  <tr><td>Get the payload</td><td><code>std::get&lt;A&gt;(v)</code> (throws if wrong)</td><td>destructured in the pattern — can't be wrong</td></tr>
+  <tr><td>Exhaustive dispatch</td><td><code>std::visit</code> + <code>overloaded</code> lambdas</td><td><code>match</code>, built in</td></tr>
+  <tr><td>Catch-all case</td><td>a <code>[](auto&amp;&amp;)</code> lambda</td><td><code>_ =&gt; …</code> (explicit, greppable)</td></tr>
+  <tr><td>π</td><td><code>M_PI</code> (POSIX macro)</td><td><code>std::f64::consts::PI</code></td></tr>
+</table>
+<p>The deeper shift: in C++ the variant's alternatives are free-standing types
+glued together after the fact, so accessing them is a runtime question
+(<code>std::get</code> can throw). In Rust the variants exist only inside the
+enum, so the compiler always knows the full set — that's what makes
+<code>match</code> both safe and exhaustive with zero ceremony. You've
+already seen this pay off twice: <code>Option</code> and <code>Result</code>
+are just enums like this one.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

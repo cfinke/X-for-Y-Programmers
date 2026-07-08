@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>This is the biggest philosophical flip in the whole course. Go makes every
+error a value: functions return <code>(T, error)</code>, and every call site
+writes the <code>if err != nil</code> plumbing to pass it up. Ruby has
+exceptions: <code>raise</code> throws an error that <em>propagates invisibly</em>
+up the call stack — through every intermediate method, with no plumbing at
+all — until a <code>rescue</code> catches it. Go has this mechanism too:
+<code>panic</code>/<code>recover</code>. The difference is cultural. In Go it's
+reserved for the unrecoverable; in Ruby it is the <em>normal</em> error path,
+and the language gives it first-class ergonomics.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>return 0, fmt.Errorf("bad input %q", s)</code></td><td><code>raise ArgumentError, "bad input #{s}"</code></td></tr>
+  <tr><td><code>if err != nil { return 0, err }</code></td><td><em>nothing — it propagates by itself</em></td></tr>
+  <tr><td><code>errors.As(err, &amp;parseErr)</code></td><td><code>rescue ArgumentError =&gt; e</code> (rescues match by class)</td></tr>
+  <tr><td><code>var ErrEmpty = errors.New("empty")</code></td><td><code>class EmptyError &lt; StandardError; end</code></td></tr>
+  <tr><td><code>defer cleanup()</code></td><td><code>ensure</code> (runs on success <em>and</em> on error)</td></tr>
+</table>
+<p>The full form is <code>begin</code>/<code>rescue</code>/<code>ensure</code>/<code>end</code>,
+but the idiomatic gem is <strong>def-level rescue</strong>: a method body can have
+<code>rescue</code> clauses directly before its <code>end</code>, making error
+handling part of the method's shape with zero extra nesting. The honest
+trade: you <em>lose the visible error path</em> — you can no longer see at a
+call site that a call can fail — and you gain signal-to-noise: the happy path
+reads with no plumbing, and errors are handled once, where you can actually
+do something about them.</p>`,
+
+  go: `var digitsOnly = regexp.MustCompile(\`^\\d+$\`)
+
+func ParseAge(s string) (int, error) {
+	t := strings.TrimSpace(s)
+	if !digitsOnly.MatchString(t) {
+		return 0, fmt.Errorf("parse age: %q is not a number", s)
+	}
+	return strconv.Atoi(t) // (int, error) again — plumbing all the way
+}
+
+func SafeParseAge(s string, def int) int {
+	age, err := ParseAge(s)
+	if err != nil {
+		return def
+	}
+	return age
+}
+
+var ErrEmptyCart = errors.New("cart is empty")
+
+func Checkout(items []int) (int, error) {
+	if len(items) == 0 {
+		return 0, ErrEmptyCart
+	}
+	total := 0
+	for _, p := range items {
+		total += p
+	}
+	return total, nil
+}`,
+
+  task: `
+<p>Rewrite the Go on the left as Ruby:</p>
+<ol>
+  <li><code>parse_age(s)</code> — <code>raise ArgumentError, "..."</code> unless
+      <code>s.strip.match?(/\\A\\d+\\z/)</code>; otherwise return
+      <code>s.to_i</code>. Note there is no error in the return type — the
+      method returns an <code>Integer</code>, full stop.</li>
+  <li><code>safe_parse_age(s, default)</code> — call <code>parse_age(s)</code>
+      and use a <strong>def-level rescue</strong>: write
+      <code>rescue ArgumentError</code> directly in the method body (no
+      <code>begin</code>) and return <code>default</code> from it.</li>
+  <li><code>checkout(items)</code> — the custom error class
+      <code>EmptyCartError &lt; StandardError</code> is already defined in the
+      starter (that one line is the whole definition — compare
+      <code>errors.New</code> + wrapping). Raise it when <code>items</code> is
+      empty; otherwise return <code>items.sum</code>.</li>
+</ol>`,
+
+  starter: `# 1. parse_age: raise ArgumentError unless the string is all digits.
+#    Go: return 0, fmt.Errorf(...)  ->  Ruby: raise ArgumentError, "message"
+def parse_age(s)
+  raise NotImplementedError, "TODO: implement parse_age"
+end
+
+# 2. safe_parse_age: def-level rescue — no begin/end needed:
+#      def safe_parse_age(s, default)
+#        ...happy path...
+#      rescue ArgumentError
+#        ...fallback...
+#      end
+def safe_parse_age(s, default)
+  raise NotImplementedError, "TODO: implement safe_parse_age"
+end
+
+# 3. A custom error type is one line: subclass StandardError.
+class EmptyCartError < StandardError
+end
+
+# 4. checkout: raise EmptyCartError if items.empty?, else items.sum.
+def checkout(items)
+  raise NotImplementedError, "TODO: implement checkout"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+\w*Error/, message: "Rescue a specific error class (rescue ArgumentError), not everything" },
+    { pattern: /raise\s+/, message: "Raise errors with the raise keyword" },
+    { pattern: /<\s*StandardError/, message: "EmptyCartError subclasses StandardError with <" },
+    { pattern: /match\?|to_i/, message: "Validate with match? and convert with to_i" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42 (and " 7 " strips to 7)',
+      code: '  expect_eq(parse_age("42"), 42)\n  expect_eq(parse_age(" 7 "), 7)' },
+    { name: 'parse_age("abc") raises ArgumentError',
+      code: '  begin\n    parse_age("abc")\n    raise "did not raise"\n  rescue ArgumentError\n  end' },
+    { name: 'safe_parse_age("abc", 18) falls back to 18; "42" parses to 42',
+      code: '  expect_eq(safe_parse_age("abc", 18), 18)\n  expect_eq(safe_parse_age("42", 18), 42)' },
+    { name: "checkout([]) raises EmptyCartError",
+      code: '  begin\n    checkout([])\n    raise "did not raise"\n  rescue EmptyCartError\n  end' },
+    { name: "checkout([100, 250]) returns 350",
+      code: "  expect_eq(checkout([100, 250]), 350)" },
+  ],
+
+  solution: `def parse_age(s)
+  raise ArgumentError, "not a number: #{s.inspect}" unless s.strip.match?(/\\A\\d+\\z/)
+  s.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise EmptyCartError, "cart is empty" if items.empty?
+  items.sum
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Signal an error</td><td><code>return 0, errors.New("msg")</code></td><td><code>raise SomeError, "msg"</code></td></tr>
+  <tr><td>Pass it up</td><td><code>if err != nil { return 0, err }</code></td><td>automatic — exceptions propagate</td></tr>
+  <tr><td>Handle by type</td><td><code>errors.As(err, &amp;target)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td>Custom error</td><td><code>type ParseError struct{...}</code> + <code>Error()</code></td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+  <tr><td>Cleanup</td><td><code>defer f.Close()</code></td><td><code>ensure</code> clause</td></tr>
+  <tr><td>Escape hatch</td><td><code>panic</code>/<code>recover</code> (frowned upon)</td><td><code>raise</code>/<code>rescue</code> (the normal path)</td></tr>
+</table>
+<p>Rescue clauses match by class <em>including subclasses</em> — like
+<code>errors.As</code>, structurally. A bare <code>rescue</code> catches
+<code>StandardError</code> and below, which is why custom errors subclass
+<code>StandardError</code> and not <code>Exception</code>: things like
+<code>SignalException</code> stay out of your handlers. And def-level rescue
+means "this method's error handling" reads as part of the method — the
+signature stays <code>parse_age(s) → Integer</code>, and the failure mode
+lives in documentation and tests rather than in every caller's control
+flow. That's the deal: less honesty in the types, far less noise in the
+code.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

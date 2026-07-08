@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Generators & Iterables</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Generators & Iterables",
+
+  intro: `
+<p>In Rust, a lazy sequence means implementing <code>Iterator</code> —
+an associated <code>Item</code> type and a hand-written <code>next()</code>
+holding your state machine — or, on nightly, letting a <code>gen</code>
+block write that state machine for you. PHP shipped the <code>gen</code>-block
+idea years ago: put <code>yield</code> anywhere in a function body and the
+whole function becomes a generator factory. Calling it runs <em>none</em> of
+the body; it hands back a <code>Generator</code> object that produces one
+value per resume. That is the iterator protocol in one keyword.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>impl Iterator for T { type Item = …; fn next(&amp;mut self) … }</code></td><td><code>function f(): Generator { yield $x; }</code></td></tr>
+  <tr><td><code>gen { yield x; }</code> (nightly)</td><td><code>yield</code> — stable since PHP 5.5</td></tr>
+  <tr><td>Lazy: nothing runs until consumed</td><td>Same — the body starts on first iteration</td></tr>
+  <tr><td><code>for x in iter { … }</code></td><td><code>foreach ($gen as $x) { … }</code></td></tr>
+  <tr><td><code>.collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td><code>impl IntoIterator</code> bound</td><td><code>iterable</code> type — accepts arrays <em>and</em> generators</td></tr>
+  <tr><td><code>.take(n).collect()</code></td><td>a counter and <code>break</code>, by hand</td></tr>
+</table>
+<p>Laziness carries over exactly: a generator over two billion numbers costs
+nothing until someone pulls values, and pulling three values costs three
+steps. What does <em>not</em> carry over is the adaptor arsenal —
+<code>map</code>, <code>filter</code>, <code>take</code>, <code>zip</code>
+have no built-in generator equivalents, so you compose generators with
+<code>foreach</code> loops or write the adaptors yourself. When a function
+just needs "something loopable", type the parameter <code>iterable</code>:
+it is the <code>impl IntoIterator</code> of PHP, satisfied by arrays and
+generators alike.</p>`,
+
+  rust: `fn evens_up_to(max: u64) -> impl Iterator<Item = u64> {
+    (0..=max).filter(|n| n % 2 == 0)
+}
+
+fn squares(nums: Vec<i64>) -> impl Iterator<Item = i64> {
+    nums.into_iter().map(|n| n * n)
+}
+
+fn take_n(items: impl IntoIterator<Item = u64>, n: usize) -> Vec<u64> {
+    items.into_iter().take(n).collect()
+}
+
+fn main() {
+    // Lazy: two billion candidates, three steps of work.
+    let first = take_n(evens_up_to(2_000_000_000), 3);
+    assert_eq!(first, vec![0, 2, 4]);
+    assert_eq!(squares(vec![1, 2, 3]).collect::<Vec<_>>(), vec![1, 4, 9]);
+}`,
+
+  task: `
+<p>Build the same lazy pipeline with <code>yield</code>:</p>
+<ol>
+  <li>Write <code>evens_up_to(int $max): Generator</code> — yield the even
+      numbers from <code>0</code> up to and including <code>$max</code>. A
+      plain <code>for</code> loop stepping by 2 with a <code>yield</code>
+      inside is the whole state machine.</li>
+  <li>Write <code>squares(array $nums): Generator</code> — yield
+      <code>$n * $n</code> for each element. This is <code>.map()</code>
+      spelled as a loop.</li>
+  <li>Write <code>take(iterable $items, int $n): array</code> — the missing
+      <code>.take(n).collect()</code>: <code>foreach</code> over
+      <code>$items</code>, append to a result array, and <code>break</code>
+      once you have <code>$n</code> values. Typing the parameter
+      <code>iterable</code> lets the tests pass in both generators and
+      plain arrays.</li>
+</ol>
+<p>One test calls <code>take(evens_up_to(2000000000), 3)</code>. If your
+generator were eager, that would be two billion iterations — its instant
+pass is the proof of laziness.</p>`,
+
+  starter: `<?php
+
+// 1. evens_up_to: 0, 2, 4, ... $max. One keyword makes this lazy.
+//    Rust: (0..=max).filter(|n| n % 2 == 0)
+function evens_up_to(int $max): Generator {
+    throw new Exception("TODO: loop and yield the even numbers");
+}
+
+// 2. squares: .map(), spelled as foreach + yield.
+function squares(array $nums): Generator {
+    throw new Exception("TODO: yield each square");
+}
+
+// 3. take: .take(n).collect() by hand -- counter, append, break.
+//    iterable = impl IntoIterator: arrays and generators both qualify.
+function take(iterable $items, int $n): array {
+    throw new Exception("TODO: collect the first n items");
+}
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Use yield — that's what makes a function a generator" },
+    { pattern: /:\s*Generator/, message: "Declare the : Generator return type on the generator functions" },
+    { pattern: /iterable/, message: "Type take()'s first parameter as iterable so arrays and generators both work" },
+  ],
+
+  tests: [
+    { name: "iterator_to_array(evens_up_to(8)) collects [0, 2, 4, 6, 8]",
+      code: "expect_eq(iterator_to_array(evens_up_to(8)), [0, 2, 4, 6, 8]);" },
+    { name: "iterator_to_array(squares([1, 2, 3, 4])) collects [1, 4, 9, 16]",
+      code: "expect_eq(iterator_to_array(squares([1, 2, 3, 4])), [1, 4, 9, 16]);" },
+    { name: "take(evens_up_to(2000000000), 3) returns [0, 2, 4] instantly — laziness",
+      code: "expect_eq(take(evens_up_to(2000000000), 3), [0, 2, 4]);" },
+    { name: "take() also accepts a plain array",
+      code: "expect_eq(take([10, 20, 30, 40], 2), [10, 20]);" },
+    { name: "take() stops early when the sequence runs out",
+      code: "expect_eq(take(squares([1, 2, 3]), 5), [1, 4, 9]);" },
+  ],
+
+  solution: `<?php
+
+function evens_up_to(int $max): Generator {
+    for ($i = 0; $i <= $max; $i += 2) {
+        yield $i;
+    }
+}
+
+function squares(array $nums): Generator {
+    foreach ($nums as $n) {
+        yield $n * $n;
+    }
+}
+
+function take(iterable $items, int $n): array {
+    $out = [];
+    $count = 0;
+    foreach ($items as $item) {
+        if ($count >= $n) {
+            break;
+        }
+        $out[] = $item;
+        $count += 1;
+    }
+    return $out;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Define an iterator</td><td><code>impl Iterator</code> + <code>fn next()</code></td><td>any function containing <code>yield</code></td></tr>
+  <tr><td>Its type</td><td><code>impl Iterator&lt;Item = T&gt;</code></td><td><code>: Generator</code> (untyped items)</td></tr>
+  <tr><td>Evaluation</td><td>lazy, driven by <code>next()</code></td><td>lazy, driven by iteration/resume</td></tr>
+  <tr><td>Consume</td><td><code>for x in iter</code></td><td><code>foreach ($gen as $x)</code></td></tr>
+  <tr><td>Collect</td><td><code>.collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td>Generic "loopable" bound</td><td><code>impl IntoIterator</code></td><td><code>iterable</code> (array | Traversable)</td></tr>
+  <tr><td>Adaptors (map/filter/take)</td><td>built into the trait</td><td>DIY with loops (or nikic/iter)</td></tr>
+</table>
+<p>Two gotchas worth carrying home. Generators are single-pass: like a Rust
+iterator moved into a <code>for</code> loop, a consumed <code>Generator</code>
+is spent, and rewinding one after iteration starts throws — call the
+factory function again for a fresh pass. And <code>yield</code> is
+infectious the way <code>async</code> is elsewhere: its mere presence
+anywhere in a body turns the <em>whole</em> function into a generator
+factory, so a <code>return</code> before your <code>yield</code> doesn't
+return a value to the caller — it just ends an iteration nobody started.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

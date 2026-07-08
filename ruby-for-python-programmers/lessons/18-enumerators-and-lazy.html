@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Enumerators & Lazy</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Enumerators & Lazy",
+
+  intro: `
+<p>Python generators — a <code>def</code> with <code>yield</code> inside —
+have a direct Ruby counterpart: <code>Enumerator.new</code>. You get handed a
+<em>yielder</em> object, and pushing into it (<code>y &lt;&lt; value</code>)
+is your <code>yield</code>. Like a generator, nothing runs until someone asks
+for values, an infinite <code>loop do ... end</code> inside is perfectly fine,
+and the consumer pulls one value at a time.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>def gen(): ... yield v</code></td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+  <tr><td><code>itertools.count(1)</code></td><td><code>(1..Float::INFINITY)</code></td></tr>
+  <tr><td><code>(i for i in count(1) if ...)</code></td><td><code>(1..Float::INFINITY).lazy.select { ... }</code></td></tr>
+  <tr><td><code>list(islice(gen, 5))</code></td><td><code>.first(5)</code></td></tr>
+  <tr><td>grouper recipe / manual slicing</td><td><code>arr.each_slice(2)</code></td></tr>
+</table>
+<p>For the <code>itertools</code> half of your toolbox, Ruby needs no import:
+<code>(1..Float::INFINITY)</code> is <code>count(1)</code>, tacking on
+<code>.lazy</code> makes every <code>map</code>/<code>select</code> after it
+demand-driven instead of eager, and <code>.first(n)</code> plays the role of
+<code>islice</code> — pull <code>n</code> results and stop. Without
+<code>.lazy</code>, <code>select</code> on an infinite range would try to
+build the whole array and hang; with it, work happens only as values are
+demanded. And <code>each_slice(n)</code> is the "grouper" recipe you've
+pasted from the itertools docs, built in — including keeping the short tail
+chunk.</p>`,
+
+  python: `from itertools import count, islice
+
+def multiples_of(k, n):
+    gen = (i for i in count(1) if i % k == 0)
+    return list(islice(gen, n))
+
+def fibonacci(n):
+    def fibs():
+        a, b = 0, 1
+        while True:
+            yield a
+            a, b = b, a + b
+    return list(islice(fibs(), n))
+
+def pairs(items):
+    return [items[i:i + 2] for i in range(0, len(items), 2)]`,
+
+  task: `
+<p>Rewrite the Python on the left as Ruby:</p>
+<ol>
+  <li><code>multiples_of(k, count)</code> — start from
+      <code>(1..Float::INFINITY).lazy</code>, <code>select</code> the numbers
+      divisible by <code>k</code>, and take <code>.first(count)</code>
+      (which returns an array).</li>
+  <li><code>fibonacci(count)</code> — build an <code>Enumerator.new</code>
+      whose block does <code>a, b = 0, 1</code> then <code>loop do</code>:
+      push <code>a</code> into the yielder with <code>&lt;&lt;</code> and
+      step with <code>a, b = b, a + b</code> — the classic Python generator,
+      translated. Return <code>.first(count)</code> of it.</li>
+  <li><code>pairs(arr)</code> — <code>arr.each_slice(2).to_a</code>. The
+      trailing odd element stays as a short chunk, no
+      <code>zip_longest</code> gymnastics.</li>
+</ol>`,
+
+  starter: `# 1. multiples_of: infinite range + .lazy + select + first(count).
+#    Without .lazy this would hang — select would never finish.
+def multiples_of(k, count)
+  raise NotImplementedError, "TODO: implement multiples_of"
+end
+
+# 2. fibonacci: Enumerator.new do |y| ... end — pushing into y is yield.
+#      a, b = 0, 1
+#      loop do
+#        y << a
+#        a, b = b, a + b
+#      end
+def fibonacci(count)
+  raise NotImplementedError, "TODO: implement fibonacci"
+end
+
+# 3. pairs: each_slice(2) chunks the array; .to_a materializes it.
+def pairs(arr)
+  raise NotImplementedError, "TODO: implement pairs"
+end
+`,
+
+  requirements: [
+    { pattern: /\.lazy/, message: "Make the infinite range lazy with .lazy" },
+    { pattern: /Enumerator\.new/, message: "Build fibonacci with Enumerator.new" },
+    { pattern: /first\(/, message: "Take a finite prefix with first(n)" },
+    { pattern: /each_slice/, message: "Chunk the array with each_slice" },
+  ],
+
+  tests: [
+    { name: "multiples_of(3, 4) returns [3, 6, 9, 12]",
+      code: "  expect_eq(multiples_of(3, 4), [3, 6, 9, 12])" },
+    { name: "multiples_of(7, 3) returns [7, 14, 21]",
+      code: "  expect_eq(multiples_of(7, 3), [7, 14, 21])" },
+    { name: "fibonacci(8) returns [0, 1, 1, 2, 3, 5, 8, 13]",
+      code: "  expect_eq(fibonacci(8), [0, 1, 1, 2, 3, 5, 8, 13])" },
+    { name: "fibonacci(1) returns [0]",
+      code: "  expect_eq(fibonacci(1), [0])" },
+    { name: "pairs([1, 2, 3, 4, 5]) keeps the short tail chunk",
+      code: "  expect_eq(pairs([1, 2, 3, 4, 5]), [[1, 2], [3, 4], [5]])" },
+    { name: "pairs([]) returns []",
+      code: "  expect_eq(pairs([]), [])" },
+  ],
+
+  solution: `def multiples_of(k, count)
+  (1..Float::INFINITY).lazy.select { |n| n % k == 0 }.first(count)
+end
+
+def fibonacci(count)
+  fibs = Enumerator.new do |y|
+    a, b = 0, 1
+    loop do
+      y << a
+      a, b = b, a + b
+    end
+  end
+  fibs.first(count)
+end
+
+def pairs(arr)
+  arr.each_slice(2).to_a
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Generator</td><td><code>def f(): yield v</code></td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+  <tr><td>Infinite counter</td><td><code>itertools.count(1)</code></td><td><code>(1..Float::INFINITY)</code> (or <code>1.step</code>)</td></tr>
+  <tr><td>Lazy pipeline</td><td>generator expressions (lazy by default)</td><td><code>.lazy</code> then <code>map</code>/<code>select</code></td></tr>
+  <tr><td>Take n</td><td><code>list(islice(gen, n))</code></td><td><code>.first(n)</code></td></tr>
+  <tr><td>Chunk</td><td>grouper recipe / slicing loop</td><td><code>each_slice(n)</code></td></tr>
+  <tr><td>Sliding window</td><td><code>itertools.pairwise</code></td><td><code>each_cons(2)</code></td></tr>
+  <tr><td>Pull one value</td><td><code>next(gen)</code></td><td><code>enum.next</code></td></tr>
+</table>
+<p>The polarity flip to remember: Python iterators are lazy by default and you
+opt into eagerness with <code>list()</code>; Ruby's Enumerable is eager by
+default and you opt into laziness with <code>.lazy</code>. An
+<code>Enumerator</code> itself is always demand-driven, though — it even
+supports <code>.next</code> for external, one-at-a-time iteration, exactly
+like calling <code>next()</code> on a generator. Every <code>each</code>-like
+method called without a block (<code>arr.each_slice(2)</code> above) returns
+one of these, which is why <code>.to_a</code> was needed to materialize the
+chunks.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

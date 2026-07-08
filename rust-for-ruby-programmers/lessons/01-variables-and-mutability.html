@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables, Mutability & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables, Mutability & Types",
+
+  intro: `
+<p>In Ruby, a variable is a label you can stick on anything: <code>age = 36</code>,
+then <code>age = "thirty-six"</code>, then <code>age = nil</code> — Ruby shrugs.
+Rust is the opposite temperament. <code>let age = 36;</code> fixes both the
+<em>type</em> (an integer, forever) and the <em>value</em>: you can't reassign
+it, and you can't mutate its contents either. It's as if every object came
+pre-<code>.freeze</code>-d, and mutation is something you opt into with
+<code>let mut</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>name = "Ada"</code></td><td><code>let name = "Ada";</code></td></tr>
+  <tr><td><code>age = 36</code> (rebind anytime)</td><td><code>let mut age = 36;</code> (mutation is opt-in)</td></tr>
+  <tr><td><code>Integer</code>, <code>Float</code> (any size, one kind)</td><td><code>i32</code>, <code>u32</code>, <code>f64</code>… (fixed-size, you pick)</td></tr>
+  <tr><td><code>"#{name} is #{age}"</code></td><td><code>format!("{} is {}", name, age)</code></td></tr>
+</table>
+<p>Why put up with this? Because for the first time, a compiler is reading
+your whole program before it runs. Typo a variable name, mix a string into
+arithmetic, forget a case — in Ruby you find out at 2 a.m. in production; in
+Rust the code simply doesn't compile. The trade is real: you give up Ruby's
+fluidity (no rebinding <code>age</code> to a string, no duck typing) and in
+exchange whole categories of <code>NoMethodError for nil</code> vanish before
+the program ever starts.</p>`,
+
+  ruby: `name = "Ada"
+age = 36
+
+# Ruby: any variable rebinds to anything, anytime.
+age = 37          # fine
+age = "thirty"    # also fine (until something does age + 1 ...)
+age = 37          # let's put that back
+
+def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  age += 1
+  age
+end
+
+puts describe_user(name, age)
+puts birthday(age)`,
+
+  task: `
+<p>Rewrite the Ruby on the left as Rust:</p>
+<ol>
+  <li>Write <code>describe_user</code> taking <code>name: &amp;str</code> and
+      <code>age: u32</code>, returning a <code>String</code> like
+      <code>"Ada is 36 years old"</code>. Ruby's <code>"#{name}"</code>
+      interpolation becomes the <code>format!</code> macro:
+      <code>format!("{} is {} years old", name, age)</code>. Good news: Rust
+      uses <code>snake_case</code> too, so the name doesn't change.</li>
+  <li>Write <code>birthday</code> taking <code>age: u32</code> and returning
+      <code>u32</code>. Inside, bind the argument to a <code>let mut</code>
+      local, add 1 with <code>+=</code>, and return it — Rust won't let you
+      mutate anything you didn't explicitly mark <code>mut</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. describe_user: takes name: &str and age: u32, returns String.
+//    Ruby: "#{name} is #{age} years old"
+//    Rust: format!("{} is {} years old", ...)
+fn describe_user(name: &str, age: u32) -> String {
+    todo!()
+}
+
+// 2. birthday: bind age to a \`let mut\` local, add 1 with +=, return it.
+fn birthday(age: u32) -> u32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s+describe_user\s*\(\s*name\s*:\s*&str\s*,\s*age\s*:\s*u32\s*\)\s*->\s*String/, message: "Define describe_user(name: &str, age: u32) -> String" },
+    { pattern: /format!\s*\(/, message: "Use the format! macro (Rust's string interpolation)" },
+    { pattern: /let\s+mut\b/, message: "Use a let mut binding inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: 'assert_eq!(describe_user("Ada", 36), "Ada is 36 years old");' },
+    { name: 'describe_user("Yukihiro", 60) returns "Yukihiro is 60 years old"',
+      code: 'assert_eq!(describe_user("Yukihiro", 60), "Yukihiro is 60 years old");' },
+    { name: "birthday(36) returns 37",
+      code: "assert_eq!(birthday(36), 37);" },
+    { name: "birthday(0) returns 1",
+      code: "assert_eq!(birthday(0), 1);" },
+  ],
+
+  solution: `fn describe_user(name: &str, age: u32) -> String {
+    format!("{} is {} years old", name, age)
+}
+
+fn birthday(age: u32) -> u32 {
+    let mut next = age;
+    next += 1;
+    next
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Variable</td><td><code>x = 1</code> (rebind to anything)</td><td><code>let x = 1;</code> (immutable, one type)</td></tr>
+  <tr><td>Mutable variable</td><td>everything, always</td><td><code>let mut x = 1;</code> (explicit opt-in)</td></tr>
+  <tr><td>Integers</td><td><code>Integer</code> (grows forever)</td><td><code>i32</code>/<code>u32</code>/<code>i64</code>… (fixed-size, you choose)</td></tr>
+  <tr><td>Floats</td><td><code>Float</code></td><td><code>f64</code> (never silently mixed with integers)</td></tr>
+  <tr><td>Interpolation</td><td><code>"#{name} is #{age}"</code></td><td><code>format!("{} is {}", name, age)</code></td></tr>
+  <tr><td>Naming</td><td><code>snake_case</code></td><td><code>snake_case</code> — same convention!</td></tr>
+</table>
+<p>The mental flip: Ruby trusts you and checks nothing until the line runs;
+Rust trusts nothing and checks everything before it runs. Misspell
+<code>nmae</code> in Ruby and you get a <code>NameError</code> at runtime —
+if that branch ever executes. In Rust it's a compile error with a "did you
+mean <code>name</code>?" hint, every single time. That compiler is about to
+become the pair-programming partner who never lets a typo through review.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

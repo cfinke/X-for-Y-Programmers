@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>After <code>System.Text.Json</code>'s ceremony — DTO records, serializer
+options, <code>JsonElement</code> spelunking — PHP's JSON story is two
+functions. <code>json_encode($data)</code> serializes straight from the
+arrays you've been using all course (string-keyed arrays become objects,
+list arrays become arrays), and <code>json_decode($json, true)</code> parses
+back into associative arrays. That <code>true</code> matters: without it you
+get <code>stdClass</code> objects — PHP's <code>dynamic</code>-style bag
+accessed with <code>-&gt;</code> — and none of your array tools work. This
+course, like most PHP codebases, always passes <code>true</code>.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>JsonSerializer.Serialize(obj)</code></td><td><code>json_encode($data)</code> — straight from arrays</td></tr>
+  <tr><td><code>JsonSerializer.Deserialize&lt;User&gt;(json)</code></td><td><code>json_decode($json, true)</code> — no <code>&lt;T&gt;</code>, no DTO</td></tr>
+  <tr><td>invalid JSON: throws <code>JsonException</code></td><td>returns <code>null</code> silently — opt in with <code>JSON_THROW_ON_ERROR</code></td></tr>
+  <tr><td><code>TryGetProperty("name", out var n)</code></td><td><code>$data["name"] ?? "unknown"</code></td></tr>
+  <tr><td><code>JsonElement</code> / <code>dynamic</code></td><td><code>json_decode</code> <em>without</em> <code>true</code> → <code>stdClass</code></td></tr>
+</table>
+<p>The gotcha is error handling. <code>JsonSerializer</code> throws on
+invalid input by default; <code>json_decode</code>'s default is a silent
+<code>null</code>, which then <code>??</code>s and <code>foreach</code>es
+like an empty result until something fails far from the cause. Passing the
+<code>JSON_THROW_ON_ERROR</code> flag restores the C# behavior
+(<code>JsonException</code> becomes <code>JsonException</code>, pleasingly).
+For missing <em>keys</em>, no flag needed — lesson 6's <code>??</code>
+replaces the whole <code>TryGetProperty</code> dance.</p>`,
+
+  csharp: `var json = JsonSerializer.Serialize(
+    new Dictionary<string, object> { ["name"] = "Ada", ["age"] = 36 });
+// {"name":"Ada","age":36}
+
+using var doc = JsonDocument.Parse(json);   // throws JsonException if invalid
+var root = doc.RootElement;
+
+var name = root.TryGetProperty("name", out var n)
+    ? n.GetString() : "unknown";
+var age = root.TryGetProperty("age", out var a)
+    ? a.GetInt32() : 0;
+
+var users = JsonSerializer.Deserialize<List<User>>(
+    """[{"name":"Ada"},{"name":"Grace"}]""");
+var names = users.Select(u => u.Name).ToList();
+
+record User(string Name);`,
+
+  task: `
+<p>Build the JSON helpers:</p>
+<ol>
+  <li><code>to_json(array $data): string</code> — one call to
+      <code>json_encode</code>. Add the <code>JSON_THROW_ON_ERROR</code> flag
+      as the second argument for C#-style failure behavior.</li>
+  <li><code>parse_user(string $json): array</code> — decode with
+      <code>json_decode($json, true)</code>, then return a new array
+      <code>["name" =&gt; ..., "age" =&gt; ...]</code> where missing keys fall
+      back to <code>"unknown"</code> and <code>0</code> via <code>??</code> —
+      the two-line version of the <code>TryGetProperty</code> block.</li>
+  <li><code>pluck_names(string $json): array</code> — decode an array of user
+      objects and return just their <code>"name"</code> values with
+      <code>array_map</code> (lesson 13's <code>.Select().ToList()</code>).</li>
+</ol>
+<p>The tests compare arrays with strict <code>===</code>, so key order and
+value types both count — build <code>parse_user</code>'s result with
+<code>"name"</code> first.</p>`,
+
+  starter: `<?php
+
+// 1. json_encode goes straight from arrays - no DTO, no options object.
+function to_json(array $data): string {
+    throw new Exception("TODO: implement to_json");
+}
+
+// 2. json_decode($json, true) -> assoc array; ?? supplies the defaults
+//    ("unknown" for name, 0 for age).
+function parse_user(string $json): array {
+    throw new Exception("TODO: implement parse_user");
+}
+
+// 3. Decode a JSON array of {"name": ...} objects, array_map the names out.
+function pluck_names(string $json): array {
+    throw new Exception("TODO: implement pluck_names");
+}
+`,
+
+  requirements: [
+    { pattern: /json_encode/, message: "Serialize with json_encode" },
+    { pattern: /json_decode\s*\(\s*\$\w+\s*,\s*true\s*\)/, message: "Decode with json_decode($json, true) — the true means assoc arrays, not stdClass" },
+    { pattern: /\?\?/, message: "Use ?? for the missing-key defaults (the TryGetProperty replacement)" },
+  ],
+
+  tests: [
+    { name: 'to_json(["name" => "Ada", "age" => 36]) produces the JSON object',
+      code: 'expect_eq(to_json(["name" => "Ada", "age" => 36]), \'{"name":"Ada","age":36}\');' },
+    { name: "to_json([1, 2, 3]) produces a JSON array, and a round trip survives",
+      code: 'expect_eq(to_json([1, 2, 3]), "[1,2,3]");\nexpect_eq(json_decode(to_json(["a" => 1]), true), ["a" => 1]);' },
+    { name: "parse_user with both keys present",
+      code: 'expect_eq(parse_user(\'{"name":"Ada","age":36}\'), ["name" => "Ada", "age" => 36]);' },
+    { name: 'parse_user defaults: missing name => "unknown", missing age => 0',
+      code: 'expect_eq(parse_user(\'{"age":50}\'), ["name" => "unknown", "age" => 50]);\nexpect_eq(parse_user("{}"), ["name" => "unknown", "age" => 0]);' },
+    { name: "pluck_names pulls the name out of each object",
+      code: 'expect_eq(pluck_names(\'[{"name":"Ada"},{"name":"Grace"}]\'), ["Ada", "Grace"]);\nexpect_eq(pluck_names("[]"), []);' },
+  ],
+
+  solution: `<?php
+
+function to_json(array $data): string {
+    return json_encode($data, JSON_THROW_ON_ERROR);
+}
+
+function parse_user(string $json): array {
+    $data = json_decode($json, true);
+    return [
+        "name" => $data["name"] ?? "unknown",
+        "age" => $data["age"] ?? 0,
+    ];
+}
+
+function pluck_names(string $json): array {
+    $users = json_decode($json, true);
+    return array_map(fn($u) => $u["name"], $users);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Serialize</td><td><code>JsonSerializer.Serialize(obj)</code></td><td><code>json_encode($data)</code></td></tr>
+  <tr><td>Deserialize</td><td><code>Deserialize&lt;T&gt;(json)</code></td><td><code>json_decode($json, true)</code></td></tr>
+  <tr><td>Target shape</td><td>DTO / record classes</td><td>associative arrays (or <code>stdClass</code> without <code>true</code>)</td></tr>
+  <tr><td>Invalid input</td><td>throws by default</td><td><code>null</code> by default — add <code>JSON_THROW_ON_ERROR</code></td></tr>
+  <tr><td>Missing key</td><td><code>TryGetProperty</code> / <code>?.</code></td><td><code>$data["key"] ?? $default</code></td></tr>
+  <tr><td>Pretty print</td><td><code>WriteIndented = true</code></td><td><code>JSON_PRETTY_PRINT</code> flag</td></tr>
+  <tr><td>Exception type</td><td><code>JsonException</code></td><td><code>JsonException</code> (with the throw flag)</td></tr>
+</table>
+<p>The trade you're making is explicit: C# buys compile-time shape checking
+with DTO classes; PHP skips the mapping layer entirely and hands you the data
+as arrays — faster to write, nothing to keep in sync, and no protection if
+the payload's shape drifts. That's why the <code>??</code>-with-default
+pattern in <code>parse_user</code> is idiomatic rather than optional: the
+decode boundary is exactly where unknown data enters, so normalize shape
+there — defaults applied, keys picked — and the rest of the code can trust
+its arrays. In production code, make <code>JSON_THROW_ON_ERROR</code> a
+reflex; silent <code>null</code> is the JSON equivalent of lesson 7's type
+juggling.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

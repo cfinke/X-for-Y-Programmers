@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>This is the biggest philosophical shift in the course. Go treats errors as
+ordinary values: every fallible function returns <code>(T, error)</code>, and
+you write <code>if err != nil</code> at every call site, plumbing the error
+up through every intermediate return. PHP inverts the model: failure
+<em>throws</em>, and the exception propagates invisibly up the call stack —
+through every intermediate function, no plumbing required — until something
+catches it (or the program dies with a stack trace).</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>return 0, fmt.Errorf("bad input")</code></td><td><code>throw new InvalidArgumentException("bad input");</code></td></tr>
+  <tr><td><code>if err != nil { return 0, err }</code></td><td><em>nothing — exceptions propagate on their own</em></td></tr>
+  <tr><td><code>errors.As(err, &amp;parseErr)</code></td><td><code>catch (InvalidArgumentException $e)</code> (typed catch)</td></tr>
+  <tr><td>custom type with an <code>Error()</code> method</td><td><code>class ParseError extends Exception {}</code></td></tr>
+  <tr><td><code>defer f.Close()</code></td><td><code>finally { ... }</code> (runs on both paths)</td></tr>
+  <tr><td><code>panic</code> / <code>recover</code></td><td><code>throw</code> / <code>catch</code> — but as the <em>normal</em> path</td></tr>
+</table>
+<p>Mechanically you already know this machinery: it is <code>panic</code> and
+<code>recover</code>. The difference is cultural — in Go, panicking across an
+API boundary is a bug; in PHP, throwing <em>is</em> the error-handling API.
+A <code>catch</code> clause names the exception class it handles, and the
+class hierarchy does the matching that <code>errors.As</code> does in Go:
+<code>catch (InvalidArgumentException $e)</code> catches that class and its
+subclasses, letting anything else keep flying upward. You catch at the one
+level that can actually do something about the failure, and every function in
+between stays clean.</p>`,
+
+  go: `func parseAge(s string) (int, error) {
+    n, err := strconv.Atoi(strings.TrimSpace(s))
+    if err != nil {
+        return 0, fmt.Errorf("invalid age %q: %w", s, err)
+    }
+    return n, nil
+}
+
+// Every caller re-plumbs the error, even if it just
+// wants a fallback value:
+func safeParseAge(s string, def int) int {
+    n, err := parseAge(s)
+    if err != nil {
+        return def
+    }
+    return n
+}`,
+
+  task: `
+<p>Port the pair of functions to the exception model:</p>
+<ol>
+  <li><code>parse_age(string $s): int</code> — trim the input with
+      <code>trim($s)</code>; if the result is not all digits
+      (<code>ctype_digit(...)</code> returns <code>false</code>), throw a
+      <code>new InvalidArgumentException</code>. Otherwise cast with
+      <code>(int)</code> and return. Note the signature: no
+      <code>(int, error)</code> pair — the failure path leaves through
+      <code>throw</code>, not the return value.</li>
+  <li><code>safe_parse_age(string $s, int $default): int</code> — call
+      <code>parse_age</code> inside <code>try { ... }</code> and return its
+      result; in <code>catch (InvalidArgumentException $e) { ... }</code>
+      return <code>$default</code>. This is your <code>if err != nil</code>
+      check, reconstructed at the <em>one</em> place that cares.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Go: return 0, err  ->  PHP: throw new InvalidArgumentException(...)
+//    Valid means ctype_digit(trim($s)) is true; return (int) of the
+//    trimmed string.
+function parse_age(string $s): int {
+    throw new Exception("TODO: implement parse_age");
+}
+
+// 2. The err != nil check, rebuilt with try/catch:
+//    try { return parse_age($s); } catch (...) { return $default; }
+function safe_parse_age(string $s, int $default): int {
+    throw new Exception("TODO: implement safe_parse_age");
+}
+`,
+
+  requirements: [
+    { pattern: /InvalidArgumentException/, message: "Throw (and catch) InvalidArgumentException, not the generic Exception" },
+    { pattern: /try\s*\{/, message: "Use a try block in safe_parse_age" },
+    { pattern: /catch\s*\(/, message: "Use a catch clause to handle the failure" },
+    { pattern: /throw\s+new/, message: "Throw a new exception on invalid input" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42',
+      code: 'expect_eq(parse_age("42"), 42);' },
+    { name: 'parse_age(" 7 ") trims whitespace and returns 7',
+      code: 'expect_eq(parse_age(" 7 "), 7);' },
+    { name: 'parse_age("abc") throws InvalidArgumentException',
+      code: 'try { parse_age("abc"); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}' },
+    { name: 'parse_age("") throws InvalidArgumentException',
+      code: 'try { parse_age(""); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}' },
+    { name: 'safe_parse_age("abc", 18) falls back to 18',
+      code: 'expect_eq(safe_parse_age("abc", 18), 18);' },
+    { name: 'safe_parse_age("30", 18) returns 30',
+      code: 'expect_eq(safe_parse_age("30", 18), 30);' },
+  ],
+
+  solution: `<?php
+
+function parse_age(string $s): int {
+    $trimmed = trim($s);
+    if (!ctype_digit($trimmed)) {
+        throw new InvalidArgumentException("invalid age: $s");
+    }
+    return (int) $trimmed;
+}
+
+function safe_parse_age(string $s, int $default): int {
+    try {
+        return parse_age($s);
+    } catch (InvalidArgumentException $e) {
+        return $default;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Signal failure</td><td><code>return 0, err</code></td><td><code>throw new SomeException("msg");</code></td></tr>
+  <tr><td>Propagate upward</td><td><code>if err != nil { return 0, err }</code> everywhere</td><td>automatic — do nothing</td></tr>
+  <tr><td>Handle by type</td><td><code>errors.As(err, &amp;target)</code></td><td><code>catch (SomeException $e)</code> — subclasses match too</td></tr>
+  <tr><td>Custom error</td><td>type with <code>Error() string</code></td><td><code>class MyError extends Exception {}</code></td></tr>
+  <tr><td>Guaranteed cleanup</td><td><code>defer</code></td><td><code>finally { ... }</code></td></tr>
+  <tr><td>The message</td><td><code>err.Error()</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+  <tr><td>Catch anything</td><td><code>recover()</code></td><td><code>catch (Throwable $e)</code></td></tr>
+</table>
+<p>PHP's throwable hierarchy has two big branches: <code>Exception</code>
+(application-level failures, what you throw) and <code>Error</code>
+(engine-level failures like <code>TypeError</code>), both under the
+<code>Throwable</code> interface. The standard library ships useful ready-made
+subclasses — <code>InvalidArgumentException</code>,
+<code>RuntimeException</code>, <code>LogicException</code> — so you often
+don't need a custom class at all. And unlike a forgotten
+<code>if err != nil</code>, an unhandled exception can never be silently
+dropped: it crashes loudly with a full stack trace, which is exactly what you
+want from a bug.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

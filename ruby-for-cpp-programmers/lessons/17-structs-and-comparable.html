@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Structs & Comparable</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Structs & Comparable",
+
+  intro: `
+<p>You know the tax on a small value type: <code>struct Point { int x, y;
+};</code> is one line, but then comes <code>operator==</code>, then
+<code>operator&lt;</code> via <code>std::tie</code>, and only C++20's
+<code>= default</code> + <code>operator&lt;=&gt;</code> finally paid it off.
+Ruby collects no such tax. <code>Point = Struct.new(:x, :y)</code> is a
+complete value class in one line: constructor, readers, writers, value
+equality, <code>hash</code>, and a readable <code>inspect</code>. Pass
+<code>Struct.new</code> a block and you can define extra methods right
+inside.</p>
+<table>
+  <tr><th>C++</th><th>Ruby</th></tr>
+  <tr><td><code>struct Point { int x, y; };</code> + <code>operator==</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td><code>std::tie(major, minor) &lt; std::tie(o.major, o.minor)</code></td><td><code>[major, minor] &lt;=&gt; [other.major, other.minor]</code></td></tr>
+  <tr><td><code>auto operator&lt;=&gt;(const V&amp;) const = default;</code> (C++20)</td><td><code>include Comparable</code> + one <code>def &lt;=&gt;</code></td></tr>
+  <tr><td>rewrite rules synthesize <code>&lt; &gt; &lt;= &gt;=</code></td><td>the mixin synthesizes <code>&lt; &gt; == between? clamp</code></td></tr>
+</table>
+<p>And here is a fun historical note: C++20's spaceship operator is Ruby's
+operator — <code>&lt;=&gt;</code> has been Ruby's comparison primitive since
+the 1990s, returning <code>-1</code>, <code>0</code>, or <code>1</code>.
+Where C++ bakes the rewrite rules into the compiler, Ruby ships them as a
+library: <code>include Comparable</code>, define one <code>&lt;=&gt;</code>,
+and the mixin hands you <code>&lt;</code>, <code>&gt;</code>,
+<code>==</code>, <code>between?</code> — and everything sortable expects it,
+so <code>sort</code>, <code>min</code>, and <code>max</code> just work.</p>`,
+
+  cpp: `#include <cmath>
+#include <tuple>
+
+struct Point {
+    int x, y;
+    bool operator==(const Point& o) const { return x == o.x && y == o.y; }
+    double distance_to(const Point& o) const {
+        return std::hypot(x - o.x, y - o.y);
+    }
+};
+
+struct Version {
+    int major_v, minor_v;
+    bool operator==(const Version& o) const {
+        return std::tie(major_v, minor_v) == std::tie(o.major_v, o.minor_v);
+    }
+    bool operator<(const Version& o) const {
+        return std::tie(major_v, minor_v) < std::tie(o.major_v, o.minor_v);
+    }
+    // ...and >, <=, >= by hand — or in C++20:
+    // auto operator<=>(const Version&) const = default;
+};`,
+
+  task: `
+<p>Build both value types the one-line way:</p>
+<ol>
+  <li><code>Point = Struct.new(:x, :y)</code> with a block that defines
+      <code>distance_to(other)</code> —
+      <code>Math.sqrt((x - other.x)**2 + (y - other.y)**2)</code>. Inside the
+      block, <code>x</code> and <code>y</code> are the generated accessors.
+      Equality comes free; do not write it.</li>
+  <li><code>class Version</code> — <code>include Comparable</code>,
+      <code>initialize(major, minor)</code> storing both ivars,
+      <code>attr_reader :major, :minor</code>, and a single
+      <code>&lt;=&gt;(other)</code> comparing
+      <code>[major, minor] &lt;=&gt; [other.major, other.minor]</code>
+      (arrays compare element-wise, exactly like <code>std::tie</code>).
+      That one method must unlock <code>&lt;</code>, <code>sort</code>, and
+      <code>between?</code> in the tests.</li>
+</ol>`,
+
+  starter: `# 1. One line replaces the struct + operator== boilerplate.
+#    The block is the place for extra methods; x and y are accessors there.
+Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    raise NotImplementedError, "TODO: Math.sqrt of squared differences"
+  end
+end
+
+# 2. include Comparable, then define only <=> — the mixin does the rest.
+class Version
+  # TODO: include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    raise NotImplementedError, "TODO: store @major and @minor"
+  end
+
+  def <=>(other)
+    raise NotImplementedError, "TODO: [major, minor] <=> [other.major, other.minor]"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /Struct\.new/, message: "Create Point with Struct.new" },
+    { pattern: /include\s+Comparable/, message: "include Comparable in Version" },
+    { pattern: /<=>/, message: "Define the spaceship operator <=>" },
+    { pattern: /def\s+distance_to/, message: "Define distance_to in the Struct.new block" },
+  ],
+
+  tests: [
+    { name: "Point.new(0, 0).distance_to(Point.new(3, 4)) is 5.0",
+      code: "  expect_eq(Point.new(0, 0).distance_to(Point.new(3, 4)), 5.0)" },
+    { name: "Struct gives value equality for free: Point.new(1, 2) == Point.new(1, 2)",
+      code: "  expect_true(Point.new(1, 2) == Point.new(1, 2))" },
+    { name: "Version.new(1, 2) < Version.new(1, 10) — numeric, not lexicographic",
+      code: "  expect_true(Version.new(1, 2) < Version.new(1, 10))" },
+    { name: "sort works: [2.0, 1.9, 1.10] sorts to [1.9, 1.10, 2.0]",
+      code: `  sorted = [Version.new(2, 0), Version.new(1, 9), Version.new(1, 10)].sort
+  expect_eq(sorted.map { |v| [v.major, v.minor] }, [[1, 9], [1, 10], [2, 0]])` },
+    { name: "between? works: 1.5 is between 1.0 and 2.0",
+      code: "  expect_true(Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0)))" },
+  ],
+
+  solution: `Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    Math.sqrt((x - other.x)**2 + (y - other.y)**2)
+  end
+end
+
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  def <=>(other)
+    [major, minor] <=> [other.major, other.minor]
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Value type</td><td><code>struct</code> + <code>operator==</code> boilerplate</td><td><code>Struct.new(:x, :y)</code> — equality, hash, inspect included</td></tr>
+  <tr><td>Extra methods</td><td>member functions in the struct</td><td>the <code>Struct.new do ... end</code> block</td></tr>
+  <tr><td>Three-way compare</td><td><code>operator&lt;=&gt;</code> (C++20)</td><td><code>&lt;=&gt;</code> returning -1 / 0 / 1 (since forever)</td></tr>
+  <tr><td>Member-wise compare</td><td><code>std::tie(a, b) &lt; std::tie(...)</code></td><td><code>[a, b] &lt;=&gt; [...]</code> — arrays compare element-wise</td></tr>
+  <tr><td>Operator synthesis</td><td>compiler rewrite rules</td><td><code>include Comparable</code> (a plain mixin)</td></tr>
+  <tr><td>What you unlock</td><td><code>&lt; &gt; &lt;= &gt;= == !=</code></td><td>those plus <code>between?</code>, <code>clamp</code>, <code>sort</code>, <code>min</code>, <code>max</code></td></tr>
+</table>
+<p>The deep difference is <em>where</em> the machinery lives. C++20 put the
+comparison rewrite rules in the language; Ruby put them in a module anyone
+could have written: <code>Comparable</code> is ordinary Ruby that calls your
+<code>&lt;=&gt;</code> and interprets the -1/0/1. That is the mixin pattern
+from lesson 10 doing operator work — one protocol method, a module of
+derived behavior, no compiler involvement. When a Struct outgrows itself
+(you want validation, private state), promote it to a class; nothing else in
+your code changes.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

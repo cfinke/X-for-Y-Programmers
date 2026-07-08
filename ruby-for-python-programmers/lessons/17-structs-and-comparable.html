@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Structs & Comparable</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Structs & Comparable",
+
+  intro: `
+<p>Python's <code>@dataclass</code> generates <code>__init__</code>,
+<code>__eq__</code>, and <code>__repr__</code> from a list of fields. Ruby
+shipped that generator decades earlier as <code>Struct</code>:
+<code>Point = Struct.new(:x, :y)</code> is one line that hands you a real
+class with accessors, field-by-field <code>==</code> value equality, and
+<code>to_a</code> (Python's <code>astuple</code>). Need methods on top? Pass
+a block — <code>Struct.new(:x, :y) do ... end</code> — and define them
+inside, where <code>x</code> and <code>y</code> are ordinary method calls,
+no <code>self.</code> prefix required.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>@dataclass</code> with <code>x</code>, <code>y</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td><code>__eq__</code> generated field-by-field</td><td><code>==</code> generated field-by-field</td></tr>
+  <tr><td><code>astuple(p)</code></td><td><code>p.to_a</code></td></tr>
+  <tr><td><code>@total_ordering</code> + <code>__lt__</code> + <code>__eq__</code></td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td></tr>
+  <tr><td><code>(a, b) &lt; (c, d)</code> tuple comparison</td><td><code>[a, b] &lt;=&gt; [c, d]</code> array comparison</td></tr>
+</table>
+<p>Ordering is the same trick as <code>functools.total_ordering</code>, with
+a spaceship instead of dunders. Where Python needs <code>__eq__</code> plus
+<code>__lt__</code> and the decorator derives the rest, Ruby needs exactly one
+method: <code>&lt;=&gt;</code>, returning <code>-1</code>, <code>0</code>, or
+<code>1</code>. Mix in <code>Comparable</code> and that single definition
+unlocks <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>,
+<code>&gt;=</code>, <code>==</code>, <code>between?</code>, and free
+<code>sort</code> — and just as Python compares tuples element-by-element,
+Ruby arrays already know how to spaceship each other.</p>`,
+
+  python: `from dataclasses import dataclass
+from functools import total_ordering
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+    def distance_to(self, other):
+        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
+
+@total_ordering
+class Version:
+    def __init__(self, major, minor):
+        self.major, self.minor = major, minor
+
+    def __eq__(self, other):
+        return (self.major, self.minor) == (other.major, other.minor)
+
+    def __lt__(self, other):
+        return (self.major, self.minor) < (other.major, other.minor)`,
+
+  task: `
+<p>Rewrite the Python on the left as Ruby:</p>
+<ol>
+  <li><code>Point = Struct.new(:x, :y)</code> using the <strong>block
+      form</strong>, and inside the block define
+      <code>distance_to(other)</code> returning
+      <code>Math.sqrt((x - other.x)**2 + (y - other.y)**2)</code>. Equality
+      and <code>to_a</code> come free — do not write them.</li>
+  <li>A <code>class Version</code> that <code>include Comparable</code>,
+      with <code>initialize(major, minor)</code> assigning both ivars,
+      <code>attr_reader :major, :minor</code>, and a single
+      <code>&lt;=&gt;(other)</code> that compares
+      <code>[major, minor] &lt;=&gt; [other.major, other.minor]</code>.
+      Write no other comparison methods — <code>Comparable</code> derives
+      them all from the spaceship.</li>
+</ol>`,
+
+  starter: `# 1. Point: Struct.new with a block — methods defined inside the block
+#    become instance methods. Inside, x and y are plain method calls.
+Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    raise NotImplementedError, "TODO: implement distance_to"
+  end
+end
+
+# 2. Version: include Comparable, assign the ivars in initialize, and
+#    define <=> — one method, and Comparable derives <, >, ==, between?.
+class Version
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    raise NotImplementedError, "TODO: assign @major and @minor"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /Struct\.new/, message: "Create Point with Struct.new" },
+    { pattern: /include\s+Comparable/, message: "Mix Comparable into Version with include" },
+    { pattern: /<=>/, message: "Define the spaceship operator <=>" },
+    { pattern: /def\s+distance_to/, message: "Define distance_to inside the Struct block" },
+  ],
+
+  tests: [
+    { name: "Point.new(0, 0).distance_to(Point.new(3, 4)) is 5.0",
+      code: "  expect_eq(Point.new(0, 0).distance_to(Point.new(3, 4)), 5.0)" },
+    { name: "Structs get value equality and to_a for free",
+      code: "  expect_true(Point.new(1, 2) == Point.new(1, 2))\n  expect_eq(Point.new(1, 2).to_a, [1, 2])" },
+    { name: "Version.new(1, 2) < Version.new(1, 10) — numeric, not lexicographic",
+      code: "  expect_true(Version.new(1, 2) < Version.new(1, 10))" },
+    { name: "Versions sort correctly",
+      code: "  versions = [Version.new(2, 0), Version.new(1, 10), Version.new(1, 2)]\n  expect_eq(versions.sort.map { |v| [v.major, v.minor] }, [[1, 2], [1, 10], [2, 0]])" },
+    { name: "between? comes free with Comparable",
+      code: "  expect_true(Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0)))" },
+  ],
+
+  solution: `Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    Math.sqrt((x - other.x)**2 + (y - other.y)**2)
+  end
+end
+
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  def <=>(other)
+    [major, minor] <=> [other.major, other.minor]
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Value object in one line</td><td><code>@dataclass</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td>Add methods</td><td>body of the decorated class</td><td><code>Struct.new(:x, :y) do ... end</code></td></tr>
+  <tr><td>Field equality</td><td><code>__eq__</code> (generated)</td><td><code>==</code> (generated)</td></tr>
+  <tr><td>As tuple/array</td><td><code>astuple(p)</code></td><td><code>p.to_a</code></td></tr>
+  <tr><td>Full ordering</td><td><code>@total_ordering</code> + 2 dunders</td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td></tr>
+  <tr><td>Compare pairs</td><td><code>(a, b) &lt; (c, d)</code></td><td><code>[a, b] &lt;=&gt; [c, d]</code></td></tr>
+  <tr><td>Range check</td><td><code>lo &lt;= x &lt;= hi</code></td><td><code>x.between?(lo, hi)</code></td></tr>
+</table>
+<p>The spaceship is the whole protocol: <code>sort</code>, <code>min</code>,
+<code>max</code>, and <code>Range#include?</code> all just call
+<code>&lt;=&gt;</code>. That's one method where Python's rich-comparison
+protocol has six — <code>total_ordering</code> exists precisely to paper over
+that, and <code>Comparable</code> is the same idea promoted to a first-class
+mixin. Delegating to array comparison (<code>[major, minor] &lt;=&gt;
+...</code>) is the direct translation of Python's tuple-comparison idiom, and
+it nails the classic trap either way: version 1.2 sorts before 1.10.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Utility Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Utility Types",
+
+  intro: `
+<p>Ruby's Hash has a lovely toolbox: <code>merge</code>, <code>slice</code>,
+<code>except</code>, <code>freeze</code>. TypeScript has the same toolbox —
+but it operates on <em>types</em>, not just values. When you write
+<code>user.merge(changes)</code> in Ruby, nothing describes what
+<code>changes</code> may contain; any stray key sails through. In TypeScript,
+the spread <code>{ ...user, ...changes }</code> does the runtime merge, and
+<code>Partial&lt;User&gt;</code> does the type-level half: "any subset of
+User's fields, all optional" — a typo like <code>emial</code> is a compile
+error.</p>
+<table>
+  <tr><th>Ruby (values, at runtime)</th><th>TypeScript (types, at compile time)</th></tr>
+  <tr><td><code>user.merge(changes)</code></td><td><code>{ ...user, ...changes }</code> with <code>changes: Partial&lt;User&gt;</code></td></tr>
+  <tr><td><code>user.slice(:id, :name)</code></td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td><code>user.except(:password)</code></td><td><code>Omit&lt;User, "password"&gt;</code></td></tr>
+  <tr><td><code>user.freeze</code> (raises later, if ever)</td><td><code>Readonly&lt;User&gt;</code> (assignment is a compile error)</td></tr>
+</table>
+<p>These are <strong>utility types</strong>: generic type transformers that
+ship with TypeScript. They matter because real apps are full of "User, but
+only some fields" moments — update payloads, API summaries, redacted logs.
+Ruby handles each with a runtime hash operation and a prayer;
+TypeScript gives each its own precise, checkable name derived from the one
+source-of-truth interface.</p>`,
+
+  ruby: `user = {
+  id: 1,
+  name: "Yukihiro",
+  email: "matz@ruby.org",
+  password: "s3cret"
+}
+
+# Non-destructive update — merge returns a new hash:
+updated = user.merge(email: "matz@ruby-lang.org")
+user[:email]           # => "matz@ruby.org" (untouched)
+
+# Keep only some keys:
+summary = user.slice(:id, :name)
+# => { id: 1, name: "Yukihiro" }
+
+# Everything except the dangerous one:
+safe = user.except(:password)
+
+# Freeze — mutation raises FrozenError, at runtime:
+user.freeze`,
+
+  task: `
+<p>Rebuild the Hash toolbox with types attached:</p>
+<ol>
+  <li>Define <code>interface User</code> with <code>id: number</code>,
+      <code>name: string</code>, <code>email: string</code>, and
+      <code>password: string</code>.</li>
+  <li>Write <code>updateUser(user: User, changes: Partial&lt;User&gt;): User</code>
+      that returns a <strong>new</strong> object via spread —
+      <code>Hash#merge</code>, not <code>Hash#merge!</code>. Do not mutate
+      <code>user</code>.</li>
+  <li>Write <code>toSummary(user: User): Pick&lt;User, "id" | "name"&gt;</code>
+      that returns an object with <em>only</em> <code>id</code> and
+      <code>name</code> — <code>user.slice(:id, :name)</code>, but the return
+      type promises the password can never leak.</li>
+</ol>
+<p>Remember: <code>Pick</code> and <code>Partial</code> exist only at compile
+time. At runtime you still build the object yourself — the utility type is the
+contract, the spread or object literal is the implementation.</p>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+}
+
+// 1. Hash#merge, typed. changes may contain any SUBSET of User's fields.
+//    Return a new object — spread both, like user.merge(changes).
+function updateUser(user: User, changes: Partial<User>): User {
+  // TODO: spread user, then changes, into a fresh object
+  return user;
+}
+
+// 2. Hash#slice(:id, :name), typed. The return type guarantees
+//    that email and password cannot escape.
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  // TODO: return an object literal with just id and name
+  return { id: 0, name: "" };
+}
+`,
+
+  exportNames: ["updateUser", "toSummary"],
+
+  requirements: [
+    { pattern: /Partial\s*</, message: "Type the changes parameter as Partial<User> — merge's missing half" },
+    { pattern: /(Pick|Omit)\s*</, message: "Use Pick or Omit to express the slice/except of the User type" },
+    { pattern: /\{\s*\.\.\./, message: "Build the updated user with object spread ({ ...user, ...changes })" },
+  ],
+
+  tests: [
+    { name: "updateUser applies the changes", run: (x) => {
+        const user = { id: 1, name: "Yukihiro", email: "matz@ruby.org", password: "s3cret" };
+        const updated = x.updateUser(user, { email: "matz@ruby-lang.org" });
+        expectEqual(updated.email, "matz@ruby-lang.org");
+        expectEqual(updated.name, "Yukihiro");
+        expectEqual(updated.id, 1);
+      } },
+    { name: "updateUser does not mutate the original (merge, not merge!)", run: (x) => {
+        const user = { id: 1, name: "Yukihiro", email: "matz@ruby.org", password: "s3cret" };
+        x.updateUser(user, { email: "changed@example.com", name: "Matz" });
+        expectEqual(user.email, "matz@ruby.org");
+        expectEqual(user.name, "Yukihiro");
+      } },
+    { name: "updateUser handles multiple changed fields", run: (x) => {
+        const user = { id: 2, name: "Aaron", email: "a@example.com", password: "pw" };
+        const updated = x.updateUser(user, { name: "tenderlove", email: "t@example.com" });
+        expectEqual(updated.name, "tenderlove");
+        expectEqual(updated.email, "t@example.com");
+        expectEqual(updated.password, "pw");
+      } },
+    { name: "toSummary keeps id and name", run: (x) => {
+        const summary = x.toSummary({ id: 1, name: "Yukihiro", email: "matz@ruby.org", password: "s3cret" });
+        expectEqual(summary.id, 1);
+        expectEqual(summary.name, "Yukihiro");
+      } },
+    { name: "toSummary drops email and password (slice, not the whole hash)", run: (x) => {
+        const summary = x.toSummary({ id: 1, name: "Yukihiro", email: "matz@ruby.org", password: "s3cret" });
+        expectEqual(summary.email, undefined);
+        expectEqual(summary.password, undefined);
+        expectDeepEqual(Object.keys(summary).sort(), ["id", "name"]);
+      } },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+}
+
+function updateUser(user: User, changes: Partial<User>): User {
+  return { ...user, ...changes };
+}
+
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  return { id: user.id, name: user.name };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Merge / update</td><td><code>h.merge(changes)</code></td><td><code>{ ...h, ...changes }</code> + <code>Partial&lt;T&gt;</code></td></tr>
+  <tr><td>Keep keys</td><td><code>h.slice(:id, :name)</code></td><td><code>Pick&lt;T, "id" | "name"&gt;</code> (type) + object literal (value)</td></tr>
+  <tr><td>Drop keys</td><td><code>h.except(:password)</code></td><td><code>Omit&lt;T, "password"&gt;</code></td></tr>
+  <tr><td>Immutability</td><td><code>h.freeze</code> → <code>FrozenError</code> at runtime</td><td><code>Readonly&lt;T&gt;</code> → compile error on assignment</td></tr>
+  <tr><td>All fields optional</td><td>n/a — every hash key is already optional</td><td><code>Partial&lt;T&gt;</code>; inverse is <code>Required&lt;T&gt;</code></td></tr>
+  <tr><td>Hash with typed keys/values</td><td><code>Hash.new</code> + discipline</td><td><code>Record&lt;K, V&gt;</code></td></tr>
+</table>
+<p>The insight: utility types are not new data structures — they are
+<em>derived views of one interface</em>. Declare <code>User</code> once; every
+update payload (<code>Partial</code>), public summary (<code>Pick</code>), and
+redacted record (<code>Omit</code>) stays automatically in sync when
+<code>User</code> gains a field. In Ruby, each of those shapes lives only in
+your head and your specs.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

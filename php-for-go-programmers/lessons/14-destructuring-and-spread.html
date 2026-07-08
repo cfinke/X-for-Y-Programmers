@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: List Assignment &amp; Spread</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "List Assignment & Spread",
+
+  intro: `
+<p>Go's multiple assignment — <code>a, b := f()</code>, or the beloved
+one-liner swap <code>a, b = b, a</code> — has a PHP counterpart that works on
+<em>arrays</em> instead of multiple return values. Since a PHP function
+returns one value, the convention is to return a small array and pull it
+apart at the call site: <code>[$a, $b] = $pair;</code>. The same syntax also
+does something Go can't: with keys, <code>['name' =&gt; $n] = $user;</code>
+plucks named fields out of an associative array, ignoring the rest.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>a, b := f()</code></td><td><code>[$a, $b] = f();</code></td></tr>
+  <tr><td><code>a, b = b, a</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td><em>(no keyed equivalent)</em></td><td><code>['name' =&gt; $n, 'age' =&gt; $a] = $user;</code></td></tr>
+  <tr><td><code>func f(nums ...int)</code></td><td><code>function f(int ...$nums)</code></td></tr>
+  <tr><td><code>f(args...)</code></td><td><code>f(...$args)</code></td></tr>
+  <tr><td><code>append(append([]int{}, a...), b...)</code></td><td><code>[...$a, ...$b]</code></td></tr>
+</table>
+<p>The three-dot spread will feel like home, with one cosmetic flip: Go puts
+the dots <em>after</em> the value at a call site (<code>f(nums...)</code>),
+PHP puts them <em>before</em> (<code>f(...$nums)</code>) — but in a parameter
+list they land in the same place: <code>...int</code> vs
+<code>int ...$nums</code>. And PHP's spread works inside array literals too,
+so <code>[...$a, ...$b]</code> replaces Go's double-<code>append</code> dance
+for concatenation. When the spread arrays have string keys, later keys
+overwrite earlier ones — which turns "defaults plus overrides" into a
+one-liner.</p>`,
+
+  go: `func minMax(nums []int) (int, int) {
+    // ...
+    return lo, hi
+}
+
+lo, hi := minMax(values) // multiple assignment
+a, b = b, a              // the classic swap
+
+func sum(nums ...int) int { // variadic
+    total := 0
+    for _, n := range nums {
+        total += n
+    }
+    return total
+}
+
+sum(1, 2, 3)
+sum(parts...) // spread a slice into the variadic
+
+// Concatenating two slices without mutating either:
+merged := append(append([]int{}, a...), b...)`,
+
+  task: `
+<p>Write three functions that lean on list assignment and spread:</p>
+<ol>
+  <li><code>swap(array $pair): array</code> — take a two-element list, pull
+      it apart with <code>[$a, $b] = $pair;</code>, and return the elements
+      in the opposite order. This is <code>a, b = b, a</code>, just routed
+      through an array.</li>
+  <li><code>sum(int ...$nums): int</code> — a variadic exactly like Go's
+      <code>func sum(nums ...int) int</code>. Inside the function,
+      <code>$nums</code> is an ordinary array; add its elements up and
+      return the total. Calling <code>sum()</code> with no arguments must
+      return <code>0</code>.</li>
+  <li><code>merge_settings(array $defaults, array $overrides): array</code> —
+      merge two associative arrays with the spread operator:
+      <code>[...$defaults, ...$overrides]</code>. Keys present in
+      <code>$overrides</code> win, everything else keeps its default.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Go: a, b = b, a
+//    PHP: [$a, $b] = $pair; then return them reversed.
+function swap(array $pair): array {
+    throw new Exception("TODO: implement swap");
+}
+
+// 2. Go: func sum(nums ...int) int
+//    Same dots, same idea — $nums arrives as an array.
+function sum(int ...$nums): int {
+    throw new Exception("TODO: implement sum");
+}
+
+// 3. Go: two appends and a fresh slice.
+//    PHP: one literal — [...$defaults, ...$overrides].
+//    Later string keys overwrite earlier ones.
+function merge_settings(array $defaults, array $overrides): array {
+    throw new Exception("TODO: implement merge_settings");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\s*\$\w+\s*,\s*\$\w+\s*\]\s*=/, message: "Use list assignment ([$a, $b] = ...) to destructure the pair" },
+    { pattern: /\.\.\.\$/, message: "Use the ...$nums variadic (or a ...$spread) somewhere" },
+    { pattern: /\[\s*\.\.\./, message: "Use spread inside an array literal ([...$defaults, ...$overrides])" },
+  ],
+
+  tests: [
+    { name: 'swap([1, 2]) returns [2, 1]',
+      code: 'expect_eq(swap([1, 2]), [2, 1]);' },
+    { name: 'swap(["left", "right"]) returns ["right", "left"]',
+      code: 'expect_eq(swap(["left", "right"]), ["right", "left"]);' },
+    { name: 'sum(1, 2, 3) returns 6',
+      code: 'expect_eq(sum(1, 2, 3), 6);' },
+    { name: 'sum() with no arguments returns 0',
+      code: 'expect_eq(sum(), 0);' },
+    { name: 'sum(...[4, 5, 6]) spreads an array into the call, like sum(parts...)',
+      code: 'expect_eq(sum(...[4, 5, 6]), 15);' },
+    { name: 'merge_settings lets overrides win while keeping other defaults',
+      code: 'expect_eq(merge_settings(["debug" => false, "port" => 80], ["port" => 8080]), ["debug" => false, "port" => 8080]);' },
+  ],
+
+  solution: `<?php
+
+function swap(array $pair): array {
+    [$a, $b] = $pair;
+    return [$b, $a];
+}
+
+function sum(int ...$nums): int {
+    $total = 0;
+    foreach ($nums as $n) {
+        $total += $n;
+    }
+    return $total;
+}
+
+function merge_settings(array $defaults, array $overrides): array {
+    return [...$defaults, ...$overrides];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Multiple assignment</td><td><code>a, b := f()</code></td><td><code>[$a, $b] = f();</code></td></tr>
+  <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td>Skip a value</td><td><code>_, b := f()</code></td><td><code>[, $b] = f();</code></td></tr>
+  <tr><td>Pick named fields</td><td>—</td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+  <tr><td>Variadic parameter</td><td><code>func f(nums ...int)</code></td><td><code>function f(int ...$nums)</code></td></tr>
+  <tr><td>Spread at call site</td><td><code>f(nums...)</code> (dots after)</td><td><code>f(...$nums)</code> (dots before)</td></tr>
+  <tr><td>Concatenate</td><td><code>append(a, b...)</code></td><td><code>[...$a, ...$b]</code></td></tr>
+  <tr><td>Destructure in a loop</td><td><code>for _, p := range pairs</code></td><td><code>foreach ($pairs as [$x, $y])</code></td></tr>
+</table>
+<p>The keyed form is the sleeper feature here. Go has no way to bind struct
+fields to locals in one statement, but PHP's
+<code>['name' =&gt; $n, 'age' =&gt; $a] = $user;</code> pulls exactly the
+fields you name out of an associative array and ignores everything else —
+handy for config arrays and decoded JSON. One caution on spread: with
+<em>integer</em> keys, <code>[...$a, ...$b]</code> renumbers and keeps
+everything (a true concatenation), but with <em>string</em> keys, duplicates
+collide and the last spread wins — that collision is precisely what makes
+<code>merge_settings</code> work.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

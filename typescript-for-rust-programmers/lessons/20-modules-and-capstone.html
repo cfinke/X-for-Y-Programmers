@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Modules & Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Modules & Capstone",
+
+  intro: `
+<p>Rust makes you declare your module tree: <code>mod inventory;</code> in
+<code>main.rs</code>, <code>pub</code> on everything callers may touch,
+<code>use crate::inventory::Item</code> to bring names in. ES modules invert the
+bookkeeping: <strong>one file is one module, automatically</strong>. There are
+no <code>mod</code> declarations and no crate graph — the <code>import</code>
+statements <em>are</em> the module graph. <code>export</code> is
+<code>pub</code>; everything unexported is private to the file, and that's the
+whole visibility story: no <code>pub(crate)</code>, no <code>pub(super)</code>,
+no re-export hierarchies to design.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>mod inventory;</code> (declare the file)</td><td>nothing — the file existing is enough</td></tr>
+  <tr><td><code>pub fn total_value(…)</code></td><td><code>export function totalValue(…)</code></td></tr>
+  <tr><td><code>use crate::inventory::{Item, total_value};</code></td><td><code>import { Item, totalValue } from "./inventory";</code></td></tr>
+  <tr><td><code>use serde::Serialize;</code> (external crate)</td><td><code>import { z } from "zod";</code> (bare specifier = package)</td></tr>
+  <tr><td>orphan rules, coherence</td><td>none — any file can extend anything (for better and worse)</td></tr>
+</table>
+<p>What you give up: Rust's privacy is enforced across the whole crate graph,
+while a TypeScript file's "privacy" ends at the file boundary — anyone can
+import anything you export, there's no coherence checking, and no orphan rule
+stops a stranger's file from monkey-patching a prototype. Now the capstone: a
+typed inventory module that pulls together the course — interfaces, a generic
+function with a bound, array methods instead of iterators, spread instead of
+struct update, and a type guard for data arriving from outside — everything
+published with <code>export</code>, like a <code>pub</code> API surface.
+(The editor here is a single sandboxed file, so write the <code>export</code>s
+but no <code>import</code> lines.)</p>`,
+
+  rust: `// src/inventory.rs — and main.rs still needs: mod inventory;
+pub struct Item {
+    pub id: u32,
+    pub name: String,
+    pub price: f64,
+    pub quantity: u32,
+}
+
+pub fn total_value(items: &[Item]) -> f64 {
+    items.iter().map(|i| i.price * i.quantity as f64).sum()
+}
+
+pub fn find_by_id(items: &[Item], id: u32) -> Option<&Item> {
+    items.iter().find(|i| i.id == id)
+}
+
+pub fn restock(items: &[Item], id: u32, amount: u32) -> Vec<Item> {
+    items.iter()
+        .map(|i| if i.id == id {
+            Item { quantity: i.quantity + amount, ..i.clone() }
+        } else {
+            i.clone()
+        })
+        .collect()
+}`,
+
+  task: `
+<p>Build the public API of an inventory module. Mark <em>every</em> symbol
+<code>pub</code> — that is, <code>export</code>:</p>
+<ol>
+  <li><code>export interface Item</code> with <code>id: number</code>,
+      <code>name: string</code>, <code>price: number</code>,
+      <code>quantity: number</code>.</li>
+  <li><code>export function totalValue(items: Item[]): number</code> — sum of
+      <code>price * quantity</code> over the whole list
+      (<code>.iter().map().sum()</code> → <code>.reduce()</code>).</li>
+  <li><code>export function findById&lt;T extends { id: number }&gt;(items: T[],
+      id: number): T | undefined</code> — generic over anything with an
+      <code>id</code>, like a trait bound; <code>Option&lt;&amp;T&gt;</code>
+      becomes <code>T | undefined</code> via <code>.find()</code>.</li>
+  <li><code>export function restock(items: Item[], id: number, amount: number):
+      Item[]</code> — return a <strong>new</strong> array where the matching
+      item's quantity grew by <code>amount</code>; copy with spread
+      (<code>{ ...item, quantity: … }</code>), mutate nothing.</li>
+  <li><code>export function isItem(value: unknown): value is Item</code> — the
+      type guard from lesson 16, for inventory data arriving as JSON.</li>
+</ol>`,
+
+  starter: `// The whole file is one module. export = pub; everything else is private.
+
+// 1. pub struct Item -> export interface Item
+export interface Item {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+// 2. .iter().map(...).sum() -> .reduce(...)
+export function totalValue(items: Item[]): number {
+  // TODO: sum price * quantity
+  return 0;
+}
+
+// 3. Generic with a bound: <T: HasId> -> <T extends { id: number }>
+//    Option<&T> -> T | undefined (that's what .find() returns)
+export function findById<T extends { id: number }>(items: T[], id: number): T | undefined {
+  // TODO: items.find(...)
+  return undefined;
+}
+
+// 4. Struct update, immutably: { quantity: i.quantity + n, ..i.clone() }
+//    -> { ...item, quantity: item.quantity + n }. Return a NEW array.
+export function restock(items: Item[], id: number, amount: number): Item[] {
+  // TODO: map over items, spreading a new object for the matching id
+  return items;
+}
+
+// 5. The lesson-16 type guard: narrow unknown JSON into an Item.
+export function isItem(value: unknown): value is Item {
+  // TODO: non-null object; id, price, quantity numbers; name a string
+  return false;
+}`,
+
+  exportNames: ["totalValue", "findById", "restock", "isItem"],
+
+  requirements: [
+    { pattern: /export\s+(function|const)/, message: "Publish your API with export — the pub keyword of ES modules" },
+    { pattern: /export\s+interface\s+Item/, message: "Export the Item interface too (pub struct Item)" },
+    { pattern: /<\s*T\s+extends/, message: "Give findById a bounded generic: <T extends { id: number }>" },
+    { pattern: /\.\.\./, message: "Copy-and-update with spread in restock — no mutation" },
+  ],
+
+  tests: [
+    {
+      name: "totalValue sums price × quantity",
+      run: (x) => {
+        const items = [
+          { id: 1, name: "gear", price: 2.5, quantity: 4 },
+          { id: 2, name: "crab plush", price: 20, quantity: 2 },
+        ];
+        expectEqual(x.totalValue(items), 50);
+        expectEqual(x.totalValue([]), 0);
+      },
+    },
+    {
+      name: "findById returns the match, or undefined (Option -> T | undefined)",
+      run: (x) => {
+        const items = [
+          { id: 1, name: "gear", price: 2.5, quantity: 4 },
+          { id: 2, name: "crab plush", price: 20, quantity: 2 },
+        ];
+        expectEqual(x.findById(items, 2), items[1]);
+        expectEqual(x.findById(items, 99), undefined);
+      },
+    },
+    {
+      name: "findById is generic: works on anything with an id",
+      run: (x) => {
+        const tags = [{ id: 10, label: "sale" }, { id: 11, label: "new" }];
+        expectEqual(x.findById(tags, 11).label, "new");
+      },
+    },
+    {
+      name: "restock bumps the right item's quantity in a new array",
+      run: (x) => {
+        const items = [
+          { id: 1, name: "gear", price: 2.5, quantity: 4 },
+          { id: 2, name: "crab plush", price: 20, quantity: 2 },
+        ];
+        const after = x.restock(items, 1, 6);
+        expectDeepEqual(after, [
+          { id: 1, name: "gear", price: 2.5, quantity: 10 },
+          { id: 2, name: "crab plush", price: 20, quantity: 2 },
+        ]);
+      },
+    },
+    {
+      name: "restock does not mutate the original array or items",
+      run: (x) => {
+        const items = [{ id: 1, name: "gear", price: 2.5, quantity: 4 }];
+        const after = x.restock(items, 1, 1);
+        expectEqual(items[0].quantity, 4);
+        expectTruthy(after !== items);
+        expectTruthy(after[0] !== items[0]);
+      },
+    },
+    {
+      name: "isItem accepts a real Item and rejects malformed JSON",
+      run: (x) => {
+        expectEqual(x.isItem({ id: 1, name: "gear", price: 2.5, quantity: 4 }), true);
+        expectEqual(x.isItem({ id: 1, name: "gear", price: "2.5", quantity: 4 }), false);
+        expectEqual(x.isItem({ id: 1, name: "gear" }), false);
+        expectEqual(x.isItem(null), false);
+        expectEqual(x.isItem("item"), false);
+      },
+    },
+  ],
+
+  solution: `export interface Item {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export function totalValue(items: Item[]): number {
+  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+export function findById<T extends { id: number }>(items: T[], id: number): T | undefined {
+  return items.find((item) => item.id === id);
+}
+
+export function restock(items: Item[], id: number, amount: number): Item[] {
+  return items.map((item) =>
+    item.id === id ? { ...item, quantity: item.quantity + amount } : item
+  );
+}
+
+export function isItem(value: unknown): value is Item {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as { id?: unknown; name?: unknown; price?: unknown; quantity?: unknown };
+  return (
+    typeof candidate.id === "number" &&
+    typeof candidate.name === "string" &&
+    typeof candidate.price === "number" &&
+    typeof candidate.quantity === "number"
+  );
+}`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Define a module</td><td>file + <code>mod name;</code> declaration</td><td>the file itself — nothing to declare</td></tr>
+  <tr><td>Make public</td><td><code>pub</code></td><td><code>export</code></td></tr>
+  <tr><td>Import from your code</td><td><code>use crate::inventory::Item;</code></td><td><code>import { Item } from "./inventory";</code></td></tr>
+  <tr><td>Import a dependency</td><td><code>use serde::…</code> + Cargo.toml</td><td><code>import … from "pkg"</code> + package.json</td></tr>
+  <tr><td>Rename</td><td><code>use x as y;</code></td><td><code>import { x as y }</code></td></tr>
+  <tr><td>Default visibility</td><td>private to the module</td><td>private to the file</td></tr>
+  <tr><td>Fine-grained visibility</td><td><code>pub(crate)</code>, <code>pub(super)</code></td><td>none — exported or not</td></tr>
+  <tr><td>Coherence / orphan rules</td><td>enforced by the compiler</td><td>none; convention and review</td></tr>
+</table>
+<p>The insight — and the course in one sentence: TypeScript gives you Rust's
+<em>type discipline</em> (unions instead of enums, narrowing instead of match,
+structural interfaces instead of traits) without Rust's <em>ownership
+discipline</em>. Nothing stops a function from mutating what it's handed, so the
+immutability you got for free from <code>&amp;</code> becomes a habit you keep on
+purpose: spread-and-copy in <code>restock</code>, <code>map</code> over
+mutation, <code>Readonly&lt;T&gt;</code> where it helps. Write TypeScript like a
+Rust programmer and you'll be the person on the team whose code doesn't have
+aliasing bugs.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

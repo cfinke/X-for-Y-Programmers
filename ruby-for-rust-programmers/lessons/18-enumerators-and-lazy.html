@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Enumerators & Lazy</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Enumerators & Lazy",
+
+  intro: `
+<p>Rust iterators are lazy <em>by construction</em> — a chain of
+<code>filter</code>/<code>map</code> does nothing until <code>collect</code>
+or <code>take</code> drives it. Ruby is the other way around:
+<code>map</code> and <code>select</code> are <strong>eager</strong>, each one
+materializing a whole new array. Call <code>select</code> on an infinite
+range and it will happily run forever. Laziness is opt-in: insert
+<code>.lazy</code> and the rest of the chain becomes iterator adapters that
+produce values on demand, with <code>first(n)</code> playing the role of
+<code>take(n).collect()</code>.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>(1..)</code> infinite range</td><td><code>(1..Float::INFINITY)</code></td></tr>
+  <tr><td>lazy by default</td><td>eager by default — opt in with <code>.lazy</code></td></tr>
+  <tr><td><code>.filter(...).take(n).collect()</code></td><td><code>.lazy.select { ... }.first(n)</code></td></tr>
+  <tr><td><code>std::iter::from_fn</code> / gen blocks</td><td><code>Enumerator.new { |y| y &lt;&lt; value }</code></td></tr>
+  <tr><td><code>.chunks(2)</code></td><td><code>.each_slice(2)</code></td></tr>
+</table>
+<p>For sequences that are not a transformation of something else, Ruby has
+<code>Enumerator.new</code>: a generator with a <em>yielder</em>. Inside the
+block, <code>y &lt;&lt; value</code> suspends until the consumer asks for the
+next element — a hand-written <code>Iterator</code> impl (or a gen block)
+with zero protocol to implement. An infinite <code>loop do ... end</code>
+inside is fine, because only demanded values are ever computed.</p>`,
+
+  rust: `fn multiples_of(k: u64, count: usize) -> Vec<u64> {
+    (1..).filter(|n| n % k == 0).take(count).collect()
+}
+
+fn fibonacci(count: usize) -> Vec<u64> {
+    let mut pair = (0u64, 1u64);
+    std::iter::from_fn(move || {
+        let next = pair.0;
+        pair = (pair.1, pair.0 + pair.1);
+        Some(next)
+    })
+    .take(count)
+    .collect()
+}
+
+fn pairs(arr: &[i32]) -> Vec<Vec<i32>> {
+    arr.chunks(2).map(|c| c.to_vec()).collect()
+}`,
+
+  task: `
+<p>Port all three, choosing the right tool for each:</p>
+<ol>
+  <li><code>multiples_of(k, count)</code> — start from
+      <code>(1..Float::INFINITY)</code>, add <code>.lazy</code>, then
+      <code>select</code> the numbers divisible by <code>k</code> and take
+      <code>first(count)</code>. Without <code>.lazy</code> this never
+      returns — try it mentally, not literally.</li>
+  <li><code>fibonacci(count)</code> — build an
+      <code>Enumerator.new do |y| ... end</code> holding
+      <code>a, b = 0, 1</code> and an infinite <code>loop</code> that yields
+      <code>a</code> (<code>y &lt;&lt; a</code>) then steps
+      <code>a, b = b, a + b</code>. Return its <code>first(count)</code>.</li>
+  <li><code>pairs(arr)</code> — Rust's <code>chunks(2)</code> is
+      <code>each_slice(2)</code>; return <code>.to_a</code> of it.</li>
+</ol>`,
+
+  starter: `# 1. Eager select on an infinite range never finishes.
+#    .lazy turns the chain into iterator adapters; first(count) drives it.
+def multiples_of(k, count)
+  raise NotImplementedError, "TODO: (1..Float::INFINITY).lazy.select ... first(count)"
+end
+
+# 2. Enumerator.new is from_fn / a gen block: y << value suspends
+#    until the consumer pulls the next element.
+def fibonacci(count)
+  raise NotImplementedError, "TODO: Enumerator.new with a, b = 0, 1 and loop"
+end
+
+# 3. chunks(2) -> each_slice(2)
+def pairs(arr)
+  raise NotImplementedError, "TODO: arr.each_slice(2).to_a"
+end
+`,
+
+  requirements: [
+    { pattern: /\.lazy/, message: "Opt in to laziness with .lazy" },
+    { pattern: /Enumerator\.new/, message: "Build fibonacci with Enumerator.new and a yielder" },
+    { pattern: /first\(/, message: "Drive the sequences with first(n)" },
+    { pattern: /each_slice/, message: "Use each_slice for pairs" },
+  ],
+
+  tests: [
+    { name: "multiples_of(3, 4) is [3, 6, 9, 12]",
+      code: "  expect_eq(multiples_of(3, 4), [3, 6, 9, 12])" },
+    { name: "multiples_of(7, 3) is [7, 14, 21]",
+      code: "  expect_eq(multiples_of(7, 3), [7, 14, 21])" },
+    { name: "fibonacci(7) is [0, 1, 1, 2, 3, 5, 8]",
+      code: "  expect_eq(fibonacci(7), [0, 1, 1, 2, 3, 5, 8])" },
+    { name: "fibonacci(1) is [0]",
+      code: "  expect_eq(fibonacci(1), [0])" },
+    { name: "pairs([1, 2, 3, 4, 5]) is [[1, 2], [3, 4], [5]]",
+      code: "  expect_eq(pairs([1, 2, 3, 4, 5]), [[1, 2], [3, 4], [5]])" },
+  ],
+
+  solution: `def multiples_of(k, count)
+  (1..Float::INFINITY).lazy.select { |n| (n % k).zero? }.first(count)
+end
+
+def fibonacci(count)
+  fib = Enumerator.new do |y|
+    a, b = 0, 1
+    loop do
+      y << a
+      a, b = b, a + b
+    end
+  end
+  fib.first(count)
+end
+
+def pairs(arr)
+  arr.each_slice(2).to_a
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>Evaluation model</td><td>lazy by construction</td><td>eager; <code>.lazy</code> opts in</td></tr>
+  <tr><td>Infinite source</td><td><code>(1..)</code>, <code>iter::repeat</code></td><td><code>(1..Float::INFINITY)</code>, <code>(1..)</code>, <code>Enumerator</code></td></tr>
+  <tr><td>Take n</td><td><code>.take(n).collect()</code></td><td><code>.first(n)</code></td></tr>
+  <tr><td>Custom generator</td><td><code>impl Iterator</code> / <code>from_fn</code> / gen</td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+  <tr><td>Chunking</td><td><code>.chunks(2)</code></td><td><code>.each_slice(2)</code></td></tr>
+  <tr><td>Sliding window</td><td><code>.windows(2)</code></td><td><code>.each_cons(2)</code></td></tr>
+  <tr><td>Force to Vec/Array</td><td><code>.collect()</code></td><td><code>.to_a</code> / <code>.force</code></td></tr>
+</table>
+<p>Why is Ruby eager by default? Each adapter returning a real array is
+simpler to debug and fast enough for typical collection sizes — laziness
+only pays off on infinite or expensive sources, so that is when you reach
+for it. One habit to keep from Rust: a lazy chain still needs a driver.
+<code>first(n)</code>, <code>.force</code>, or <code>.to_a</code> is your
+<code>collect()</code> — without one, nothing runs.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

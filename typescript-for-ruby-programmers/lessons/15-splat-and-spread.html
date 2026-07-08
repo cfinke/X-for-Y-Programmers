@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Splat & Spread</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Splat & Spread",
+
+  intro: `
+<p>Ruby's splat family maps onto one TypeScript operator with three dots
+instead of one star. A variadic method's <code>*args</code> becomes
+<code>...args: number[]</code> — same idea, more dots, plus a type for the
+collected array. The double splat <code>**opts</code> has no direct twin;
+in TypeScript the idiom is to pass an options <em>object</em> as an explicit
+parameter (as you saw with destructured parameters last lesson).</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>def sum(*nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td><code>def go(**opts)</code></td><td><code>function go(opts: Options)</code> — an options object</td></tr>
+  <tr><td><code>[*a, *b]</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td><code>h1.merge(h2)</code></td><td><code>{ ...h1, ...h2 }</code></td></tr>
+  <tr><td><code>list + [item]</code></td><td><code>[...list, item]</code></td></tr>
+</table>
+<p>On the receiving side the dots collect; on the calling side they spread.
+<code>[*a, *b]</code> becomes <code>[...a, ...b]</code>, and — the one to
+tattoo on your wrist — Ruby's <code>h1.merge(h2)</code> becomes
+<code>{ ...h1, ...h2 }</code>: build a <em>new</em> object with
+<code>h1</code>'s entries, letting <code>h2</code>'s win on conflict. Just
+like <code>merge</code> (and unlike <code>merge!</code>), nothing is
+modified. This copy-with-changes spread is the backbone of immutable-update
+style in TypeScript, so the tests below check not just your return values
+but that the inputs came through unscathed.</p>`,
+
+  ruby: `def sum(*nums)
+  nums.sum
+end
+
+sum(1, 2, 3)  # => 6
+sum()         # => 0
+
+defaults  = { theme: "light", font_size: 14 }
+overrides = { theme: "dark" }
+
+settings = defaults.merge(overrides)
+# => { theme: "dark", font_size: 14 }
+# defaults is untouched — merge copies (merge! would not)
+
+list = ["a", "b"]
+bigger = list + ["c"]   # or [*list, "c"]
+# list is still ["a", "b"]`,
+
+  task: `
+<p>Translate each splat idiom, keeping every input pristine:</p>
+<ol>
+  <li><code>sum(...nums: number[]): number</code> — variadic like Ruby's
+      <code>def sum(*nums)</code>; return the total, <code>0</code> when
+      called with no arguments.</li>
+  <li><code>mergeSettings(defaults: Settings, overrides: SettingsPatch): Settings</code>
+      — the <code>Settings</code> and <code>SettingsPatch</code> types are
+      in the starter. Return a <strong>new</strong> object via object
+      spread, <code>{ ...defaults, ...overrides }</code>, with overrides
+      winning — <code>Hash#merge</code>, not <code>merge!</code>.</li>
+  <li><code>appendItem(items: string[], item: string): string[]</code> —
+      return a <strong>new</strong> array with <code>item</code> at the end
+      via array spread (<code>[*list, item]</code> in Ruby). No
+      <code>.push</code> — that mutates.</li>
+</ol>`,
+
+  starter: `interface Settings {
+  theme: string;
+  fontSize: number;
+}
+
+interface SettingsPatch {
+  theme?: string;
+  fontSize?: number;
+}
+
+// 1. Ruby: def sum(*nums) = nums.sum
+function sum(): number {
+  // TODO: collect the arguments with ...nums: number[], then total them
+  return 0;
+}
+
+// 2. Ruby: defaults.merge(overrides) — copies, never mutates
+function mergeSettings(defaults: Settings, overrides: SettingsPatch): Settings {
+  // TODO: return a NEW object: { ...defaults, ...overrides }
+  return defaults;
+}
+
+// 3. Ruby: [*items, item]
+function appendItem(items: string[], item: string): string[] {
+  // TODO: return a NEW array via spread — no .push!
+  return items;
+}
+`,
+
+  exportNames: ["sum", "mergeSettings", "appendItem"],
+
+  requirements: [
+    { pattern: /\(\s*\.\.\.\s*nums\s*:\s*number\[\]\s*\)/, message: "Declare sum with a typed rest parameter: (...nums: number[])" },
+    { pattern: /\{\s*\.\.\./, message: "Merge with object spread: { ...defaults, ...overrides }" },
+    { pattern: /\[\s*\.\.\./, message: "Build the new array with array spread: [...items, item]" },
+  ],
+
+  tests: [
+    { name: "sum(1, 2, 3) returns 6", run: (x) => expectEqual(x.sum(1, 2, 3), 6) },
+    { name: "sum() with no arguments returns 0", run: (x) => expectEqual(x.sum(), 0) },
+    {
+      name: "mergeSettings lets overrides win, keeps the rest",
+      run: (x) => expectDeepEqual(
+        x.mergeSettings({ theme: "light", fontSize: 14 }, { theme: "dark" }),
+        { theme: "dark", fontSize: 14 }
+      ),
+    },
+    {
+      name: "mergeSettings does NOT mutate defaults (merge, not merge!)",
+      run: (x) => {
+        const defaults = { theme: "light", fontSize: 14 };
+        const merged = x.mergeSettings(defaults, { fontSize: 16 });
+        expectDeepEqual(defaults, { theme: "light", fontSize: 14 });
+        expectTruthy(merged !== defaults);
+      },
+    },
+    { name: 'appendItem(["a", "b"], "c") returns ["a", "b", "c"]', run: (x) => expectDeepEqual(x.appendItem(["a", "b"], "c"), ["a", "b", "c"]) },
+    {
+      name: "appendItem does NOT mutate the original array",
+      run: (x) => {
+        const items = ["a", "b"];
+        const result = x.appendItem(items, "c");
+        expectDeepEqual(items, ["a", "b"]);
+        expectTruthy(result !== items);
+      },
+    },
+  ],
+
+  solution: `interface Settings {
+  theme: string;
+  fontSize: number;
+}
+
+interface SettingsPatch {
+  theme?: string;
+  fontSize?: number;
+}
+
+function sum(...nums: number[]): number {
+  return nums.reduce((total, n) => total + n, 0);
+}
+
+function mergeSettings(defaults: Settings, overrides: SettingsPatch): Settings {
+  return { ...defaults, ...overrides };
+}
+
+function appendItem(items: string[], item: string): string[] {
+  return [...items, item];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Variadic parameters</td><td><code>def sum(*nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td>Keyword-arg bag</td><td><code>def go(**opts)</code></td><td>Explicit options object parameter</td></tr>
+  <tr><td>Splat into an array</td><td><code>[*a, *b]</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td>Splat into a call</td><td><code>sum(*nums)</code></td><td><code>sum(...nums)</code></td></tr>
+  <tr><td>Merge hashes/objects</td><td><code>h1.merge(h2)</code></td><td><code>{ ...h1, ...h2 }</code> (later spread wins)</td></tr>
+  <tr><td>Copy-with-changes</td><td><code>user.merge(admin: true)</code></td><td><code>{ ...user, admin: true }</code></td></tr>
+  <tr><td>Mutating cousins</td><td><code>merge!</code>, <code>concat</code>, <code>&lt;&lt;</code></td><td><code>Object.assign(h1, h2)</code>, <code>.push</code> — avoid by default</td></tr>
+</table>
+<p>The insight: Ruby draws the mutate/copy line with a bang —
+<code>merge</code> copies, <code>merge!</code> mutates. JavaScript never got
+the bang, so the spread operator became the convention:
+<code>{ ...obj, key: value }</code> and <code>[...arr, item]</code>
+<em>read as</em> "fresh copy with changes," while <code>Object.assign</code>
+on an existing object, <code>.push</code>, and friends are the unmarked
+<code>merge!</code>s. When state matters — React, Redux, any shared object —
+reach for the dots the way you reached for the bang-less method in Ruby.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

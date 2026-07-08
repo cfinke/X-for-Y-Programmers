@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Ownership & Moves</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Ownership & Moves",
+
+  intro: `
+<p>In Python, every object lives on the heap and every name is a reference
+to it. <code>b = a</code> makes an alias, not a copy — mutate through
+<code>b</code> and <code>a</code> sees it. Aliasing bugs are a Python rite of
+passage (the mutable default argument is the famous one), and the refcounter
+plus GC quietly clean up whenever the last reference dies. Rust replaces all
+of that with one rule: <strong>every value has exactly one owner</strong>.
+Assignment <em>moves</em> ownership — after <code>let b = a;</code>, using
+<code>a</code> is a compile error, not a lurking alias. When the owner goes
+out of scope, the memory is freed right there, deterministically, no GC.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>b = a</code> — alias, both names live</td><td><code>let b = a;</code> — move, <code>a</code> is dead</td></tr>
+  <tr><td><code>copy.deepcopy(a)</code> — rare, explicit</td><td><code>a.clone()</code> — explicit and visible</td></tr>
+  <tr><td>refcounting + GC frees memory eventually</td><td>owner's scope ends → freed immediately</td></tr>
+  <tr><td>aliasing bugs at runtime (if you're lucky)</td><td>use-after-move caught at compile time</td></tr>
+</table>
+<p>When you really want two independent values, <code>.clone()</code> is
+Rust's <code>copy.deepcopy</code>: an explicit, visible, deliberate copy —
+never something that happens behind your back. One carve-out: simple
+fixed-size types like <code>i32</code>, <code>f64</code>, and
+<code>bool</code> are <em>Copy</em> — assignment duplicates them (it's just
+bits), so numbers never move and this whole lesson quietly doesn't apply to
+them. It's heap-owning types — <code>String</code>, <code>Vec</code> — where
+ownership bites, and where passing a value to a function moves it in
+just like assignment does.</p>`,
+
+  python: `import copy
+
+def sneaky(items: list[int] = []) -> list[int]:
+    # The classic: ONE list shared by every call.
+    items.append(1)
+    return items
+
+a = [1, 2, 3]
+b = a                  # alias — the SAME list
+b.append(4)
+print(a)               # [1, 2, 3, 4]  surprise!
+
+c = copy.deepcopy(a)   # explicit, independent copy
+c.append(5)
+print(a)               # [1, 2, 3, 4]  unchanged
+
+def consume_and_shout(s: str) -> str:
+    return s.upper()   # s is one of many refs; GC cleans up`,
+
+  task: `
+<ol>
+  <li>Write <code>consume_and_shout</code> taking <code>s: String</code>
+      (note: owned <code>String</code>, not <code>&amp;str</code> — the
+      function takes <em>ownership</em>; the caller's variable is moved in
+      and unusable afterwards) and returning a <code>String</code>: the
+      input uppercased via <code>.to_uppercase()</code>.</li>
+  <li>Write <code>keep_both</code> taking <code>v: Vec&lt;i32&gt;</code> and
+      returning a tuple <code>(Vec&lt;i32&gt;, Vec&lt;i32&gt;)</code>:
+      first the original vector unchanged, second a <code>.clone()</code> of
+      it with the value <code>99</code> pushed on the end with
+      <code>.push()</code>. Clone <em>before</em> pushing — and notice you
+      can't just write <code>(v, v)</code>: the first <code>v</code> would
+      move it, and the compiler stops the second.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. consume_and_shout takes ownership of its String and returns a new one.
+fn consume_and_shout(s: String) -> String {
+    todo!()
+}
+
+// 2. keep_both: return (original, clone-with-99-pushed).
+//    .clone() is Rust's copy.deepcopy — explicit, never implicit.
+//    The clone must be \`mut\` to .push() onto it.
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.clone\(\)/, message: "Use .clone() to make an explicit copy of the Vec" },
+    { pattern: /\.push\(/, message: "Use .push() to append 99 to the clone" },
+  ],
+
+  tests: [
+    { name: 'consume_and_shout("hello".to_string()) returns "HELLO"',
+      code: 'assert_eq!(consume_and_shout(String::from("hello")), "HELLO");' },
+    { name: 'consume_and_shout("moved!") returns "MOVED!"',
+      code: 'assert_eq!(consume_and_shout(String::from("moved!")), "MOVED!");' },
+    { name: "keep_both(vec![1, 2, 3]) returns the original unchanged",
+      code: "let (original, _extended) = keep_both(vec![1, 2, 3]);\nassert_eq!(original, vec![1, 2, 3]);" },
+    { name: "keep_both(vec![1, 2, 3]) returns a clone with 99 appended",
+      code: "let (_original, extended) = keep_both(vec![1, 2, 3]);\nassert_eq!(extended, vec![1, 2, 3, 99]);" },
+    { name: "keep_both(vec![]) returns ([], [99])",
+      code: "let (original, extended) = keep_both(vec![]);\nassert_eq!(original, vec![]);\nassert_eq!(extended, vec![99]);" },
+  ],
+
+  solution: `fn consume_and_shout(s: String) -> String {
+    s.to_uppercase()
+}
+
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    let mut extended = v.clone();
+    extended.push(99);
+    (v, extended)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>Assignment</td><td><code>b = a</code> aliases</td><td><code>let b = a;</code> moves (for non-Copy types)</td></tr>
+  <tr><td>Use after handing off</td><td>fine — both names work</td><td>compile error: "value borrowed here after move"</td></tr>
+  <tr><td>Deep copy</td><td><code>copy.deepcopy(a)</code></td><td><code>a.clone()</code></td></tr>
+  <tr><td>Numbers</td><td>immutable objects, refs anyway</td><td><code>Copy</code> types — duplicated, never moved</td></tr>
+  <tr><td>Cleanup</td><td>refcount hits zero / GC cycle</td><td>owner leaves scope → freed, deterministically</td></tr>
+  <tr><td>Passing to a function</td><td>passes a reference</td><td>moves the argument in (unless you borrow — next lesson)</td></tr>
+</table>
+<p>Ownership is the price and the payoff: Python's "everything is shared,
+GC sorts it out" becomes "exactly one owner, freed the instant it's done" —
+memory safety with no garbage collector and no aliasing surprises. But
+<code>consume_and_shout</code> shows the friction: taking a
+<code>String</code> by value destroys the caller's variable, which is usually
+overkill just to <em>read</em> it. The fix — lending instead of moving — is
+the next lesson.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

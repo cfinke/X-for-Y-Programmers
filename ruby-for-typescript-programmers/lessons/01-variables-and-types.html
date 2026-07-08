@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Ruby strips away everything TypeScript adds and then some: no type
+annotations, no <code>let</code> or <code>const</code> — a variable exists the
+moment you assign to it, and it will happily hold a string today and an
+integer tomorrow. There is no compiler pass at all; the types live in the
+objects themselves, and you ask <em>them</em>: <code>x.class</code>,
+<code>x.is_a?(Integer)</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>const name = "Ada";</code></td><td><code>name = "Ada"</code></td></tr>
+  <tr><td><code>let age: number = 36;</code></td><td><code>age = 36</code></td></tr>
+  <tr><td><code>number</code> (one type)</td><td><code>Integer</code> and <code>Float</code> (two classes)</td></tr>
+  <tr><td><code>\`\${name} is \${age}\`</code></td><td><code>"#{name} is #{age}"</code></td></tr>
+</table>
+<p>Also gone: semicolons, and mostly parentheses. What you get in exchange is
+a language where <em>everything</em> is an expression and every value is a
+full object (more on that in lesson 7). Functions are defined with
+<code>def</code>, and — the habit to build first — a method's <strong>last
+expression is its return value</strong>; idiomatic Ruby rarely writes
+<code>return</code>.</p>`,
+
+  typescript: `const name = "Ada";
+let age: number = 36;
+
+// TS: the compiler enforces the annotation.
+// age = "thirty-six";  // compile error
+
+function describeUser(name: string, age: number): string {
+  return \`\${name} is \${age} years old\`;
+}
+
+console.log(describeUser(name, age));`,
+
+  task: `
+<p>Rewrite the TypeScript on the left as Ruby:</p>
+<ol>
+  <li>Write a method <code>describe_user(name, age)</code> that returns
+      <code>"Ada is 36 years old"</code>-style text using string interpolation
+      — <code>"#{name} is #{age} years old"</code> is your template literal,
+      with <code>#{}</code> instead of <code>\${}</code>. No type annotations
+      exist to write; and make the interpolated string the method's
+      <em>last expression</em> instead of using <code>return</code>.</li>
+  <li>Write a method <code>birthday(age)</code> that adds 1 using
+      <code>+=</code> on a local variable and returns the result implicitly
+      (no <code>return</code> keyword anywhere in your solution).</li>
+</ol>
+<p>Note the convention: <code>snake_case</code> methods, no semicolons, and
+<code>def ... end</code> instead of braces.</p>`,
+
+  starter: `# 1. describe_user: interpolate with #{} — the last expression is returned.
+#    TS: \`\${name} is \${age} years old\`  ->  Ruby: "#{name} is #{age} years old"
+def describe_user(name, age)
+  raise NotImplementedError, "TODO: implement describe_user"
+end
+
+# 2. birthday: bump a local with += and let it be the last expression.
+def birthday(age)
+  raise NotImplementedError, "TODO: implement birthday"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+describe_user\s*\(\s*name\s*,\s*age\s*\)/, message: "Define describe_user(name, age) with def" },
+    { pattern: /#\{\s*name\s*\}/, message: "Build the string with #{} interpolation" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: '  expect_eq(describe_user("Ada", 36), "Ada is 36 years old")' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: '  expect_eq(describe_user("Grace", 52), "Grace is 52 years old")' },
+    { name: "birthday(36) returns 37",
+      code: "  expect_eq(birthday(36), 37)" },
+    { name: "birthday(0) returns 1",
+      code: "  expect_eq(birthday(0), 1)" },
+  ],
+
+  solution: `def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Declare a variable</td><td><code>let x = 1;</code></td><td><code>x = 1</code> (assignment is declaration)</td></tr>
+  <tr><td>Constant</td><td><code>const x = 1;</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+  <tr><td>Numbers</td><td><code>number</code></td><td><code>Integer</code> (arbitrary precision!) and <code>Float</code></td></tr>
+  <tr><td>Interpolation</td><td><code>\`\${name}!\`</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+  <tr><td>Check a type</td><td><code>typeof x === "string"</code></td><td><code>x.is_a?(String)</code></td></tr>
+  <tr><td>Return</td><td><code>return</code> required</td><td>last expression; <code>return</code> only for early exit</td></tr>
+</table>
+<p>Ruby's <code>Integer</code> is arbitrary precision — <code>2 ** 100</code>
+just works, no <code>BigInt</code> suffix. And where TypeScript catches a
+wrong-type argument before the code runs, Ruby raises a
+<code>NoMethodError</code> at the moment something doesn't respond — the
+trade this whole course explores.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

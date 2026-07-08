@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Structs & Comparable</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Structs & Comparable",
+
+  intro: `
+<p>In Rust, a plain data type takes a <code>struct</code> plus a stack of
+derives: <code>#[derive(Debug, Clone, PartialEq)]</code> to get printing,
+copying, and value equality. Ruby collapses all of that into one line:
+<code>Point = Struct.new(:x, :y)</code> builds a class with accessors,
+a constructor, value equality, and a readable <code>inspect</code> —
+no derives, because there is nothing to opt into.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>#[derive(Debug, Clone, PartialEq)] struct Point { x: f64, y: f64 }</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td><code>impl Point { fn distance_to(&amp;self, ...) }</code></td><td><code>Struct.new(:x, :y) do ... end</code> — methods in the block</td></tr>
+  <tr><td><code>#[derive(PartialOrd, Ord)]</code> / <code>impl Ord</code></td><td><code>include Comparable</code> + one <code>&lt;=&gt;</code> method</td></tr>
+  <tr><td><code>Ord::cmp</code> returns <code>Ordering</code></td><td><code>&lt;=&gt;</code> returns <code>-1</code>, <code>0</code>, or <code>1</code></td></tr>
+</table>
+<p>The block form of <code>Struct.new</code> is your inline <code>impl</code>
+block: methods defined there become instance methods. And ordering is one
+method away: <code>include Comparable</code>, define <code>&lt;=&gt;</code>
+(the <em>spaceship</em> — <code>Ord::cmp</code> as a single method), and Ruby
+derives <code>&lt;</code>, <code>&gt;</code>, <code>==</code>,
+<code>between?</code>, and sortability from it. Handy trick: arrays already
+compare element by element, so <code>[major, minor] &lt;=&gt;
+[other.major, other.minor]</code> is lexicographic ordering for free.</p>`,
+
+  rust: `#[derive(Debug, Clone, Copy, PartialEq)]
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+impl Point {
+    fn distance_to(&self, other: &Point) -> f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+}
+
+// Derived Ord compares fields in order: major first, then minor.
+// That one impl unlocks <, >, ==, sort(), min(), max(), clamp() ...
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct Version {
+    major: u32,
+    minor: u32,
+}`,
+
+  task: `
+<p>Build both types the Ruby way:</p>
+<ol>
+  <li><code>Point = Struct.new(:x, :y)</code> with a
+      <code>distance_to(other)</code> method defined in the block —
+      <code>Math.sqrt</code> of the squared differences. Accessors and value
+      equality come free; do not write them.</li>
+  <li><code>class Version</code> — <code>include Comparable</code>,
+      an <code>initialize(major, minor)</code> that stores both,
+      <code>attr_reader :major, :minor</code>, and a
+      <code>&lt;=&gt;(other)</code> that compares
+      <code>[major, minor] &lt;=&gt; [other.major, other.minor]</code>.
+      That single spaceship must make <code>&lt;</code>, <code>sort</code>,
+      and <code>between?</code> all work.</li>
+</ol>`,
+
+  starter: `# 1. One line replaces struct + three derives. Methods go in the block —
+#    your inline impl. Inside, x and y are the accessors.
+Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    raise NotImplementedError, "TODO: Math.sqrt of squared dx, dy"
+  end
+end
+
+# 2. include Comparable + one <=> method = derive(PartialOrd, Ord).
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    raise NotImplementedError, "TODO: store @major and @minor"
+  end
+
+  def <=>(other)
+    raise NotImplementedError, "TODO: compare [major, minor] arrays"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /Struct\.new/, message: "Build Point with Struct.new" },
+    { pattern: /include\s+Comparable/, message: "include Comparable in Version" },
+    { pattern: /<=>/, message: "Define the spaceship operator <=>" },
+    { pattern: /def\s+distance_to/, message: "Define distance_to in the Struct.new block" },
+  ],
+
+  tests: [
+    { name: "Point.new(3, 0).distance_to(Point.new(0, 4)) is 5.0",
+      code: "  expect_eq(Point.new(3, 0).distance_to(Point.new(0, 4)), 5.0)" },
+    { name: "Struct gives value equality: Point.new(1, 2) == Point.new(1, 2)",
+      code: "  expect_true(Point.new(1, 2) == Point.new(1, 2))" },
+    { name: "Version.new(1, 2) < Version.new(1, 10)",
+      code: "  expect_true(Version.new(1, 2) < Version.new(1, 10))" },
+    { name: "versions sort by major, then minor",
+      code: `  sorted = [Version.new(2, 0), Version.new(1, 9), Version.new(1, 2)].sort
+  expect_eq(sorted.map { |v| [v.major, v.minor] }, [[1, 2], [1, 9], [2, 0]])` },
+    { name: "Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0))",
+      code: "  expect_true(Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0)))" },
+  ],
+
+  solution: `Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    Math.sqrt((x - other.x)**2 + (y - other.y)**2)
+  end
+end
+
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  def <=>(other)
+    [major, minor] <=> [other.major, other.minor]
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>Plain data type</td><td><code>#[derive(...)] struct</code></td><td><code>Name = Struct.new(:a, :b)</code></td></tr>
+  <tr><td>Value equality</td><td><code>#[derive(PartialEq)]</code></td><td>free with <code>Struct</code></td></tr>
+  <tr><td>Debug printing</td><td><code>#[derive(Debug)]</code> + <code>{:?}</code></td><td>free — <code>p point</code> / <code>point.inspect</code></td></tr>
+  <tr><td>Methods on the type</td><td><code>impl Point { ... }</code></td><td>the <code>Struct.new do ... end</code> block</td></tr>
+  <tr><td>Total ordering</td><td><code>impl Ord</code> (<code>cmp</code>)</td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td></tr>
+  <tr><td>Lexicographic compare</td><td>derived field order</td><td><code>[a, b] &lt;=&gt; [other.a, other.b]</code></td></tr>
+  <tr><td>Range check</td><td><code>(lo..=hi).contains(&amp;x)</code></td><td><code>x.between?(lo, hi)</code></td></tr>
+</table>
+<p>The spaceship is the whole protocol: return <code>-1</code>, <code>0</code>,
+or <code>1</code> (or <code>nil</code> for "not comparable") and
+<code>Comparable</code> derives the six comparison operators plus
+<code>between?</code> and <code>clamp</code> — exactly the leverage
+<code>Ord::cmp</code> gives you, minus the trait bounds. One caveat with
+<code>Struct</code>: it is <em>mutable</em> by default
+(<code>point.x = 9</code> works). If that offends your Rust instincts,
+Ruby 3.2+ offers <code>Data.define(:x, :y)</code> — the immutable cousin.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

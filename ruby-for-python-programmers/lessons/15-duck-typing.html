@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Duck Typing & respond_to?</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Duck Typing & respond_to?",
+
+  intro: `
+<p>The Python community coined "duck typing" — if it walks like a duck and
+quacks like a duck, call <code>.quack()</code> and don't ask for papers.
+Ruby lives by exactly the same creed, and gives the probe first-class
+spelling: where Python asks <code>hasattr(x, "speak")</code>, Ruby asks the
+object directly — <code>x.respond_to?(:speak)</code>. Note it takes a
+<em>symbol</em> naming the method, and reads as a question because of the
+<code>?</code> convention.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>hasattr(x, "speak")</code></td><td><code>x.respond_to?(:speak)</code></td></tr>
+  <tr><td><code>isinstance(x, Dog)</code></td><td><code>x.is_a?(Dog)</code></td></tr>
+  <tr><td><code>try: x.speak() except AttributeError:</code></td><td><code>begin x.speak rescue NoMethodError</code></td></tr>
+  <tr><td>EAFP is the stated ideal</td><td><code>respond_to?</code> guards are just as idiomatic</td></tr>
+</table>
+<p>Python culture famously prefers EAFP — "easier to ask forgiveness than
+permission," <code>try</code>/<code>except AttributeError</code> — over LBYL
+<code>hasattr</code> checks. Ruby is relaxed about the same divide: you can
+call the method and rescue <code>NoMethodError</code>, but a
+<code>respond_to?</code> guard is every bit as idiomatic when the "can't"
+case is a normal outcome rather than an error. Either way, nobody checks the
+class when what they mean is the <em>capability</em> —
+<code>is_a?</code> is for the rare case where identity truly matters.</p>`,
+
+  python: `class Dog:
+    def speak(self):
+        return "Woof"
+
+class Robot:
+    def speak(self):
+        return "Beep"
+
+class Rock:
+    pass
+
+def make_speak(thing):
+    if hasattr(thing, "speak"):        # LBYL
+        return thing.speak()
+    return "..."
+
+def make_speak_eafp(thing):
+    try:                               # EAFP
+        return thing.speak()
+    except AttributeError:
+        return "..."
+
+print([make_speak(t) for t in [Dog(), Rock(), Robot()]
+       if hasattr(t, "speak")])       # ['Woof', 'Beep']`,
+
+  task: `
+<p>Port the whole menagerie:</p>
+<ol>
+  <li>Class <code>Dog</code> with a <code>speak</code> method returning
+      <code>"Woof"</code>, and class <code>Robot</code> whose
+      <code>speak</code> returns <code>"Beep"</code>. No shared base class,
+      no interface — the shared method name <em>is</em> the contract.</li>
+  <li>Class <code>Rock</code> — defines no methods at all.</li>
+  <li><code>make_speak(thing)</code> — if
+      <code>thing.respond_to?(:speak)</code>, return <code>thing.speak</code>;
+      otherwise return <code>"..."</code>. (<code>hasattr</code> becomes
+      <code>respond_to?</code> with a symbol.)</li>
+  <li><code>all_speakers(things)</code> — <code>.select</code> the things
+      that respond to <code>:speak</code>, then <code>.map</code> each to its
+      <code>speak</code> result.</li>
+</ol>`,
+
+  starter: `# 1. Two unrelated classes that happen to share a method name.
+class Dog
+  def speak
+    raise NotImplementedError, "TODO: return \\"Woof\\""
+  end
+end
+
+class Robot
+  def speak
+    raise NotImplementedError, "TODO: return \\"Beep\\""
+  end
+end
+
+# 2. Rock: no speak method — it stays silent.
+class Rock
+end
+
+# 3. make_speak: hasattr(thing, "speak") -> thing.respond_to?(:speak)
+def make_speak(thing)
+  raise NotImplementedError, "TODO: implement make_speak"
+end
+
+# 4. all_speakers: keep the things that respond to :speak, map to speak.
+def all_speakers(things)
+  raise NotImplementedError, "TODO: implement all_speakers"
+end
+`,
+
+  requirements: [
+    { pattern: /respond_to\?/, message: "Probe the capability with respond_to?" },
+    { pattern: /class\s+Dog/, message: "Define a Dog class" },
+    { pattern: /class\s+Robot/, message: "Define a Robot class" },
+    { pattern: /\.speak/, message: "Actually call .speak on the object" },
+  ],
+
+  tests: [
+    { name: 'make_speak(Dog.new) returns "Woof"',
+      code: '  expect_eq(make_speak(Dog.new), "Woof")' },
+    { name: 'make_speak(Robot.new) returns "Beep"',
+      code: '  expect_eq(make_speak(Robot.new), "Beep")' },
+    { name: 'make_speak(Rock.new) returns "..." — rocks are quiet',
+      code: '  expect_eq(make_speak(Rock.new), "...")' },
+    { name: "a Rock really has no speak method",
+      code: '  expect_true(!Rock.new.respond_to?(:speak))' },
+    { name: 'all_speakers([Dog.new, Rock.new, Robot.new]) returns ["Woof", "Beep"]',
+      code: '  expect_eq(all_speakers([Dog.new, Rock.new, Robot.new]), ["Woof", "Beep"])' },
+  ],
+
+  solution: `class Dog
+  def speak
+    "Woof"
+  end
+end
+
+class Robot
+  def speak
+    "Beep"
+  end
+end
+
+class Rock
+end
+
+def make_speak(thing)
+  thing.respond_to?(:speak) ? thing.speak : "..."
+end
+
+def all_speakers(things)
+  things.select { |t| t.respond_to?(:speak) }.map(&:speak)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Capability check</td><td><code>hasattr(x, "speak")</code></td><td><code>x.respond_to?(:speak)</code></td></tr>
+  <tr><td>Class check</td><td><code>isinstance(x, Dog)</code></td><td><code>x.is_a?(Dog)</code> (also matches subclasses)</td></tr>
+  <tr><td>Exact class</td><td><code>type(x) is Dog</code></td><td><code>x.instance_of?(Dog)</code></td></tr>
+  <tr><td>Missing method error</td><td><code>AttributeError</code></td><td><code>NoMethodError</code></td></tr>
+  <tr><td>EAFP</td><td><code>try: ... except AttributeError:</code></td><td><code>begin ... rescue NoMethodError</code></td></tr>
+  <tr><td>Formal interface</td><td><code>Protocol</code> / <code>ABC</code> (optional)</td><td>none — shared method names are the contract</td></tr>
+</table>
+<p>One subtlety: <code>hasattr</code> is true for <em>any</em> attribute,
+data or callable, because Python methods are just attributes you can fetch.
+<code>respond_to?</code> asks specifically whether the object answers that
+<em>message</em> — there is no attribute/method divide to blur. Objects can
+even claim dynamically handled messages by overriding
+<code>respond_to_missing?</code>, the counterpart to Python's
+<code>__getattr__</code>-based ducks.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

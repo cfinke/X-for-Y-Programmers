@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; case</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & case",
+
+  intro: `
+<p>Ruby's <code>if</code> will feel familiar: like Go, no parentheses around
+the condition — but the body ends with <code>end</code> instead of braces.
+The idiom you already love survives intact: Go's early-return guard clause is
+Ruby's <strong>modifier if</strong>, a whole guard on one line —
+<code>return "zero" if n.zero?</code>. There is also <code>unless</code>,
+an <code>if !</code> that reads aloud: <code>return unless valid</code>.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>if n == 0 { return "zero" }</code></td><td><code>return "zero" if n.zero?</code></td></tr>
+  <tr><td><code>switch { case score &gt;= 90: ... }</code></td><td><code>case score when 90.. then ...</code></td></tr>
+  <tr><td><code>case "Sat", "Sun":</code></td><td><code>when "Saturday", "Sunday"</code></td></tr>
+  <tr><td>no fallthrough unless <code>fallthrough</code></td><td>no fallthrough, ever (same instinct!)</td></tr>
+</table>
+<p>Go's <code>switch</code> maps to <code>case</code>/<code>when</code>, and
+two Go habits transfer directly: arms don't fall through (Ruby doesn't even
+have a <code>fallthrough</code> keyword), and arms can group values
+(<code>when "Saturday", "Sunday"</code>). Ruby adds two upgrades: a
+<code>when</code> can take a <strong>range</strong> — <code>when 90..</code>
+matches 90 and up, <code>when 80..89</code> a band — and the whole
+<code>case</code> is an <strong>expression</strong>: it produces a value you
+can assign or return, so the branches need no <code>return</code> at all.</p>`,
+
+  go: `func grade(score int) string {
+	switch { // expressionless switch, boolean arms
+	case score >= 90:
+		return "A"
+	case score >= 80:
+		return "B"
+	case score >= 70:
+		return "C"
+	default:
+		return "F"
+	}
+}
+
+func dayType(day string) string {
+	switch day {
+	case "Saturday", "Sunday": // grouped, no fallthrough
+		return "weekend"
+	default:
+		return "weekday"
+	}
+}`,
+
+  task: `
+<p>Port the switches — and use one guard clause:</p>
+<ol>
+  <li><code>grade(score)</code> — a <code>case score</code> with
+      <strong>range</strong> arms: <code>when 90..</code> →
+      <code>"A"</code>, <code>when 80..89</code> → <code>"B"</code>,
+      <code>when 70..79</code> → <code>"C"</code>, <code>else</code>
+      <code>"F"</code>. Let the <code>case</code> itself be the method's
+      return value — no <code>return</code> in any arm.</li>
+  <li><code>day_type(day)</code> — a <code>case</code> with one grouped arm,
+      <code>when "Saturday", "Sunday"</code> → <code>"weekend"</code>,
+      <code>else</code> <code>"weekday"</code>.</li>
+  <li><code>describe_number(n)</code> — start with the one-line guard
+      <code>return "zero" if n.zero?</code>, then an <code>if/else</code>
+      <em>expression</em> yielding <code>"positive"</code> or
+      <code>"negative"</code>.</li>
+</ol>`,
+
+  starter: `# 1. case is an expression — make it the last thing in the method.
+#    Range arms: when 90.. / when 80..89 / when 70..79 / else.
+def grade(score)
+  raise NotImplementedError, "TODO: implement grade"
+end
+
+# 2. Group values in one arm: when "Saturday", "Sunday" (no fallthrough,
+#    just like Go).
+def day_type(day)
+  raise NotImplementedError, "TODO: implement day_type"
+end
+
+# 3. Guard clause first: return "zero" if n.zero?
+#    Then an if/else expression: "positive" / "negative".
+def describe_number(n)
+  raise NotImplementedError, "TODO: implement describe_number"
+end
+`,
+
+  requirements: [
+    { pattern: /case\b/, message: "Use a case expression" },
+    { pattern: /when\s+/, message: "Use when arms (ranges and grouped values)" },
+    { pattern: /if\s+\w|unless/, message: "Use a modifier if (or unless) guard clause" },
+  ],
+
+  tests: [
+    { name: 'grade: 95 → "A", 90 → "A", 85 → "B"',
+      code: '  expect_eq(grade(95), "A")\n  expect_eq(grade(90), "A")\n  expect_eq(grade(85), "B")' },
+    { name: 'grade: 72 → "C", 69 → "F"',
+      code: '  expect_eq(grade(72), "C")\n  expect_eq(grade(69), "F")' },
+    { name: 'day_type("Sunday") and day_type("Saturday") return "weekend"',
+      code: '  expect_eq(day_type("Sunday"), "weekend")\n  expect_eq(day_type("Saturday"), "weekend")' },
+    { name: 'day_type("Tuesday") returns "weekday"',
+      code: '  expect_eq(day_type("Tuesday"), "weekday")' },
+    { name: 'describe_number: 0 → "zero", 5 → "positive", -3 → "negative"',
+      code: '  expect_eq(describe_number(0), "zero")\n  expect_eq(describe_number(5), "positive")\n  expect_eq(describe_number(-3), "negative")' },
+  ],
+
+  solution: `def grade(score)
+  case score
+  when 90.. then "A"
+  when 80..89 then "B"
+  when 70..79 then "C"
+  else "F"
+  end
+end
+
+def day_type(day)
+  case day
+  when "Saturday", "Sunday" then "weekend"
+  else "weekday"
+  end
+end
+
+def describe_number(n)
+  return "zero" if n.zero?
+
+  if n.positive?
+    "positive"
+  else
+    "negative"
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Guard clause</td><td><code>if x == nil { return }</code></td><td><code>return if x.nil?</code> (modifier form)</td></tr>
+  <tr><td>Negated guard</td><td><code>if !ok { return }</code></td><td><code>return unless ok</code></td></tr>
+  <tr><td>Switch on a value</td><td><code>switch day { case "Sat": }</code></td><td><code>case day when "Sat" then ... end</code></td></tr>
+  <tr><td>Boolean arms</td><td><code>switch { case x &gt; 9: }</code></td><td>range arms: <code>when 90..</code>, <code>when ..0</code></td></tr>
+  <tr><td>Grouped arms</td><td><code>case "Sat", "Sun":</code></td><td><code>when "Saturday", "Sunday"</code></td></tr>
+  <tr><td>Fallthrough</td><td>opt-in via <code>fallthrough</code></td><td>does not exist</td></tr>
+  <tr><td>Branch as value</td><td>not possible — assign in each arm</td><td><code>x = case ... end</code>, <code>x = if ... end</code></td></tr>
+</table>
+<p>Under the hood a <code>when</code> arm uses the <em>case equality</em>
+operator <code>===</code>: ranges match by inclusion, classes by
+<code>is_a?</code>, regexps by match — so <code>when Integer</code> and
+<code>when /^\\d+$/</code> work too. Your Go instincts about
+<code>switch</code> hygiene (no fallthrough, grouped cases) carry over
+unchanged; the new power is that the whole construct evaluates to a value.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

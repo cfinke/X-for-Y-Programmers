@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Nothing new this time — the capstone is an inventory module built from
+pieces you already own: a promoted-constructor class, the
+<code>array_map</code>/<code>array_filter</code>/<code>array_reduce</code>
+trio, nullable return types, and one semantic point worth engraving. PHP
+arrays <strong>copy</strong> on assignment — but the <strong>objects inside
+them are handles</strong>, exactly like JS references. Copy an array of
+<code>Item</code> objects and you get a new array pointing at the <em>same</em>
+items; mutate one and both "copies" see it.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>items.reduce((s, i) =&gt; ..., 0)</code></td><td><code>array_reduce($items, fn($s, $i) =&gt; ..., 0)</code></td></tr>
+  <tr><td><code>items.find(...) ?? null</code></td><td><code>foreach</code> + return, declared <code>: ?Item</code></td></tr>
+  <tr><td><code>{ ...item, count: c + n }</code> (spread-copy)</td><td><code>$copy = clone $item; $copy-&gt;count += $n;</code></td></tr>
+  <tr><td><code>items.filter(...).map(...)</code></td><td><code>array_values(array_map(..., array_filter(...)))</code></td></tr>
+</table>
+<p>So a non-mutating update has two layers here, just as in JS: a fresh
+array (which PHP's copy semantics nearly give you for free) <em>and</em> a
+fresh object for the one element you're changing — that's what
+<code>clone</code> is for, PHP's spelling of the <code>{ ...item }</code>
+spread-copy. Everything else in the object graph can be shared untouched.</p>`,
+
+  javascript: `class Item {
+  constructor(name, priceCents, count) {
+    Object.assign(this, { name, priceCents, count });
+  }
+}
+
+const totalValue = (items) =>
+  items.reduce((sum, i) => sum + i.priceCents * i.count, 0);
+
+const findItem = (items, name) =>
+  items.find((i) => i.name === name) ?? null;
+
+function restock(items, name, amount) {
+  // new array + copied object for the match: no mutation anywhere
+  return items.map((i) =>
+    i.name === name ? Object.assign(new Item(), i, { count: i.count + amount }) : i);
+}
+
+const namesInStock = (items) =>
+  items.filter((i) => i.count > 0).map((i) => i.name);`,
+
+  task: `
+<p>The <code>Item</code> class is written for you. Implement the four
+functions:</p>
+<ol>
+  <li><code>total_value(array $items): int</code> — sum of
+      <code>price_cents * count</code> over all items;
+      <code>array_reduce</code> with a <code>0</code> seed is the direct
+      port of <code>reduce</code>.</li>
+  <li><code>find_item(array $items, string $name): ?Item</code> — return the
+      first item whose <code>-&gt;name</code> matches (the <em>same</em>
+      object handle, not a copy), or <code>null</code>. A
+      <code>foreach</code> with an early <code>return</code> is PHP's
+      <code>find</code>.</li>
+  <li><code>restock(array $items, string $name, int $amount): array</code> —
+      return a <strong>new</strong> array where the matching item's
+      <code>count</code> grew by <code>$amount</code> — without mutating the
+      original <code>Item</code>. Use <code>array_map</code>: for the match,
+      <code>clone</code> it and bump the clone's count; return every other
+      item as-is (same handles). No match, no change.</li>
+  <li><code>names_in_stock(array $items): array</code> — the names of items
+      with <code>count &gt; 0</code>, as a clean reindexed list —
+      <code>array_filter</code>, then <code>array_map</code>, then the
+      <code>array_values</code> you learned to never forget.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Item is complete — a promoted-constructor data class.
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+// 1. Sum of price_cents * count. array_reduce(..., ..., 0).
+function total_value(array $items): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// 2. First matching item (the same handle) or null.
+function find_item(array $items, string $name): ?Item {
+    throw new Exception("TODO: implement find_item");
+}
+
+// 3. New array; the match is CLONED before its count changes.
+function restock(array $items, string $name, int $amount): array {
+    throw new Exception("TODO: implement restock");
+}
+
+// 4. Names where count > 0 — filter, map, array_values.
+function names_in_stock(array $items): array {
+    throw new Exception("TODO: implement names_in_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /\?Item/, message: "Declare find_item's return type as ?Item (nullable)" },
+    { pattern: /array_(map|filter|reduce|values)/, message: "Use the array_* function family (map/filter/reduce/values)" },
+    { pattern: /clone/, message: "clone the matched Item in restock instead of mutating it" },
+  ],
+
+  tests: [
+    { name: "total_value: 10 apples at 150 + 2 books at 1200 = 3900 cents",
+      code: `$items = [new Item("apple", 150, 10), new Item("pen", 300, 0), new Item("book", 1200, 2)];
+expect_eq(total_value($items), 3900);
+expect_eq(total_value([]), 0);` },
+    { name: "find_item returns the very same Item handle",
+      code: `$items = [new Item("apple", 150, 10), new Item("pen", 300, 0), new Item("book", 1200, 2)];
+$found = find_item($items, "book");
+expect_true($found instanceof Item);
+expect_eq($found->price_cents, 1200);
+expect_true($found === $items[2]);` },
+    { name: "find_item returns null when nothing matches",
+      code: `$items = [new Item("apple", 150, 10)];
+expect_true(find_item($items, "ghost") === null);
+expect_true(find_item([], "apple") === null);` },
+    { name: "restock bumps the count on a CLONE — the original Item is untouched",
+      code: `$items = [new Item("apple", 150, 10), new Item("pen", 300, 0), new Item("book", 1200, 2)];
+$restocked = restock($items, "pen", 5);
+expect_eq($restocked[1]->count, 5);
+expect_eq($restocked[1]->name, "pen");
+expect_eq($items[1]->count, 0);
+expect_true($restocked[1] !== $items[1]);
+expect_true($restocked[0] === $items[0]);` },
+    { name: "restock with an unknown name changes nothing",
+      code: `$items = [new Item("apple", 150, 10), new Item("pen", 300, 0), new Item("book", 1200, 2)];
+$r = restock($items, "ghost", 5);
+expect_eq(count($r), 3);
+expect_eq($r[0]->count, 10);
+expect_eq($r[1]->count, 0);
+expect_eq($r[2]->count, 2);` },
+    { name: "names_in_stock filters out count 0 and reindexes",
+      code: `$items = [new Item("apple", 150, 10), new Item("pen", 300, 0), new Item("book", 1200, 2)];
+expect_eq(names_in_stock($items), ["apple", "book"]);
+expect_eq(names_in_stock([]), []);` },
+  ],
+
+  solution: `<?php
+
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+function total_value(array $items): int {
+    return array_reduce(
+        $items,
+        fn($sum, $item) => $sum + $item->price_cents * $item->count,
+        0,
+    );
+}
+
+function find_item(array $items, string $name): ?Item {
+    foreach ($items as $item) {
+        if ($item->name === $name) {
+            return $item;
+        }
+    }
+    return null;
+}
+
+function restock(array $items, string $name, int $amount): array {
+    return array_map(function (Item $item) use ($name, $amount) {
+        if ($item->name !== $name) {
+            return $item;
+        }
+        $copy = clone $item;
+        $copy->count += $amount;
+        return $copy;
+    }, $items);
+}
+
+function names_in_stock(array $items): array {
+    $in_stock = array_filter($items, fn($item) => $item->count > 0);
+    return array_values(array_map(fn($item) => $item->name, $in_stock));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Sum a list</td><td><code>reduce((s, x) =&gt; ..., 0)</code></td><td><code>array_reduce($a, fn($s, $x) =&gt; ..., 0)</code></td></tr>
+  <tr><td>Find or null</td><td><code>find(...) ?? null</code></td><td><code>foreach</code> + <code>return</code>, typed <code>: ?Item</code></td></tr>
+  <tr><td>Shallow-copy an object</td><td><code>{ ...item }</code></td><td><code>clone $item</code></td></tr>
+  <tr><td>Copy an array</td><td><code>[...items]</code> (explicit)</td><td>assignment / <code>array_map</code> (automatic)</td></tr>
+  <tr><td>Objects in arrays</td><td>references</td><td>handles — the one thing PHP does <em>not</em> copy</td></tr>
+  <tr><td>Filter + reindex</td><td><code>filter()</code> (fresh indexes free)</td><td><code>array_values(array_filter(...))</code></td></tr>
+</table>
+<p>The deep insight — and the course's value-semantics story completed:
+PHP arrays copy, PHP objects don't. <code>restock</code> shows both layers
+working together: <code>array_map</code> hands you a brand-new array (layer
+one, free), but every element in it is still a live handle to an original
+<code>Item</code> — so the one element you intend to change must be
+<code>clone</code>d (layer two, explicit) before you touch its
+<code>count</code>. Share what you don't change, copy what you do: that's
+the same discipline as <code>items.map(i =&gt; ({ ...i }))</code> in JS,
+just with the copying split between the language and you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

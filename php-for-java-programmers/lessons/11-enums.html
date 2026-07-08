@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums",
+
+  intro: `
+<p>Java enums are famously rich: each constant is an object, you attach fields
+through a constructor, add methods, and get <code>values()</code>,
+<code>valueOf()</code>, <code>name()</code>, and <code>ordinal()</code> for
+free. PHP had nothing comparable until 8.1 — people faked enums with class
+constants — but the real thing arrived as a close cousin of Java's:
+<code>enum OrderStatus: string { case Pending = 'pending'; }</code> declares a
+<em>backed enum</em>, where every case carries a scalar payload readable as
+<code>OrderStatus::Pending-&gt;value</code>, like a built-in final field.</p>
+<table>
+  <tr><th>Java</th><th>PHP</th></tr>
+  <tr><td><code>enum OrderStatus { PENDING("pending"); ... }</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td></tr>
+  <tr><td><code>status.getCode()</code> (your field + getter)</td><td><code>$status-&gt;value</code> (built in for backed enums)</td></tr>
+  <tr><td><code>OrderStatus.valueOf("PENDING")</code> — throws on bad input</td><td><code>OrderStatus::from('pending')</code> — throws; <code>::tryFrom()</code> returns <code>null</code></td></tr>
+  <tr><td><code>OrderStatus.values()</code></td><td><code>OrderStatus::cases()</code></td></tr>
+  <tr><td><code>status.ordinal()</code></td><td>— (no ordinal; cases have no position number)</td></tr>
+  <tr><td>Methods on the enum</td><td>Methods on the enum (and it can implement interfaces)</td></tr>
+</table>
+<p>Two lookups instead of one is the notable upgrade: <code>::from()</code> is
+<code>valueOf</code>'s strict twin (throws <code>ValueError</code>), while
+<code>::tryFrom()</code> returns <code>null</code> for unknown input — no
+try/catch needed to parse untrusted strings. Note that both look up by the
+<em>backing value</em> (<code>'pending'</code>), not the case name. Cases are
+singletons, so <code>===</code> compares them safely, and <code>match</code>
+expressions pair with enums exactly like Java's <code>switch</code> arrows.</p>`,
+
+  java: `public enum OrderStatus {
+    PENDING("pending"),
+    SHIPPED("shipped"),
+    DELIVERED("delivered");
+
+    private final String code;
+
+    OrderStatus(String code) { this.code = code; }
+
+    public String getCode() { return code; }
+
+    public String label() {
+        return switch (this) {
+            case PENDING   -> "Order pending";
+            case SHIPPED   -> "Order shipped";
+            case DELIVERED -> "Order delivered";
+        };
+    }
+}
+
+// OrderStatus.valueOf("PENDING")  -> PENDING, or throws
+// OrderStatus.values().length     -> 3`,
+
+  task: `
+<p>Port the Java enum to a PHP 8.1 backed enum plus two helper functions:</p>
+<ol>
+  <li>Declare <code>enum OrderStatus: string</code> with three cases:
+      <code>Pending = 'pending'</code>, <code>Shipped = 'shipped'</code>, and
+      <code>Delivered = 'delivered'</code>. The string payload replaces Java's
+      constructor field — each case exposes it as <code>-&gt;value</code>.</li>
+  <li>Write <code>status_label(OrderStatus $status): string</code> using a
+      <code>match($status)</code> expression that returns
+      <code>"Order pending"</code>, <code>"Order shipped"</code>, or
+      <code>"Order delivered"</code> — the arrow-<code>switch</code> from the
+      Java version, as an expression.</li>
+  <li>Write <code>parse_status(string $value): ?OrderStatus</code> that looks a
+      status up by its backing value with <code>OrderStatus::tryFrom()</code>,
+      returning <code>null</code> for unknown strings instead of throwing the
+      way <code>valueOf</code> would.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. The backed enum: each case = a constant with a string payload.
+//    Java: PENDING("pending")  ->  PHP: case Pending = 'pending';
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+// 2. match($status) is Java's arrow-switch as an expression.
+//    Cases are singletons: match on OrderStatus::Pending etc.
+function status_label(OrderStatus $status): string {
+    throw new Exception("TODO: implement status_label");
+}
+
+// 3. tryFrom = valueOf that returns null instead of throwing.
+function parse_status(string $value): ?OrderStatus {
+    throw new Exception("TODO: implement parse_status");
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus\s*:\s*string/, message: "Declare enum OrderStatus: string (a string-backed enum)" },
+    { pattern: /case\s+\w+\s*=/, message: "Give each case a backing value: case Pending = 'pending';" },
+    { pattern: /::tryFrom|::from/, message: "Look the status up with OrderStatus::tryFrom() (or ::from())" },
+    { pattern: /match\s*\(/, message: "Use a match expression in status_label" },
+  ],
+
+  tests: [
+    { name: "OrderStatus::Pending->value is 'pending' (the built-in field)",
+      code: "expect_eq(OrderStatus::Pending->value, 'pending');" },
+    { name: "OrderStatus::cases() has all three cases, like values()",
+      code: "expect_eq(count(OrderStatus::cases()), 3);\nexpect_true(OrderStatus::cases()[0] === OrderStatus::Pending);" },
+    { name: "status_label(OrderStatus::Shipped) returns 'Order shipped'",
+      code: "expect_eq(status_label(OrderStatus::Shipped), 'Order shipped');" },
+    { name: "status_label covers Pending and Delivered too",
+      code: "expect_eq(status_label(OrderStatus::Pending), 'Order pending');\nexpect_eq(status_label(OrderStatus::Delivered), 'Order delivered');" },
+    { name: "parse_status('delivered') returns the OrderStatus::Delivered singleton",
+      code: "expect_true(parse_status('delivered') === OrderStatus::Delivered);" },
+    { name: "parse_status('bogus') returns null instead of throwing",
+      code: "expect_true(parse_status('bogus') === null);" },
+  ],
+
+  solution: `<?php
+
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+function status_label(OrderStatus $status): string {
+    return match($status) {
+        OrderStatus::Pending => 'Order pending',
+        OrderStatus::Shipped => 'Order shipped',
+        OrderStatus::Delivered => 'Order delivered',
+    };
+}
+
+function parse_status(string $value): ?OrderStatus {
+    return OrderStatus::tryFrom($value);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>PHP</th></tr>
+  <tr><td>Declare</td><td><code>enum Status { PENDING }</code></td><td><code>enum Status { case Pending; }</code> (pure) or <code>enum Status: string { case Pending = 'pending'; }</code> (backed)</td></tr>
+  <tr><td>Attached data</td><td>Constructor + <code>private final</code> field</td><td>The backing value, read via <code>-&gt;value</code></td></tr>
+  <tr><td>Case name</td><td><code>status.name()</code></td><td><code>$status-&gt;name</code> (property, no parens)</td></tr>
+  <tr><td>Lookup, strict</td><td><code>Status.valueOf("PENDING")</code> throws</td><td><code>Status::from('pending')</code> throws <code>ValueError</code></td></tr>
+  <tr><td>Lookup, lenient</td><td>— (wrap in try/catch)</td><td><code>Status::tryFrom('pending')</code> returns <code>null</code></td></tr>
+  <tr><td>All cases</td><td><code>Status.values()</code></td><td><code>Status::cases()</code></td></tr>
+  <tr><td>Position</td><td><code>status.ordinal()</code></td><td>— none; don't rely on order</td></tr>
+</table>
+<p>PHP enums deliberately dropped <code>ordinal()</code> — there is no implicit
+integer identity, so persisting an enum means persisting its explicit backing
+value, which survives reordering cases. The other habit to carry over intact:
+enum cases are singleton objects, so compare with <code>===</code> and branch
+with <code>match</code>, which fails loudly (<code>UnhandledMatchError</code>)
+when a new case appears — the closest PHP gets to Java's exhaustive
+<code>switch</code> over enums.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Vectors</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Vectors",
+
+  intro: `
+<p><code>Vec&lt;T&gt;</code> is <code>std::vector&lt;T&gt;</code> — a growable,
+heap-allocated, contiguous array — and the API maps almost one-to-one. The
+differences are exactly the discipline you already follow, enforced. You treat
+vectors as const unless they need to change; in Rust a <code>Vec</code> in a
+<code>let</code> binding <em>is</em> const, and <code>push</code> is only
+callable once you write <code>let mut</code>. Const-correct by default,
+non-const by explicit opt-in.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>std::vector&lt;int&gt; v{10, 20, 30};</code></td><td><code>let v = vec![10, 20, 30];</code></td></tr>
+  <tr><td><code>v.push_back(x);</code></td><td><code>v.push(x);</code> (requires <code>let mut v</code>)</td></tr>
+  <tr><td><code>v.size()</code></td><td><code>v.len()</code></td></tr>
+  <tr><td><code>v[i]</code> out of bounds → UB</td><td><code>v[i]</code> out of bounds → panic (defined, immediate)</td></tr>
+  <tr><td><code>v.at(i)</code> → throws</td><td><code>v.get(i)</code> → <code>Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td><code>for (int x : v)</code></td><td><code>for x in &amp;v</code></td></tr>
+</table>
+<p>Two safety upgrades come for free. Indexing is bounds-checked:
+<code>v[i]</code> past the end is a clean panic, never a silent read of stray
+memory, and <code>v.get(i)</code> gives you the checked-access
+<code>Option</code> when out-of-range is expected rather than a bug. And the
+iterator-invalidation class of bugs is gone: <code>for x in &amp;v</code>
+borrows the vector, so a <code>v.push(...)</code> inside the loop — UB in C++,
+found in code review if you're lucky — is a compile error in Rust. The borrow
+checker is the reviewer who never misses it.</p>`,
+
+  cpp: `#include <vector>
+#include <numeric>
+
+std::vector<int> make_scores() {
+    return {10, 20, 30};
+}
+
+void append(std::vector<int>& v, int x) {
+    v.push_back(x);
+}
+
+int total(const std::vector<int>& v) {
+    return std::accumulate(v.begin(), v.end(), 0);
+}
+
+// v[i] past the end: undefined behavior, maybe a crash, maybe not.
+// push_back while range-for iterating v: invalidation — UB again.`,
+
+  task: `
+<p>Port the vector utilities on the left to Rust:</p>
+<ol>
+  <li><code>make_scores() -&gt; Vec&lt;i32&gt;</code> — return a vector
+      containing <code>10, 20, 30</code>, using the <code>vec!</code> macro
+      (the initializer-list of Rust).</li>
+  <li><code>append(v: &amp;mut Vec&lt;i32&gt;, x: i32)</code> — push
+      <code>x</code> onto the end. <code>&amp;mut</code> is the non-const
+      reference: visible in the signature <em>and</em> at the call site.</li>
+  <li><code>total(v: &amp;[i32]) -&gt; i32</code> — sum the elements with
+      <code>v.iter().sum()</code>. Note the parameter is a slice
+      <code>&amp;[i32]</code>, the idiomatic read-only view — like taking
+      <code>span&lt;const int&gt;</code> instead of
+      <code>const vector&amp;</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. make_scores: return a Vec<i32> of 10, 20, 30 — use the vec! macro.
+fn make_scores() -> Vec<i32> {
+    todo!()
+}
+
+// 2. append: push_back is spelled push. The &mut is why it's allowed to.
+fn append(v: &mut Vec<i32>, x: i32) {
+    todo!()
+}
+
+// 3. total: std::accumulate, built in — v.iter().sum()
+fn total(v: &[i32]) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /vec!\s*\[/, message: "Use the vec! macro to build the vector" },
+    { pattern: /\.push\(/, message: "Use .push() to append (push_back's shorter cousin)" },
+    { pattern: /Vec<i32>/, message: "Work with Vec<i32> in your signatures" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [10, 20, 30]",
+      code: "assert_eq!(make_scores(), vec![10, 20, 30]);" },
+    { name: "append(&mut [1, 2], 3) yields [1, 2, 3]",
+      code: "let mut v = vec![1, 2];\nappend(&mut v, 3);\nassert_eq!(v, vec![1, 2, 3]);" },
+    { name: "append works on an empty vector",
+      code: "let mut v: Vec<i32> = Vec::new();\nappend(&mut v, 7);\nassert_eq!(v, vec![7]);" },
+    { name: "total(&[10, 20, 30]) returns 60",
+      code: "assert_eq!(total(&[10, 20, 30]), 60);" },
+    { name: "total(&[]) returns 0",
+      code: "assert_eq!(total(&[]), 0);" },
+  ],
+
+  solution: `fn make_scores() -> Vec<i32> {
+    vec![10, 20, 30]
+}
+
+fn append(v: &mut Vec<i32>, x: i32) {
+    v.push(x);
+}
+
+fn total(v: &[i32]) -> i32 {
+    v.iter().sum()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Construct</td><td><code>std::vector&lt;int&gt; v{1, 2};</code></td><td><code>let v = vec![1, 2];</code></td></tr>
+  <tr><td>Append</td><td><code>v.push_back(x)</code></td><td><code>v.push(x)</code> — needs <code>let mut</code></td></tr>
+  <tr><td>Length</td><td><code>v.size()</code></td><td><code>v.len()</code></td></tr>
+  <tr><td>Unchecked index</td><td><code>v[i]</code> (UB if out of range)</td><td>doesn't exist — <code>v[i]</code> is checked, panics</td></tr>
+  <tr><td>Checked access</td><td><code>v.at(i)</code> throws</td><td><code>v.get(i)</code> returns <code>Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (int x : v)</code></td><td><code>for x in &amp;v</code></td></tr>
+  <tr><td>Read-only view param</td><td><code>std::span&lt;const int&gt;</code> / <code>const vector&amp;</code></td><td><code>&amp;[i32]</code> (a slice)</td></tr>
+</table>
+<p>The performance model is identical — same contiguous buffer, same amortized
+growth, same cache behavior. What changed is where mistakes surface: in C++,
+an out-of-bounds index or an invalidated iterator is a bug you find at runtime
+(or in production); in Rust, the first is a defined panic and the second
+doesn't compile. Note also that <code>&amp;Vec&lt;i32&gt;</code> coerces to
+<code>&amp;[i32]</code> automatically, which is why <code>total</code> takes a
+slice — the same reason your style guide says take <code>span</code>, not
+<code>const vector&amp;</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Generators &amp; Iterables</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Generators & Iterables",
+
+  intro: `
+<p>Ruby builds lazy sequences with <code>Enumerator.new { |y| y &lt;&lt; 1 }</code>
+— you're handed a yielder object and push values into it. PHP bakes the
+yielder into the language: any function containing the <code>yield</code>
+keyword <em>is</em> a generator. Calling it runs no code; it returns a
+<code>Generator</code> object that produces one value per <code>yield</code>
+as something iterates it. So <code>y &lt;&lt; n</code> becomes simply
+<code>yield $n;</code>, and the laziness you opt into with Ruby's
+<code>.lazy</code> comes free — a generator over two billion numbers costs
+nothing until you pull from it.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>Enumerator.new { |y| y &lt;&lt; 1 }</code></td><td><code>function f(): Generator { yield 1; }</code></td></tr>
+  <tr><td><code>y &lt;&lt; value</code></td><td><code>yield $value;</code></td></tr>
+  <tr><td><code>enum.each { |x| … }</code></td><td><code>foreach ($gen as $x) { … }</code></td></tr>
+  <tr><td><code>enum.to_a</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td><code>.lazy</code></td><td>free — generators are always lazy</td></tr>
+  <tr><td><code>.first(n)</code></td><td><code>foreach</code> + counter + <code>break</code></td></tr>
+  <tr><td>duck-typed "any Enumerable"</td><td><code>iterable</code> type (arrays <em>and</em> generators)</td></tr>
+</table>
+<p>Two practicalities. First, <code>foreach</code> consumes a generator — like
+an <code>Enumerator</code> you've walked with <code>next</code>, there's no
+rewinding; call the function again for a fresh one. Second, when a function
+should accept "anything I can loop over" — the way Ruby methods happily take
+any <code>Enumerable</code> — declare the parameter <code>iterable</code>,
+which admits both plain arrays and generators.</p>`,
+
+  ruby: `def evens_up_to(max)
+  Enumerator.new do |y|
+    n = 0
+    while n <= max
+      y << n        # the yielder
+      n += 2
+    end
+  end
+end
+
+def squares(nums)
+  nums.lazy.map { |n| n * n }
+end
+
+def take(items, n)
+  items.first(n)    # works on any Enumerable
+end
+
+evens_up_to(10).to_a                  # [0, 2, 4, 6, 8, 10]
+squares([1, 2, 3]).to_a               # [1, 4, 9]
+take(evens_up_to(2_000_000_000), 3)   # [0, 2, 4] — lazy, returns instantly`,
+
+  task: `
+<p>Port the Ruby to PHP:</p>
+<ol>
+  <li><code>evens_up_to(int $max): Generator</code> — <code>yield</code> the
+      even numbers <code>0, 2, 4, …</code> up to and including
+      <code>$max</code>. A <code>while</code> loop with <code>yield $n;</code>
+      inside is the whole Enumerator block, minus the yielder object.</li>
+  <li><code>squares(array $nums): Generator</code> — loop over
+      <code>$nums</code> and <code>yield</code> each square. The lazy
+      <code>map</code>, as a three-line function.</li>
+  <li><code>take(iterable $items, int $n): array</code> — the missing
+      <code>.first(n)</code>: <code>foreach</code> with a counter, appending
+      to a result array and <code>break</code>-ing once you have
+      <code>$n</code>. Declare the parameter <code>iterable</code> so it
+      accepts arrays and generators alike — one test feeds it a generator
+      spanning two billion numbers, and only laziness makes that instant.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Enumerator.new { |y| ... y << n ... }  ->  a function that yields.
+// The : Generator return type documents what calling it hands back.
+function evens_up_to(int $max): Generator {
+    throw new Exception("TODO: implement evens_up_to (loop and yield)");
+}
+
+// nums.lazy.map { |n| n * n }  ->  foreach + yield
+function squares(array $nums): Generator {
+    throw new Exception("TODO: implement squares");
+}
+
+// items.first(n)  ->  foreach + counter + break.
+// iterable = "any Enumerable": plain arrays AND generators.
+function take(iterable $items, int $n): array {
+    throw new Exception("TODO: implement take");
+}
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Produce values with the yield keyword (the built-in yielder)" },
+    { pattern: /:\s*Generator/, message: "Declare : Generator return types" },
+    { pattern: /iterable/, message: "take() must accept any iterable (arrays and generators)" },
+  ],
+
+  tests: [
+    { name: "iterator_to_array(evens_up_to(10)) is [0, 2, 4, 6, 8, 10]",
+      code: "expect_eq(iterator_to_array(evens_up_to(10)), [0, 2, 4, 6, 8, 10]);" },
+    { name: "evens_up_to() returns a Generator, not an array",
+      code: "expect_true(evens_up_to(4) instanceof Generator);" },
+    { name: "iterator_to_array(squares([1, 2, 3, 4])) is [1, 4, 9, 16]",
+      code: "expect_eq(iterator_to_array(squares([1, 2, 3, 4])), [1, 4, 9, 16]);" },
+    { name: "take() works on a plain array (iterable covers both)",
+      code: "expect_eq(take([10, 20, 30, 40], 2), [10, 20]);" },
+    { name: "take() asks for fewer items than exist and stops early",
+      code: "expect_eq(take(squares([2, 3, 4]), 2), [4, 9]);" },
+    { name: "take(evens_up_to(2000000000), 3) is instant — laziness proven",
+      code: "expect_eq(take(evens_up_to(2000000000), 3), [0, 2, 4]);" },
+  ],
+
+  solution: `<?php
+
+function evens_up_to(int $max): Generator {
+    $n = 0;
+    while ($n <= $max) {
+        yield $n;    // y << n
+        $n += 2;
+    }
+}
+
+function squares(array $nums): Generator {
+    foreach ($nums as $n) {
+        yield $n * $n;
+    }
+}
+
+function take(iterable $items, int $n): array {
+    $out = [];
+    foreach ($items as $item) {
+        if (count($out) >= $n) {
+            break;   // stop pulling — the generator never runs further
+        }
+        $out[] = $item;
+    }
+    return $out;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Build lazily</td><td><code>Enumerator.new { |y| … }</code></td><td>any function containing <code>yield</code></td></tr>
+  <tr><td>Emit a value</td><td><code>y &lt;&lt; value</code></td><td><code>yield $value;</code></td></tr>
+  <tr><td>Emit key + value</td><td>—</td><td><code>yield $key =&gt; $value;</code></td></tr>
+  <tr><td>Delegate</td><td><code>other.each { |x| y &lt;&lt; x }</code></td><td><code>yield from $other;</code></td></tr>
+  <tr><td>Consume</td><td><code>.each</code></td><td><code>foreach</code> (one pass only — no rewind)</td></tr>
+  <tr><td>Materialize</td><td><code>.to_a</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td>Laziness</td><td>opt-in via <code>.lazy</code></td><td>always — nothing runs until iterated</td></tr>
+  <tr><td>"Any Enumerable" param</td><td>duck typing</td><td><code>iterable</code> type declaration</td></tr>
+</table>
+<p>The mental shift is where the machinery lives. Ruby gives you an
+explicit yielder object and a menu of chainable lazy adapters
+(<code>.lazy.map.select.first</code>); PHP gives you one keyword and expects
+<code>foreach</code> to do the consuming — hence writing <code>take()</code>
+yourself instead of calling <code>.first(n)</code>. In return, generator
+functions read like ordinary loops, and any signature declared
+<code>iterable</code> composes with them for free: <code>take(squares(...))</code>
+chained exactly like enumerators, without allocating a single intermediate
+array.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

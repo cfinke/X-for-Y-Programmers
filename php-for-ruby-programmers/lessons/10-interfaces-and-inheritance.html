@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Interfaces, Inheritance &amp; Abstracts</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Interfaces, Inheritance & Abstracts",
+
+  intro: `
+<p>Single inheritance carries straight over: <code>class Circle &lt;
+Shape</code> becomes <code>class Circle extends Shape</code>, and
+<code>super</code> becomes the explicit
+<code>parent::__construct(...)</code>. Where the philosophies diverge is
+the duck. Ruby's contract is behavioral — "responds to <code>area</code>?
+Good enough" — checked, if at all, with <code>respond_to?</code> at
+runtime. PHP writes the duck contract down: an <code>interface</code> lists
+the methods, a class says <code>implements</code>, and the engine verifies
+the signatures <em>when the class loads</em>.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>class Circle &lt; Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td><code>super(args)</code></td><td><code>parent::__construct($args)</code></td></tr>
+  <tr><td>duck typing / <code>respond_to?(:area)</code></td><td><code>interface HasArea { ... }</code> + <code>implements</code></td></tr>
+  <tr><td><code>def area = raise NotImplementedError</code></td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td>forgot to override? explodes <em>when called</em></td><td>forgot to implement? fatal error <em>when the class loads</em></td></tr>
+  <tr><td><code>obj.is_a?(Shape)</code></td><td><code>$obj instanceof Shape</code></td></tr>
+</table>
+<p>The same shift powers <code>abstract</code>. The Ruby idiom — a base
+method that does <code>raise NotImplementedError</code> — is a runtime
+tripwire: nothing complains until someone actually calls the missing
+method, maybe in production. PHP's <code>abstract public function
+area(): float;</code> has no body at all, and a subclass that forgets it is
+a fatal error the moment the class is <em>defined</em>, before a single
+object exists. An abstract class can still carry concrete methods that call
+the abstract one — the classic template-method pattern you're about to
+write.</p>`,
+
+  ruby: `class Shape
+  def area = raise NotImplementedError # explodes only when CALLED
+
+  def describe = "area: #{area}" # template method: calls the subclass's area
+end
+
+class Circle < Shape
+  def initialize(radius)
+    @radius = radius
+  end
+
+  def area = Math::PI * @radius**2
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    @width, @height = width, height
+  end
+
+  def area = @width * @height
+end
+
+Circle.new(1).area.round(2)     # 3.14
+Rectangle.new(2, 3).describe    # "area: 6"
+Circle.new(1).is_a?(Shape)      # true`,
+
+  task: `
+<p>Port the hierarchy to PHP:</p>
+<ol>
+  <li><code>Shape</code> — an <code>abstract class</code> declaring
+      <code>abstract public function area(): float;</code> (no body — the
+      semicolon replaces <code>raise NotImplementedError</code>) plus the
+      concrete template method <code>describe(): string</code> returning
+      <code>"area: " . $this->area()</code>. The starter has this part
+      done; read it.</li>
+  <li><code>Circle extends Shape</code> — promote
+      <code>private float $radius</code> in the constructor and implement
+      <code>area(): float</code> as <code>M_PI * $this->radius ** 2</code>
+      (<code>Math::PI</code> becomes the constant <code>M_PI</code>).</li>
+  <li><code>Rectangle extends Shape</code> — promote
+      <code>private float $width</code> and <code>private float $height</code>,
+      with <code>area(): float</code> returning their product. Both
+      subclasses inherit <code>describe()</code> for free.</li>
+</ol>`,
+
+  starter: `<?php
+
+abstract class Shape {
+    // No body — subclasses MUST implement this, and PHP checks it
+    // when each subclass LOADS, not when area() is first called.
+    abstract public function area(): float;
+
+    // Concrete template method: works via whatever area() the child wrote.
+    public function describe(): string {
+        return "area: " . $this->area();
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    // Math::PI  ->  M_PI
+    public function area(): float {
+        throw new Exception("TODO: implement Circle::area");
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        throw new Exception("TODO: implement Rectangle::area");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Keep Shape an abstract class" },
+    { pattern: /extends\s+Shape/, message: "Subclass with extends Shape (Ruby's < Shape)" },
+    { pattern: /abstract\s+(public\s+)?function\s+area/, message: "Declare area() as an abstract function" },
+  ],
+
+  tests: [
+    { name: "Circle area: radius 1 rounds to 3.14",
+      code: "$c = new Circle(1);\nexpect_eq(round($c->area(), 2), 3.14);" },
+    { name: "Rectangle area is exact: 2 x 3 = 6.0",
+      code: "$r = new Rectangle(2, 3);\nexpect_eq($r->area(), 6.0);" },
+    { name: "the inherited template method describe() uses the subclass's area()",
+      code: "$r = new Rectangle(2, 3);\nexpect_eq($r->describe(), 'area: 6');" },
+    { name: "both subclasses are Shapes (is_a? -> instanceof)",
+      code: "expect_true(new Circle(1) instanceof Shape);\nexpect_true(new Rectangle(1, 1) instanceof Shape);" },
+    { name: "a bigger circle still satisfies pi r squared",
+      code: "$c = new Circle(2);\nexpect_eq(round($c->area(), 2), 12.57);" },
+  ],
+
+  solution: `<?php
+
+abstract class Shape {
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "area: " . $this->area();
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        return M_PI * $this->radius ** 2;
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        return $this->width * $this->height;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Inherit</td><td><code>class Circle &lt; Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td>Call parent ctor</td><td><code>super(args)</code></td><td><code>parent::__construct($args)</code> — never implicit</td></tr>
+  <tr><td>Must-implement method</td><td><code>raise NotImplementedError</code> body</td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td>Enforced when?</td><td>at call time</td><td>at class load time</td></tr>
+  <tr><td>Duck contract</td><td>implicit / <code>respond_to?</code></td><td><code>interface</code> + <code>implements</code>, signature-checked</td></tr>
+  <tr><td>Type test</td><td><code>obj.is_a?(Shape)</code></td><td><code>$obj instanceof Shape</code></td></tr>
+  <tr><td>Multiple contracts</td><td>modules / duck typing</td><td><code>implements A, B</code> (but <code>extends</code> only one)</td></tr>
+</table>
+<p>Choosing between the two tools maps cleanly onto Ruby instincts: reach
+for an <code>abstract class</code> when you'd have written a base class
+with shared code plus a <code>NotImplementedError</code> hole — like
+<code>Shape</code> here, where <code>describe()</code> rides along. Reach
+for an <code>interface</code> when you'd have said "anything
+quack-compatible works": interfaces carry no state or code, a class can
+implement several, and type declarations accept them —
+<code>function total(HasArea $s)</code> is duck typing with the contract
+written down and checked before the program runs.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

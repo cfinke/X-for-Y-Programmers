@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Vectors</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Vectors",
+
+  intro: `
+<p>The JavaScript array is a bag: <code>[1, "two", null, {}]</code> is a
+perfectly legal value, and nothing complains until something downstream
+chokes on the string it wasn't expecting. Rust's growable list is
+<code>Vec&lt;T&gt;</code>, and the <code>T</code> is the deal: a
+<code>Vec&lt;i32&gt;</code> holds <code>i32</code>s and nothing else,
+checked at compile time. The mixed bag is simply not a thing you can
+build by accident.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>const scores = [10, 20, 30];</code></td><td><code>let scores = vec![10, 20, 30];</code></td></tr>
+  <tr><td><code>scores.push(40);</code> (even on a <code>const</code>)</td><td><code>scores.push(40);</code> — only if <code>let mut scores</code></td></tr>
+  <tr><td><code>scores[99]</code> → <code>undefined</code></td><td><code>scores.get(99)</code> → <code>None</code> (an <code>Option</code>)</td></tr>
+  <tr><td><code>for (const s of scores)</code></td><td><code>for s in &amp;scores</code></td></tr>
+</table>
+<p>Two habits transfer with a twist. First, mutation: JavaScript's
+<code>const</code> only pins the binding, so <code>.push</code> works on a
+<code>const</code> array. In Rust, <code>.push</code> requires the whole
+vector to be declared <code>let mut</code> — mutability is a property of
+the data, not just the name. Second, out-of-bounds reads:
+<code>scores[99]</code> in JS hands you <code>undefined</code> and lets
+you carry it around like a live grenade. Rust's <code>.get(i)</code>
+returns an <code>Option</code> you must deal with, and plain
+<code>scores[99]</code> panics loudly instead of shrugging. Lesson 8
+covers <code>Option</code> in full; today you just need to know the shrug
+is gone.</p>`,
+
+  javascript: `const scores = [10, 20, 30];
+
+scores.push(40);            // fine, despite the const
+
+// Nothing stops the mixed bag:
+scores.push("forty-one");   // [10, 20, 30, 40, "forty-one"]
+
+console.log(scores[99]);    // undefined — no error, just a shrug
+
+let total = 0;
+for (const s of scores) {
+  total += s;               // "100forty-one" — silent concatenation
+}
+console.log(total);`,
+
+  task: `
+<p>Rebuild the well-behaved parts of the snippet as Rust:</p>
+<ol>
+  <li>Write <code>make_scores()</code> returning a <code>Vec&lt;i32&gt;</code>
+      that contains <code>10, 20, 30</code> — use the <code>vec![]</code>
+      literal, the Rust spelling of <code>[10, 20, 30]</code>.</li>
+  <li>Write <code>append(v: &amp;mut Vec&lt;i32&gt;, x: i32)</code> that
+      pushes <code>x</code> onto the end of <code>v</code>. Note that the
+      permission to mutate is written right in the signature.</li>
+  <li>Write <code>total(v: &amp;[i32]) -&gt; i32</code> that sums the
+      elements. Skip the manual loop: <code>v.iter().sum()</code> is the
+      idiom.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. make_scores: return a Vec<i32> containing 10, 20, 30.
+//    JS: [10, 20, 30]  ->  Rust: vec![10, 20, 30]
+fn make_scores() -> Vec<i32> {
+    todo!()
+}
+
+// 2. append: push x onto the end of v.
+//    The &mut in the signature is what makes .push legal here.
+fn append(v: &mut Vec<i32>, x: i32) {
+    todo!()
+}
+
+// 3. total: sum every element with v.iter().sum() — no loop needed.
+fn total(v: &[i32]) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /vec!\s*\[/, message: "Build the list with the vec![] literal" },
+    { pattern: /\.push\(/, message: "Use .push() to append in append()" },
+    { pattern: /Vec<i32>/, message: "Work with the Vec<i32> type" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns vec![10, 20, 30]",
+      code: "assert_eq!(make_scores(), vec![10, 20, 30]);" },
+    { name: "append adds an element to the end",
+      code: "let mut v = make_scores();\nappend(&mut v, 40);\nassert_eq!(v, vec![10, 20, 30, 40]);" },
+    { name: "append works repeatedly",
+      code: "let mut v = vec![1];\nappend(&mut v, 2);\nappend(&mut v, 3);\nassert_eq!(v, vec![1, 2, 3]);" },
+    { name: "total sums the scores to 60",
+      code: "assert_eq!(total(&make_scores()), 60);" },
+    { name: "total of an empty slice is 0",
+      code: "assert_eq!(total(&[]), 0);" },
+  ],
+
+  solution: `fn make_scores() -> Vec<i32> {
+    vec![10, 20, 30]
+}
+
+fn append(v: &mut Vec<i32>, x: i32) {
+    v.push(x);
+}
+
+fn total(v: &[i32]) -> i32 {
+    v.iter().sum()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>List literal</td><td><code>[10, 20, 30]</code></td><td><code>vec![10, 20, 30]</code></td></tr>
+  <tr><td>Element types</td><td>anything, mixed freely</td><td>one <code>T</code> per <code>Vec&lt;T&gt;</code>, compiler-enforced</td></tr>
+  <tr><td>Append</td><td><code>arr.push(x)</code> — works on <code>const</code></td><td><code>v.push(x)</code> — needs <code>let mut v</code></td></tr>
+  <tr><td>Out-of-bounds read</td><td><code>arr[99]</code> → <code>undefined</code></td><td><code>v.get(99)</code> → <code>None</code>; <code>v[99]</code> panics</td></tr>
+  <tr><td>Iterate</td><td><code>for (const s of arr)</code></td><td><code>for s in &amp;v</code></td></tr>
+  <tr><td>Sum</td><td><code>arr.reduce((a, b) =&gt; a + b, 0)</code></td><td><code>v.iter().sum()</code></td></tr>
+</table>
+<p>Notice <code>total</code> takes <code>&amp;[i32]</code> — a slice — rather
+than <code>&amp;Vec&lt;i32&gt;</code>. A slice is "a view of some
+contiguous i32s", so the same function accepts a borrowed vector, an
+array, or a piece of either. It's the same instinct as writing a JS
+function against "anything iterable" instead of demanding a concrete
+Array — except the flexibility is checked, not hoped for.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

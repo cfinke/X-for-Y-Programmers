@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: List Assignment &amp; Spread</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "List Assignment & Spread",
+
+  intro: `
+<p>Rust destructures tuples and structs in patterns:
+<code>let (a, b) = pair;</code>, <code>let User { name, .. } = user;</code>.
+PHP has no tuples — small fixed groups travel as arrays — and destructures
+them with <em>list assignment</em>: <code>[$a, $b] = $pair;</code>. The
+brackets on the <em>left</em> of <code>=</code> are the pattern. Keyed arrays
+destructure too: <code>['name' =&gt; $n] = $user;</code> plucks one field and
+ignores the rest, exactly the job of <code>..</code> in a struct pattern. And
+the classic swap needs no <code>mem::swap</code>:
+<code>[$a, $b] = [$b, $a];</code>.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>let (a, b) = pair;</code></td><td><code>[$a, $b] = $pair;</code></td></tr>
+  <tr><td><code>std::mem::swap(&amp;mut a, &amp;mut b)</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td><code>let User { name, .. } = user;</code></td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+  <tr><td>no variadic functions</td><td><code>function sum(int ...$nums)</code> collects the rest</td></tr>
+  <tr><td><code>f(a, b, c)</code> spelled out</td><td><code>f(...$args)</code> spreads an array into arguments</td></tr>
+  <tr><td><code>Config { lang, ..defaults }</code></td><td><code>[...$defaults, ...$overrides]</code> — later keys win</td></tr>
+</table>
+<p>The <code>...</code> token also goes the other way. Rust has no variadics —
+you pass a slice — but PHP functions can declare
+<code>int ...$nums</code> to collect trailing arguments into an array, and any
+call site can explode an array with <code>f(...$args)</code>. In array
+literals, <code>[...$a, ...$b]</code> concatenates lists (there is no
+<code>.concat()</code> or <code>.extend()</code> method to reach for), and
+with string keys it merges maps with last-one-wins — PHP's spelling of the
+<code>..defaults</code> struct-update idiom.</p>`,
+
+  rust: `fn swap(pair: (i32, i32)) -> (i32, i32) {
+    let (a, b) = pair; // tuple pattern
+    (b, a)
+}
+
+// No variadics in Rust: callers hand you a slice.
+fn sum(nums: &[i32]) -> i32 {
+    nums.iter().sum()
+}
+
+#[derive(Clone)]
+struct Settings {
+    theme: String,
+    lang: String,
+}
+
+fn merge_settings(defaults: &Settings, lang: Option<String>) -> Settings {
+    Settings {
+        lang: lang.unwrap_or_else(|| defaults.lang.clone()),
+        ..defaults.clone() // struct update: fill the rest from defaults
+    }
+}`,
+
+  task: `
+<p>Port the patterns:</p>
+<ol>
+  <li><code>swap(array $pair): array</code> — destructure the two-element
+      array with <code>[$a, $b] = $pair;</code> and return them flipped as
+      <code>[$b, $a]</code>.</li>
+  <li><code>sum(int ...$nums): int</code> — a real variadic: the declaration
+      collects every argument into the array <code>$nums</code>. Total them
+      (a plain <code>foreach</code> or <code>array_sum</code> both work);
+      <code>sum()</code> with no arguments returns <code>0</code>.</li>
+  <li><code>merge_settings(array $defaults, array $overrides): array</code> —
+      the struct-update idiom for maps: return
+      <code>[...$defaults, ...$overrides]</code>, so every default appears and
+      any key present in <code>$overrides</code> wins.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. let (a, b) = pair  ->  [$a, $b] = $pair (brackets, not parens)
+function swap(array $pair): array {
+    throw new Exception("TODO: implement swap");
+}
+
+// 2. ...$nums collects the arguments into an array — the variadic
+//    Rust never gave you.
+function sum(int ...$nums): int {
+    throw new Exception("TODO: implement sum");
+}
+
+// 3. Settings { ..defaults } for maps: spread both, later keys win.
+function merge_settings(array $defaults, array $overrides): array {
+    throw new Exception("TODO: implement merge_settings");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\s*\$\w+\s*,\s*\$\w+\s*\]\s*=/, message: "Destructure with list assignment: [$a, $b] = ..." },
+    { pattern: /\.\.\.\$/, message: "Use the ... token with a variable (variadic or spread)" },
+    { pattern: /\[\s*\.\.\./, message: "Merge with spread inside an array literal: [...$defaults, ...]" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "expect_eq(swap([1, 2]), [2, 1]);" },
+    { name: "swap(['left', 'right']) returns ['right', 'left']",
+      code: "expect_eq(swap(['left', 'right']), ['right', 'left']);" },
+    { name: "sum(1, 2, 3, 4) returns 10",
+      code: "expect_eq(sum(1, 2, 3, 4), 10);" },
+    { name: "sum() with no arguments returns 0, and sum(...[5, 6]) spreads to 11",
+      code: "expect_eq(sum(), 0);\nexpect_eq(sum(...[5, 6]), 11);" },
+    { name: "merge_settings keeps defaults and lets overrides win",
+      code: "$merged = merge_settings(['theme' => 'dark', 'lang' => 'en'], ['lang' => 'fr']);\nexpect_eq($merged, ['theme' => 'dark', 'lang' => 'fr']);" },
+    { name: "merge_settings with empty overrides returns the defaults",
+      code: "expect_eq(merge_settings(['a' => 1], []), ['a' => 1]);" },
+  ],
+
+  solution: `<?php
+
+function swap(array $pair): array {
+    [$a, $b] = $pair;
+    return [$b, $a];
+}
+
+function sum(int ...$nums): int {
+    return array_sum($nums);
+}
+
+function merge_settings(array $defaults, array $overrides): array {
+    return [...$defaults, ...$overrides];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Tuple/list destructure</td><td><code>let (a, b) = pair;</code></td><td><code>[$a, $b] = $pair;</code></td></tr>
+  <tr><td>Skip elements</td><td><code>let (a, _, c) = t;</code></td><td><code>[$a, , $c] = $t;</code> (just leave the slot empty)</td></tr>
+  <tr><td>Struct/map field pluck</td><td><code>let User { name, .. } = u;</code></td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+  <tr><td>Swap</td><td><code>mem::swap</code> / tuple trick</td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td>Variadic declaration</td><td>— (take a slice)</td><td><code>function f(int ...$nums)</code></td></tr>
+  <tr><td>Spread at call site</td><td>—</td><td><code>f(...$args)</code></td></tr>
+  <tr><td>Concatenate lists</td><td><code>[a, b].concat()</code> / <code>.extend()</code></td><td><code>[...$a, ...$b]</code></td></tr>
+  <tr><td>Struct update / merge maps</td><td><code>S { x, ..defaults }</code></td><td><code>[...$defaults, ...$overrides]</code> (later wins)</td></tr>
+</table>
+<p>One asymmetry to note: list assignment is an <em>assignment</em>, not a
+binding pattern — there's no refutability, no match integration, and reading
+a missing index raises a warning and hands you <code>null</code> rather than
+refusing to compile. And spread-merging with <em>integer</em> keys
+concatenates and renumbers instead of overwriting; the last-key-wins behavior
+you leaned on in <code>merge_settings</code> applies to string keys, which is
+exactly the config-map case it's for.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays",
+
+  intro: `
+<p>Java gives you two sequence types with different rules: bare arrays
+(<code>int[]</code> — fixed size, primitives allowed, its own
+<code>.length</code> syntax) and collections
+(<code>ArrayList&lt;Integer&gt;</code> — growable, boxed, method calls).
+Ruby has exactly one: <code>Array</code>. It's written <code>[1, 2, 3]</code>,
+it grows freely, and since everything is an object it can hold mixed types —
+<code>[1, "two", 3.0]</code> is legal (whether it's wise is another matter).</p>
+<table>
+  <tr><th>Java</th><th>Ruby</th></tr>
+  <tr><td><code>int[] a = {1, 2, 3};</code> / <code>new ArrayList&lt;&gt;()</code></td><td><code>a = [1, 2, 3]</code></td></tr>
+  <tr><td><code>list.add(x)</code></td><td><code>a &lt;&lt; x</code> (the shovel)</td></tr>
+  <tr><td><code>list.size()</code> / <code>arr.length</code></td><td><code>a.size</code> or <code>a.length</code> (same thing)</td></tr>
+  <tr><td><code>list.contains(x)</code></td><td><code>a.include?(x)</code></td></tr>
+  <tr><td><code>list.get(list.size() - 1)</code></td><td><code>a[-1]</code> or <code>a.last</code></td></tr>
+  <tr><td><code>Arrays.stream(nums).sum()</code></td><td><code>a.sum</code></td></tr>
+</table>
+<p>Two idioms to adopt on day one. <strong>The shovel:</strong>
+<code>a &lt;&lt; x</code> appends in place — it's <code>list.add(x)</code>
+with the ceremony boiled off, and it returns the array so you can chain it.
+<strong>Negative indexing:</strong> <code>a[-1]</code> is the last element,
+<code>a[-2]</code> the one before — no more <code>size() - 1</code>
+arithmetic. There are also friendly <code>a.first</code> and
+<code>a.last</code>, and range slices like <code>a[1..2]</code> (elements 1
+through 2) where Java would reach for <code>subList</code>.</p>`,
+
+  java: `import java.util.ArrayList;
+import java.util.List;
+
+public class Scores {
+    public static void main(String[] args) {
+        List<Integer> scores = new ArrayList<>();
+        scores.add(85);
+        scores.add(92);
+        scores.add(78);
+
+        int count = scores.size();
+        boolean hasTop = scores.contains(92);
+
+        int first = scores.get(0);
+        int last = scores.get(scores.size() - 1);   // the classic dance
+
+        int total = scores.stream()
+                          .mapToInt(Integer::intValue)
+                          .sum();
+    }
+}`,
+
+  task: `
+<p>Rebuild the score handling in Ruby:</p>
+<ol>
+  <li><code>make_scores</code> — start from an empty array <code>[]</code> and
+      shovel <code>85</code>, <code>92</code>, <code>78</code> into it with
+      <code>&lt;&lt;</code>, then make the array the last expression.</li>
+  <li><code>append(arr, x)</code> — push <code>x</code> onto <code>arr</code>
+      with the shovel and produce the array (<code>&lt;&lt;</code> already
+      returns it — one line).</li>
+  <li><code>total(nums)</code> — sum the numbers. The whole
+      <code>stream().mapToInt(...).sum()</code> pipeline is one word:
+      <code>.sum</code>.</li>
+  <li><code>ends(arr)</code> — a two-element array of the first and last
+      elements: <code>[arr.first, arr.last]</code> (or flex the negative
+      index: <code>arr[-1]</code>).</li>
+</ol>`,
+
+  starter: `# 1. make_scores: [] then shovel 85, 92, 78 with <<
+def make_scores
+  raise NotImplementedError, "TODO: implement make_scores"
+end
+
+# 2. append: arr << x — the shovel returns the array, so one line does it.
+def append(arr, x)
+  raise NotImplementedError, "TODO: implement append"
+end
+
+# 3. total: stream().mapToInt(Integer::intValue).sum() -> nums.sum
+def total(nums)
+  raise NotImplementedError, "TODO: implement total"
+end
+
+# 4. ends: [arr.first, arr.last] — no more size() - 1 arithmetic.
+def ends(arr)
+  raise NotImplementedError, "TODO: implement ends"
+end
+`,
+
+  requirements: [
+    { pattern: /<</, message: "Use the << shovel to append" },
+    { pattern: /\.sum/, message: "Use .sum in total" },
+    { pattern: /\.first/, message: "Use .first in ends" },
+    { pattern: /\[-1\]|\.last/, message: "Use .last (or arr[-1]) in ends" },
+  ],
+
+  tests: [
+    { name: "make_scores returns [85, 92, 78]",
+      code: "  expect_eq(make_scores, [85, 92, 78])" },
+    { name: "append([1, 2], 3) returns [1, 2, 3]",
+      code: "  expect_eq(append([1, 2], 3), [1, 2, 3])" },
+    { name: "total([85, 92, 78]) returns 255",
+      code: "  expect_eq(total([85, 92, 78]), 255)" },
+    { name: "total([]) returns 0",
+      code: "  expect_eq(total([]), 0)" },
+    { name: "ends([85, 92, 78]) returns [85, 78]",
+      code: "  expect_eq(ends([85, 92, 78]), [85, 78])" },
+    { name: "ends([7]) returns [7, 7]",
+      code: "  expect_eq(ends([7]), [7, 7])" },
+  ],
+
+  solution: `def make_scores
+  scores = []
+  scores << 85
+  scores << 92
+  scores << 78
+  scores
+end
+
+def append(arr, x)
+  arr << x
+end
+
+def total(nums)
+  nums.sum
+end
+
+def ends(arr)
+  [arr.first, arr.last]
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Ruby</th></tr>
+  <tr><td>Literal</td><td><code>List.of(1, 2, 3)</code> / <code>int[] {1, 2, 3}</code></td><td><code>[1, 2, 3]</code></td></tr>
+  <tr><td>Append</td><td><code>list.add(x)</code></td><td><code>a &lt;&lt; x</code> (or <code>a.push(x)</code>)</td></tr>
+  <tr><td>Size</td><td><code>list.size()</code> / <code>arr.length</code></td><td><code>a.size</code> / <code>a.length</code> — aliases</td></tr>
+  <tr><td>Membership</td><td><code>list.contains(x)</code></td><td><code>a.include?(x)</code></td></tr>
+  <tr><td>Last element</td><td><code>list.get(list.size() - 1)</code></td><td><code>a[-1]</code> or <code>a.last</code></td></tr>
+  <tr><td>First element</td><td><code>list.get(0)</code></td><td><code>a[0]</code> or <code>a.first</code></td></tr>
+  <tr><td>Slice</td><td><code>list.subList(1, 3)</code></td><td><code>a[1..2]</code> (or <code>a[1...3]</code>, end-exclusive)</td></tr>
+  <tr><td>Sum</td><td><code>stream().mapToInt(...).sum()</code></td><td><code>a.sum</code></td></tr>
+</table>
+<p>Out-of-bounds access is another culture shock: <code>a[99]</code> quietly
+gives you <code>nil</code> instead of throwing an
+<code>IndexOutOfBoundsException</code>. That leniency is very Ruby — handy
+right up until it isn't — and it's why lesson 6 is entirely about
+<code>nil</code>. The stream-style power tools (<code>map</code>,
+<code>select</code>, <code>reduce</code>) arrive in lesson 12.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

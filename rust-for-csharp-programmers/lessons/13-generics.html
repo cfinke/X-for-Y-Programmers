@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Generics & Trait Bounds</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Generics & Trait Bounds",
+
+  intro: `
+<p>Good news: your <code>List&lt;T&gt;</code> instincts transfer wholesale.
+<code>Vec&lt;T&gt;</code>, <code>Option&lt;T&gt;</code>,
+<code>HashMap&lt;K, V&gt;</code> — you've been reading these as C# generics
+all course, and generic functions work the same way:
+<code>fn first&lt;T&gt;(items: &amp;[T])</code>. Constraints transfer too,
+just terser: where C# writes <code>where T : IComparable&lt;T&gt;</code>,
+Rust puts the bound inline — <code>fn largest&lt;T: PartialOrd&gt;</code>.
+Same idea exactly: "this function works for any T that can be compared."
+Without the bound, comparing two <code>T</code>s is a compile error in both
+languages.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>T First&lt;T&gt;(IReadOnlyList&lt;T&gt; items)</code></td><td><code>fn first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td><code>where T : IComparable&lt;T&gt;</code></td><td><code>&lt;T: PartialOrd&gt;</code> (or a trailing <code>where</code> clause)</td></tr>
+  <tr><td><code>item.CompareTo(largest) &gt; 0</code></td><td><code>item &gt; largest</code> (the bound unlocks the operator)</td></tr>
+  <tr><td>Reified: <code>typeof(T)</code> at runtime</td><td>Monomorphized: T is gone by runtime</td></tr>
+  <tr><td>Shared code for reference types; boxing at interface edges</td><td>Specialized code for <em>every</em> type; zero boxing</td></tr>
+</table>
+<p>Under the hood the strategies differ in a way worth knowing. C# generics
+are <em>reified</em>: <code>typeof(T)</code> exists at runtime, and the JIT
+shares one compiled body across reference types. Rust
+<em>monomorphizes</em> — like what the CLR already does for value-type
+instantiations (<code>List&lt;int&gt;</code> gets its own specialized code),
+but for every type, always. By runtime, <code>largest::&lt;i32&gt;</code>
+and <code>largest::&lt;&amp;str&gt;</code> are two separate functions with
+zero boxing and full inlining; there's no <code>typeof(T)</code> because
+<code>T</code> no longer exists. Generics in Rust are a compile-time copy
+machine, and you pay nothing at runtime.</p>`,
+
+  csharp: `T? First<T>(IReadOnlyList<T> items) =>
+    items.Count > 0 ? items[0] : default;
+
+T Largest<T>(IReadOnlyList<T> items) where T : IComparable<T>
+{
+    var largest = items[0];
+    foreach (var item in items)
+        if (item.CompareTo(largest) > 0)
+            largest = item;
+    return largest;
+}
+
+// Reified generics: typeof(T) is real at runtime, one shared
+// body for reference types. Rust instead stamps out a
+// specialized copy per type -- like List<int> vs List<long>
+// in the CLR, but for everything.
+Console.WriteLine(Largest(new[] { 3, 7, 2 }));  // 7`,
+
+  task: `
+<p>Write the two generic functions:</p>
+<ol>
+  <li><code>first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code>
+      — a reference to the first element, or <code>None</code> for an empty
+      slice. No bound needed: any <code>T</code> can be pointed at. (The
+      slice method <code>.first()</code> does exactly this, or write the
+      <code>if</code> yourself.)</li>
+  <li><code>largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code>
+      — a reference to the largest element. The <code>PartialOrd</code>
+      bound is C#'s <code>where T : IComparable&lt;T&gt;</code>, and it's
+      what makes <code>&gt;</code> compile. Start with a mutable reference
+      to <code>&amp;items[0]</code>, loop, and compare. Assume the slice is
+      non-empty.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. first: no bound needed -- any T can be borrowed.
+//    Return Some(&first_element) or None if the slice is empty.
+fn first<T>(items: &[T]) -> Option<&T> {
+    todo!()
+}
+
+// 2. largest: the bound <T: PartialOrd> is C#'s where T : IComparable<T>.
+//    It's what lets you write item > largest below.
+//    Assume the slice is non-empty.
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<T\s*:\s*PartialOrd>/, message: "Constrain largest with <T: PartialOrd> — the where T : IComparable<T> of Rust" },
+    { pattern: /<T>/, message: "Make first generic over an unconstrained <T>" },
+    { pattern: /Option<&T>/, message: "first should return Option<&T>" },
+  ],
+
+  tests: [
+    { name: "first(&[10, 20, 30]) returns Some(&10)",
+      code: "assert_eq!(first(&[10, 20, 30]), Some(&10));" },
+    { name: "first of an empty slice returns None",
+      code: "let empty: [i32; 0] = [];\nassert_eq!(first(&empty), None);" },
+    { name: "first works for &str too: Some(&\"alpha\")",
+      code: 'assert_eq!(first(&["alpha", "beta"]), Some(&"alpha"));' },
+    { name: "largest(&[3, 7, 2]) returns &7",
+      code: "assert_eq!(largest(&[3, 7, 2]), &7);" },
+    { name: 'largest(&["apple", "zebra", "mango"]) returns &"zebra"',
+      code: 'assert_eq!(largest(&["apple", "zebra", "mango"]), &"zebra");' },
+    { name: "largest(&[-5, -1, -9]) returns &-1",
+      code: "assert_eq!(largest(&[-5, -1, -9]), &-1);" },
+  ],
+
+  solution: `fn first<T>(items: &[T]) -> Option<&T> {
+    if items.is_empty() {
+        None
+    } else {
+        Some(&items[0])
+    }
+}
+
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    let mut largest = &items[0];
+    for item in items {
+        if item > largest {
+            largest = item;
+        }
+    }
+    largest
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Generic function</td><td><code>T First&lt;T&gt;(...)</code></td><td><code>fn first&lt;T&gt;(...)</code></td></tr>
+  <tr><td>Constraint</td><td><code>where T : IComparable&lt;T&gt;</code></td><td><code>&lt;T: PartialOrd&gt;</code>, or <code>where T: PartialOrd</code> after the signature</td></tr>
+  <tr><td>Multiple constraints</td><td><code>where T : IComparable&lt;T&gt;, ICloneable</code></td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+  <tr><td>Comparing</td><td><code>a.CompareTo(b) &gt; 0</code></td><td><code>a &gt; b</code> (operators are trait methods)</td></tr>
+  <tr><td>Runtime model</td><td>Reified — <code>typeof(T)</code>, shared bodies, boxing at edges</td><td>Monomorphized — per-type copies, zero boxing, no <code>typeof</code></td></tr>
+  <tr><td>"Maybe empty" return</td><td><code>T?</code> / <code>default</code></td><td><code>Option&lt;&amp;T&gt;</code> — honest in the type</td></tr>
+</table>
+<p>Two details worth savoring. First, <code>item &gt; largest</code>: in
+Rust, operators are just trait methods (<code>&gt;</code> comes from
+<code>PartialOrd</code>), so declaring the bound doesn't merely permit a
+<code>CompareTo</code> call — it unlocks the operator itself. Second, the
+constraint system is <em>strict</em>: C# lets an unconstrained method still
+call <code>.ToString()</code> or <code>.Equals()</code> because everything
+inherits <code>object</code>; in Rust an unconstrained <code>T</code>
+supports almost nothing. Every capability a generic function uses must be
+spelled out in its bounds — which means the signature never lies about what
+a function can do with your type.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

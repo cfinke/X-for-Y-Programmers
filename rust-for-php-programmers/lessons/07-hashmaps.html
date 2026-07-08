@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p>Last lesson took the "list" half of PHP's array; this one takes the other
+half. <code>['apples' =&gt; 3]</code> — the associative array — becomes
+<code>HashMap&lt;String, u32&gt;</code>: a dedicated key–value type where the
+key type and the value type are both fixed. It lives in the standard library
+rather than the language, so you bring it into scope with
+<code>use std::collections::HashMap;</code> and build one with
+<code>HashMap::new()</code> — there's no literal syntax like PHP's
+<code>=&gt;</code>.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>$m = ['apples' =&gt; 3];</code></td><td><code>let mut m = HashMap::new(); m.insert(...)</code></td></tr>
+  <tr><td><code>$m[$k] = $v;</code></td><td><code>m.insert(k, v);</code></td></tr>
+  <tr><td><code>$m[$k] ?? 0</code></td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>isset($m[$k])</code></td><td><code>m.contains_key(k)</code></td></tr>
+  <tr><td><code>$m[$k] = ($m[$k] ?? 0) + $n;</code></td><td><code>*m.entry(k).or_insert(0) += n;</code></td></tr>
+  <tr><td><code>unset($m[$k]);</code></td><td><code>m.remove(k);</code></td></tr>
+</table>
+<p>Reading deserves a closer look. <code>m.get(k)</code> returns an
+<code>Option&lt;&amp;u32&gt;</code> — a maybe-reference. For a small copyable
+number, <code>.copied()</code> turns that into <code>Option&lt;u32&gt;</code>,
+and <code>.unwrap_or(0)</code> is exactly your <code>?? 0</code>. And the
+beloved counting idiom — read-with-default, add, write back — collapses into
+one line with the <em>entry API</em>: <code>.entry(k).or_insert(0)</code>
+returns a mutable reference to the value, inserting the default first if the
+key was missing. One lookup, no race between the check and the write.</p>`,
+
+  php: `$inventory = ['apples' => 3, 'pears' => 5];
+
+$inventory['plums'] = 4;                  // insert (or overwrite)
+$apples = $inventory['apples'] ?? 0;      // read with a default
+$hasPears = isset($inventory['pears']);   // key check
+unset($inventory['plums']);               // remove
+
+// The classic upsert: read-with-default, add, write back.
+$delta = 2;
+$inventory['apples'] = ($inventory['apples'] ?? 0) + $delta;
+
+foreach ($inventory as $name => $count) {
+    echo "$name: $count\\n";
+}`,
+
+  task: `
+<p>Port the inventory code to a real map type (the starter already has the
+<code>use</code> line):</p>
+<ol>
+  <li><code>build_inventory() -&gt; HashMap&lt;String, u32&gt;</code> — return
+      a map containing <code>"apples" =&gt; 3</code> and
+      <code>"pears" =&gt; 5</code>. Make a <code>let mut</code> map with
+      <code>HashMap::new()</code>, then <code>.insert()</code> — note the keys
+      must be owned <code>String</code>s
+      (<code>String::from("apples")</code>).</li>
+  <li><code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str) -&gt; u32</code>
+      — the <code>$m[$k] ?? 0</code> of Rust:
+      <code>inv.get(name).copied().unwrap_or(0)</code>.</li>
+  <li><code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str, n: u32)</code>
+      — add <code>n</code> to the existing count, treating a missing key as 0.
+      Use the entry API: <code>*inv.entry(name.to_string()).or_insert(0) += n;</code></li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "apples" => 3, "pears" => 5.
+//    PHP: return ['apples' => 3, 'pears' => 5];
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: the count for name, or 0 if it's not there.
+//    PHP: return $inv[$name] ?? 0;
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: add n to name's count, starting from 0 if missing.
+//    PHP: $inv[$name] = ($inv[$name] ?? 0) + $n;
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Use the HashMap<String, u32> type" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Use .insert() and the .entry() API to write into the map" },
+    { pattern: /unwrap_or/, message: "Use .unwrap_or(0) for the ?? 0 read in get_count" },
+  ],
+
+  tests: [
+    { name: 'build_inventory() has apples => 3 and pears => 5',
+      code: 'let inv = build_inventory();\nassert_eq!(inv.get("apples").copied(), Some(3));\nassert_eq!(inv.get("pears").copied(), Some(5));\nassert_eq!(inv.len(), 2);' },
+    { name: 'get_count(&inv, "apples") returns 3',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "apples"), 3);' },
+    { name: 'get_count of a missing key returns 0 (the ?? 0)',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "plums"), 0);' },
+    { name: 'add_stock(&mut inv, "apples", 2) bumps 3 to 5',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "apples", 2);\nassert_eq!(get_count(&inv, "apples"), 5);' },
+    { name: 'add_stock on a missing key starts from 0',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "plums", 4);\nassert_eq!(get_count(&inv, "plums"), 4);' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert(String::from("apples"), 3);
+    inv.insert(String::from("pears"), 5);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Create</td><td><code>$m = ['a' =&gt; 1];</code></td><td><code>let mut m = HashMap::new();</code> + <code>.insert()</code></td></tr>
+  <tr><td>Write</td><td><code>$m[$k] = $v;</code></td><td><code>m.insert(k, v);</code></td></tr>
+  <tr><td>Read with default</td><td><code>$m[$k] ?? 0</code></td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Key exists?</td><td><code>isset($m[$k])</code></td><td><code>m.contains_key(k)</code></td></tr>
+  <tr><td>Upsert</td><td><code>$m[$k] = ($m[$k] ?? 0) + $n;</code></td><td><code>*m.entry(k).or_insert(0) += n;</code></td></tr>
+  <tr><td>Iterate</td><td><code>foreach ($m as $k =&gt; $v)</code></td><td><code>for (k, v) in &amp;m</code></td></tr>
+</table>
+<p>One PHP habit to consciously drop: order. PHP's associative arrays remember
+insertion order; <code>HashMap</code> does not — iteration order is
+effectively random and can differ run to run. When order matters, that's a
+different tool (<code>BTreeMap</code> keeps keys sorted). Also notice
+<code>.entry(name.to_string())</code>: the map owns its keys, so inserting
+means handing it an owned <code>String</code>, while merely looking one up
+(<code>.get(name)</code>) is happy with a borrowed <code>&amp;str</code> —
+the own-versus-borrow split from the strings lesson, applied to keys.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

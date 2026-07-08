@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p>Where TypeScript reaches for <code>Record&lt;string, number&gt;</code> or
+<code>Map&lt;string, number&gt;</code>, Rust has one workhorse:
+<code>HashMap&lt;String, u32&gt;</code> from <code>std::collections</code>
+(it needs a <code>use</code> line — it's not in the prelude). Insertion is
+<code>.insert(key, value)</code>, and lookup is where Rust gets honest:
+<code>.get(key)</code> returns <code>Option&lt;&amp;V&gt;</code>. TypeScript's
+<code>inv[name]</code> is <em>really</em> <code>number | undefined</code>, but
+<code>Record</code> lets you pretend otherwise; Rust puts the maybe-missing
+case in the type where you can't ignore it.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>const inv: Record&lt;string, number&gt; = {};</code></td><td><code>let mut inv: HashMap&lt;String, u32&gt; = HashMap::new();</code></td></tr>
+  <tr><td><code>inv["apples"] = 3;</code></td><td><code>inv.insert("apples".to_string(), 3);</code></td></tr>
+  <tr><td><code>inv[name]</code> → <code>number</code> (a lie)</td><td><code>inv.get(name)</code> → <code>Option&lt;&amp;u32&gt;</code> (the truth)</td></tr>
+  <tr><td><code>inv[name] ?? 0</code></td><td><code>inv.get(name).copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>inv[name] = (inv[name] ?? 0) + n;</code></td><td><code>*inv.entry(name).or_insert(0) += n;</code></td></tr>
+</table>
+<p>The <code>?? 0</code> idiom becomes <code>.copied().unwrap_or(0)</code>:
+<code>.copied()</code> turns the borrowed <code>Option&lt;&amp;u32&gt;</code>
+into an owned <code>Option&lt;u32&gt;</code>, and <code>.unwrap_or(0)</code>
+supplies the default. For upserts, the <code>entry</code> API replaces the
+read-modify-write dance: <code>.entry(key).or_insert(0)</code> returns a
+mutable reference to the value — existing or freshly defaulted — that you can
+add to directly.</p>`,
+
+  typescript: `const inventory: Record<string, number> = {
+  apples: 3,
+  bananas: 5,
+};
+
+function getCount(inv: Record<string, number>, name: string): number {
+  return inv[name] ?? 0;    // inv[name] is number | undefined, really
+}
+
+function addStock(inv: Record<string, number>, name: string, n: number): void {
+  // read, default, write — three chances to typo the key
+  inv[name] = (inv[name] ?? 0) + n;
+}
+
+addStock(inventory, "kiwis", 7);
+console.log(getCount(inventory, "plums"));   // 0`,
+
+  task: `
+<p>Port the inventory helpers to <code>HashMap</code>:</p>
+<ol>
+  <li><code>build_inventory() -&gt; HashMap&lt;String, u32&gt;</code> —
+      create a map with <code>"apples"</code> → <code>3</code> and
+      <code>"bananas"</code> → <code>5</code>, using <code>.insert()</code>
+      (keys are <code>String</code>, so <code>.to_string()</code> them).</li>
+  <li><code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str) -&gt; u32</code>
+      — the <code>?? 0</code> port: <code>.get(name).copied().unwrap_or(0)</code>.</li>
+  <li><code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str, n: u32)</code>
+      — use the entry API: <code>inv.entry(name.to_string()).or_insert(0)</code>
+      gives you a <code>&amp;mut u32</code> to add <code>n</code> to.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "apples" -> 3, "bananas" -> 5.
+//    HashMap::new() then .insert(key, value); keys are owned Strings.
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: the ?? 0 idiom.
+//    .get(name) is Option<&u32>; .copied() makes it Option<u32>; .unwrap_or(0) defaults.
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: upsert with the entry API.
+//    *inv.entry(...).or_insert(0) += n;
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Keep the HashMap<String, u32> types in the signatures" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Use .insert() to build the map and .entry() to upsert" },
+    { pattern: /unwrap_or/, message: "Use .unwrap_or(0) for the ?? 0 default in get_count" },
+  ],
+
+  tests: [
+    { name: 'build_inventory() has "apples" -> 3 and "bananas" -> 5',
+      code: 'let inv = build_inventory();\nassert_eq!(inv.get("apples").copied(), Some(3));\nassert_eq!(inv.get("bananas").copied(), Some(5));\nassert_eq!(inv.len(), 2);' },
+    { name: 'get_count finds existing keys',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "apples"), 3);\nassert_eq!(get_count(&inv, "bananas"), 5);' },
+    { name: 'get_count returns 0 for missing keys (the ?? 0)',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "plums"), 0);' },
+    { name: 'add_stock adds to an existing key',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "apples", 2);\nassert_eq!(get_count(&inv, "apples"), 5);' },
+    { name: 'add_stock inserts a brand-new key',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "kiwis", 7);\nassert_eq!(get_count(&inv, "kiwis"), 7);\nadd_stock(&mut inv, "kiwis", 1);\nassert_eq!(get_count(&inv, "kiwis"), 8);' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert("apples".to_string(), 3);
+    inv.insert("bananas".to_string(), 5);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Map type</td><td><code>Record&lt;string, number&gt;</code> / <code>Map</code></td><td><code>HashMap&lt;String, u32&gt;</code> (+ <code>use std::collections::HashMap;</code>)</td></tr>
+  <tr><td>Create</td><td><code>{}</code> / <code>new Map()</code></td><td><code>HashMap::new()</code> (binding must be <code>mut</code> to fill it)</td></tr>
+  <tr><td>Set</td><td><code>inv[k] = v</code> / <code>m.set(k, v)</code></td><td><code>inv.insert(k, v)</code></td></tr>
+  <tr><td>Get</td><td><code>inv[k]</code> — <code>undefined</code> hides in the type</td><td><code>inv.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>Default</td><td><code>inv[k] ?? 0</code></td><td><code>inv.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Upsert</td><td><code>inv[k] = (inv[k] ?? 0) + n</code></td><td><code>*inv.entry(k).or_insert(0) += n</code></td></tr>
+</table>
+<p>The entry API is the piece with no TypeScript equivalent: it does the
+lookup <em>once</em> and hands you a mutable slot, whether or not the key
+existed. The TypeScript upsert reads the map, defaults, then writes — two
+traversals and a race in concurrent code. <code>entry</code> is both faster
+and impossible to get out of sync with itself.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Hashes & Symbols</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Hashes & Symbols",
+
+  intro: `
+<p>Ruby's <code>Hash</code> is your
+<code>std::unordered_map&lt;K, V&gt;</code> — with two upgrades. First, it
+preserves <strong>insertion order</strong> when you iterate (imagine
+<code>unordered_map</code> and a vector of keys glued together). Second, the
+idiomatic keys are <em>symbols</em>: <code>:apples</code> is an interned
+identifier — one immutable object per name, compared by identity. If you have
+ever used an <code>enum class</code> as a map key to avoid string
+comparisons, symbols are that trick built into the language, no enum
+definition required. The literal syntax bakes them in:
+<code>{ apples: 3, bananas: 5 }</code> is a hash with the symbol keys
+<code>:apples</code> and <code>:bananas</code>.</p>
+<table>
+  <tr><th>C++</th><th>Ruby</th></tr>
+  <tr><td><code>std::unordered_map&lt;std::string, int&gt; m;</code></td><td><code>m = { apples: 3 }</code></td></tr>
+  <tr><td><code>m["k"] = v;</code></td><td><code>m[:k] = v</code></td></tr>
+  <tr><td><code>m["missing"]</code> — <em>inserts</em> a zero!</td><td><code>m[:missing]</code> — returns <code>nil</code>, inserts nothing</td></tr>
+  <tr><td><code>auto it = m.find(k); it != m.end() ? it-&gt;second : 0</code></td><td><code>m.fetch(k, 0)</code></td></tr>
+  <tr><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>m.each { |k, v| ... }</code></td></tr>
+  <tr><td>iteration order: unspecified</td><td>insertion order, guaranteed</td></tr>
+</table>
+<p>Two gotchas. Reading with <code>[]</code> never inserts — unlike
+<code>operator[]</code> on a C++ map, <code>m[:missing]</code> quietly
+returns <code>nil</code> and leaves the hash alone; when you want a default,
+say so with <code>m.fetch(k, 0)</code>, which replaces the whole
+find/end dance. And <code>h[:name]</code> is not <code>h["name"]</code> —
+a symbol and a string are different objects, so they are different keys.</p>`,
+
+  cpp: `#include <string>
+#include <unordered_map>
+
+using Inventory = std::unordered_map<std::string, int>;
+
+Inventory build_inventory() {
+    return { {"apples", 3}, {"bananas", 5} };
+}
+
+int get_count(const Inventory& inv, const std::string& name) {
+    auto it = inv.find(name);            // the find/end dance
+    return it != inv.end() ? it->second : 0;
+}
+
+Inventory add_stock(Inventory inv, const std::string& name, int n) {
+    inv[name] += n;    // operator[] default-inserts — handy here,
+    return inv;        // a silent bug when you only meant to read
+}
+
+// no item_names(): iteration order is unspecified anyway`,
+
+  task: `
+<p>Rewrite the C++ on the left as Ruby:</p>
+<ol>
+  <li><code>build_inventory</code> — return the literal
+      <code>{ apples: 3, bananas: 5 }</code>. Symbol keys, no
+      <code>using</code> alias, no template parameters.</li>
+  <li><code>get_count(inv, name)</code> — the find/end/ternary dance is one
+      call: <code>inv.fetch(name, 0)</code>.</li>
+  <li><code>add_stock(inv, name, n)</code> — build and return a <em>new</em>
+      hash, leaving the argument untouched:
+      <code>inv.merge(name =&gt; inv.fetch(name, 0) + n)</code>. (The
+      <code>name =&gt; value</code> arrow form is how you use a key held in a
+      variable.)</li>
+  <li><code>item_names(inv)</code> — return <code>inv.keys</code>. Its order
+      is the insertion order, guaranteed — this method is only
+      <em>possible</em> because Ruby hashes remember it.</li>
+</ol>`,
+
+  starter: `# 1. Hash literal with symbol keys — { apples: 3, ... }.
+def build_inventory
+  raise NotImplementedError, "TODO: implement build_inventory"
+end
+
+# 2. find()/end() ternary -> fetch(key, default), one call.
+def get_count(inv, name)
+  raise NotImplementedError, "TODO: implement get_count"
+end
+
+# 3. Non-mutating: merge builds a NEW hash; the argument stays untouched.
+#    inv.merge(name => new_count)
+def add_stock(inv, name, n)
+  raise NotImplementedError, "TODO: implement add_stock"
+end
+
+# 4. The keys, in guaranteed insertion order.
+def item_names(inv)
+  raise NotImplementedError, "TODO: implement item_names"
+end
+`,
+
+  requirements: [
+    { pattern: /fetch\s*\(/, message: "Use fetch(key, default) for reads with a fallback" },
+    { pattern: /merge/, message: "Use merge in add_stock to build a new hash" },
+    { pattern: /:\w+/, message: "Use symbol keys (like :apples)" },
+    { pattern: /\.each|\.keys/, message: "Use .keys (or .each) to walk the hash" },
+  ],
+
+  tests: [
+    { name: "build_inventory returns { apples: 3, bananas: 5 }",
+      code: "  expect_eq(build_inventory, { apples: 3, bananas: 5 })" },
+    { name: "get_count({ apples: 3 }, :apples) returns 3",
+      code: "  expect_eq(get_count({ apples: 3 }, :apples), 3)" },
+    { name: "get_count({ apples: 3 }, :pears) returns 0 — and does NOT insert",
+      code: '  inv = { apples: 3 }\n  expect_eq(get_count(inv, :pears), 0)\n  expect_eq(inv, { apples: 3 })' },
+    { name: "add_stock({ apples: 3 }, :apples, 2) returns { apples: 5 } without mutating",
+      code: '  inv = { apples: 3 }\n  expect_eq(add_stock(inv, :apples, 2), { apples: 5 })\n  expect_eq(inv, { apples: 3 })' },
+    { name: "add_stock({}, :pears, 4) returns { pears: 4 }",
+      code: "  expect_eq(add_stock({}, :pears, 4), { pears: 4 })" },
+    { name: "item_names({ zebra: 1, apple: 2 }) returns [:zebra, :apple] — insertion order",
+      code: "  expect_eq(item_names({ zebra: 1, apple: 2 }), [:zebra, :apple])" },
+  ],
+
+  solution: `def build_inventory
+  # symbol keys :apples and :bananas — not the strings "apples"/"bananas"
+  { apples: 3, bananas: 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  inv.merge(name => inv.fetch(name, 0) + n)
+end
+
+def item_names(inv)
+  inv.keys
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Literal</td><td><code>{ {"a", 1}, {"b", 2} }</code></td><td><code>{ a: 1, b: 2 }</code> (symbol keys)</td></tr>
+  <tr><td>Key type of choice</td><td><code>std::string</code> / enum trick</td><td><code>:symbol</code> — interned, identity-compared</td></tr>
+  <tr><td>Write</td><td><code>m[k] = v;</code></td><td><code>m[k] = v</code></td></tr>
+  <tr><td>Read, maybe absent</td><td><code>operator[]</code> <em>inserts!</em>; else find/end</td><td><code>m[k]</code> → <code>nil</code>, never inserts</td></tr>
+  <tr><td>Read with default</td><td><code>it != m.end() ? it-&gt;second : 0</code></td><td><code>m.fetch(k, 0)</code></td></tr>
+  <tr><td>Missing key should be an error</td><td><code>m.at(k)</code> throws</td><td><code>m.fetch(k)</code> raises <code>KeyError</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>m.each { |k, v| ... }</code> — structured bindings built in</td></tr>
+  <tr><td>Order</td><td>unspecified (<code>unordered_map</code>)</td><td>insertion order, guaranteed</td></tr>
+  <tr><td>Non-mutating update</td><td>copy, then mutate the copy</td><td><code>m.merge(k =&gt; v)</code> returns a new hash</td></tr>
+</table>
+<p>Keep the two key gotchas straight: Ruby flips your <code>operator[]</code>
+instinct — reads never insert, so there is no accidental zero left behind by
+a lookup — and <code>h[:name]</code> versus <code>h["name"]</code> are
+different keys entirely. Symbols cost one allocation ever (they are
+interned, like an enumerator with a name attached), which is why every hash
+you will read in the wild uses them.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

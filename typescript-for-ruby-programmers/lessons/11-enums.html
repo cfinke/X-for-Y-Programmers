@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Literal Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Literal Types",
+
+  intro: `
+<p>Every Ruby codebase has them: little vocabularies of symbols —
+<code>:pending</code>, <code>:shipped</code>, <code>:delivered</code> — passed
+around as statuses and modes. They are cheap, readable, and completely
+unchecked: type <code>:pnding</code> and Ruby shrugs, your <code>case</code>
+falls through, and you find out in production. TypeScript's
+<em>string-literal union types</em> are those same symbols with the serifs
+filed off: <code>type Status = "pending" | "shipped" | "delivered"</code>
+declares the vocabulary once, and the compiler spell-checks every use.
+Pass <code>"pnding"</code> and the build fails on the spot.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>:pending</code></td><td><code>"pending"</code> (the literal string <em>is</em> the type)</td></tr>
+  <tr><td><code>STATUSES = %i[pending shipped]</code></td><td><code>type Status = "pending" | "shipped";</code></td></tr>
+  <tr><td><code>status == :pnding</code> (silently false)</td><td><code>status === "pnding"</code> — compile error</td></tr>
+  <tr><td>Constants module: <code>Status::PENDING</code></td><td><code>enum OrderStatus { Pending = "pending" }</code></td></tr>
+</table>
+<p>TypeScript also offers <code>enum</code>, a heavier construct closer to a
+Ruby module full of constants: it exists at runtime as a real object, so you
+can write <code>OrderStatus.Pending</code> and iterate its members. Modern
+TypeScript style reaches for literal unions first — they are zero-cost and
+erase to plain strings — and saves <code>enum</code> for when you want a
+runtime namespace for the values. Today you will write both and feel the
+difference.</p>`,
+
+  ruby: `STATUSES = %i[pending shipped delivered]
+
+def status_label(status)
+  case status
+  when :pending   then "Waiting to ship"
+  when :shipped   then "On the way"
+  when :delivered then "Arrived"
+  else raise ArgumentError, "unknown status: #{status}"
+  end
+end
+
+status_label(:pending)  # => "Waiting to ship"
+status_label(:pnding)   # boom — ArgumentError, but only at runtime,
+                        # and only because we remembered the else clause`,
+
+  task: `
+<p>Give the order-status vocabulary a compiler-checked home:</p>
+<ol>
+  <li>Define a type alias <code>Status</code> as the literal union
+      <code>"pending" | "shipped" | "delivered"</code> — the direct
+      translation of the Ruby symbol list.</li>
+  <li>Define a string enum <code>OrderStatus</code> with members
+      <code>Pending = "pending"</code>, <code>Shipped = "shipped"</code>,
+      <code>Delivered = "delivered"</code> — the heavier, runtime-backed
+      alternative (like a Ruby constants module).</li>
+  <li>Write <code>statusLabel(status: Status): string</code> returning
+      <code>"Waiting to ship"</code> for <code>"pending"</code>,
+      <code>"On the way"</code> for <code>"shipped"</code>, and
+      <code>"Arrived"</code> for <code>"delivered"</code>. No
+      <code>else raise</code> needed — the compiler already rejects anything
+      outside the union.</li>
+</ol>`,
+
+  starter: `// 1. The literal-union type alias — Ruby's symbol list, compiler-checked.
+//    Ruby: STATUSES = %i[pending shipped delivered]
+type Status = "pending"; // TODO: add the other two members with |
+
+// 2. The heavier alternative: a string enum (a runtime object, like a
+//    Ruby module of constants).
+// TODO: enum OrderStatus { Pending = "pending", ... }
+
+// 3. Translate the Ruby case statement.
+function statusLabel(status: Status): string {
+  // TODO: "pending" -> "Waiting to ship", "shipped" -> "On the way",
+  //       "delivered" -> "Arrived"
+  return "";
+}
+`,
+
+  exportNames: ["OrderStatus", "statusLabel"],
+
+  requirements: [
+    { pattern: /type\s+Status\s*=/, message: "Define a type alias named Status" },
+    { pattern: /"\w+"\s*\|\s*"/, message: "Status must be a union of string literals, e.g. \"pending\" | \"shipped\"" },
+    { pattern: /enum\s+OrderStatus/, message: "Define an enum named OrderStatus" },
+    { pattern: /statusLabel\s*\(\s*\w+\s*:\s*Status\s*\)\s*:\s*string/, message: "statusLabel must take a Status parameter and declare a : string return type" },
+  ],
+
+  tests: [
+    { name: 'statusLabel("pending") returns "Waiting to ship"', run: (x) => expectEqual(x.statusLabel("pending"), "Waiting to ship") },
+    { name: 'statusLabel("shipped") returns "On the way"', run: (x) => expectEqual(x.statusLabel("shipped"), "On the way") },
+    { name: 'statusLabel("delivered") returns "Arrived"', run: (x) => expectEqual(x.statusLabel("delivered"), "Arrived") },
+    { name: 'OrderStatus.Pending holds the wire value "pending"', run: (x) => expectEqual(x.OrderStatus.Pending, "pending") },
+    { name: 'OrderStatus.Shipped holds the wire value "shipped"', run: (x) => expectEqual(x.OrderStatus.Shipped, "shipped") },
+  ],
+
+  solution: `type Status = "pending" | "shipped" | "delivered";
+
+enum OrderStatus {
+  Pending = "pending",
+  Shipped = "shipped",
+  Delivered = "delivered",
+}
+
+function statusLabel(status: Status): string {
+  switch (status) {
+    case "pending":
+      return "Waiting to ship";
+    case "shipped":
+      return "On the way";
+    case "delivered":
+      return "Arrived";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>One tag value</td><td><code>:pending</code></td><td><code>"pending"</code> as a literal type</td></tr>
+  <tr><td>The allowed set</td><td><code>%i[pending shipped]</code> (docs only)</td><td><code>type Status = "pending" | "shipped";</code> (enforced)</td></tr>
+  <tr><td>Constants namespace</td><td><code>module Status; PENDING = :pending; end</code></td><td><code>enum OrderStatus { Pending = "pending" }</code></td></tr>
+  <tr><td>Typo defense</td><td><code>else raise ArgumentError</code> at runtime</td><td>Compile error before the code runs</td></tr>
+  <tr><td>Runtime cost</td><td>Symbols are interned objects</td><td>Literal unions erase to plain strings; enums emit an object</td></tr>
+</table>
+<p>The insight: Ruby symbols were never really about the colon — they were
+about a small, fixed vocabulary of tags. A literal union captures exactly
+that intent and hands it to the compiler, so an exhaustive <code>switch</code>
+over a <code>Status</code> needs no <code>else raise</code>: if you add
+<code>"refunded"</code> to the union later, every non-exhaustive switch
+lights up as an error. Reach for <code>enum</code> only when you also want
+the values gathered in a runtime object; otherwise the union is the
+idiomatic — and lighter — choice.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

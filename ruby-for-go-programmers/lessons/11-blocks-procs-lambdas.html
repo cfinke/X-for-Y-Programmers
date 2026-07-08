@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Blocks, Procs & Lambdas</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Blocks, Procs & Lambdas",
+
+  intro: `
+<p>In Go, passing behavior means passing a <code>func</code> value: you declare
+a <code>f func(int) int</code> parameter, the caller hands you a func literal
+inside the parentheses, and you call it by name. Ruby's most common version of
+this is the <strong>block</strong> — and it is syntax, not a value. The closure
+argument rides <em>outside</em> the parentheses:
+<code>apply_twice(3) { |v| v * 2 }</code>. The receiving method declares no
+parameter for it at all; the block arrives invisibly, and the method invokes it
+with <code>yield</code>. To ask whether a caller attached one — Go's
+<code>f != nil</code> check — you call <code>block_given?</code>.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>applyTwice(3, func(v int) int { return v * 2 })</code></td><td><code>apply_twice(3) { |v| v * 2 }</code> — block outside the parens</td></tr>
+  <tr><td><code>func applyTwice(x int, f func(int) int)</code></td><td><code>def apply_twice(x)</code> — no parameter; the block is invisible</td></tr>
+  <tr><td><code>f(x)</code></td><td><code>yield(x)</code></td></tr>
+  <tr><td><code>if f != nil { ... }</code></td><td><code>block_given?</code></td></tr>
+  <tr><td><code>double := func(x int) int { return x * 2 }</code></td><td><code>double = -&gt;(x) { x * 2 }</code></td></tr>
+  <tr><td><code>double(5)</code></td><td><code>double.call(5)</code></td></tr>
+</table>
+<p>When you genuinely need a first-class value — something to store in a
+variable, return from a method, keep in a hash — Ruby has the
+<strong>lambda</strong>: <code>-&gt;(x) { x * 2 }</code>, invoked with
+<code>.call</code>. Lambdas close over their environment exactly like Go's func
+literals do, and just like in Go, the garbage collector keeps captured
+variables alive after the enclosing method returns. One last shortcut you will
+see everywhere: <code>words.map(&amp;:upcase)</code> — the <code>&amp;:symbol</code>
+form turns a method name into a block, the way Go passes
+<code>strings.ToUpper</code> by name.</p>`,
+
+  go: `package main
+
+import "fmt"
+
+func applyTwice(x int, f func(int) int) int {
+	return f(f(x)) // the func is an explicit, named parameter
+}
+
+func makeMultiplier(n int) func(int) int {
+	// A closure: n stays alive after makeMultiplier returns.
+	return func(x int) int { return x * n }
+}
+
+func main() {
+	fmt.Println(applyTwice(3, func(v int) int { return v * 2 })) // 12
+
+	triple := makeMultiplier(3)
+	fmt.Println(triple(10)) // 30
+}`,
+
+  task: `
+<p>Rewrite the Go on the left in Ruby's three flavors of "passing behavior":</p>
+<ol>
+  <li><code>apply_twice(x)</code> — takes <em>no</em> func parameter. The
+      caller attaches a block (<code>apply_twice(3) { |v| v * 2 }</code>) and
+      you invoke it twice with <code>yield(yield(x))</code>.</li>
+  <li><code>maybe_yield(x)</code> — if a block was given, yield <code>x</code>
+      to it; otherwise return <code>x</code> unchanged. Use
+      <code>block_given? ? yield(x) : x</code>.</li>
+  <li><code>make_multiplier(n)</code> — return a lambda,
+      <code>-&gt;(x) { x * n }</code>. The tests call it with
+      <code>.call</code>. Like Go's closure, <code>n</code> outlives the
+      method call.</li>
+  <li><code>shout_all(words)</code> — upcase every word using the
+      <code>&amp;:symbol</code> shorthand: <code>words.map(&amp;:upcase)</code>.</li>
+</ol>
+<p>Notice what you never write: a parameter for the block. It is simply
+<em>there</em> when the method runs.</p>`,
+
+  starter: `# 1. apply_twice: no block parameter to declare — just yield(yield(x)).
+def apply_twice(x)
+  raise NotImplementedError, "TODO: implement apply_twice"
+end
+
+# 2. maybe_yield: block_given? ? yield(x) : x
+def maybe_yield(x)
+  raise NotImplementedError, "TODO: implement maybe_yield"
+end
+
+# 3. make_multiplier: return a lambda ->(x) { ... } closing over n.
+def make_multiplier(n)
+  raise NotImplementedError, "TODO: implement make_multiplier"
+end
+
+# 4. shout_all: map with the &:symbol shorthand.
+def shout_all(words)
+  raise NotImplementedError, "TODO: implement shout_all"
+end
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Invoke the invisible block with yield" },
+    { pattern: /block_given\?/, message: "Check for a block with block_given?" },
+    { pattern: /->\s*\(/, message: "Build the multiplier as a ->(x) { ... } lambda" },
+    { pattern: /&:/, message: "Use the &:symbol shorthand in shout_all" },
+  ],
+
+  tests: [
+    { name: "apply_twice(3) { |v| v * 2 } returns 12",
+      code: "  expect_eq(apply_twice(3) { |v| v * 2 }, 12)" },
+    { name: 'apply_twice("a") { |s| s + "!" } returns "a!!"',
+      code: '  expect_eq(apply_twice("a") { |s| s + "!" }, "a!!")' },
+    { name: "maybe_yield(10) { |v| v + 1 } returns 11",
+      code: "  expect_eq(maybe_yield(10) { |v| v + 1 }, 11)" },
+    { name: "maybe_yield(10) with no block returns 10",
+      code: "  expect_eq(maybe_yield(10), 10)" },
+    { name: "make_multiplier(5).call(6) returns 30",
+      code: "  expect_eq(make_multiplier(5).call(6), 30)" },
+    { name: 'shout_all(["go", "ruby"]) returns ["GO", "RUBY"]',
+      code: '  expect_eq(shout_all(["go", "ruby"]), ["GO", "RUBY"])' },
+  ],
+
+  solution: `def apply_twice(x)
+  yield(yield(x))
+end
+
+def maybe_yield(x)
+  block_given? ? yield(x) : x
+end
+
+def make_multiplier(n)
+  ->(x) { x * n }
+end
+
+def shout_all(words)
+  words.map(&:upcase)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Pass behavior in</td><td><code>f(x, func(v int) int { ... })</code></td><td><code>f(x) { |v| ... }</code> — block after the parens</td></tr>
+  <tr><td>Receive it</td><td><code>f func(int) int</code> parameter</td><td>nothing to declare; the block is implicit</td></tr>
+  <tr><td>Invoke it</td><td><code>f(v)</code></td><td><code>yield(v)</code></td></tr>
+  <tr><td>Was one passed?</td><td><code>f != nil</code></td><td><code>block_given?</code></td></tr>
+  <tr><td>First-class function</td><td><code>g := func(x int) int { ... }</code></td><td><code>g = -&gt;(x) { ... }</code>, call with <code>g.call(x)</code></td></tr>
+  <tr><td>Multi-line block</td><td>same braces</td><td><code>do |v| ... end</code> (convention for multi-line)</td></tr>
+  <tr><td>Method by name</td><td><code>strings.ToUpper</code></td><td><code>&amp;:upcase</code></td></tr>
+</table>
+<p>The deep difference: a Go func literal is always a <em>value</em>, but a
+Ruby block is pure <em>syntax</em> — every method can accept exactly one, and
+most of the standard library is designed around it. That is why the next two
+lessons feel the way they do: <code>each</code>, <code>map</code>, and
+<code>select</code> are just ordinary methods that <code>yield</code> each
+element to whatever block you attach. When you truly need a value, reach for a
+lambda; when a method wants a block and you have a method name, glue them with
+<code>&amp;:</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Hashes & Symbols</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Hashes & Symbols",
+
+  intro: `
+<p><code>HashMap&lt;String, u32&gt;</code> becomes <code>Hash</code>, and the
+<code>::new()</code>-then-<code>insert</code> ceremony becomes a literal:
+<code>{ apples: 3, bananas: 5 }</code>. Those keys are
+<strong>symbols</strong> — <code>:apples</code> — interned, immutable
+identifiers with strong <code>&amp;'static str</code> energy: one shared
+instance per name, compared by identity, the idiomatic choice for fixed keys.
+<code>apples: 3</code> inside a hash literal is shorthand for
+<code>:apples =&gt; 3</code>.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>let mut m = HashMap::new();</code><br><code>m.insert("apples".to_string(), 3);</code></td><td><code>inv = { apples: 3 }</code></td></tr>
+  <tr><td><code>m.get(&amp;k)</code> → <code>Option&lt;&amp;V&gt;</code></td><td><code>inv[:apples]</code> → the value, or <code>nil</code></td></tr>
+  <tr><td><code>m.get(&amp;k).copied().unwrap_or(0)</code></td><td><code>inv.fetch(:apples, 0)</code></td></tr>
+  <tr><td><code>for (k, v) in &amp;m { … }</code></td><td><code>inv.each { |k, v| … }</code></td></tr>
+  <tr><td>iteration order arbitrary</td><td><strong>insertion order preserved</strong></td></tr>
+</table>
+<p>Lookups collapse <code>Option&lt;&amp;V&gt;</code> the same way arrays
+collapsed it: <code>inv[:kiwis]</code> on a missing key is just
+<code>nil</code>. When you want a default instead,
+<code>inv.fetch(key, 0)</code> is your <code>.unwrap_or(0)</code> — and
+<code>fetch</code> with <em>no</em> default raises on a missing key, which
+makes it the strict <code>.expect(...)</code> flavor too. One genuine gotcha
+for the dynamically-typed world: <code>inv[:name]</code> and
+<code>inv["name"]</code> are <em>different keys</em>. A symbol is not a
+string, and a hash keyed by symbols answers <code>nil</code> to string
+lookups — no compiler will catch the mix-up for you.</p>`,
+
+  rust: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new(); // the ceremony
+    inv.insert("apples".to_string(), 3);
+    inv.insert("bananas".to_string(), 5);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+// Non-mutating update: clone, then bump the entry.
+fn add_stock(inv: &HashMap<String, u32>, name: &str, n: u32)
+    -> HashMap<String, u32> {
+    let mut next = inv.clone();
+    *next.entry(name.to_string()).or_insert(0) += n;
+    next
+}`,
+
+  task: `
+<p>Port the inventory to a symbol-keyed hash:</p>
+<ol>
+  <li><code>build_inventory</code> — the literal
+      <code>{ apples: 3, bananas: 5 }</code>. The entire
+      <code>HashMap::new()</code> / <code>insert</code> ceremony becomes one
+      line.</li>
+  <li><code>get_count(inv, name)</code> — <code>inv.fetch(name, 0)</code>,
+      the direct translation of <code>.unwrap_or(0)</code>.</li>
+  <li><code>add_stock(inv, name, n)</code> — <em>non-mutating</em>, like the
+      Rust version: build the updated hash with
+      <code>inv.merge(name =&gt; inv.fetch(name, 0) + n)</code> and leave the
+      original untouched. (<code>merge</code> returns a new hash;
+      <code>name =&gt; …</code> is the arrow form you need when the key is a
+      variable.)</li>
+  <li><code>stock_names(inv)</code> — <code>inv.keys</code>. The tests check
+      the order: Ruby hashes remember insertion order.</li>
+</ol>`,
+
+  starter: `# 1. build_inventory: no HashMap::new, no insert — just a literal
+#    with symbol keys (apples: 3 is shorthand for :apples => 3).
+def build_inventory
+  raise NotImplementedError, "TODO: implement build_inventory"
+end
+
+# 2. get_count: .get(&k).copied().unwrap_or(0) -> fetch(name, 0)
+def get_count(inv, name)
+  raise NotImplementedError, "TODO: implement get_count"
+end
+
+# 3. add_stock: non-mutating — merge returns a NEW hash.
+#    inv.merge(name => inv.fetch(name, 0) + n)
+def add_stock(inv, name, n)
+  raise NotImplementedError, "TODO: implement add_stock"
+end
+
+# 4. stock_names: the keys, in insertion order.
+def stock_names(inv)
+  raise NotImplementedError, "TODO: implement stock_names"
+end
+`,
+
+  requirements: [
+    { pattern: /fetch\s*\(/, message: "Use fetch( with a default in get_count" },
+    { pattern: /merge/, message: "Build the updated hash with merge in add_stock" },
+    { pattern: /:\w+/, message: "Use symbol keys (like :apples)" },
+    { pattern: /\.each|\.keys/, message: "Use .keys (or .each) to walk the hash" },
+  ],
+
+  tests: [
+    { name: "build_inventory returns { apples: 3, bananas: 5 }",
+      code: "  expect_eq(build_inventory, { apples: 3, bananas: 5 })" },
+    { name: "get_count(build_inventory, :apples) returns 3",
+      code: "  expect_eq(get_count(build_inventory, :apples), 3)" },
+    { name: "get_count(build_inventory, :kiwis) returns 0 — the unwrap_or(0)",
+      code: "  expect_eq(get_count(build_inventory, :kiwis), 0)" },
+    { name: "add_stock(inv, :apples, 2) returns { apples: 5, bananas: 5 }",
+      code: "  expect_eq(add_stock(build_inventory, :apples, 2), { apples: 5, bananas: 5 })" },
+    { name: "add_stock does not mutate the original hash",
+      code: `  inv = build_inventory
+  add_stock(inv, :kiwis, 4)
+  expect_eq(inv, { apples: 3, bananas: 5 })` },
+    { name: "stock_names(build_inventory) returns [:apples, :bananas] in insertion order",
+      code: "  expect_eq(stock_names(build_inventory), [:apples, :bananas])" },
+  ],
+
+  solution: `def build_inventory
+  # symbol keys: apples: 3 is shorthand for :apples => 3
+  { apples: 3, bananas: 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  inv.merge(name => inv.fetch(name, 0) + n)
+end
+
+def stock_names(inv)
+  inv.keys
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>Make one</td><td><code>HashMap::new()</code> + <code>insert</code></td><td><code>{ apples: 3, bananas: 5 }</code></td></tr>
+  <tr><td>Fixed keys</td><td><code>&amp;'static str</code> / enums</td><td>symbols: <code>:apples</code> — interned, compared by identity</td></tr>
+  <tr><td>Lookup</td><td><code>m.get(&amp;k)</code> → <code>Option&lt;&amp;V&gt;</code></td><td><code>h[:k]</code> → value or <code>nil</code></td></tr>
+  <tr><td>With default</td><td><code>.unwrap_or(0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+  <tr><td>Strict lookup</td><td><code>.expect("missing")</code></td><td><code>h.fetch(k)</code> — raises if absent</td></tr>
+  <tr><td>Insert / update</td><td><code>m.insert(k, v)</code></td><td><code>h[k] = v</code> (mutating) or <code>h.merge(k =&gt; v)</code> (new hash)</td></tr>
+  <tr><td>Iterate</td><td><code>for (k, v) in &amp;m</code></td><td><code>h.each { |k, v| … }</code></td></tr>
+  <tr><td>Order</td><td>arbitrary (hash order)</td><td>insertion order, guaranteed</td></tr>
+</table>
+<p>The <code>merge</code> pattern is the closest Ruby gets to Rust's
+functional-update spirit: no <code>&amp;mut</code>, callers keep their hash
+untouched, and there is no clone ceremony because a new hash is what
+<code>merge</code> produces anyway. Keep the gotcha in your pocket, though:
+<code>h[:name]</code> and <code>h["name"]</code> can coexist in the same
+hash with different values, and the wrong one silently reads as
+<code>nil</code>. Where Rust's type system made key type a compile-time
+fact, in Ruby it is a convention — symbols for internal fixed keys, strings
+for external data — and a test away from being verified.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

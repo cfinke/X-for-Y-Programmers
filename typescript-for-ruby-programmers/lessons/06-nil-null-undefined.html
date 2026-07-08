@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Nil, Null & Undefined</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Nil, Null & Undefined",
+
+  intro: `
+<p>Ruby has exactly one flavor of nothing: <code>nil</code>. JavaScript — and
+therefore TypeScript — has two: <code>null</code> ("deliberately empty") and
+<code>undefined</code> ("was never set"). The split follows a rule you already
+know from hashes: just as <code>h[:missing]</code> quietly returns
+<code>nil</code>, reading a property that does not exist —
+<code>obj.missing</code> — quietly returns <code>undefined</code>.
+<code>null</code> is what you assign on purpose, the way an API returns
+<code>nil</code> to say "looked, found nothing".</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>nil</code></td><td><code>null</code> (deliberate) and <code>undefined</code> (never set)</td></tr>
+  <tr><td><code>h[:missing]</code> → <code>nil</code></td><td><code>obj.missing</code> → <code>undefined</code></td></tr>
+  <tr><td><code>user&amp;.address&amp;.city</code></td><td><code>user?.address?.city</code></td></tr>
+  <tr><td><code>value || "fallback"</code></td><td><code>value ?? "fallback"</code> (see the trap below)</td></tr>
+  <tr><td><code>NoMethodError</code> for <code>nil</code>, at runtime</td><td>compile error until you handle the <code>null</code></td></tr>
+</table>
+<p>Two direct translations. The safe-navigation operator <code>&amp;.</code> is
+<em>exactly</em> <code>?.</code> — same semantics, different sigil. Defaults
+need more care: Ruby's <code>||</code> only treats <code>nil</code> and
+<code>false</code> as falsy, but JavaScript's <code>||</code> also swallows
+<code>""</code> and <code>0</code>. The safe translation of
+<code>value || fallback</code> is <code>value ?? fallback</code>, which fires
+only on <code>null</code>/<code>undefined</code>.</p>
+<p>And here is the payoff for the two-nothings tax: nullability lives in the
+type. A return type of <code>User | null</code> means the compiler refuses to
+let you touch <code>.name</code> until you have checked — the nil-check you
+used to discover in production, moved into the editor.</p>`,
+
+  ruby: `users = [
+  { name: "Yukihiro", address: { city: "Matsue" } },
+  { name: "Aaron" }                       # no :address key at all
+]
+
+def find_user(users, name)
+  users.find { |u| u[:name] == name }     # nil when nothing matches
+end
+
+def city_of(users, name)
+  user = find_user(users, name)
+  user&.dig(:address, :city) || "Unknown" # &. guards the nil
+end
+
+city_of(users, "Yukihiro")  # => "Matsue"
+city_of(users, "nobody")    # => "Unknown"
+
+# The || trap is worse in JS: Ruby's || only treats nil/false as
+# falsy, but JavaScript's || also swallows "" and 0.
+nickname = ""
+nickname || "guest"         # => "" in Ruby — but "guest" with JS's ||!`,
+
+  task: `
+<p>Translate the Ruby lookup on the left, with the nullability written into
+the types:</p>
+<ol>
+  <li>Complete <code>findUser(name: string)</code> so it returns the matching
+      user <strong>or <code>null</code></strong> — annotate the return type as
+      <code>User | null</code>. Note the mismatch you must bridge:
+      <code>users.find(...)</code> gives you <code>User | undefined</code>
+      (the missing-property flavor of nothing), and <code>??</code> converts
+      it to a deliberate <code>null</code>.</li>
+  <li>Complete <code>cityOf(name: string): string</code>: look the user up,
+      then reach for <code>.address.city</code> using the safe-navigation
+      operator <code>?.</code> (your <code>&amp;.</code>), falling back to
+      <code>"Unknown"</code> with <code>??</code>.</li>
+  <li>Complete <code>withDefault(value, fallback)</code> so it returns
+      <code>value</code> unless it is <code>null</code> or
+      <code>undefined</code>, in which case it returns <code>fallback</code>.
+      Use <code>??</code>, not <code>||</code> — the tests pass in
+      <code>""</code> and expect it back.</li>
+</ol>
+<p>Try returning <code>found</code> directly from <code>findUser</code>, or
+calling <code>.address.city</code> without the <code>?.</code> — the compiler
+pushes back. That is the point.</p>`,
+
+  starter: `interface User {
+  name: string;
+  address?: { city: string };
+}
+
+const users: User[] = [
+  { name: "Yukihiro", address: { city: "Matsue" } },
+  { name: "Aaron" },
+];
+
+// 1. Ruby: users.find { |u| u[:name] == name }  — nil when missing.
+//    Here .find gives User | undefined; return a deliberate null instead.
+//    TODO: annotate the return type as User | null, and use ?? to convert.
+function findUser(name: string) {
+  const found = users.find((u) => u.name === name);
+  return null; // TODO
+}
+
+// 2. Ruby: find_user(name)&.dig(:address, :city) || "Unknown"
+//    Use ?. for the safe navigation and ?? for the default.
+function cityOf(name: string): string {
+  return ""; // TODO
+}
+
+// 3. Return value unless it is null/undefined, else fallback.
+//    Careful: || would also replace "" — use ??.
+function withDefault(value: string | null | undefined, fallback: string): string {
+  return fallback; // TODO
+}
+`,
+
+  exportNames: ["findUser", "cityOf", "withDefault"],
+
+  requirements: [
+    { pattern: /\|\s*null/, message: "Write the nullability into a type: findUser should return User | null" },
+    { pattern: /\?\./, message: "Use the safe-navigation operator ?. (Ruby's &.) somewhere in cityOf" },
+    { pattern: /\?\?/, message: "Use ?? for defaults — it only fires on null/undefined, unlike ||" },
+  ],
+
+  tests: [
+    { name: 'findUser("Yukihiro") returns the user', run: (x) => expectEqual(x.findUser("Yukihiro").name, "Yukihiro") },
+    { name: 'findUser("nobody") returns null (not undefined)', run: (x) => expectEqual(x.findUser("nobody"), null) },
+    { name: 'cityOf("Yukihiro") is "Matsue"', run: (x) => expectEqual(x.cityOf("Yukihiro"), "Matsue") },
+    { name: 'cityOf("Aaron") is "Unknown" — user exists, address does not', run: (x) => expectEqual(x.cityOf("Aaron"), "Unknown") },
+    { name: 'withDefault(null, "guest") falls back to "guest"', run: (x) => expectEqual(x.withDefault(null, "guest"), "guest") },
+    { name: 'withDefault("", "guest") keeps "" — ?? does not swallow it', run: (x) => expectEqual(x.withDefault("", "guest"), "") },
+  ],
+
+  solution: `interface User {
+  name: string;
+  address?: { city: string };
+}
+
+const users: User[] = [
+  { name: "Yukihiro", address: { city: "Matsue" } },
+  { name: "Aaron" },
+];
+
+function findUser(name: string): User | null {
+  const found = users.find((u) => u.name === name);
+  return found ?? null;
+}
+
+function cityOf(name: string): string {
+  return findUser(name)?.address?.city ?? "Unknown";
+}
+
+function withDefault(value: string | null | undefined, fallback: string): string {
+  return value ?? fallback;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>The nothing value</td><td><code>nil</code></td><td><code>null</code> (deliberate) / <code>undefined</code> (never set)</td></tr>
+  <tr><td>Missing key / property</td><td><code>h[:missing]</code> → <code>nil</code></td><td><code>obj.missing</code> → <code>undefined</code></td></tr>
+  <tr><td>Safe navigation</td><td><code>user&amp;.address&amp;.city</code></td><td><code>user?.address?.city</code></td></tr>
+  <tr><td>Safe call</td><td><code>callback&amp;.call</code></td><td><code>callback?.()</code></td></tr>
+  <tr><td>Default value</td><td><code>value || fallback</code></td><td><code>value ?? fallback</code> — <code>||</code> also swallows <code>""</code> and <code>0</code></td></tr>
+  <tr><td>Nil in the type</td><td>invisible (Sorbet: <code>T.nilable</code>)</td><td><code>User | null</code>, enforced by the compiler</td></tr>
+</table>
+<p>"Undefined method for nil" is the classic Ruby production crash — the nil
+travels far from where it was born before anything notices. TypeScript moves
+that discovery to the editor: once a type says <code>| null</code> or
+<code>| undefined</code>, member access is a compile error until you narrow it
+with a check, <code>?.</code>, or <code>??</code>. The two-nothings split is a
+mild annoyance; the compiler-enforced nil-check is the trade that makes it
+worth it.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

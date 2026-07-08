@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Threads &amp; Channels</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Threads & Channels",
+
+  intro: `
+<p>PHP's concurrency story is famously simple: one request, one thread,
+start to finish. When work won't fit in a request, it leaves the language —
+a job serialized into Redis or a database queue, a worker process started by
+a supervisor, maybe <code>pcntl_fork</code> if you're feeling brave. Rust
+has real threads <em>in the language</em>: <code>thread::spawn</code> takes
+a closure and runs it on another OS thread immediately, and the returned
+handle's <code>.join()</code> waits for it and hands back its result. No
+queue server, no serialization, no supervisor.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Background work: queue + worker process</td><td><code>let h = thread::spawn(move || ...);</code></td></tr>
+  <tr><td>Waiting for the result: poll the queue</td><td><code>h.join().unwrap()</code> — blocks, returns the closure's value</td></tr>
+  <tr><td>Passing data: <code>json_encode</code> through Redis</td><td><code>mpsc::channel()</code> — typed values, in order, no serializing</td></tr>
+  <tr><td>Data races: impossible (no shared memory at all)</td><td>Impossible (the compiler rejects unsafe sharing)</td></tr>
+</table>
+<p>What makes threads terrifying in most languages is shared memory: two
+threads mutating one value is a data race, the crash that reproduces only in
+production. Here Rust's ownership rules — the same ones from lessons 4 and
+5 — pay off spectacularly. The <code>move</code> keyword makes the closure
+take <em>ownership</em> of what it captures (like <code>use ($b)</code>
+by-value, but enforced), so once <code>b</code> moves into the thread, the
+original is gone and racing on it won't compile. And for ongoing
+communication, <code>mpsc::channel()</code> gives you a typed job queue
+between threads: <code>tx.send(value)</code> on one side,
+<code>rx.recv()</code> on the other, values arriving in the order they were
+sent.</p>`,
+
+  php: `<?php
+// One request, one thread. Concurrency lives OUTSIDE the language:
+// a queue, plus a worker process started by a supervisor.
+
+$redis = new Redis();
+$redis->connect('127.0.0.1');
+$redis->rPush('jobs', json_encode(['values' => [4, 5, 6]]));
+
+// ...meanwhile, in worker.php — a separate PROCESS entirely:
+while (true) {
+    [, $payload] = $redis->blPop(['jobs'], 0);
+    $job = json_decode($payload, true);
+    $redis->rPush('results', (string) array_sum($job['values']));
+}
+
+// Shared memory between the two? There is none — serialization
+// through Redis is the only bridge.`,
+
+  task: `
+<p>Two flavors of "worker", both in-process (the starter already has
+<code>use std::thread;</code> and <code>use std::sync::mpsc;</code>):</p>
+<ol>
+  <li><code>parallel_sum(a: Vec&lt;i32&gt;, b: Vec&lt;i32&gt;) -&gt; i32</code>
+      — spawn a thread that sums <code>b</code> (the closure needs
+      <code>move</code> to take ownership of <code>b</code>), sum
+      <code>a</code> on the current thread, then <code>.join()</code> the
+      handle — <code>join()</code> returns a <code>Result</code>, so
+      <code>.unwrap()</code> it — and add the two sums.
+      Hint: <code>b.iter().sum::&lt;i32&gt;()</code>.</li>
+  <li><code>channel_double(vals: Vec&lt;i32&gt;) -&gt; Vec&lt;i32&gt;</code>
+      — a one-worker job queue. Save <code>vals.len()</code> first, then
+      <code>let (tx, rx) = mpsc::channel();</code> and spawn a thread that
+      <code>move</code>s <code>vals</code> and <code>tx</code> in, sending
+      <code>v * 2</code> for each value. Back on the main thread,
+      <code>rx.recv().unwrap()</code> exactly that many times, collecting
+      into a Vec (order is preserved). <code>.join()</code> the handle before
+      returning, so the test is deterministic.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::thread;
+use std::sync::mpsc;
+
+// Spawn a thread to sum b (move!), sum a here, join, add.
+// thread::spawn returns a JoinHandle; .join() returns Result — unwrap it.
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    todo!()
+}
+
+// A typed in-process job queue:
+//   let (tx, rx) = mpsc::channel();
+// Worker thread: send v * 2 for each v in vals (move vals and tx in).
+// Main thread: rx.recv().unwrap() exactly vals.len() times, in order.
+// Join the worker before returning.
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /thread::spawn/, message: "Start a real thread with thread::spawn(move || ...)" },
+    { pattern: /\.join\(\)/, message: "Wait for the thread with .join() before using its result" },
+    { pattern: /mpsc/, message: "Use an mpsc channel to pass values between threads" },
+  ],
+
+  tests: [
+    { name: "parallel_sum(vec![1, 2, 3], vec![4, 5, 6]) returns 21",
+      code: "assert_eq!(parallel_sum(vec![1, 2, 3], vec![4, 5, 6]), 21);" },
+    { name: "parallel_sum works when one side is empty",
+      code: "assert_eq!(parallel_sum(vec![], vec![10]), 10);\nassert_eq!(parallel_sum(vec![7], vec![]), 7);" },
+    { name: "channel_double(vec![1, 2, 3]) returns vec![2, 4, 6] — in order",
+      code: "assert_eq!(channel_double(vec![1, 2, 3]), vec![2, 4, 6]);" },
+    { name: "channel_double handles negatives: vec![-4, 0] becomes vec![-8, 0]",
+      code: "assert_eq!(channel_double(vec![-4, 0]), vec![-8, 0]);" },
+    { name: "channel_double of an empty Vec is an empty Vec",
+      code: "assert_eq!(channel_double(vec![]), Vec::<i32>::new());" },
+  ],
+
+  solution: `use std::thread;
+use std::sync::mpsc;
+
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    let handle = thread::spawn(move || b.iter().sum::<i32>());
+    let sum_a: i32 = a.iter().sum();
+    sum_a + handle.join().unwrap()
+}
+
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    let n = vals.len();
+    let (tx, rx) = mpsc::channel();
+    let handle = thread::spawn(move || {
+        for v in vals {
+            tx.send(v * 2).unwrap();
+        }
+    });
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        out.push(rx.recv().unwrap());
+    }
+    handle.join().unwrap();
+    out
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Run work concurrently</td><td>Queue + worker process / <code>pcntl_fork</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+  <tr><td>Wait for the result</td><td>Poll the results queue</td><td><code>handle.join().unwrap()</code></td></tr>
+  <tr><td>Hand data to the worker</td><td><code>json_encode</code> → Redis → <code>json_decode</code></td><td><code>move</code> ownership in; typed values, zero serialization</td></tr>
+  <tr><td>Stream of jobs/results</td><td>Redis list, stringly-typed</td><td><code>mpsc::channel()</code> — <code>tx.send(x)</code> / <code>rx.recv()</code>, typed and ordered</td></tr>
+  <tr><td>Data race protection</td><td>By architecture (nothing is shared)</td><td>By the compiler (unsafe sharing won't build)</td></tr>
+</table>
+<p>PHP's share-nothing model was never a weakness — it's why PHP apps
+parallelize so easily across requests. Rust gives you the same discipline
+<em>inside</em> one process: <code>move</code> transfers ownership into the
+thread just as surely as <code>json_encode</code> transferred your job out
+of it, and a channel is your familiar job queue with the compiler checking
+the payload type. The difference is what happens when you get it wrong. Try
+to use <code>b</code> after moving it into the thread, or send a value and
+then mutate it — in Rust these aren't 3 a.m. incidents, they're red
+squiggles. "Fearless concurrency" is the ownership system from lesson 4
+cashing its biggest check.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

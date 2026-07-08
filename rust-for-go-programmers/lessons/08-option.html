@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Option: The End of Null</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Option: The End of Null",
+
+  intro: `
+<p>Go expresses "no value" several different ways, and each behaves
+differently: a nil pointer dereferences to a panic, a nil map reads fine
+but panics on write, a nil slice is mostly usable, and a nil interface is
+its own famous interview question (a non-nil pointer in a nil-checking
+interface — <code>err != nil</code> being true when you'd swear it
+shouldn't be). And when nil isn't available — a plain <code>string</code>
+or <code>int</code> — absence hides inside a zero value, indistinguishable
+from a real <code>""</code> or <code>0</code>, which is why comma-ok
+returns exist at all.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>*User</code> that might be <code>nil</code></td><td><code>Option&lt;User&gt;</code> — <code>Some(user)</code> or <code>None</code></td></tr>
+  <tr><td><code>name, ok := lookup(id)</code></td><td><code>lookup(id)</code> returns <code>Option&lt;String&gt;</code></td></tr>
+  <tr><td><code>if !ok { name = "guest" }</code></td><td><code>name.unwrap_or("guest".to_string())</code></td></tr>
+  <tr><td><code>if u != nil { ... }</code> pyramids</td><td><code>u.map(...)</code> chains, or <code>match</code></td></tr>
+  <tr><td>forget the nil check → runtime panic</td><td>forget to handle <code>None</code> → compile error</td></tr>
+</table>
+<p>Rust replaces all of it with one concept: <code>Option&lt;T&gt;</code>
+is either <code>Some(value)</code> or <code>None</code>, and the compiler
+will not let you treat an <code>Option&lt;String&gt;</code> as a
+<code>String</code> until you've said what happens when it's
+<code>None</code>. <code>unwrap_or(default)</code> is the zero value made
+explicit and chosen per call site; <code>.map(...)</code> transforms the
+value if present and passes <code>None</code> through, flattening the
+<code>if x != nil</code> pyramids into a chain. You already saw
+<code>Option</code> sneak out of <code>HashMap::get</code> and
+<code>v.get(i)</code> — now you know what it is.</p>`,
+
+  go: `package main
+
+import "fmt"
+
+// Absence as a nil pointer — one of Go's several "no value" encodings.
+func findUser(id uint32) *string {
+	users := map[uint32]string{1: "Ada", 2: "Grace"}
+	if name, ok := users[id]; ok {
+		return &name
+	}
+	return nil
+}
+
+func displayName(name *string) string {
+	if name == nil { // forget this check and you panic at runtime
+		return "guest"
+	}
+	return *name
+}
+
+func main() {
+	fmt.Println(displayName(findUser(1)), displayName(findUser(99)))
+}`,
+
+  task: `
+<p>Replace the nil-pointer encoding with <code>Option</code>:</p>
+<ol>
+  <li><code>find_user(id: u32) -&gt; Option&lt;String&gt;</code> — return
+      <code>Some("Ada".to_string())</code> for id 1,
+      <code>Some("Grace".to_string())</code> for id 2, and
+      <code>None</code> for anything else (a <code>match</code> on
+      <code>id</code> works nicely).</li>
+  <li><code>display_name(name: Option&lt;String&gt;) -&gt; String</code> —
+      return the name if present, otherwise <code>"guest"</code>. No
+      <code>if name == nil</code>: one call to
+      <code>unwrap_or</code>.</li>
+  <li><code>first_char(s: &amp;str) -&gt; Option&lt;char&gt;</code> — the
+      first character of <code>s</code>, or <code>None</code> if it's
+      empty. <code>s.chars().next()</code> already <em>is</em> an
+      <code>Option&lt;char&gt;</code> — absence composes instead of
+      needing a length check.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. find_user: Some("Ada") for 1, Some("Grace") for 2, None otherwise.
+//    match id { 1 => ..., 2 => ..., _ => ... } reads well here.
+fn find_user(id: u32) -> Option<String> {
+    todo!()
+}
+
+// 2. display_name: the nil check + "guest" fallback, as one method call.
+fn display_name(name: Option<String>) -> String {
+    todo!()
+}
+
+// 3. first_char: s.chars().next() is already an Option<char> —
+//    no len(s) == 0 guard needed.
+fn first_char(s: &str) -> Option<char> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option</, message: "Use Option<T> for values that may be absent" },
+    { pattern: /Some\(/, message: "Wrap present values in Some(...)" },
+    { pattern: /None/, message: "Use None for the absent case" },
+    { pattern: /unwrap_or/, message: 'Use unwrap_or for the "guest" fallback in display_name' },
+  ],
+
+  tests: [
+    { name: 'find_user(1) returns Some("Ada")',
+      code: 'assert_eq!(find_user(1), Some("Ada".to_string()));' },
+    { name: 'find_user(2) returns Some("Grace")',
+      code: 'assert_eq!(find_user(2), Some("Grace".to_string()));' },
+    { name: "find_user(99) returns None",
+      code: "assert_eq!(find_user(99), None);" },
+    { name: 'display_name(Some("Ada")) returns "Ada"',
+      code: 'assert_eq!(display_name(Some("Ada".to_string())), "Ada");' },
+    { name: 'display_name(None) returns "guest"',
+      code: 'assert_eq!(display_name(None), "guest");' },
+    { name: "first_char works on \"go\" and returns None on \"\"",
+      code: `assert_eq!(first_char("go"), Some('g'));
+assert_eq!(first_char(""), None);` },
+  ],
+
+  solution: `fn find_user(id: u32) -> Option<String> {
+    match id {
+        1 => Some("Ada".to_string()),
+        2 => Some("Grace".to_string()),
+        _ => None,
+    }
+}
+
+fn display_name(name: Option<String>) -> String {
+    name.unwrap_or("guest".to_string())
+}
+
+fn first_char(s: &str) -> Option<char> {
+    s.chars().next()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Maybe-absent value</td><td><code>*T</code> nil, comma-ok, zero values, nil interface…</td><td><code>Option&lt;T&gt;</code> — one concept for all of them</td></tr>
+  <tr><td>Present / absent</td><td><code>&amp;v</code> / <code>nil</code></td><td><code>Some(v)</code> / <code>None</code></td></tr>
+  <tr><td>Fallback default</td><td><code>if p == nil { return "guest" }</code></td><td><code>p.unwrap_or("guest".to_string())</code></td></tr>
+  <tr><td>Transform if present</td><td><code>if p != nil { x := f(*p) ... }</code></td><td><code>p.map(f)</code></td></tr>
+  <tr><td>Branch on both cases</td><td><code>if p != nil { ... } else { ... }</code></td><td><code>match p { Some(v) =&gt; ..., None =&gt; ... }</code></td></tr>
+  <tr><td>Forgot to check</td><td>compiles; panics at runtime</td><td>doesn't compile</td></tr>
+</table>
+<p>The deep difference isn't the syntax — it's <em>where the check is
+enforced</em>. Go's nil check is a convention you remember (or don't);
+Rust's <code>None</code> handling is in the type, so the compiler is the
+code reviewer who never misses one. And because <code>Option</code> is a
+plain enum, absence composes: <code>find_user(id).map(|n| n.len())</code>
+is an <code>Option&lt;usize&gt;</code>, no pyramid required. Next lesson
+applies the same move to Go's other famous pair:
+<code>(T, error)</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

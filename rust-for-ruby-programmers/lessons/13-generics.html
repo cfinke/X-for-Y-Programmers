@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Generics & Trait Bounds</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Generics & Trait Bounds",
+
+  intro: `
+<p>Every Ruby method is already "generic": <code>def largest(items)</code>
+takes anything, and whether the elements support <code>&gt;</code> is
+discovered one comparison at a time. Pass <code>[3, "seven", 2]</code> and you
+get an <code>ArgumentError</code> mid-loop, at runtime, on whichever input
+finally mixes types. The method's real requirement — "elements must be
+comparable to each other" — exists only in your head.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>def first(items)</code> — takes anything</td><td><code>fn first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td><code>def largest(items)</code> — <em>hopes</em> for <code>&gt;</code></td><td><code>fn largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code></td></tr>
+  <tr><td>requirement is implicit</td><td><code>T: PartialOrd</code> — "T supports <code>&lt;</code>", in the signature</td></tr>
+  <tr><td>wrong element → error at runtime, mid-loop</td><td>wrong element type → error at the call site, at compile time</td></tr>
+</table>
+<p>Rust generics declare the quacking up front. <code>fn first&lt;T&gt;</code>
+works for <em>any</em> T because it never does anything to the elements —
+just hands one back. The moment the body needs a capability, the signature
+must say so: <code>largest</code> compares elements, so it demands
+<code>&lt;T: PartialOrd&gt;</code> — a <strong>trait bound</strong>, the
+traits from last lesson used as constraints. <code>PartialOrd</code> is
+Rust's <code>Comparable</code>, but <em>enforced</em>: inside the function
+you may only call what the bounds promise, and callers may only pass types
+that deliver. One definition, every type, zero runtime surprises.</p>`,
+
+  ruby: `def first(items)
+  items.first   # nil when empty — the caller finds out later
+end
+
+def largest(items)
+  result = items[0]
+  items.each { |item| result = item if item > result }
+  result
+end
+
+largest([3, 7, 2])                # => 7
+largest(["apple", "pear"])        # => "pear"
+
+# One definition, any type — until the types disagree:
+largest([3, "seven", 2])
+# => ArgumentError: comparison of String with 3 failed
+#    ...at RUNTIME, mid-loop`,
+
+  task: `
+<p>Write the two generic functions, declaring exactly the capability each one
+needs:</p>
+<ol>
+  <li><code>first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code> —
+      a reference to the first element, or <code>None</code> if the slice is
+      empty (Ruby's <code>items.first</code> returning <code>nil</code>, but
+      the maybe-absence is in the type). No bound on <code>T</code>: you
+      never do anything to the element, so any type qualifies. Hint:
+      slices already have a <code>.first()</code> method — or match on
+      <code>items.is_empty()</code> and return <code>Some(&amp;items[0])</code>.</li>
+  <li><code>largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code> —
+      a reference to the largest element. The body compares with
+      <code>&gt;</code> or <code>&lt;</code>, so the signature must demand
+      <code>T: PartialOrd</code>. Assume the slice is non-empty: start with
+      <code>&amp;items[0]</code> and loop (<code>for item in items</code>),
+      keeping the bigger reference.</li>
+</ol>
+<p>The tests call both functions with <code>i32</code> slices <em>and</em>
+<code>&amp;str</code> slices — one definition each. Don't write
+<code>fn main</code>; the lesson's tests call your functions directly.</p>`,
+
+  starter: `// 1. Any T at all — the body never touches the element's abilities.
+//    Return Some(&items[0]) style references, or None when empty.
+fn first<T>(items: &[T]) -> Option<&T> {
+    todo!()
+}
+
+// 2. The body uses \`>\`, so the signature must promise it: T: PartialOrd.
+//    (Delete the bound and watch the compiler point at the comparison.)
+//    Assume non-empty: track the best as \`&items[0]\`, loop, compare, return.
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<T\s*:\s*PartialOrd>/, message: "Give largest the trait bound <T: PartialOrd>" },
+    { pattern: /<T>/, message: "Make first generic over any T with <T>" },
+    { pattern: /Option<&T>/, message: "first returns Option<&T> — absence is in the type" },
+  ],
+
+  tests: [
+    { name: "first(&[1, 2, 3]) returns Some(&1)",
+      code: "assert_eq!(first(&[1, 2, 3]), Some(&1));" },
+    { name: "first on an empty slice returns None",
+      code: "assert_eq!(first::<i32>(&[]), None);" },
+    { name: 'first(&["a", "b"]) returns Some(&"a") — same function, strings',
+      code: 'assert_eq!(first(&["a", "b"]), Some(&"a"));' },
+    { name: "largest(&[3, 7, 2]) returns &7",
+      code: "assert_eq!(largest(&[3, 7, 2]), &7);" },
+    { name: 'largest(&["apple", "pear", "banana"]) returns &"pear" — same function, strings',
+      code: 'assert_eq!(largest(&["apple", "pear", "banana"]), &"pear");' },
+  ],
+
+  solution: `fn first<T>(items: &[T]) -> Option<&T> {
+    if items.is_empty() {
+        None
+    } else {
+        Some(&items[0])
+    }
+}
+
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    let mut result = &items[0];
+    for item in items {
+        if item > result {
+            result = item;
+        }
+    }
+    result
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Works for any type</td><td>every method, implicitly</td><td><code>fn first&lt;T&gt;(...)</code>, explicitly</td></tr>
+  <tr><td>"Must support &lt;"</td><td>hope + <code>ArgumentError</code></td><td><code>&lt;T: PartialOrd&gt;</code>, checked at compile time</td></tr>
+  <tr><td>Comparable-style contract</td><td><code>include Comparable</code></td><td><code>PartialOrd</code> bound (usually derived)</td></tr>
+  <tr><td>Several requirements</td><td>—</td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+  <tr><td>Maybe-absent result</td><td><code>nil</code></td><td><code>Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td>Mixed-type list</td><td><code>[3, "seven"]</code> — allowed, risky</td><td><code>&amp;[T]</code> is homogeneous; the mix can't be built</td></tr>
+</table>
+<p>Note what the bound buys you in <em>both</em> directions. Callers can't
+pass a type that doesn't compare — but also, inside <code>largest</code> you
+can't secretly call anything beyond what <code>PartialOrd</code> promises, so
+the signature is complete documentation of the function's demands. And
+there's no runtime cost: the compiler stamps out a specialized copy per
+concrete type (monomorphization), so <code>largest::&lt;i32&gt;</code> runs
+exactly as fast as a hand-written integer version. You've been consuming
+these all along — <code>Vec&lt;T&gt;</code>, <code>Option&lt;T&gt;</code>,
+<code>HashMap&lt;K, V&gt;</code>; now you can write them.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

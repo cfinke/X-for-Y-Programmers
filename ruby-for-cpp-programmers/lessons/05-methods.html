@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods & Implicit Return</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods & Implicit Return",
+
+  intro: `
+<p>No headers, no forward declarations, no translation units. A method comes
+into existence when the interpreter executes its <code>def</code>, and from
+that line on anyone can call it — define <code>greet</code> at the top of the
+file, call it at the bottom, done. The habit from lesson 1 is now the rule to
+lean on everywhere: the <strong>last expression evaluated is the method's
+value</strong>. An <code>if</code>/<code>else</code> is itself an expression,
+so whole method bodies read like a single computation with no plumbing.</p>
+<table>
+  <tr><th>C++</th><th>Ruby</th></tr>
+  <tr><td>declaration in a header + definition</td><td><code>def greet(name) ... end</code> — that's all</td></tr>
+  <tr><td><code>std::string greet(const std::string&amp; n, const std::string&amp; g = "Hello")</code></td><td><code>def greet(name, greeting = "Hello")</code></td></tr>
+  <tr><td>overload set for optional/named parameters</td><td>keyword arguments: <code>def create(name:, age: 0)</code></td></tr>
+  <tr><td><code>create("Ada", 36)</code> — which overload?</td><td><code>create(name: "Ada", age: 36)</code> — reads like designated initializers</td></tr>
+  <tr><td><code>return x;</code></td><td>last expression; the keyword is for early exit only</td></tr>
+</table>
+<p>Default arguments carry over almost unchanged. Overload sets do not exist
+— one name, one method — and their job is done by <em>keyword arguments</em>:
+<code>name:</code> with no default is required, <code>age: 0</code> is
+optional, and the call site names every argument the way C++20 designated
+initializers name struct fields. Add the naming conventions from lesson 2 —
+<code>?</code> for predicates, <code>!</code> for the dangerous variant — and
+you can read most Ruby signatures at a glance.</p>`,
+
+  cpp: `#include <optional>
+#include <string>
+
+// declaration first, or the compiler has never heard of you
+std::string greet(const std::string& name,
+                  const std::string& greeting = "Hello");
+
+std::string greet(const std::string& name, const std::string& greeting) {
+    return greeting + ", " + name + "!";
+}
+
+// an overload set standing in for optional named parameters
+std::string full_name(const std::string& first) {
+    return first;
+}
+std::string full_name(const std::string& first, const std::string& last) {
+    return first + " " + last;
+}
+
+bool is_adult(int age) { return age >= 18; }`,
+
+  task: `
+<p>Rewrite the C++ on the left as Ruby — and write no <code>return</code>
+keyword anywhere:</p>
+<ol>
+  <li><code>greet(name, greeting = "Hello")</code> — a positional default,
+      just like C++. Interpolate to get <code>"Hello, Ada!"</code>, or
+      <code>"Howdy, Ada!"</code> when a greeting is passed.</li>
+  <li><code>full_name(first:, last: nil)</code> — the two-overload set
+      collapses into one method with keyword arguments: <code>first:</code>
+      is required, <code>last:</code> defaults to <code>nil</code>. When
+      <code>last</code> is given, produce <code>"first last"</code>;
+      otherwise just <code>first</code>. Remember <code>if</code> is an
+      expression — let it be the method body's last one.</li>
+  <li><code>adult?(age)</code> — a predicate, so the <code>?</code> goes in
+      the name. The comparison <code>age &gt;= 18</code> already is the
+      answer; just make it the last expression.</li>
+</ol>`,
+
+  starter: `# 1. Positional default, C++-style: greeting = "Hello".
+#    Interpolate greeting and name; last expression is the value.
+def greet(name, greeting = "Hello")
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 2. Keyword arguments replace the overload set:
+#    first: is required, last: defaults to nil.
+#    An if/else is an expression — use it as the body's last one.
+def full_name(first:, last: nil)
+  raise NotImplementedError, "TODO: implement full_name"
+end
+
+# 3. Predicates end in ? and simply ARE their comparison.
+def adult?(age)
+  raise NotImplementedError, "TODO: implement adult?"
+end
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give greeting a default value of "Hello"' },
+    { pattern: /\w+:/, message: "Use keyword arguments (first:, last:) in full_name" },
+    { pattern: /def\s+adult\?/, message: "Name the predicate adult? — the ? is part of the name" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") returns "Hello, Ada!" (default used)',
+      code: '  expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'greet("Ada", "Howdy") returns "Howdy, Ada!"',
+      code: '  expect_eq(greet("Ada", "Howdy"), "Howdy, Ada!")' },
+    { name: 'full_name(first: "Grace", last: "Hopper") returns "Grace Hopper"',
+      code: '  expect_eq(full_name(first: "Grace", last: "Hopper"), "Grace Hopper")' },
+    { name: 'full_name(first: "Plato") returns "Plato"',
+      code: '  expect_eq(full_name(first: "Plato"), "Plato")' },
+    { name: "adult?(18) is true",
+      code: "  expect_true(adult?(18))" },
+    { name: "adult?(17) is false",
+      code: "  expect_eq(adult?(17), false)" },
+  ],
+
+  solution: `def greet(name, greeting = "Hello")
+  "#{greeting}, #{name}!"
+end
+
+def full_name(first:, last: nil)
+  if last
+    "#{first} #{last}"
+  else
+    first
+  end
+end
+
+def adult?(age)
+  age >= 18
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Define a function</td><td>declare (header) + define</td><td><code>def name(args) ... end</code>, callable from then on</td></tr>
+  <tr><td>Give back a value</td><td><code>return x;</code></td><td>last expression; keyword only for early exit</td></tr>
+  <tr><td>Default argument</td><td><code>f(int x, int y = 0)</code></td><td><code>def f(x, y = 0)</code></td></tr>
+  <tr><td>Named/optional params</td><td>overload set, builder, or aggregate + designated init</td><td><code>def f(a:, b: 0)</code>; call as <code>f(a: 1, b: 2)</code></td></tr>
+  <tr><td>Required keyword</td><td>—</td><td><code>a:</code> with no default raises <code>ArgumentError</code> if omitted</td></tr>
+  <tr><td>Predicate naming</td><td><code>is_adult</code>, <code>has_value</code></td><td><code>adult?</code>, <code>value?</code></td></tr>
+  <tr><td>Mutating variant</td><td>documentation, <code>&amp;</code> vs <code>const&amp;</code></td><td><code>sort</code> vs <code>sort!</code></td></tr>
+  <tr><td>Conditional as a value</td><td><code>cond ? a : b</code></td><td><code>if</code>/<code>else</code> is already an expression</td></tr>
+</table>
+<p>Because <code>if</code>, <code>case</code>, and even <code>begin/end</code>
+blocks are expressions, "compute the value, then hand it back" collapses into
+one shape: the body <em>is</em> the value. Keyword arguments are checked at
+call time — omit a required <code>first:</code> and you get an
+<code>ArgumentError</code> naming it — which is as close as a dynamic
+language gets to the overload resolution the C++ compiler used to do for
+you. The other half of that safety story is the test suite you have been
+running all along.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

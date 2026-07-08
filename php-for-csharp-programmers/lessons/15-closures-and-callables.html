@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Closures &amp; Callables</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Closures & Callables",
+
+  intro: `
+<p>C# lambdas capture enclosing variables automatically — and always <em>by
+reference</em>, which is where the infamous loop-variable bug came from
+(every closure sharing one mutating <code>i</code>). PHP flips the defaults:
+a long-form anonymous function captures <strong>nothing</strong> unless you
+list it in a <code>use (...)</code> clause, and what you list is captured
+<strong>by value</strong> — a snapshot taken when the closure is created.
+Want C#'s live-variable behavior? You opt in per variable with an ampersand:
+<code>use (&amp;$x)</code>.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>x =&gt; x * n</code> (auto-capture, by reference)</td><td><code>fn($x) =&gt; $x * $n</code> (auto-capture, <em>by value</em>)</td></tr>
+  <tr><td><code>(x) =&gt; { ... }</code></td><td><code>function ($x) use ($n) { ... }</code> — captures listed explicitly</td></tr>
+  <tr><td>capture the live variable (always)</td><td><code>use (&amp;$count)</code> — by reference, opt-in</td></tr>
+  <tr><td><code>Func&lt;int, int&gt;</code> / <code>Action</code> / <code>Delegate</code></td><td><code>callable</code> (loose) or <code>Closure</code> (the class) — no arity/type in the hint</td></tr>
+  <tr><td><code>var f = Console.WriteLine;</code> (method group)</td><td><code>$f = strlen(...);</code> — first-class callable syntax (8.1)</td></tr>
+</table>
+<p>The short form <code>fn($x) =&gt; expr</code> (single expression only)
+auto-captures like C# — but still by value, so it's safe by default: no PHP
+equivalent of the loop-variable bug is possible without an explicit
+<code>&amp;</code>. For types, <code>callable</code> is the analog of
+<code>Delegate</code>-plus-<code>Func</code> rolled into one untyped hint —
+it accepts closures, <code>'function_name'</code> strings, and
+<code>[$obj, 'method']</code> pairs alike; <code>Closure</code> is the
+concrete class every anonymous function actually is, and the tighter choice
+for return types.</p>`,
+
+  csharp: `Func<int, int> MakeMultiplier(int n) => x => x * n;
+
+int ApplyTwice(Func<int, int> f, int x) => f(f(x));
+
+Func<int> MakeCounter()
+{
+    int count = 0;
+    // C# closures capture by reference, always:
+    // the lambda sees and mutates the live variable.
+    return () => ++count;
+}
+
+var counter = MakeCounter();
+Console.WriteLine(counter());  // 1
+Console.WriteLine(counter());  // 2
+Console.WriteLine(ApplyTwice(MakeMultiplier(3), 2));  // 18`,
+
+  task: `
+<p>Port the three factory/higher-order functions:</p>
+<ol>
+  <li><code>make_multiplier(int $n): Closure</code> — return
+      <code>fn(int $x) =&gt; $x * $n;</code>. The short closure grabs
+      <code>$n</code> automatically, as a by-value snapshot — which is
+      exactly right for a factory.</li>
+  <li><code>apply_twice(callable $f, int $x): int</code> — call
+      <code>$f</code> on <code>$x</code>, then on the result. A
+      <code>callable</code> parameter is invoked with plain
+      <code>$f(...)</code> syntax — no <code>.Invoke()</code>.</li>
+  <li><code>make_counter(): Closure</code> — declare a local
+      <code>$count</code>, then return a long-form closure that does
+      <code>use (&amp;$count)</code> and returns <code>++$count</code>.
+      By-value capture would snapshot 0 forever and return 1 every time; the
+      <code>&amp;</code> is you asking for the reference semantics C# never
+      let you refuse. Successive calls must return 1, 2, 3…</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. C#: x => x * n  (n captured automatically, by reference)
+//    PHP: fn(int $x) => ...  auto-captures $n — but BY VALUE.
+function make_multiplier(int $n): Closure {
+    throw new Exception("TODO: implement make_multiplier");
+}
+
+// 2. callable ~ Delegate/Func, untyped: closures, 'strlen',
+//    [$obj, 'method'] all qualify. Invoke it as $f($x).
+function apply_twice(callable $f, int $x): int {
+    throw new Exception("TODO: implement apply_twice");
+}
+
+// 3. Long form captures nothing by default. use ($count) would
+//    snapshot the value; use (&$count) shares the live variable.
+function make_counter(): Closure {
+    throw new Exception("TODO: implement make_counter");
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s*\(/, message: "Use a short closure fn(...) => ... (it auto-captures by value)" },
+    { pattern: /use\s*\(\s*&/, message: "Capture the counter state by reference: use (&$count)" },
+    { pattern: /callable|Closure/, message: "Keep the callable / Closure type declarations in the signatures" },
+  ],
+
+  tests: [
+    { name: "make_multiplier(3) returns a closure: times3(5) is 15",
+      code: `$times3 = make_multiplier(3);
+expect_eq($times3(5), 15);` },
+    { name: "each factory call snapshots its own $n: times2(5) is 10, times3(5) still 15",
+      code: `$times3 = make_multiplier(3);
+$times2 = make_multiplier(2);
+expect_eq($times2(5), 10);
+expect_eq($times3(5), 15);` },
+    { name: "apply_twice(fn(int \$x) => \$x + 3, 10) returns 16",
+      code: 'expect_eq(apply_twice(fn(int $x) => $x + 3, 10), 16);' },
+    { name: "apply_twice works with any callable, e.g. a make_multiplier closure",
+      code: 'expect_eq(apply_twice(make_multiplier(3), 2), 18);' },
+    { name: "make_counter() counts 1, 2, 3 — use (&\$count) keeps the state alive",
+      code: `$counter = make_counter();
+expect_eq($counter(), 1);
+expect_eq($counter(), 2);
+expect_eq($counter(), 3);` },
+    { name: "two counters are independent — each closure owns its capture",
+      code: `$a = make_counter();
+$b = make_counter();
+$a();
+$a();
+expect_eq($b(), 1);
+expect_eq($a(), 3);` },
+  ],
+
+  solution: `<?php
+
+function make_multiplier(int $n): Closure {
+    return fn(int $x) => $x * $n;
+}
+
+function apply_twice(callable $f, int $x): int {
+    return $f($f($x));
+}
+
+function make_counter(): Closure {
+    $count = 0;
+    return function () use (&$count): int {
+        return ++$count;
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Expression lambda</td><td><code>x =&gt; x * n</code></td><td><code>fn($x) =&gt; $x * $n</code> (one expression, auto-capture by value)</td></tr>
+  <tr><td>Statement lambda</td><td><code>(x) =&gt; { ... }</code></td><td><code>function ($x) use ($a, $b) { ... }</code></td></tr>
+  <tr><td>Capture semantics</td><td>by reference, automatic, always</td><td>by value by default; <code>use (&amp;$x)</code> for by reference, per variable</td></tr>
+  <tr><td>Function type hint</td><td><code>Func&lt;int, int&gt;</code>, <code>Action&lt;T&gt;</code> (typed)</td><td><code>callable</code> / <code>Closure</code> (untyped — arity unchecked until called)</td></tr>
+  <tr><td>Method group reference</td><td><code>var f = obj.Method;</code></td><td><code>$f = $obj-&gt;method(...);</code> / <code>strlen(...)</code> (PHP 8.1)</td></tr>
+  <tr><td>Invoke</td><td><code>f(x)</code> / <code>f.Invoke(x)</code></td><td><code>$f($x)</code></td></tr>
+</table>
+<p>Read PHP's design as the post-mortem of C#'s: because capture is explicit
+and by value, a closure is a sealed package by default — nothing outside can
+mutate its state, and the loop-variable bug can't be written by accident.
+Every <code>&amp;</code> in a <code>use</code> clause is a visible, per-variable
+declaration that "this closure shares live state," which is precisely what
+<code>make_counter</code> means to say. The cost is on the type side:
+<code>callable</code> promises only "invokable," so a wrong-shaped callback
+fails at call time, not at the boundary — the one place you'll miss
+<code>Func&lt;int, int&gt;</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

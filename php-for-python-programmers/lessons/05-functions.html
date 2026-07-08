@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>PHP functions will feel like home. Defaults work exactly like Python's
+(<code>string $greeting = "Hello"</code>), and PHP 8 even has keyword
+arguments — called <em>named arguments</em> — with the same syntax minus the
+<code>$</code>: <code>greet(name: "Ada")</code>. Same feature, same colon,
+same ability to skip earlier defaults.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>def greet(name, greeting="Hello"):</code></td><td><code>function greet(string $name, string $greeting = "Hello")</code></td></tr>
+  <tr><td><code>last: str | None = None</code> (or <code>Optional[str]</code>)</td><td><code>?string $last = null</code></td></tr>
+  <tr><td><code>id: int | str</code></td><td><code>int|string $id</code></td></tr>
+  <tr><td><code>greet(name="Ada")</code></td><td><code>greet(name: "Ada")</code></td></tr>
+  <tr><td><code>isinstance(x, int)</code></td><td><code>is_int($x)</code></td></tr>
+</table>
+<p>The type vocabulary maps almost symbol-for-symbol: Python 3.10's
+<code>int | str</code> union is PHP's <code>int|string</code> (no spaces, by
+convention), and <code>Optional[str]</code> has the shorthand
+<code>?string</code> — a leading question mark meaning "this type or
+null". The recurring theme from lesson 1 still applies, with teeth: these
+declarations are <em>enforced</em>. Where a mistyped call in Python sails
+past unless mypy is watching, PHP throws a <code>TypeError</code> at the
+call boundary. To branch on which union member you actually received, use
+<code>is_int($x)</code> / <code>is_string($x)</code> — PHP's
+<code>isinstance</code>.</p>`,
+
+  python: `def greet(name: str, greeting: str = "Hello") -> str:
+    return f"{greeting}, {name}!"
+
+def format_name(first: str, last: str | None = None) -> str:
+    if last is None:
+        return first
+    return f"{first} {last}"
+
+def describe(id: int | str) -> str:
+    if isinstance(id, int):
+        return f"numeric id {id}"
+    return f"string id {id}"
+
+print(greet("Ada"))                    # Hello, Ada!
+print(greet("Ada", greeting="Hi"))     # keyword argument
+print(format_name("Ada", "Lovelace"))  # Ada Lovelace
+print(describe(42))                    # numeric id 42`,
+
+  task: `
+<p>Port the three functions to PHP:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      default parameter, returning <code>"Hello, Ada!"</code>-style text.
+      One test calls it with a named argument,
+      <code>greet(name: "Ada", greeting: "Hey")</code> — that works with no
+      extra effort on your part, as long as your parameters are named
+      <code>$name</code> and <code>$greeting</code>.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      the <code>?string</code> is <code>Optional[str]</code>. Return just
+      the first name when <code>$last === null</code>, otherwise
+      <code>"first last"</code>.</li>
+  <li><code>describe(int|string $id): string</code> — a union type, checked
+      at runtime. Use <code>is_int($id)</code> to return
+      <code>"numeric id 42"</code> for ints and
+      <code>"string id abc"</code> for strings.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. def greet(name, greeting="Hello")  ->  same default syntax.
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. last: str | None = None  ->  ?string $last = null
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. id: int | str  ->  int|string $id; isinstance(id, int) -> is_int($id)
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give $greeting the default value "Hello"' },
+    { pattern: /\?string/, message: "Declare $last as nullable with ?string" },
+    { pattern: /int\|string/, message: "Declare $id with the union type int|string" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Ada", "Hi") returns "Hi, Ada!"',
+      code: 'expect_eq(greet("Ada", "Hi"), "Hi, Ada!");' },
+    { name: 'named arguments: greet(name: "Ada", greeting: "Hey")',
+      code: 'expect_eq(greet(name: "Ada", greeting: "Hey"), "Hey, Ada!");' },
+    { name: 'format_name("Ada") returns "Ada"',
+      code: 'expect_eq(format_name("Ada"), "Ada");' },
+    { name: 'format_name("Ada", "Lovelace") returns "Ada Lovelace"',
+      code: 'expect_eq(format_name("Ada", "Lovelace"), "Ada Lovelace");' },
+    { name: 'describe(42) and describe("abc") branch on the runtime type',
+      code: 'expect_eq(describe(42), "numeric id 42");\nexpect_eq(describe("abc"), "string id abc");' },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    if ($last === null) {
+        return $first;
+    }
+    return "$first $last";
+}
+
+function describe(int|string $id): string {
+    if (is_int($id)) {
+        return "numeric id $id";
+    }
+    return "string id $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Default value</td><td><code>greeting="Hello"</code></td><td><code>string $greeting = "Hello"</code></td></tr>
+  <tr><td>Optional / nullable</td><td><code>str | None</code>, <code>Optional[str]</code></td><td><code>?string</code></td></tr>
+  <tr><td>Union type</td><td><code>int | str</code></td><td><code>int|string</code></td></tr>
+  <tr><td>Keyword argument</td><td><code>greet(name="Ada")</code></td><td><code>greet(name: "Ada")</code></td></tr>
+  <tr><td>Runtime type check</td><td><code>isinstance(x, int)</code></td><td><code>is_int($x)</code>, <code>is_string($x)</code></td></tr>
+  <tr><td>No return value</td><td><code>-&gt; None</code></td><td><code>: void</code></td></tr>
+</table>
+<p>Named arguments arrived in PHP 8.0 and behave like Python's keyword
+arguments: skip defaults, reorder freely, mix positional-then-named. One
+consequence Python also has: parameter names are part of your public API —
+rename <code>$name</code> and every <code>greet(name: ...)</code> call
+breaks. And because declarations are enforced, <code>?string</code> versus
+<code>string</code> is a real runtime contract, not documentation: passing
+<code>null</code> to a plain <code>string</code> parameter throws a
+<code>TypeError</code> instead of sneaking through as <code>None</code>
+does in unchecked Python.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

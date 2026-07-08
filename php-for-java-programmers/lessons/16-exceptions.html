@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions &amp; Error Handling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>Exceptions are home turf: <code>try</code>, <code>catch</code>,
+<code>finally</code>, <code>throw new</code> — all present, all meaning what
+you expect. The one big change: <strong>there are no checked exceptions</strong>.
+Nothing forces you to catch anything, and there is no <code>throws</code>
+clause to declare — that discipline moves into <code>@throws</code> docblock
+annotations and code review. Every exception in PHP behaves like Java's
+unchecked <code>RuntimeException</code>.</p>
+<table>
+  <tr><th>Java</th><th>PHP</th></tr>
+  <tr><td><code>int f() throws ParseException</code></td><td><code>function f(): int</code> (no throws clause exists)</td></tr>
+  <tr><td><code>catch (IllegalArgumentException e)</code></td><td><code>catch (InvalidArgumentException $e)</code></td></tr>
+  <tr><td><code>catch (A | B e)</code></td><td><code>catch (A | B $e)</code> (same multi-catch!)</td></tr>
+  <tr><td><code>class MyEx extends RuntimeException</code></td><td><code>class MyEx extends Exception</code></td></tr>
+  <tr><td><code>Throwable → Exception / Error</code></td><td><code>Throwable → Exception / Error</code> (same shape)</td></tr>
+</table>
+<p>The hierarchy even mirrors Java's: <code>Throwable</code> sits at the top,
+with <code>Exception</code> for application problems and <code>Error</code>
+for engine problems (out of memory, type errors, calling undefined functions)
+— exactly the role Java's <code>Error</code> plays. Typed catch blocks,
+multi-catch with <code>|</code>, custom exception classes via
+<code>extends Exception</code>, and <code>finally</code> all work the way your
+fingers already know. SPL ships useful builtins like
+<code>InvalidArgumentException</code> so you rarely need a custom class for
+simple cases.</p>`,
+
+  java: `static int parseAge(String s) {
+    String t = s.trim();
+    if (t.isEmpty() || !t.chars().allMatch(Character::isDigit)) {
+        // Unchecked, so no "throws" clause needed even in Java.
+        throw new IllegalArgumentException("not a valid age: " + s);
+    }
+    return Integer.parseInt(t);
+}
+
+static int safeParseAge(String s, int defaultAge) {
+    try {
+        return parseAge(s);
+    } catch (IllegalArgumentException e) {
+        return defaultAge;
+    } finally {
+        // cleanup would run either way, same as PHP
+    }
+}`,
+
+  task: `
+<p>Port the Java on the left to PHP:</p>
+<ol>
+  <li>Write <code>parse_age(string $s): int</code>. Trim the input; if the
+      result is not all digits — check with
+      <code>ctype_digit(trim($s))</code>, which is also <code>false</code> for
+      the empty string — <code>throw new InvalidArgumentException(...)</code>.
+      Otherwise cast the trimmed string to an int with <code>(int)</code> and
+      return it. Note what's <em>missing</em>: no <code>throws</code> clause —
+      there is nowhere to put one.</li>
+  <li>Write <code>safe_parse_age(string $s, int $default): int</code>: call
+      <code>parse_age</code> inside <code>try</code>, and in a typed
+      <code>catch (InvalidArgumentException $e)</code> block return
+      <code>$default</code> instead.</li>
+</ol>
+<p>The tests call <code>parse_age</code> with bad input and expect the typed
+exception to fly — an over-broad <code>catch (Exception $e)</code> in the
+tests would hide bugs, so throw the specific class.</p>`,
+
+  starter: `<?php
+
+// 1. parse_age: trim, validate with ctype_digit, and either
+//    throw new InvalidArgumentException(...) or return (int) $t.
+//    No throws clause exists in PHP -- document with @throws instead.
+/**
+ * @throws InvalidArgumentException when $s is not all digits
+ */
+function parse_age(string $s): int {
+    throw new Exception('TODO: implement parse_age');
+}
+
+// 2. safe_parse_age: try { return parse_age($s); }
+//    catch (InvalidArgumentException $e) { return $default; }
+function safe_parse_age(string $s, int $default): int {
+    throw new Exception('TODO: implement safe_parse_age');
+}
+`,
+
+  requirements: [
+    { pattern: /InvalidArgumentException/, message: "Throw and catch the SPL InvalidArgumentException class" },
+    { pattern: /try\s*\{/, message: "Use a try block in safe_parse_age" },
+    { pattern: /catch\s*\(/, message: "Use a typed catch block" },
+    { pattern: /throw\s+new/, message: "Throw a new exception on invalid input" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42',
+      code: 'expect_eq(parse_age("42"), 42);' },
+    { name: 'parse_age(" 7 ") trims whitespace and returns 7',
+      code: 'expect_eq(parse_age(" 7 "), 7);' },
+    { name: 'parse_age("abc") throws InvalidArgumentException',
+      code: 'try { parse_age("abc"); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}' },
+    { name: 'safe_parse_age("abc", 18) falls back to 18',
+      code: 'expect_eq(safe_parse_age("abc", 18), 18);' },
+    { name: 'safe_parse_age("30", 18) parses 30; "-5" falls back',
+      code: 'expect_eq(safe_parse_age("30", 18), 30);\nexpect_eq(safe_parse_age("-5", 0), 0);' },
+  ],
+
+  solution: `<?php
+
+/**
+ * @throws InvalidArgumentException when $s is not all digits
+ */
+function parse_age(string $s): int {
+    $t = trim($s);
+    if (!ctype_digit($t)) {
+        throw new InvalidArgumentException("not a valid age: $s");
+    }
+    return (int) $t;
+}
+
+function safe_parse_age(string $s, int $default): int {
+    try {
+        return parse_age($s);
+    } catch (InvalidArgumentException $e) {
+        return $default;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>PHP</th></tr>
+  <tr><td>Checked exceptions</td><td><code>throws IOException</code> forces callers</td><td>None — every exception is unchecked</td></tr>
+  <tr><td>Declaring throws</td><td><code>throws</code> clause in signature</td><td><code>@throws</code> docblock (convention only)</td></tr>
+  <tr><td>Root of the tree</td><td><code>Throwable</code></td><td><code>Throwable</code> (an interface here)</td></tr>
+  <tr><td>Engine problems</td><td><code>Error</code> (OOM, linkage)</td><td><code>Error</code> (TypeError, DivisionByZeroError…)</td></tr>
+  <tr><td>Typed catch</td><td><code>catch (ParseException e)</code></td><td><code>catch (InvalidArgumentException $e)</code></td></tr>
+  <tr><td>Multi-catch</td><td><code>catch (A | B e)</code></td><td><code>catch (A | B $e)</code></td></tr>
+  <tr><td>Custom exception</td><td><code>extends RuntimeException</code></td><td><code>extends Exception</code></td></tr>
+  <tr><td>Cleanup</td><td><code>finally</code></td><td><code>finally</code> (identical)</td></tr>
+</table>
+<p>The insight: PHP made the choice Kotlin, C#, and most post-Java languages
+made — checked exceptions lost. The compiler will never tell you what a
+function can throw, so the discipline you got for free from <code>javac</code>
+now lives in <code>@throws</code> docblocks (which IDEs and PHPStan do read)
+and in throwing <em>specific</em> classes so callers can write narrow catch
+blocks. Catch <code>Exception</code> at boundaries, catch specific types
+everywhere else, and leave <code>Error</code> alone — just like you leave
+Java's <code>Error</code> alone.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

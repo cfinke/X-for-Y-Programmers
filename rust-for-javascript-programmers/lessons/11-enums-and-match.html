@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Pattern Matching</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Pattern Matching",
+
+  intro: `
+<p>You've written this a hundred times: objects with a <code>type</code> field
+— <code>{ type: "circle", radius: 1 }</code>, <code>{ type: "rectangle",
+width: 3, height: 4 }</code> — and a <code>switch (shape.type)</code> to
+dispatch on them. It's a fine pattern. It's also held together entirely by
+discipline: nothing stops a <code>"circel"</code> typo, nothing guarantees a
+circle actually has a <code>radius</code>, and a forgotten <code>case</code>
+quietly returns <code>undefined</code>.</p>
+<p>Rust turns that whole pattern into a language feature. An <code>enum</code>
+is a type that is <em>exactly one of</em> a fixed set of variants, and each
+variant carries its own data — a <code>Circle</code> has a radius and nothing
+else, a <code>Rectangle</code> has width and height and no radius. You've
+already met one: <code>Option</code> is just <code>enum Option&lt;T&gt; {
+Some(T), None }</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>{ type: "circle", radius: 1.0 }</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+  <tr><td><code>switch (shape.type) { case "circle": ... }</code></td><td><code>match shape { Shape::Circle { radius } =&gt; ... }</code></td></tr>
+  <tr><td>read fields off the object and hope</td><td>each arm <em>destructures</em> that variant's fields</td></tr>
+  <tr><td>missing case → <code>undefined</code>, silently</td><td>missing arm → compile error</td></tr>
+</table>
+<p>The consumer of an enum is <code>match</code> — a <code>switch</code> that
+destructures. Each arm names a variant and unpacks its fields in one move,
+and the killer feature is <em>exhaustiveness</em>: <code>match</code> must
+cover every variant. Add a <code>Triangle</code> variant next month and every
+<code>match</code> in the codebase that forgot about it becomes a compile
+error — the compiler hands you a to-do list instead of letting <code>NaN</code>
+leak out at runtime.</p>`,
+
+  javascript: `// The "tagged object" pattern: a type field, then switch on it.
+function area(shape) {
+  switch (shape.type) {
+    case "circle":
+      return Math.PI * shape.radius ** 2;
+    case "rectangle":
+      return shape.width * shape.height;
+  }
+  // Forgot a case? No error here — the call just returns
+  // undefined, and you find out later when NaN shows up.
+}
+
+console.log(area({ type: "circle", radius: 1.0 }));         // 3.14159...
+console.log(area({ type: "rectangle", width: 3, height: 4 })); // 12
+console.log(area({ type: "triangle", base: 3, height: 4 }));   // undefined`,
+
+  task: `
+<p>Port the tagged-object pattern to a real enum:</p>
+<ol>
+  <li>The starter already defines <code>enum Shape</code> with two variants —
+      <code>Circle { radius: f64 }</code> and
+      <code>Rectangle { width: f64, height: f64 }</code>. Leave it exactly as
+      is; the tests construct values like
+      <code>Shape::Circle { radius: 1.0 }</code>.</li>
+  <li>Write <code>area(shape: &amp;Shape) -&gt; f64</code> using
+      <code>match</code>. Destructure each variant's fields in its arm:
+      <code>Shape::Circle { radius } =&gt; ...</code> gives you
+      <code>radius</code> as a local. Circle area is π·r², rectangle is
+      width·height — the starter already imports
+      <code>std::f64::consts::PI</code> for you.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The enum is already defined — Rust's version of your
+// { type: "circle", radius: ... } tagged objects. Leave it as is.
+enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+use std::f64::consts::PI;
+
+// area: match on the shape and destructure each variant:
+//   Shape::Circle { radius } => ...
+//   Shape::Rectangle { width, height } => ...
+// (Try deleting one arm after it works — the compiler will object.)
+fn area(shape: &Shape) -> f64 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+Shape/, message: "Keep the enum Shape definition" },
+    { pattern: /match\b/, message: "Dispatch on the shape with match" },
+    { pattern: /Circle\s*\{/, message: "Destructure the Circle variant's fields" },
+    { pattern: /consts::PI/, message: "Use std::f64::consts::PI for the circle area" },
+  ],
+
+  tests: [
+    { name: "area of a 3×4 rectangle is exactly 12.0",
+      code: 'assert_eq!(area(&Shape::Rectangle { width: 3.0, height: 4.0 }), 12.0);' },
+    { name: "area of a 2.5×2 rectangle is exactly 5.0",
+      code: 'assert_eq!(area(&Shape::Rectangle { width: 2.5, height: 2.0 }), 5.0);' },
+    { name: "area of a circle with radius 1.0 is ~3.14159",
+      code: 'assert!((area(&Shape::Circle { radius: 1.0 }) - 3.14159265).abs() < 0.001);' },
+    { name: "area of a circle with radius 2.0 is ~12.56637",
+      code: 'assert!((area(&Shape::Circle { radius: 2.0 }) - 12.56637061).abs() < 0.001);' },
+  ],
+
+  solution: `enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+use std::f64::consts::PI;
+
+fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => PI * radius * radius,
+        Shape::Rectangle { width, height } => width * height,
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Tagged value</td><td><code>{ type: "circle", radius: 1 }</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+  <tr><td>Defining the shape of shapes</td><td>a comment, if you're lucky</td><td><code>enum Shape { Circle { radius: f64 }, ... }</code></td></tr>
+  <tr><td>Dispatch</td><td><code>switch (shape.type)</code></td><td><code>match shape</code></td></tr>
+  <tr><td>Getting at the data</td><td><code>shape.radius</code> (hope it's there)</td><td>destructure in the arm: <code>Circle { radius } =&gt;</code></td></tr>
+  <tr><td>Missing case</td><td>silent <code>undefined</code> / fall-through</td><td>compile error: "non-exhaustive patterns"</td></tr>
+  <tr><td>Catch-all</td><td><code>default:</code></td><td><code>_ =&gt; ...</code> (use sparingly — it turns exhaustiveness off)</td></tr>
+</table>
+<p>Notice there's no <code>break</code> anywhere: <code>match</code> arms never
+fall through, and the whole <code>match</code> is an expression — each arm's
+value <em>is</em> the return value, which is why <code>area</code>'s body is
+just the <code>match</code> with no <code>return</code>. The exhaustiveness
+check is the part that changes how you design: an impossible state
+(a circle with a <code>width</code>) isn't a bug you test for, it's a value
+you literally cannot construct.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

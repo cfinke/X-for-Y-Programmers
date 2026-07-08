@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods & Implicit Return</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods & Implicit Return",
+
+  intro: `
+<p>You've been writing methods for four lessons; time to make it official.
+<code>def</code> works like Python's, except <code>end</code> replaces the
+dedent and there's no colon. Default parameter values are the same idea with
+an <code>=</code>: <code>def greet(name, greeting = "Hello")</code>. Keyword
+arguments will feel familiar too — Ruby's <code>def create(name:, age: 0)</code>
+is Python's keyword-only parameters (the ones after <code>*</code>), except
+they're a native, first-class syntax: a trailing colon with no default makes
+the argument <em>required</em>, a default makes it optional.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>def greet(name, greeting="Hello"):</code></td><td><code>def greet(name, greeting = "Hello")</code></td></tr>
+  <tr><td><code>def create(*, name, age=0):</code></td><td><code>def create(name:, age: 0)</code></td></tr>
+  <tr><td><code>create(name="Ada")</code></td><td><code>create(name: "Ada")</code></td></tr>
+  <tr><td><code>def is_adult(age):</code></td><td><code>def adult?(age)</code></td></tr>
+  <tr><td>dedent ends the body</td><td><code>end</code> ends the body</td></tr>
+</table>
+<p>Naming conventions do real work here: <code>is_adult()</code> becomes
+<code>adult?</code> — the question mark <em>is</em> the "is". Its sibling
+<code>!</code> marks the dangerous variant of a method (<code>sort!</code>
+mutates where <code>sort</code> copies). And this lesson's core habit, one
+more time with feeling: the last expression of a method is its value. An
+<code>if/else</code> is an expression too, so whole branches can be the
+"return" — no keyword required, and idiomatic Ruby leaves it out.</p>`,
+
+  python: `def greet(name, greeting="Hello"):
+    return f"{greeting}, {name}!"
+
+
+def full_name(*, first, last=None):
+    # first and last are keyword-only (note the *).
+    if last:
+        return f"{first} {last}"
+    return first
+
+
+def is_adult(age):
+    return age >= 18
+
+
+print(greet("Ada"))                     # Hello, Ada!
+print(greet("Ada", "Howdy"))            # Howdy, Ada!
+print(full_name(first="Ada", last="Lovelace"))
+print(full_name(first="Grace"))         # Grace
+print(is_adult(21))                     # True`,
+
+  task: `
+<p>Rewrite the Python on the left as Ruby — with <strong>no
+<code>return</code> keyword anywhere</strong>:</p>
+<ol>
+  <li><code>greet(name, greeting = "Hello")</code> — a positional parameter
+      with a default, producing <code>"Hello, Ada!"</code> /
+      <code>"Howdy, Ada!"</code>-style text.</li>
+  <li><code>full_name(first:, last: nil)</code> — keyword arguments:
+      <code>first:</code> is required (no default), <code>last:</code>
+      defaults to <code>nil</code>. Give back <code>"First Last"</code> when
+      <code>last</code> is provided, otherwise just <code>first</code>. Let
+      the <code>if/else</code> itself be the last expression — in Ruby it's
+      an expression with a value.</li>
+  <li><code>adult?(age)</code> — Python's <code>is_adult(age)</code>, renamed
+      the Ruby way: the <code>?</code> replaces the <code>is_</code>. The
+      comparison <code>age &gt;= 18</code> is already the value; just make it
+      the last expression.</li>
+</ol>`,
+
+  starter: `# 1. greet: same default-argument idea, = instead of Python's =.
+#    Well, exactly the same, then. Spaces around = are the Ruby style.
+def greet(name, greeting = "Hello")
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 2. full_name: keyword args. first: is required, last: defaults to nil.
+#    An if/else is an expression — let it be the method's value.
+def full_name(first:, last: nil)
+  raise NotImplementedError, "TODO: implement full_name"
+end
+
+# 3. adult?: is_adult -> adult? — the comparison itself is the value.
+def adult?(age)
+  raise NotImplementedError, "TODO: implement adult?"
+end
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give greeting a default value of "Hello"' },
+    { pattern: /\w+:/, message: "Define full_name with keyword arguments (first:, last:)" },
+    { pattern: /def\s+adult\?/, message: "Name the predicate adult? — question mark included" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — every method ends on its value" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"',
+      code: '  expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'greet("Ada", "Howdy") returns "Howdy, Ada!"',
+      code: '  expect_eq(greet("Ada", "Howdy"), "Howdy, Ada!")' },
+    { name: 'full_name(first: "Ada", last: "Lovelace") returns "Ada Lovelace"',
+      code: '  expect_eq(full_name(first: "Ada", last: "Lovelace"), "Ada Lovelace")' },
+    { name: 'full_name(first: "Grace") returns "Grace"',
+      code: '  expect_eq(full_name(first: "Grace"), "Grace")' },
+    { name: "adult?(18) is true",
+      code: "  expect_true(adult?(18))" },
+    { name: "adult?(17) is false",
+      code: "  expect_eq(adult?(17), false)" },
+  ],
+
+  solution: `def greet(name, greeting = "Hello")
+  "#{greeting}, #{name}!"
+end
+
+def full_name(first:, last: nil)
+  if last
+    "#{first} #{last}"
+  else
+    first
+  end
+end
+
+def adult?(age)
+  age >= 18
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Define a method</td><td><code>def f(x):</code> … dedent</td><td><code>def f(x)</code> … <code>end</code></td></tr>
+  <tr><td>Default value</td><td><code>def f(x, y=0):</code></td><td><code>def f(x, y = 0)</code></td></tr>
+  <tr><td>Keyword-only, required</td><td><code>def f(*, name):</code></td><td><code>def f(name:)</code></td></tr>
+  <tr><td>Keyword-only, optional</td><td><code>def f(*, age=0):</code></td><td><code>def f(age: 0)</code></td></tr>
+  <tr><td>Call with keywords</td><td><code>f(name="Ada")</code></td><td><code>f(name: "Ada")</code></td></tr>
+  <tr><td>Predicate naming</td><td><code>is_adult(x)</code></td><td><code>adult?(x)</code></td></tr>
+  <tr><td>Mutating variant</td><td>—</td><td><code>sort!</code>, <code>strip!</code> (the <code>!</code> warns you)</td></tr>
+  <tr><td>Give back a value</td><td><code>return x</code></td><td>make <code>x</code> the last expression</td></tr>
+</table>
+<p>Notice what implicit return did to <code>full_name</code>: the
+<code>if/else</code> isn't a statement that returns from two places, it's a
+single expression that <em>evaluates</em> to one of two strings — and that
+expression is the method's value. This "everything is an expression" stance
+is where Ruby most departs from Python's statement/expression split, and it's
+why omitting <code>return</code> isn't laziness — it's the grain of the
+language.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

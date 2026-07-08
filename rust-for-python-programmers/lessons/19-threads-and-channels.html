@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Threads & Channels</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Threads & Channels",
+
+  intro: `
+<p>Python has real OS threads — and a Global Interpreter Lock that lets only
+one of them run Python bytecode at a time. Threads buy you concurrency for
+I/O waits, never parallel computation; for that you reach for
+<code>multiprocessing</code>, which dodges the GIL by forking processes and
+paying to pickle every object across the boundary. Rust threads are just OS
+threads with nothing in the way: <code>thread::spawn</code> runs your closure
+on another core, genuinely in parallel.</p>
+<p>So what about the data races the GIL was quietly protecting you from?
+That's the punchline of this whole course: <strong>ownership handles it</strong>.
+<code>thread::spawn(move || ...)</code> takes a <code>move</code> closure —
+the values it uses are <em>moved</em> into the thread, so the spawning code
+can't touch them anymore. Two threads mutating the same data isn't a
+heisenbug in Rust; it's a compile error. The GIL's protection, at compile
+time, with none of the GIL's cost.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>threading.Thread(target=f)</code> + <code>.start()</code></td><td><code>let h = thread::spawn(move || ...);</code></td></tr>
+  <tr><td><code>t.join()</code></td><td><code>h.join().unwrap()</code> — and it returns the closure's value</td></tr>
+  <tr><td>GIL: one thread runs at a time</td><td>no GIL: true parallelism</td></tr>
+  <tr><td>shared state, races at runtime</td><td><code>move</code> transfers ownership; races don't compile</td></tr>
+  <tr><td><code>queue.Queue</code></td><td><code>mpsc::channel()</code> — typed: a <code>Sender&lt;i32&gt;</code> only sends <code>i32</code></td></tr>
+</table>
+<p>For threads that need to talk, <code>std::sync::mpsc</code> ("multi-producer,
+single-consumer") is your <code>queue.Queue</code>: <code>channel()</code>
+returns a <code>(tx, rx)</code> pair, the sender moves into the thread,
+<code>tx.send(v)</code> is <code>q.put(v)</code>, and <code>rx.recv()</code>
+is <code>q.get()</code> — blocking until a value arrives, in send order. The
+one discipline to keep tests deterministic: <code>.join()</code> every handle
+(and receive every message) <em>before</em> you assert anything.</p>`,
+
+  python: `import threading
+from queue import Queue
+
+def parallel_sum(a: list[int], b: list[int]) -> int:
+    result: list[int] = []
+    t = threading.Thread(target=lambda: result.append(sum(b)))
+    t.start()          # "parallel" -- but the GIL serializes it
+    total_a = sum(a)
+    t.join()
+    return total_a + result[0]
+
+def channel_double(vals: list[int]) -> list[int]:
+    q: Queue[int] = Queue()   # queue.Queue = Rust's mpsc channel
+    def worker() -> None:
+        for v in vals:
+            q.put(v * 2)
+    t = threading.Thread(target=worker)
+    t.start()
+    out = [q.get() for _ in vals]   # exactly len(vals), in order
+    t.join()
+    return out`,
+
+  task: `
+<p>Same two functions, but with threads that actually run in parallel:</p>
+<ol>
+  <li><code>parallel_sum(a: Vec&lt;i32&gt;, b: Vec&lt;i32&gt;) -&gt; i32</code> —
+      spawn a thread with <code>thread::spawn(move || ...)</code> that sums
+      <code>b</code> (the <code>move</code> hands <code>b</code> to the
+      thread), sum <code>a</code> on the current thread meanwhile, then
+      <code>.join()</code> the handle — it returns the closure's value as
+      <code>Ok</code>, so <code>.unwrap()</code> it — and add the two sums.
+      Hint: <code>b.iter().sum::&lt;i32&gt;()</code>.</li>
+  <li><code>channel_double(vals: Vec&lt;i32&gt;) -&gt; Vec&lt;i32&gt;</code> —
+      make a channel with <code>mpsc::channel()</code>, spawn a thread that
+      sends <code>v * 2</code> for each value, and on the current thread
+      <code>rx.recv()</code> exactly <code>vals.len()</code> values into a
+      Vec (they arrive in send order). Save the length <em>before</em> the
+      <code>move</code> closure takes <code>vals</code>. Join the handle
+      before returning.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::thread;
+use std::sync::mpsc;
+
+// 1. Spawn a thread that sums b; sum a here; join and add.
+//    thread::spawn returns a JoinHandle -- .join().unwrap()
+//    gives you the closure's return value.
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    todo!()
+}
+
+// 2. mpsc::channel() -> (tx, rx). The thread doubles each value
+//    and tx.send()s it; receive vals.len() values with rx.recv().
+//    Grab vals.len() BEFORE the move closure takes vals.
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /thread::spawn/, message: "Spawn a thread with thread::spawn" },
+    { pattern: /\.join\(\)/, message: "Join the spawned thread with .join()" },
+    { pattern: /mpsc/, message: "Use an mpsc channel in channel_double" },
+  ],
+
+  tests: [
+    { name: "parallel_sum(vec![1, 2, 3], vec![4, 5, 6]) returns 21",
+      code: "assert_eq!(parallel_sum(vec![1, 2, 3], vec![4, 5, 6]), 21);" },
+    { name: "parallel_sum(vec![], vec![10]) returns 10",
+      code: "assert_eq!(parallel_sum(vec![], vec![10]), 10);" },
+    { name: "channel_double(vec![1, 2, 3]) returns vec![2, 4, 6]",
+      code: "assert_eq!(channel_double(vec![1, 2, 3]), vec![2, 4, 6]);" },
+    { name: "channel_double preserves order: vec![5, -1, 0] -> vec![10, -2, 0]",
+      code: "assert_eq!(channel_double(vec![5, -1, 0]), vec![10, -2, 0]);" },
+    { name: "channel_double(vec![]) returns an empty Vec",
+      code: "assert_eq!(channel_double(vec![]), Vec::<i32>::new());" },
+  ],
+
+  solution: `use std::thread;
+use std::sync::mpsc;
+
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    let handle = thread::spawn(move || b.iter().sum::<i32>());
+    let sum_a: i32 = a.iter().sum();
+    sum_a + handle.join().unwrap()
+}
+
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    let (tx, rx) = mpsc::channel();
+    let n = vals.len();
+    let handle = thread::spawn(move || {
+        for v in vals {
+            tx.send(v * 2).unwrap();
+        }
+    });
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        out.push(rx.recv().unwrap());
+    }
+    handle.join().unwrap();
+    out
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>Start a thread</td><td><code>threading.Thread(target=f).start()</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+  <tr><td>Wait for it</td><td><code>t.join()</code> (returns None)</td><td><code>h.join().unwrap()</code> (returns the closure's value)</td></tr>
+  <tr><td>Parallel CPU work</td><td><code>multiprocessing</code> + pickling</td><td>threads, directly — no GIL</td></tr>
+  <tr><td>Hand data to a thread</td><td>shared references, races possible</td><td><code>move</code> — ownership transfers, races don't compile</td></tr>
+  <tr><td>Thread-safe queue</td><td><code>q = Queue()</code>, <code>q.put</code>/<code>q.get</code></td><td><code>let (tx, rx) = mpsc::channel();</code> <code>tx.send</code>/<code>rx.recv</code></td></tr>
+</table>
+<p>The deep idea: Rust didn't add a runtime babysitter to make threads safe —
+it reused the ownership rules you've been practicing since Lesson 4.
+<code>move</code> is just a move, the same one <code>let b = a;</code> does;
+a <code>Sender</code> moving into a closure is the same rule that stopped you
+using a String after passing it to a function. That's why Rustaceans call it
+"fearless concurrency": the compiler rejects the sharing bugs, so what
+compiles is what the GIL only approximated. (For shared state rather than
+message passing, <code>Arc&lt;Mutex&lt;T&gt;&gt;</code> is the next chapter —
+same ownership story, different tool.)</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; case</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & case",
+
+  intro: `
+<p>Ruby's <code>if</code> drops the parentheses and the braces:
+<code>if cond ... end</code>. But the form that will change how your code
+reads is the <strong>modifier</strong>: <code>return x if cond</code> — the
+whole guard clause on one line, condition last, like a sentence. Its twin is
+<code>unless</code>, which is just <code>if !</code> for conditions that read
+better negated: <code>raise "empty" unless items.any?</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>if (cond) { ... }</code></td><td><code>if cond ... end</code></td></tr>
+  <tr><td><code>if (n === 0) return "zero";</code></td><td><code>return "zero" if n.zero?</code></td></tr>
+  <tr><td><code>if (!ok) { ... }</code></td><td><code>unless ok ... end</code></td></tr>
+  <tr><td><code>switch</code> + <code>break</code> everywhere</td><td><code>case/when</code> — no break, no fallthrough</td></tr>
+  <tr><td><code>switch (true) { case score &gt;= 90: ... }</code></td><td><code>case score; when 90.. then "A"</code></td></tr>
+</table>
+<p>And <code>switch</code> becomes <code>case/when</code>, done right. No
+<code>break</code> — arms never fall through. Arms match by
+<em>kind</em>, not just equality: ranges (<code>when 90..</code>), multiple
+values grouped in one arm (<code>when "sat", "sun"</code>), classes, even
+regexes. Best of all, <code>case</code> is an <em>expression</em> — it has a
+value, so you write <code>grade = case score ... end</code>, or make it the
+last expression of a method and let implicit return do the rest. (In fact
+<code>if</code> is an expression too.)</p>`,
+
+  javascript: `function grade(score) {
+  switch (true) {             // the switch(true) hack
+    case score >= 90: return "A";
+    case score >= 80: return "B";
+    case score >= 70: return "C";
+    default:          return "F";
+  }
+}
+
+function dayType(day) {
+  switch (day) {
+    case "sat":               // deliberate fallthrough --
+    case "sun":               // the ONE place it helps
+      return "weekend";       // (forget return: bug)
+    default:
+      return "weekday";
+  }
+}
+
+function describeNumber(n) {
+  if (n === 0) return "zero";
+  return n > 0 ? "positive" : "negative";
+}`,
+
+  task: `
+<p>Rewrite the JavaScript with Ruby's control flow:</p>
+<ol>
+  <li><code>grade(score)</code> — a <code>case score</code> expression with
+      <em>range</em> arms: <code>when 90..</code> → <code>"A"</code>,
+      <code>when 80..89</code> → <code>"B"</code>, <code>when 70..79</code> →
+      <code>"C"</code>, <code>else</code> <code>"F"</code>. Make the whole
+      <code>case</code> the method's last expression — no
+      <code>return</code>, no <code>break</code>.</li>
+  <li><code>day_type(day)</code> — a <code>case</code> with a grouped arm:
+      <code>when "sat", "sun"</code> → <code>"weekend"</code>, otherwise
+      <code>"weekday"</code>. Two values, one arm, zero fallthrough
+      hazards.</li>
+  <li><code>describe_number(n)</code> — start with the modifier guard
+      <code>return "zero" if n.zero?</code>, then an <code>if/else</code>
+      <em>expression</em> yielding <code>"positive"</code> or
+      <code>"negative"</code>.</li>
+</ol>`,
+
+  starter: `# 1. case score, with range arms: when 90.. then "A", etc.
+#    The case is an expression -- make it the last thing in the method.
+def grade(score)
+  raise NotImplementedError, "TODO: implement grade"
+end
+
+# 2. Group values in one arm: when "sat", "sun" then "weekend"
+def day_type(day)
+  raise NotImplementedError, "TODO: implement day_type"
+end
+
+# 3. Guard clause first:  return "zero" if n.zero?
+#    Then an if/else expression for "positive" / "negative".
+def describe_number(n)
+  raise NotImplementedError, "TODO: implement describe_number"
+end
+`,
+
+  requirements: [
+    { pattern: /case\b/, message: "Use a case expression (switch, done right)" },
+    { pattern: /when\s+/, message: "Match with when arms (ranges and grouped values)" },
+    { pattern: /if\s+\w|unless/, message: "Use a modifier if (or unless) guard clause" },
+  ],
+
+  tests: [
+    { name: 'grade covers every band: 95→"A", 80→"B", 72→"C", 40→"F"',
+      code: '  expect_eq(grade(95), "A")\n  expect_eq(grade(80), "B")\n  expect_eq(grade(72), "C")\n  expect_eq(grade(40), "F")' },
+    { name: 'grade(90) returns "A" (the 90.. range is inclusive)',
+      code: '  expect_eq(grade(90), "A")' },
+    { name: 'day_type("sat") and day_type("sun") return "weekend"',
+      code: '  expect_eq(day_type("sat"), "weekend")\n  expect_eq(day_type("sun"), "weekend")' },
+    { name: 'day_type("mon") returns "weekday"',
+      code: '  expect_eq(day_type("mon"), "weekday")' },
+    { name: 'describe_number(0) returns "zero"',
+      code: '  expect_eq(describe_number(0), "zero")' },
+    { name: 'describe_number(5) returns "positive"; describe_number(-3) returns "negative"',
+      code: '  expect_eq(describe_number(5), "positive")\n  expect_eq(describe_number(-3), "negative")' },
+  ],
+
+  solution: `def grade(score)
+  case score
+  when 90.. then "A"
+  when 80..89 then "B"
+  when 70..79 then "C"
+  else "F"
+  end
+end
+
+def day_type(day)
+  case day
+  when "sat", "sun" then "weekend"
+  else "weekday"
+  end
+end
+
+def describe_number(n)
+  return "zero" if n.zero?
+
+  if n.positive?
+    "positive"
+  else
+    "negative"
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Guard clause</td><td><code>if (x) return y;</code></td><td><code>return y if x</code></td></tr>
+  <tr><td>Negated condition</td><td><code>if (!ok) bail();</code></td><td><code>bail unless ok</code></td></tr>
+  <tr><td>Range test in switch</td><td><code>switch (true) { case s &gt;= 90: ... }</code></td><td><code>when 90..</code> / <code>when 80..89</code></td></tr>
+  <tr><td>Several values, one arm</td><td>stacked <code>case</code> labels + fallthrough</td><td><code>when "sat", "sun"</code></td></tr>
+  <tr><td>Fallthrough</td><td>default — <code>break</code> or bug</td><td>doesn't exist; arms are exclusive</td></tr>
+  <tr><td>Value of the branch</td><td>statement (use a ternary)</td><td><code>if</code>/<code>case</code> are expressions</td></tr>
+</table>
+<p>Under the hood <code>case</code> matches each arm with the
+<code>===</code> operator — which for a Range means "does it contain the
+value?", for a Class means "is it an instance?", and for a Regexp means
+"does it match?". That one design choice is why <code>case/when</code>
+subsumes both the <code>switch(true)</code> hack and the fallthrough trick
+you leaned on in JavaScript. One style tip: modifier <code>if</code> shines
+for one-line guards; once there's an <code>else</code>, use the block
+form.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

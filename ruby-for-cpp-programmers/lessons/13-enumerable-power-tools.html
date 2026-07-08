@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Enumerable Power Tools</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Enumerable Power Tools",
+
+  intro: `
+<p>Every mature C++ codebase contains the same four hand-written loops: the
+grouping loop (<code>groups[key_of(x)].push_back(x)</code>), the frequency
+count (<code>++counts[x]</code>), the accumulating map
+(<code>totals[x.category] += x.price</code>), and the two-pass partition
+(one <code>copy_if</code> for the matches, one for the rest). The STL never
+absorbed them — <code>&lt;algorithm&gt;</code> has no <code>group_by</code>
+— so you rewrite the loop, name the map, and hope the next reader
+recognizes the pattern. Enumerable ships each one as a named method.</p>
+<table>
+  <tr><th>The C++ loop you hand-write</th><th>Ruby</th></tr>
+  <tr><td><code>for (auto&amp; w : ws) groups[w.size()].push_back(w);</code></td><td><code>ws.group_by { |w| w.size }</code></td></tr>
+  <tr><td><code>for (auto&amp; v : vs) ++counts[v];</code></td><td><code>vs.tally</code></td></tr>
+  <tr><td><code>for (auto&amp; i : is) totals[i.cat] += i.price;</code></td><td><code>is.each_with_object(Hash.new(0)) { |i, t| ... }</code></td></tr>
+  <tr><td>two <code>std::copy_if</code> passes, two vectors</td><td><code>ns.partition { |n| n.even? }</code> — one pass, two arrays</td></tr>
+</table>
+<p>Three details. <code>Hash.new(0)</code> is a hash whose missing keys read
+as <code>0</code> — exactly the zero-initializing <code>operator[]</code> of
+<code>std::map&lt;K, int&gt;</code>, but opt-in. <code>each_with_object(obj)</code>
+threads <code>obj</code> through the block alongside each element and returns
+it at the end — the "declare an empty map above the loop" pattern, folded
+into one expression. And the general fold is <code>reduce</code>:
+<code>nums.reduce(:+)</code> is <code>std::accumulate</code> with the
+operation named by a symbol. Where yesterday's methods replaced STL
+one-liners, these replace loops the STL never gave you.</p>`,
+
+  cpp: `#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+using std::map; using std::string; using std::vector;
+
+// The loops every codebase re-writes, because <algorithm> lacks them:
+map<size_t, vector<string>> word_lengths(const vector<string>& words) {
+    map<size_t, vector<string>> groups;
+    for (const auto& w : words) groups[w.size()].push_back(w);
+    return groups;
+}
+
+map<string, int> vote_counts(const vector<string>& votes) {
+    map<string, int> counts;
+    for (const auto& v : votes) ++counts[v];   // [] zero-initializes
+    return counts;
+}
+
+std::pair<vector<int>, vector<int>> split_evens(const vector<int>& ns);
+// ...two copy_if passes, or a raw loop pushing into two vectors.`,
+
+  task: `
+<p>Replace each hand-rolled loop with its Enumerable name:</p>
+<ol>
+  <li><code>word_lengths(words)</code> — group words by length into a hash
+      like <code>{ 3 => ["cat", "dog"], 5 => ["horse"] }</code>. That whole
+      grouping loop is <code>words.group_by(&amp;:length)</code>.</li>
+  <li><code>vote_counts(votes)</code> — the frequency map,
+      <code>{ "yes" => 2, "no" => 1 }</code>. The <code>++counts[v]</code>
+      loop has a one-word name: <code>votes.tally</code>.</li>
+  <li><code>totals_by_category(items)</code> — items are hashes like
+      <code>{ category: :food, price: 5 }</code>; produce
+      <code>{ food: 8, tech: 10 }</code>. Use
+      <code>items.each_with_object(Hash.new(0)) { |item, totals| ... }</code>
+      and do <code>totals[item[:category]] += item[:price]</code> inside —
+      the default of <code>0</code> makes the <code>+=</code> safe on a
+      fresh key, exactly like <code>std::map</code>'s
+      <code>operator[]</code>.</li>
+  <li><code>split_evens(nums)</code> — one pass, two buckets:
+      <code>nums.partition(&amp;:even?)</code> returns
+      <code>[evens, odds]</code> (matches first).</li>
+</ol>`,
+
+  starter: `# 1. word_lengths: the grouping loop is one call — group_by(&:length).
+def word_lengths(words)
+  raise NotImplementedError, "TODO: implement word_lengths"
+end
+
+# 2. vote_counts: the ++counts[v] loop is called tally.
+def vote_counts(votes)
+  raise NotImplementedError, "TODO: implement vote_counts"
+end
+
+# 3. totals_by_category: each_with_object(Hash.new(0)) threads the hash
+#    through the block and returns it. Hash.new(0) reads missing keys as 0.
+def totals_by_category(items)
+  raise NotImplementedError, "TODO: implement totals_by_category"
+end
+
+# 4. split_evens: partition returns [matches, rest] in a single pass.
+def split_evens(nums)
+  raise NotImplementedError, "TODO: implement split_evens"
+end
+`,
+
+  requirements: [
+    { pattern: /group_by/, message: "Group with group_by" },
+    { pattern: /tally/, message: "Count with tally" },
+    { pattern: /each_with_object/, message: "Accumulate with each_with_object(Hash.new(0))" },
+    { pattern: /partition/, message: "Split with partition" },
+  ],
+
+  tests: [
+    { name: 'word_lengths(["cat", "dog", "horse"]) groups by length',
+      code: '  expect_eq(word_lengths(["cat", "dog", "horse"]), { 3 => ["cat", "dog"], 5 => ["horse"] })' },
+    { name: "word_lengths([]) returns an empty hash",
+      code: "  expect_eq(word_lengths([]), {})" },
+    { name: 'vote_counts(["yes", "no", "yes", "yes"]) returns { "yes" => 3, "no" => 1 }',
+      code: '  expect_eq(vote_counts(["yes", "no", "yes", "yes"]), { "yes" => 3, "no" => 1 })' },
+    { name: "totals_by_category sums prices per category",
+      code: "  items = [\n    { category: :food, price: 5 },\n    { category: :tech, price: 10 },\n    { category: :food, price: 3 },\n  ]\n  expect_eq(totals_by_category(items), { food: 8, tech: 10 })" },
+    { name: "split_evens([1, 2, 3, 4, 5]) returns [[2, 4], [1, 3, 5]]",
+      code: "  expect_eq(split_evens([1, 2, 3, 4, 5]), [[2, 4], [1, 3, 5]])" },
+    { name: "split_evens([]) returns [[], []]",
+      code: "  expect_eq(split_evens([]), [[], []])" },
+  ],
+
+  solution: `def word_lengths(words)
+  words.group_by(&:length)
+end
+
+def vote_counts(votes)
+  votes.tally
+end
+
+def totals_by_category(items)
+  items.each_with_object(Hash.new(0)) do |item, totals|
+    totals[item[:category]] += item[:price]
+  end
+end
+
+def split_evens(nums)
+  nums.partition(&:even?)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Hand-written C++ pattern</th><th>Ruby one-liner</th><th>Returns</th></tr>
+  <tr><td>grouping loop into <code>map&lt;K, vector&lt;T&gt;&gt;</code></td><td><code>.group_by { |x| key }</code></td><td><code>{ key => [elements] }</code></td></tr>
+  <tr><td><code>++counts[x]</code> frequency loop</td><td><code>.tally</code></td><td><code>{ element => count }</code></td></tr>
+  <tr><td>accumulate into a map declared above the loop</td><td><code>.each_with_object(Hash.new(0)) { |x, h| ... }</code></td><td>the object you seeded</td></tr>
+  <tr><td>two <code>copy_if</code> passes</td><td><code>.partition { |x| pred }</code></td><td><code>[matches, rest]</code></td></tr>
+  <tr><td><code>std::accumulate(b, e, init, op)</code></td><td><code>.reduce(:+)</code> / <code>.reduce(init) { |acc, x| ... }</code></td><td>the fold result</td></tr>
+  <tr><td>default-constructing <code>map::operator[]</code></td><td><code>Hash.new(0)</code> — a chosen default, opt-in</td><td>—</td></tr>
+</table>
+<p>The payoff is vocabulary, not keystrokes. A reviewer who sees
+<code>votes.tally</code> knows <em>everything</em> the code does; a reviewer
+who sees a five-line loop over a <code>std::map&lt;std::string, int&gt;</code>
+must reverse-engineer the intent and check the edge cases by hand. When you
+reach for <code>each_with_object</code>, you are declaring "this loop builds
+exactly one thing" — and when no named method fits, that is the signal the
+loop deserves its own well-named function anyway.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

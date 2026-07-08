@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Interfaces & Object Shapes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Interfaces & Object Shapes",
+
+  intro: `
+<p>"If it quacks like a duck, it's a duck" — Ruby's whole object model in one
+sentence. An interface is that sentence <em>formalized</em>: it writes down
+what quacking means (which properties, which types) and checks every candidate
+duck <em>before the program runs</em>. Crucially, TypeScript interfaces are
+structural, just like duck typing: an object literal never declares "I am a
+Product" — it simply is one, because it has the right shape. No
+<code>include</code>, no inheritance, no ceremony.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>Product = Struct.new(:name, :price)</code></td><td><code>interface Product { name: string; price: number }</code></td></tr>
+  <tr><td>duck contract: implicit, in your head</td><td>duck contract: written down, compiler-checked</td></tr>
+  <tr><td>optional field: just leave it <code>nil</code></td><td><code>description?: string</code></td></tr>
+  <tr><td>wrong shape: <code>NoMethodError</code>, at runtime</td><td>wrong shape: compile error, before running</td></tr>
+  <tr><td>Sorbet <code>T::Struct</code> / RBS — opt-in bolt-ons</td><td>native; the compiler is always on</td></tr>
+</table>
+<p>Where you reached for <code>Struct.new(:name, :price)</code> to give a
+record a shape, here you declare an <code>interface</code> and use a plain
+object literal — the lesson-4 hash syntax you already know. Optional
+properties get a <code>?</code> after the name, and reading one gives
+<code>undefined</code> when absent (last lesson's rules apply:
+<code>?.</code> and <code>??</code> are your friends). If you have used
+Sorbet or RBS, you know this idea — the difference is that there it is a
+bolt-on you must adopt and wire into CI; here it is simply how the language
+works.</p>
+<p>One catch: interfaces are compile-time only. They are <em>erased</em> from
+the compiled JavaScript — there is no <code>Product</code> class to
+instantiate or <code>is_a?</code> against. The contract exists purely to
+check shapes before runtime.</p>`,
+
+  ruby: `Product = Struct.new(:name, :price, :description, keyword_init: true)
+
+def describe(product)
+  # Duck typing: anything with #name, #price (and maybe #description)
+  base = "#{product.name} ($#{format('%.2f', product.price)})"
+  product.description ? "#{base} — #{product.description}" : base
+end
+
+def total_price(products)
+  products.sum(&:price)
+end
+
+coffee = Product.new(name: "Coffee", price: 12.5)  # description: nil
+describe(coffee)                # => "Coffee ($12.50)"
+
+require "ostruct"
+duck = OpenStruct.new(name: "Duck", price: 1)
+describe(duck)                  # quacks, so it works — nothing checked it
+describe("oops")                # NoMethodError, but only when this runs`,
+
+  task: `
+<p>Write the duck contract down, then lean on it:</p>
+<ol>
+  <li>Extend the <code>interface Product</code> so it has <code>name</code>
+      (<code>string</code>), <code>price</code> (<code>number</code>), and an
+      <strong>optional</strong> <code>description</code>
+      (<code>string</code>) — the <code>?</code> goes after the property
+      name.</li>
+  <li>Complete <code>describeProduct(p: Product): string</code>: return
+      <code>"Coffee ($12.50)"</code>-style output using
+      <code>p.price.toFixed(2)</code>, and when a description is present,
+      append <code>" — "</code> and the description.</li>
+  <li>Complete <code>totalPrice(products: Product[]): number</code> — the sum
+      of every price (Ruby's <code>products.sum(&amp;:price)</code>).</li>
+  <li>Declare <code>sampleProduct</code>: a plain object literal typed as
+      <code>Product</code>, with name <code>"Coffee"</code> and price
+      <code>12.5</code> and <em>no description</em> — proving the property is
+      genuinely optional.</li>
+</ol>
+<p>Try adding <code>stock: 3</code> to <code>sampleProduct</code>, or spelling
+it <code>Price</code> — the compiler rejects the wrong shape before anything
+runs.</p>`,
+
+  starter: `// 1. The duck contract, written down. Ruby: Struct.new(:name, :price, ...)
+interface Product {
+  name: string;
+  price: number;
+  // TODO: add an OPTIONAL description (string) — the ? goes after the name
+}
+
+// 2. "Coffee ($12.50)", plus " — <description>" only when one is present.
+//    Ruby: product.description ? "#{base} — #{product.description}" : base
+function describeProduct(p: Product): string {
+  // TODO: use p.price.toFixed(2) for the two decimal places
+  return "";
+}
+
+// 3. Ruby: products.sum(&:price)
+function totalPrice(products: Product[]): number {
+  // TODO
+  return 0;
+}
+
+// 4. A plain object literal IS a Product if it has the right shape —
+//    no .new, no class, no ceremony. Omit the description entirely.
+const sampleProduct: Product = { name: "TODO", price: 0 };
+`,
+
+  exportNames: ["describeProduct", "totalPrice", "sampleProduct"],
+
+  requirements: [
+    { pattern: /interface\s+Product/, message: "Declare the contract with interface Product" },
+    { pattern: /\w+\?\s*:/, message: "Make description optional with a ? after the property name (description?: string)" },
+    { pattern: /:\s*Product\b/, message: "Type your functions and sampleProduct against Product, not any" },
+  ],
+
+  tests: [
+    { name: 'describeProduct without description: "Widget ($9.99)"', run: (x) => expectEqual(x.describeProduct({ name: "Widget", price: 9.99 }), "Widget ($9.99)") },
+    { name: 'describeProduct with description appends " — A fine widget"', run: (x) => expectEqual(x.describeProduct({ name: "Widget", price: 9.99, description: "A fine widget" }), "Widget ($9.99) — A fine widget") },
+    { name: "describeProduct pads whole prices to two decimals ($5.00)", run: (x) => expectEqual(x.describeProduct({ name: "Mug", price: 5 }), "Mug ($5.00)") },
+    { name: "totalPrice sums the prices", run: (x) => expectEqual(x.totalPrice([{ name: "a", price: 2 }, { name: "b", price: 3.5 }]), 5.5) },
+    { name: "totalPrice of [] is 0", run: (x) => expectEqual(x.totalPrice([]), 0) },
+    { name: "sampleProduct is a Coffee at 12.5 with no description", run: (x) => { expectEqual(x.sampleProduct.name, "Coffee"); expectEqual(x.sampleProduct.price, 12.5); expectEqual(x.sampleProduct.description, undefined); } },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  description?: string;
+}
+
+function describeProduct(p: Product): string {
+  const base = p.name + " ($" + p.price.toFixed(2) + ")";
+  return p.description ? base + " — " + p.description : base;
+}
+
+function totalPrice(products: Product[]): number {
+  return products.reduce((sum, p) => sum + p.price, 0);
+}
+
+const sampleProduct: Product = { name: "Coffee", price: 12.5 };
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Record shape</td><td><code>Struct.new(:name, :price)</code></td><td><code>interface Product { name: string; price: number }</code></td></tr>
+  <tr><td>Make one</td><td><code>Product.new(name: "Coffee", price: 12.5)</code></td><td><code>{ name: "Coffee", price: 12.5 }</code> — a plain literal</td></tr>
+  <tr><td>Optional field</td><td>leave it <code>nil</code></td><td><code>description?: string</code> (reads as <code>undefined</code> when absent)</td></tr>
+  <tr><td>Conformance</td><td>duck typing — discovered when a message misses</td><td>structural typing — checked at compile time</td></tr>
+  <tr><td>Gradual types</td><td>Sorbet / RBS, adopted separately</td><td>built into the language</td></tr>
+  <tr><td>At runtime</td><td><code>Struct</code> is a real class</td><td>interfaces are erased — no runtime trace</td></tr>
+</table>
+<p>Structural typing is duck typing with the check moved earlier. Ruby asks
+"does it respond?" at the moment of the call; TypeScript asks "does it have
+the shape?" at compile time — and any object with the right properties
+passes, no matter where it came from. The duck test still decides; it just
+runs before the program does.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

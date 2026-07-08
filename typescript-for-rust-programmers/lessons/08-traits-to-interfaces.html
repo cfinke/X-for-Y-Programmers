@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Interfaces & Object Shapes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Interfaces & Object Shapes",
+
+  intro: `
+<p>Describing a record in Rust is a three-part ritual: a <code>struct</code>
+for the data, <code>#[derive(...)]</code> for the capabilities, and one or
+more <code>impl</code> blocks for the behavior — and nothing satisfies a
+trait until someone writes an explicit <code>impl Trait for Type</code>.
+TypeScript folds the data-shape half of that into a single
+<code>interface</code>, and changes the rules of membership: an interface is
+a <em>structural</em> contract. Any value with the right fields satisfies it
+— a bare object literal typed nowhere, a class instance, a value from a
+library that has never heard of your interface. It is as if every conforming
+type got a blanket <code>impl</code> for free.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>struct Product { name: String, ... }</code></td><td><code>interface Product { name: string; ... }</code></td></tr>
+  <tr><td><code>impl Trait for Product { ... }</code> (explicit, nominal)</td><td>nothing — matching the shape <em>is</em> conformance (structural)</td></tr>
+  <tr><td><code>description: Option&lt;String&gt;</code></td><td><code>description?: string</code></td></tr>
+  <tr><td><code>Product { name: ..., ... }</code> after the struct exists</td><td><code>{ name: "Widget", price: 9.99 }</code> — a literal is enough</td></tr>
+</table>
+<p>Two consequences worth internalizing. First, "maybe present" fields use
+<code>?</code> instead of an <code>Option</code> wrapper:
+<code>description?: string</code> means the property may be missing
+entirely, and reading it gives <code>string | undefined</code> — the check
+is still forced, as in Lesson 6. Second, honesty about what you lose:
+interfaces are erased at compile time. There is no
+<code>instanceof Product</code>, no runtime trace at all — the contract
+exists only for the compiler, which also means two independently-defined
+interfaces with the same fields are freely interchangeable, something Rust's
+nominal traits would never allow.</p>`,
+
+  rust: `#[derive(Debug, Clone)]
+struct Product {
+    id: u32,
+    name: String,
+    price: f64,
+    description: Option<String>,
+}
+
+impl Product {
+    fn describe(&self) -> String {
+        match &self.description {
+            Some(d) => format!("{} — \${:.2} ({d})", self.name, self.price),
+            None => format!("{} — \${:.2}", self.name, self.price),
+        }
+    }
+}
+
+fn discounted(p: &Product, percent: f64) -> Product {
+    Product { price: p.price * (1.0 - percent / 100.0), ..p.clone() }
+}`,
+
+  task: `
+<p>Rebuild the product type as a structural contract:</p>
+<ol>
+  <li>Define <code>interface Product</code> with <code>id: number</code>,
+      <code>name: string</code>, <code>price: number</code>, and an optional
+      <code>description?: string</code> — the <code>?</code> replaces
+      <code>Option&lt;String&gt;</code>.</li>
+  <li>Write <code>describeProduct(p: Product): string</code> returning
+      <code>"Widget — $9.99"</code> (name, space-em-dash-space, dollar sign,
+      <code>p.price.toFixed(2)</code>). When <code>description</code> is
+      present, append it in parentheses:
+      <code>"Gadget — $24.50 (solar powered)"</code>.</li>
+  <li>Write <code>applyDiscount(p: Product, percent: number): Product</code>
+      returning a <em>new</em> object (spread the old one:
+      <code>{ ...p, price: ... }</code>, the <code>..p.clone()</code> of
+      TypeScript) with the price reduced by <code>percent</code> percent.
+      Do not mutate the argument.</li>
+</ol>
+<p>The tests pass bare object literals — no constructor, no
+<code>impl</code>, no declaration that they are <code>Product</code>s.
+The shape is the contract.</p>`,
+
+  starter: `// struct Product + #[derive] + impl -> one structural interface.
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  // TODO: add the optional description field (Option<String> -> ?: string)
+}
+
+// Rust: fn describe(&self) -> String, with a match on the Option.
+function describeProduct(p: Product): string {
+  // TODO: '<name> — $<price to 2 decimals>' plus ' (<description>)' if present
+  return "";
+}
+
+// Rust: Product { price: ..., ..p.clone() } — spread replaces struct update.
+function applyDiscount(p: Product, percent: number): Product {
+  // TODO: return a NEW object with price reduced by "percent" percent
+  return p;
+}
+`,
+
+  exportNames: ["describeProduct", "applyDiscount"],
+
+  requirements: [
+    { pattern: /interface\s+Product/, message: "Define interface Product — the structural contract" },
+    { pattern: /\w+\?\s*:/, message: "Mark description optional with ? — no Option wrapper needed" },
+    { pattern: /\(\s*p\s*:\s*Product/, message: "Type the function parameter as Product" },
+  ],
+
+  tests: [
+    { name: "describeProduct on a bare literal without description", run: (x) => expectEqual(x.describeProduct({ id: 1, name: "Widget", price: 9.99 }), "Widget — $9.99") },
+    { name: "describeProduct appends the description when present", run: (x) => expectEqual(x.describeProduct({ id: 2, name: "Gadget", price: 24.5, description: "solar powered" }), "Gadget — $24.50 (solar powered)") },
+    { name: "applyDiscount(..., 25) cuts the price by a quarter", run: (x) => expectEqual(x.applyDiscount({ id: 3, name: "Sprocket", price: 80 }, 25).price, 60) },
+    { name: "applyDiscount keeps the other fields", run: (x) => { const d = x.applyDiscount({ id: 3, name: "Sprocket", price: 80 }, 25); expectEqual(d.name, "Sprocket"); expectEqual(d.id, 3); } },
+    { name: "applyDiscount does not mutate its argument", run: (x) => { const p = { id: 4, name: "Cog", price: 40 }; x.applyDiscount(p, 50); expectEqual(p.price, 40); } },
+  ],
+
+  solution: `interface Product {
+  id: number;
+  name: string;
+  price: number;
+  description?: string;
+}
+
+function describeProduct(p: Product): string {
+  const base = p.name + " — $" + p.price.toFixed(2);
+  return p.description !== undefined ? base + " (" + p.description + ")" : base;
+}
+
+function applyDiscount(p: Product, percent: number): Product {
+  return { ...p, price: p.price * (1 - percent / 100) };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Record shape</td><td><code>struct Product { ... }</code></td><td><code>interface Product { ... }</code></td></tr>
+  <tr><td>Conformance</td><td>explicit <code>impl Trait for Type</code>, nominal</td><td>structural — right shape means it conforms, automatically</td></tr>
+  <tr><td>Maybe-present field</td><td><code>description: Option&lt;String&gt;</code></td><td><code>description?: string</code> (reads as <code>string | undefined</code>)</td></tr>
+  <tr><td>Building a value</td><td><code>Product { id: 1, ... }</code> — struct must exist first</td><td><code>{ id: 1, ... }</code> — a bare literal satisfies the interface</td></tr>
+  <tr><td>Copy-with-changes</td><td><code>Product { price: p2, ..p.clone() }</code></td><td><code>{ ...p, price: p2 }</code></td></tr>
+  <tr><td>Runtime presence</td><td>struct/trait shape known to the compiled program</td><td>erased — no <code>instanceof</code>, compile-time only</td></tr>
+</table>
+<p>The mental shift: in Rust a type's identity is its <em>name</em>; in
+TypeScript it is its <em>shape</em>. That makes interfaces frictionless —
+any JSON payload or literal just works — but it also means the compiler
+cannot distinguish two same-shaped types (a <code>UserId</code> and a
+<code>ProductId</code> that are both <code>number</code> are
+interchangeable). Rust's newtype instincts still matter; TypeScript needs
+extra technique (branded types) to get them back, and it is fine to not
+bother for most code.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

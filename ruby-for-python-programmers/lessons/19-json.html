@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>Python's <code>import json</code> is Ruby's <code>require "json"</code>,
+and the two operations map cleanly — with one philosophical flip. Serializing
+is not a module function you hand data to; loading the library adds a
+<code>to_json</code> <em>method to the data itself</em>:
+<code>data.to_json</code> where Python writes <code>json.dumps(data)</code>.
+Parsing goes the module route like Python's: <code>JSON.parse(s)</code> for
+<code>json.loads(s)</code>.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>import json</code></td><td><code>require "json"</code></td></tr>
+  <tr><td><code>json.dumps(data)</code></td><td><code>data.to_json</code> (a method on the data)</td></tr>
+  <tr><td><code>json.loads(s)</code></td><td><code>JSON.parse(s)</code></td></tr>
+  <tr><td><code>d["a"]["b"]</code> (KeyError on miss)</td><td><code>data.dig(:a, :b)</code> (nil on miss)</td></tr>
+  <tr><td><code>json.JSONDecodeError</code></td><td><code>JSON::ParserError</code></td></tr>
+</table>
+<p>The catch: <code>JSON.parse</code> returns hashes with <em>string</em> keys
+— same as Python — but idiomatic Ruby wants symbol keys, so you will
+constantly write <code>JSON.parse(s, symbolize_names: true)</code> and get
+<code>{ name: "Ada" }</code> instead of <code>{ "name" =&gt; "Ada" }</code>.
+From there the hash tools you already know apply: <code>fetch</code> with a
+default for missing keys, <code>dig</code> for nested access that returns
+<code>nil</code> instead of exploding, and a def-level
+<code>rescue JSON::ParserError</code> (lesson 16) for input you don't
+trust.</p>`,
+
+  python: `import json
+
+def to_json_string(data):
+    return json.dumps(data, separators=(",", ":"))
+
+def parse_user(text):
+    data = json.loads(text)
+    return {"name": data.get("name", "unknown"), "age": data.get("age", 0)}
+
+def pluck_names(text):
+    return [user["name"] for user in json.loads(text)]
+
+def safe_parse(text):
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return {}`,
+
+  task: `
+<p>Rewrite the Python on the left as Ruby (the starter already has
+<code>require "json"</code>):</p>
+<ol>
+  <li><code>to_json_string(data)</code> — call <code>.to_json</code> on the
+      data. Compact output is the default; no <code>separators</code>
+      tweaking needed.</li>
+  <li><code>parse_user(json)</code> — parse with
+      <code>symbolize_names: true</code>, then build
+      <code>{ name: ..., age: ... }</code> using
+      <code>fetch(:name, "unknown")</code> and <code>fetch(:age, 0)</code>
+      for defaults (Ruby's <code>.get(key, default)</code>).</li>
+  <li><code>pluck_names(json)</code> — parse an array of user objects
+      (symbolized) and <code>map</code> out each <code>[:name]</code>.</li>
+  <li><code>safe_parse(json)</code> — parse with
+      <code>symbolize_names: true</code>; on
+      <code>JSON::ParserError</code>, return <code>{}</code> via a def-level
+      rescue.</li>
+</ol>`,
+
+  starter: `require "json"
+
+# 1. to_json_string: json.dumps(data) -> data.to_json — the data serializes itself.
+def to_json_string(data)
+  raise NotImplementedError, "TODO: implement to_json_string"
+end
+
+# 2. parse_user: JSON.parse(json, symbolize_names: true), then fetch with
+#    defaults: data.fetch(:name, "unknown") is data.get("name", "unknown").
+def parse_user(json)
+  raise NotImplementedError, "TODO: implement parse_user"
+end
+
+# 3. pluck_names: parse the array, then map each user hash to user[:name].
+def pluck_names(json)
+  raise NotImplementedError, "TODO: implement pluck_names"
+end
+
+# 4. safe_parse: def-level rescue JSON::ParserError -> {} for bad input.
+def safe_parse(json)
+  raise NotImplementedError, "TODO: implement safe_parse"
+end
+`,
+
+  requirements: [
+    { pattern: /require\s+["']json["']/, message: 'Load the library with require "json"' },
+    { pattern: /to_json/, message: "Serialize with the to_json method on the data" },
+    { pattern: /symbolize_names:\s*true/, message: "Parse with symbolize_names: true for symbol keys" },
+    { pattern: /JSON::ParserError|rescue/, message: "Rescue JSON::ParserError in safe_parse" },
+  ],
+
+  tests: [
+    { name: "to_json_string serializes a hash compactly",
+      code: `  expect_eq(to_json_string({ "name" => "Ada", "age" => 36 }), '{"name":"Ada","age":36}')` },
+    { name: "to_json_string serializes an array",
+      code: "  expect_eq(to_json_string([1, 2, 3]), \"[1,2,3]\")" },
+    { name: "parse_user returns symbol keys",
+      code: `  expect_eq(parse_user('{"name":"Ada","age":36}'), { name: "Ada", age: 36 })` },
+    { name: "parse_user fills in defaults for missing keys",
+      code: `  expect_eq(parse_user('{"name":"Grace"}'), { name: "Grace", age: 0 })` },
+    { name: "pluck_names extracts names from an array of users",
+      code: `  expect_eq(pluck_names('[{"name":"Ada"},{"name":"Grace"}]'), ["Ada", "Grace"])` },
+    { name: "safe_parse returns {} on bad input, parsed data otherwise",
+      code: `  expect_eq(safe_parse("{not json"), {})\n  expect_eq(safe_parse('{"ok":true}'), { ok: true })` },
+  ],
+
+  solution: `require "json"
+
+def to_json_string(data)
+  data.to_json
+end
+
+def parse_user(json)
+  data = JSON.parse(json, symbolize_names: true)
+  { name: data.fetch(:name, "unknown"), age: data.fetch(:age, 0) }
+end
+
+def pluck_names(json)
+  JSON.parse(json, symbolize_names: true).map { |user| user[:name] }
+end
+
+def safe_parse(json)
+  JSON.parse(json, symbolize_names: true)
+rescue JSON::ParserError
+  {}
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Load the library</td><td><code>import json</code></td><td><code>require "json"</code></td></tr>
+  <tr><td>Serialize</td><td><code>json.dumps(data)</code></td><td><code>data.to_json</code></td></tr>
+  <tr><td>Pretty-print</td><td><code>json.dumps(data, indent=2)</code></td><td><code>JSON.pretty_generate(data)</code></td></tr>
+  <tr><td>Parse</td><td><code>json.loads(s)</code></td><td><code>JSON.parse(s)</code> — string keys</td></tr>
+  <tr><td>Parse to symbols</td><td>—</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+  <tr><td>Default on missing key</td><td><code>d.get("k", default)</code></td><td><code>h.fetch(:k, default)</code></td></tr>
+  <tr><td>Nested access</td><td><code>d["a"]["b"]</code></td><td><code>data.dig(:a, :b)</code> — nil, never raises</td></tr>
+  <tr><td>Bad input</td><td><code>json.JSONDecodeError</code></td><td><code>JSON::ParserError</code></td></tr>
+</table>
+<p>Note the symbol/string asymmetry: <em>parsing</em> gives you string keys
+unless you ask for symbols, but <em>serializing</em> erases the difference —
+<code>{ name: "Ada" }.to_json</code> and
+<code>{ "name" =&gt; "Ada" }.to_json</code> produce the identical
+<code>{"name":"Ada"}</code>, since JSON keys are always strings. That makes
+<code>symbolize_names: true</code> a safe habit at every parse site: your
+Ruby code gets idiomatic <code>data[:name]</code> access, and nothing changes
+on the way back out.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

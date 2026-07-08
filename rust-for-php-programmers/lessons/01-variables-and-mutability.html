@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables, Mutability & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables, Mutability & Types",
+
+  intro: `
+<p>In PHP, <code>$age = 36</code> gives you a variable that is mutable,
+dynamically typed, and happy to become a string next Tuesday. Rust flips
+every one of those defaults: <code>let age = 36</code> is <em>immutable</em>
+and has one fixed type (inferred as <code>i32</code> here) for its whole
+life. Mutation is an explicit opt-in with <code>let mut</code> — and the
+<code>$</code> sigil is gone, along with camelCase: Rust names are
+<code>snake_case</code>.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>$name = "Ada";</code></td><td><code>let name = "Ada";</code></td></tr>
+  <tr><td><code>$age = 36; $age = 37;</code> (always mutable)</td><td><code>let mut age = 36; age = 37;</code></td></tr>
+  <tr><td><code>int</code>, <code>float</code> (parameter hints only)</td><td><code>i32</code>, <code>u32</code>, <code>f64</code>… (everywhere, enforced)</td></tr>
+  <tr><td><code>"9" + 1</code> → <code>10</code> (type juggling)</td><td>compile error — no silent conversions, ever</td></tr>
+  <tr><td><code>"$name is $age years old"</code></td><td><code>format!("{} is {} years old", name, age)</code></td></tr>
+</table>
+<p>If you write modern PHP 8, you already annotate parameters:
+<code>function f(int $x): string</code>. Rust is that idea taken to its
+conclusion — the types you write on function boundaries exist on
+<em>every</em> value, checked at compile time instead of at runtime.
+Inside function bodies you rarely write them, though: inference figures out
+that <code>let age = 36</code> is an <code>i32</code>, much like PHP infers
+at runtime — except Rust decides once, before the program ever runs.</p>`,
+
+  php: `<?php
+$name = "Ada";
+$age = 36;
+$price = 9.99;
+
+// Everything is mutable, always — and types are suggestions.
+$age = 37;
+$age = "thirty-seven";   // ...even into another type entirely.
+
+// PHP juggles types for you: "9" + 1 is 10.
+$total = "9" + 1;
+
+function describeUser(string $name, int $age): string {
+    return "$name is $age years old";
+}
+
+echo describeUser($name, 36);`,
+
+  task: `
+<p>Rewrite the PHP on the left as Rust:</p>
+<ol>
+  <li>Write a function <code>describe_user</code> (note:
+      <code>snake_case</code>, no <code>$</code>) that takes
+      <code>name: &amp;str</code> and <code>age: u32</code> and returns a
+      <code>String</code> like <code>"Ada is 36 years old"</code>. Use
+      <code>format!</code> — Rust's answer to PHP's
+      <code>"$name is $age"</code> interpolation.</li>
+  <li>Write a function <code>birthday</code> that takes <code>age: u32</code>
+      and returns <code>u32</code>. Inside, bind the argument to a mutable
+      local with <code>let mut</code>, add 1 to it with <code>+=</code>, and
+      return it — this is the opt-in that PHP never asks for.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. describe_user: takes name: &str and age: u32, returns String.
+//    PHP: "$name is $age years old"  ->  Rust: format!("{} is {} years old", ...)
+fn describe_user(name: &str, age: u32) -> String {
+    todo!()
+}
+
+// 2. birthday: bind age to a \`let mut\` local, increment it with +=, return it.
+fn birthday(age: u32) -> u32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s+describe_user\s*\(\s*name\s*:\s*&str\s*,\s*age\s*:\s*u32\s*\)\s*->\s*String/, message: "Define describe_user(name: &str, age: u32) -> String" },
+    { pattern: /format!\s*\(/, message: "Use the format! macro to build the string" },
+    { pattern: /let\s+mut\b/, message: "Use a let mut binding inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: 'assert_eq!(describe_user("Ada", 36), "Ada is 36 years old");' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: 'assert_eq!(describe_user("Grace", 52), "Grace is 52 years old");' },
+    { name: "birthday(36) returns 37",
+      code: "assert_eq!(birthday(36), 37);" },
+    { name: "birthday(0) returns 1",
+      code: "assert_eq!(birthday(0), 1);" },
+  ],
+
+  solution: `fn describe_user(name: &str, age: u32) -> String {
+    format!("{} is {} years old", name, age)
+}
+
+fn birthday(age: u32) -> u32 {
+    let mut next = age;
+    next += 1;
+    next
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Declare a variable</td><td><code>$x = 1;</code> (mutable, dynamic)</td><td><code>let x = 1;</code> (immutable, typed)</td></tr>
+  <tr><td>Mutable variable</td><td>every variable, always</td><td><code>let mut x = 1;</code> — opt in explicitly</td></tr>
+  <tr><td>Numbers</td><td><code>int</code>, <code>float</code>, juggled freely</td><td><code>i32</code>/<code>u32</code>/<code>f64</code>… never silently mixed</td></tr>
+  <tr><td>String interpolation</td><td><code>"$name is $age years old"</code></td><td><code>format!("{} is {} years old", name, age)</code></td></tr>
+  <tr><td>Naming</td><td><code>$camelCase</code></td><td><code>snake_case</code>, no sigil (the compiler will nag you)</td></tr>
+</table>
+<p>Notice <code>birthday</code>'s last line has no <code>return</code> and no
+semicolon: a block's final expression is its value (more on that next
+lesson). And the PHP 8 habit of typing your parameters transfers directly —
+<code>string $name</code> becomes <code>name: &amp;str</code>, just with the
+type after the name instead of before it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Enumerable: map, select & Friends</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Enumerable: map, select & Friends",
+
+  intro: `
+<p>Count the ceremony in a C++ transform: declare the output container,
+<code>std::transform</code>, <code>begin()</code>, <code>end()</code>,
+<code>std::back_inserter</code> — five moving parts before the lambda that
+does the actual work. Ruby's <code>Enumerable</code> module collapses all of
+it: <code>products.map { |p| p[:name] }</code>. No iterator pairs (the
+receiver knows its own bounds), no output container (the method allocates and
+returns a <strong>new array</strong>), no inserter adapter. The block is the
+only part you were ever really writing.</p>
+<table>
+  <tr><th>C++ &lt;algorithm&gt; / &lt;numeric&gt;</th><th>Ruby Enumerable</th></tr>
+  <tr><td><code>std::transform(v.begin(), v.end(), std::back_inserter(out), f)</code></td><td><code>v.map { |x| ... }</code></td></tr>
+  <tr><td><code>std::copy_if(v.begin(), v.end(), std::back_inserter(out), pred)</code></td><td><code>v.select { |x| ... }</code></td></tr>
+  <tr><td><code>std::accumulate(v.begin(), v.end(), 0, f)</code></td><td><code>v.sum { |x| ... }</code></td></tr>
+  <tr><td><code>std::min_element(v.begin(), v.end(), comparator)</code></td><td><code>v.min_by { |x| key }</code> — a key, not a comparator</td></tr>
+</table>
+<p>Two upgrades over the STL worth savoring. <code>min_by</code> takes a
+<em>key function</em> instead of a two-argument comparator — you say what to
+minimize, not how to compare — and returns the element itself, not an
+iterator to dereference. And because every method returns a fresh array,
+chains compose directly:
+<code>products.select { ... }.map { ... }</code> reads left to right with no
+named temporary vector between the stages. (For huge data there is a
+<code>.lazy</code> escape hatch — lesson 18 — but the default is clarity
+over allocation-counting.)</p>`,
+
+  cpp: `#include <algorithm>
+#include <iterator>
+#include <numeric>
+#include <string>
+#include <vector>
+
+struct Product { std::string name; int price_cents; bool in_stock; };
+
+std::vector<std::string> in_stock_names(const std::vector<Product>& ps) {
+    std::vector<Product> stocked;                       // temporary vector
+    std::copy_if(ps.begin(), ps.end(), std::back_inserter(stocked),
+                 [](const Product& p) { return p.in_stock; });
+    std::vector<std::string> names;
+    std::transform(stocked.begin(), stocked.end(), std::back_inserter(names),
+                   [](const Product& p) { return p.name; });
+    return names;
+}
+
+int total_value(const std::vector<Product>& ps) {
+    return std::accumulate(ps.begin(), ps.end(), 0,
+        [](int acc, const Product& p) { return acc + p.price_cents; });
+}`,
+
+  task: `
+<p>The products are symbol-keyed hashes instead of a struct —
+<code>{ name: "widget", price_cents: 300, in_stock: true }</code> — read a
+field with <code>p[:name]</code>. Write:</p>
+<ol>
+  <li><code>in_stock_names(products)</code> — the names of the in-stock
+      products, in order. This is the <code>copy_if</code>-then-
+      <code>transform</code> pipeline as one chain:
+      <code>.select { |p| p[:in_stock] }.map { |p| p[:name] }</code> —
+      no temporary vector in sight.</li>
+  <li><code>total_value(products)</code> — the sum of every product's
+      <code>:price_cents</code>. <code>std::accumulate</code> with a lambda
+      becomes <code>.sum { |p| p[:price_cents] }</code>: the block extracts,
+      <code>sum</code> adds.</li>
+  <li><code>cheapest_name(products)</code> — the <em>name</em> of the
+      cheapest product. Use <code>.min_by { |p| p[:price_cents] }</code>:
+      you hand it the key to minimize (not a comparator), it hands back the
+      element (not an iterator) — then read its <code>[:name]</code>.
+      Assume a non-empty list.</li>
+</ol>`,
+
+  starter: `# 1. in_stock_names: chain select -> map. Each returns a NEW array,
+#    so the stages compose with no temporary in between.
+def in_stock_names(products)
+  raise NotImplementedError, "TODO: implement in_stock_names"
+end
+
+# 2. total_value: sum takes a block that extracts the number to add.
+def total_value(products)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 3. cheapest_name: min_by takes the KEY to minimize and returns the
+#    element itself — then pull out its :name.
+def cheapest_name(products)
+  raise NotImplementedError, "TODO: implement cheapest_name"
+end
+`,
+
+  requirements: [
+    { pattern: /\.select/, message: "Filter with .select (your std::copy_if)" },
+    { pattern: /\.map/, message: "Transform with .map (your std::transform)" },
+    { pattern: /\.sum/, message: "Total with .sum (your std::accumulate)" },
+    { pattern: /min_by|sort_by/, message: "Find the cheapest with min_by (a key, not a comparator)" },
+  ],
+
+  tests: [
+    { name: 'in_stock_names picks ["widget", "cable"] from the mixed list',
+      code: '  products = [\n    { name: "widget", price_cents: 300, in_stock: true },\n    { name: "gizmo",  price_cents: 950, in_stock: false },\n    { name: "cable",  price_cents: 120, in_stock: true },\n  ]\n  expect_eq(in_stock_names(products), ["widget", "cable"])' },
+    { name: "in_stock_names([]) returns [] — an empty chain is fine",
+      code: "  expect_eq(in_stock_names([]), [])" },
+    { name: "total_value adds up to 1370 cents",
+      code: '  products = [\n    { name: "widget", price_cents: 300, in_stock: true },\n    { name: "gizmo",  price_cents: 950, in_stock: false },\n    { name: "cable",  price_cents: 120, in_stock: true },\n  ]\n  expect_eq(total_value(products), 1370)' },
+    { name: "total_value([]) returns 0",
+      code: "  expect_eq(total_value([]), 0)" },
+    { name: 'cheapest_name finds "cable" at 120 cents',
+      code: '  products = [\n    { name: "widget", price_cents: 300, in_stock: true },\n    { name: "gizmo",  price_cents: 950, in_stock: false },\n    { name: "cable",  price_cents: 120, in_stock: true },\n  ]\n  expect_eq(cheapest_name(products), "cable")' },
+  ],
+
+  solution: `def in_stock_names(products)
+  products.select { |p| p[:in_stock] }.map { |p| p[:name] }
+end
+
+def total_value(products)
+  products.sum { |p| p[:price_cents] }
+end
+
+def cheapest_name(products)
+  products.min_by { |p| p[:price_cents] }[:name]
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Goal</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Transform</td><td><code>std::transform</code> + <code>back_inserter</code></td><td><code>.map { |x| ... }</code> → new array</td></tr>
+  <tr><td>Keep matches</td><td><code>std::copy_if</code> + <code>back_inserter</code></td><td><code>.select { |x| ... }</code></td></tr>
+  <tr><td>Drop matches</td><td><code>std::remove_if</code> + erase idiom</td><td><code>.reject { |x| ... }</code></td></tr>
+  <tr><td>Total</td><td><code>std::accumulate(b, e, 0, f)</code></td><td><code>.sum { |x| ... }</code></td></tr>
+  <tr><td>Smallest by key</td><td><code>std::min_element(b, e, cmp)</code> → iterator</td><td><code>.min_by { |x| key }</code> → element</td></tr>
+  <tr><td>Sort by key</td><td><code>std::sort(b, e, cmp)</code>, in place</td><td><code>.sort_by { |x| key }</code> → new array</td></tr>
+  <tr><td>Any / all match?</td><td><code>std::any_of</code> / <code>std::all_of</code></td><td><code>.any? { }</code> / <code>.all? { }</code></td></tr>
+</table>
+<p>The STL separates containers from algorithms via iterators; Ruby puts the
+algorithms <em>on</em> the collections via the <code>Enumerable</code> mixin
+(lesson 10) — Array, Hash, Range, and even File all include it, paying for
+the privilege with one method, <code>each</code>. Note the mindset shift in
+the defaults: these methods return new arrays rather than mutating in place,
+so a chain is a pipeline of values, not a sequence of side effects. C++20
+ranges (<code>v | filter(...) | transform(...)</code>) chase exactly this
+composability — Ruby has had it since day one.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

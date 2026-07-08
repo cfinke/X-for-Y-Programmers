@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings &amp; Interpolation</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>Your <code>\${name}</code> template literals map almost one-to-one onto
+PHP's double-quoted strings: <code>"$name is $age"</code> interpolates, no
+backticks required. The catch TypeScript never made you think about:
+<em>single quotes do not interpolate</em>. <code>'$name'</code> is the six
+literal characters <code>$name</code>. For anything beyond a simple variable
+— a property access, an array element — wrap it in curly braces:
+<code>"{$user->name}"</code> is the full <code>\${expr}</code> form.</p>
+<table>
+  <tr><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td><code>\`Hello, \${name}!\`</code></td><td><code>"Hello, $name!"</code> (double quotes)</td></tr>
+  <tr><td><code>\`\${user.name}\`</code></td><td><code>"{$user->name}"</code> (curly form for expressions)</td></tr>
+  <tr><td><code>a + b</code> (concat)</td><td><code>$a . $b</code> (dot, not plus!)</td></tr>
+  <tr><td><code>s.toUpperCase()</code></td><td><code>strtoupper($s)</code></td></tr>
+  <tr><td><code>s.includes(n)</code></td><td><code>str_contains($s, $n)</code></td></tr>
+  <tr><td><code>s.length</code></td><td><code>strlen($s)</code></td></tr>
+  <tr><td><code>arr.join(", ")</code></td><td><code>implode(", ", $arr)</code></td></tr>
+</table>
+<p>Concatenation is the <code>.</code> operator, and this is not just spelling:
+in PHP, <code>+</code> on strings is <em>arithmetic</em>. <code>"1" + 1</code>
+is <code>2</code>, not <code>"11"</code>. Also note there are no string
+methods — strings aren't objects, so the toolbox is free functions:
+<code>strtoupper</code>, <code>str_contains</code>, <code>strlen</code>,
+<code>implode</code>. The names are crusty (and inconsistently underscored)
+but they're built in, always loaded, and cover nearly everything the JS
+string prototype does.</p>`,
+
+  typescript: `const name = "Ada";
+const greeting = \`Hello, \${name}!\`;
+
+function shout(s: string): string {
+  return s.toUpperCase();
+}
+
+function containsWord(haystack: string, needle: string): boolean {
+  return haystack.includes(needle);
+}
+
+function joinWords(words: string[]): string {
+  return words.join(", ");
+}
+
+console.log(greeting, shout("php"), containsWord("a b c", "b"));`,
+
+  task: `
+<p>Translate the string toolbox on the left into PHP:</p>
+<ol>
+  <li><code>shout(string $s): string</code> — uppercase the input with
+      <code>strtoupper</code> (there is no <code>$s-&gt;toUpperCase()</code>;
+      strings have no methods).</li>
+  <li><code>greet(string $name): string</code> — return
+      <code>"Hello, Ada!"</code>-style text using double-quote
+      <em>interpolation</em>, not concatenation — use the curly form,
+      <code>"Hello, {$name}!"</code>, which works for any expression.
+      Remember: single quotes would print a literal <code>{$name}</code>.</li>
+  <li><code>contains_word(string $haystack, string $needle): bool</code> —
+      <code>.includes()</code> becomes <code>str_contains($haystack, $needle)</code>
+      (note the haystack-first argument order).</li>
+  <li><code>join_words(array $words): string</code> — <code>arr.join(", ")</code>
+      becomes <code>implode(", ", $words)</code> — glue first, array second,
+      flipped from JS.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. TS: s.toUpperCase()  ->  PHP: strtoupper($s)
+function shout(string $s): string {
+    throw new Exception("TODO: implement shout");
+}
+
+// 2. TS: \`Hello, \${name}!\`  ->  PHP: "Hello, {$name}!" (double quotes!)
+function greet(string $name): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 3. TS: haystack.includes(needle)  ->  PHP: str_contains(...)
+function contains_word(string $haystack, string $needle): bool {
+    throw new Exception("TODO: implement contains_word");
+}
+
+// 4. TS: words.join(", ")  ->  PHP: implode(", ", ...)
+function join_words(array $words): string {
+    throw new Exception("TODO: implement join_words");
+}
+`,
+
+  requirements: [
+    { pattern: /"\$\w+|\{\$\w+/, message: 'Use double-quote interpolation ("Hello, {$name}!") in greet' },
+    { pattern: /strtoupper/, message: "Use strtoupper in shout" },
+    { pattern: /str_contains/, message: "Use str_contains in contains_word" },
+    { pattern: /implode/, message: "Use implode in join_words" },
+  ],
+
+  tests: [
+    { name: 'shout("php is fine") returns "PHP IS FINE"',
+      code: 'expect_eq(shout("php is fine"), "PHP IS FINE");' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Grace") returns "Hello, Grace!"',
+      code: 'expect_eq(greet("Grace"), "Hello, Grace!");' },
+    { name: 'contains_word finds "quick" in "the quick brown fox"',
+      code: 'expect_true(contains_word("the quick brown fox", "quick"));' },
+    { name: 'contains_word("hello", "xyz") returns false',
+      code: 'expect_eq(contains_word("hello", "xyz"), false);' },
+    { name: 'join_words(["a", "b", "c"]) returns "a, b, c"',
+      code: 'expect_eq(join_words(["a", "b", "c"]), "a, b, c");' },
+  ],
+
+  solution: `<?php
+
+function shout(string $s): string {
+    return strtoupper($s);
+}
+
+function greet(string $name): string {
+    return "Hello, {$name}!";
+}
+
+function contains_word(string $haystack, string $needle): bool {
+    return str_contains($haystack, $needle);
+}
+
+function join_words(array $words): string {
+    return implode(", ", $words);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>Interpolation</td><td><code>\`\${name}\`</code></td><td><code>"$name"</code> — double quotes only; <code>'$name'</code> is literal</td></tr>
+  <tr><td>Expression interpolation</td><td><code>\`\${user.name}\`</code></td><td><code>"{$user->name}"</code></td></tr>
+  <tr><td>Concatenation</td><td><code>a + b</code></td><td><code>$a . $b</code> (and <code>.=</code> for <code>+=</code>)</td></tr>
+  <tr><td>Uppercase</td><td><code>s.toUpperCase()</code></td><td><code>strtoupper($s)</code></td></tr>
+  <tr><td>Substring check</td><td><code>s.includes(n)</code></td><td><code>str_contains($s, $n)</code> (PHP 8+)</td></tr>
+  <tr><td>Length</td><td><code>s.length</code></td><td><code>strlen($s)</code> (bytes, not code points)</td></tr>
+  <tr><td>Join an array</td><td><code>arr.join(", ")</code></td><td><code>implode(", ", $arr)</code></td></tr>
+</table>
+<p>The <code>.</code>-vs-<code>+</code> distinction is load-bearing, not
+cosmetic: because concatenation has its own operator, PHP is free to make
+<code>+</code> always mean numeric addition, so <code>"1" + 1 === 2</code>.
+JavaScript's most famous wat (<code>"1" + 1 === "11"</code>) simply cannot
+happen — a different operator per intent removes the ambiguity. The price is
+remembering to type <code>.</code>, and that misspelling it as <code>+</code>
+silently does math on your strings.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

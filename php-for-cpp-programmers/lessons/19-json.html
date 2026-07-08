@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>JSON in C++ starts with a procurement decision: vendor nlohmann/json (a
+25,000-line header), fight with RapidJSON's allocators, or hand-roll a
+parser you will regret. PHP grew up serving web APIs, so JSON is a built-in:
+<code>json_encode($data)</code> turns any array — nested, mixed,
+associative — straight into a JSON string, and
+<code>json_decode($json, true)</code> turns JSON back into plain arrays.
+There is no DOM type, no <code>get&lt;std::string&gt;()</code> extraction —
+the associative arrays you have been using all course <em>are</em> the JSON
+data model.</p>
+<table>
+  <tr><th>C++17 (with nlohmann/json)</th><th>PHP</th></tr>
+  <tr><td>vendor a third-party library first</td><td>built into the language</td></tr>
+  <tr><td><code>json j = {{"a", 1}}; j.dump();</code></td><td><code>json_encode(["a" =&gt; 1])</code></td></tr>
+  <tr><td><code>json::parse(s)</code></td><td><code>json_decode($json, true)</code> — the <code>true</code> matters</td></tr>
+  <tr><td><code>j.value("name", "unknown")</code></td><td><code>$d["name"] ?? "unknown"</code></td></tr>
+  <tr><td>parse errors throw <code>json::parse_error</code></td><td>default: silently returns <code>null</code>; <code>JSON_THROW_ON_ERROR</code> opts into exceptions</td></tr>
+  <tr><td>list ↔ <code>std::vector</code>, object ↔ <code>std::map</code></td><td>both are just <code>array</code></td></tr>
+</table>
+<p>Two traps. First, that second argument to <code>json_decode</code>: pass
+<code>true</code> or you get <code>stdClass</code> objects
+(<code>$d-&gt;name</code> instead of <code>$d["name"]</code>) — most
+codebases want arrays, so make <code>true</code> a reflex. Second, error
+handling: by default a malformed document decodes to <code>null</code> with
+no complaint — the moral equivalent of an ignored error code. Pass
+<code>JSON_THROW_ON_ERROR</code> to <code>json_encode</code> /
+<code>json_decode</code> and failures become a catchable
+<code>JsonException</code> instead. For fields that may simply be absent,
+<code>??</code> from lesson 6 is the idiom: one operator where nlohmann makes
+you call <code>.value()</code>.</p>`,
+
+  cpp: `// Step zero in C++: vendor a library. The de-facto choice:
+#include <nlohmann/json.hpp>   // 25k lines, header-only
+using json = nlohmann::json;
+
+std::string to_json(const User& u) {
+    json j = { {"name", u.name}, {"age", u.age} };
+    return j.dump();
+}
+
+User parse_user(const std::string& s) {
+    json j = json::parse(s);              // throws json::parse_error
+    User u;
+    u.name = j.value("name", "unknown");  // default if key missing
+    u.age  = j.value("age", 0);
+    return u;
+}`,
+
+  task: `
+<p>Round-trip some user data:</p>
+<ol>
+  <li><code>to_json(array $data): string</code> — one call:
+      <code>json_encode($data, JSON_THROW_ON_ERROR)</code>. PHP lists become
+      JSON arrays, string-keyed arrays become JSON objects.</li>
+  <li><code>parse_user(string $json): array</code> — decode with
+      <code>json_decode($json, true)</code> (arrays, not
+      <code>stdClass</code>), then return
+      <code>["name" =&gt; ..., "age" =&gt; ...]</code> using <code>??</code>
+      to default a missing name to <code>"unknown"</code> and a missing age
+      to <code>0</code>.</li>
+  <li><code>pluck_names(string $json): array</code> — decode a JSON array of
+      user objects, then <code>array_map</code> (lesson 13) each row to its
+      <code>"name"</code> value.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. json_encode with JSON_THROW_ON_ERROR.
+function to_json(array $data): string {
+    throw new Exception("TODO: implement to_json");
+}
+
+// 2. json_decode($json, true), then ?? defaults: "unknown" / 0.
+function parse_user(string $json): array {
+    throw new Exception("TODO: implement parse_user");
+}
+
+// 3. Decode, then array_map each user row to its "name".
+function pluck_names(string $json): array {
+    throw new Exception("TODO: implement pluck_names");
+}
+`,
+
+  requirements: [
+    { pattern: /json_encode/, message: "Serialize with json_encode" },
+    { pattern: /json_decode\s*\(\s*\$\w+\s*,\s*true\s*\)/, message: "Decode with json_decode($json, true) — true gives arrays, not stdClass" },
+    { pattern: /\?\?/, message: "Default missing keys with the ?? operator" },
+  ],
+
+  tests: [
+    { name: 'to_json encodes an associative array as a JSON object',
+      code: `expect_eq(to_json(["name" => "Ada", "age" => 36]), '{"name":"Ada","age":36}');` },
+    { name: 'to_json encodes a list as a JSON array',
+      code: `expect_eq(to_json([1, 2, 3]), '[1,2,3]');` },
+    { name: 'parse_user round-trips a complete user',
+      code: `expect_eq(parse_user('{"name":"Grace","age":45}'), ["name" => "Grace", "age" => 45]);` },
+    { name: 'parse_user defaults a missing age to 0',
+      code: `expect_eq(parse_user('{"name":"Linus"}'), ["name" => "Linus", "age" => 0]);` },
+    { name: 'parse_user defaults everything on an empty object',
+      code: `expect_eq(parse_user('{}'), ["name" => "unknown", "age" => 0]);` },
+    { name: 'pluck_names maps a JSON array to its name fields',
+      code: `expect_eq(pluck_names('[{"name":"Ada","age":36},{"name":"Grace","age":45}]'), ["Ada", "Grace"]);` },
+  ],
+
+  solution: `<?php
+
+function to_json(array $data): string {
+    return json_encode($data, JSON_THROW_ON_ERROR);
+}
+
+function parse_user(string $json): array {
+    $d = json_decode($json, true);
+    return [
+        "name" => $d["name"] ?? "unknown",
+        "age"  => $d["age"] ?? 0,
+    ];
+}
+
+function pluck_names(string $json): array {
+    $users = json_decode($json, true);
+    return array_map(fn(array $u) => $u["name"], $users);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++17 (nlohmann)</th><th>PHP</th></tr>
+  <tr><td>Dependency</td><td>vendor the header</td><td>none — built in</td></tr>
+  <tr><td>Serialize</td><td><code>j.dump()</code></td><td><code>json_encode($data)</code></td></tr>
+  <tr><td>Pretty-print</td><td><code>j.dump(2)</code></td><td><code>json_encode($data, JSON_PRETTY_PRINT)</code></td></tr>
+  <tr><td>Parse to data</td><td><code>json::parse(s)</code></td><td><code>json_decode($json, true)</code></td></tr>
+  <tr><td>Forget the flag</td><td>—</td><td><code>json_decode($json)</code> → <code>stdClass</code> objects</td></tr>
+  <tr><td>Missing-key default</td><td><code>j.value("k", fallback)</code></td><td><code>$d["k"] ?? $fallback</code></td></tr>
+  <tr><td>Parse failure</td><td>throws <code>json::parse_error</code></td><td><code>null</code> silently — or <code>JSON_THROW_ON_ERROR</code> → <code>JsonException</code></td></tr>
+  <tr><td>Inspect last error</td><td>—</td><td><code>json_last_error_msg()</code> (legacy style)</td></tr>
+</table>
+<p>The insight: PHP wins here because there is no impedance mismatch. In C++
+the JSON library defines its own DOM type and you spend your effort moving
+data between <code>json</code> and your real structs. In PHP the decoded form
+is the same associative array every other API in the language already speaks
+— <code>array_map</code>, <code>??</code>, <code>foreach</code> all apply
+immediately. The discipline you must bring is the error handling: the
+silent-<code>null</code> default is a 2000s-era design mistake, and
+<code>JSON_THROW_ON_ERROR</code> is you choosing exceptions over ignored
+return codes — the same choice you would make in C++.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

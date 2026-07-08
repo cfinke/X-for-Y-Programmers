@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring &amp; Splat</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>PHP finally got real destructuring in 7.1 with the short syntax:
+<code>[$a, $b] = $pair</code>. It is genuinely useful, but the brackets on the
+left never quite disappear, and <code>list()</code> has one persistent gap — it
+cannot collect a <em>rest</em>. You want the head and the remaining tail, and
+you end up with <code>$first = $list[0]; $rest = array_slice($list, 1);</code>.</p>
+<p>Ruby drops the brackets entirely: <code>a, b = pair</code> unpacks a two-element
+array into two names. Swapping is the poster child — <code>a, b = b, a</code>,
+no temp array, no intermediate. And the splat operator <code>*</code> fills the
+gap PHP left open: <code>first, *rest = list</code> binds <code>first</code> to
+the head and <code>rest</code> to <em>an array of everything else</em>. The same
+<code>*</code> defines variadics — <code>def sum(*nums)</code> — and spreads an
+array back into a call or a literal: <code>f(*args)</code>,
+<code>[*a, *b]</code>.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td><code>[$a, $b] = $pair</code></td><td><code>a, b = pair</code> (brackets drop)</td></tr>
+  <tr><td><code>[$a, $b] = [$b, $a]</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td><code>$first = $list[0]; $rest = array_slice($list, 1)</code></td><td><code>first, *rest = list</code></td></tr>
+  <tr><td><code>function sum(int ...$nums)</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td><code>f(...$args)</code></td><td><code>f(*args)</code></td></tr>
+  <tr><td><code>[...$a, ...$b]</code> / <code>array_merge($a, $b)</code></td><td><code>[*a, *b]</code> / <code>a.merge(b)</code> for hashes</td></tr>
+</table>
+<p>For hashes, the counterpart to <code>array_merge</code> is
+<code>merge</code>: <code>defaults.merge(overrides)</code> returns a new hash
+where keys in <code>overrides</code> win over <code>defaults</code> — exactly the
+config-override pattern you reach for constantly.</p>`,
+
+  php: `// Destructure a pair — the brackets never leave the left side:
+$pair = [1, 2];
+[$a, $b] = $pair;
+
+// Swap needs a bracketed temporary array:
+[$a, $b] = [$b, $a];
+
+// list() cannot collect a rest, so you slice by hand:
+$list = [10, 20, 30, 40];
+$first = $list[0];
+$rest  = array_slice($list, 1);
+
+// Variadics gather trailing args into an array:
+function sum(int ...$nums): int {
+    return array_sum($nums);
+}
+echo sum(1, 2, 3);        // 6
+echo sum(...[4, 5, 6]);   // spread an array into the call
+
+// Merge two associative arrays; the right side wins on key clashes:
+$settings = array_merge($defaults, $overrides);`,
+
+  task: `
+<p>Rewrite each PHP maneuver with Ruby's bracket-free destructuring and splat:</p>
+<ol>
+  <li><code>swap(pair)</code> — given a two-element array, return it reversed
+      using <code>a, b = pair</code> then <code>[b, a]</code>. No temp array.</li>
+  <li><code>head_tail(list)</code> — split into the first element and the rest
+      with <code>first, *rest = list</code>, and return
+      <code>[first, rest]</code>. On a one-element list, <code>rest</code> is
+      <code>[]</code>.</li>
+  <li><code>sum(*nums)</code> — a variadic method that adds up however many
+      numbers it is handed. Define it with the splat parameter
+      <code>def sum(*nums)</code>.</li>
+  <li><code>merge_settings(defaults, overrides)</code> — return a new hash where
+      <code>overrides</code> wins over <code>defaults</code>, via
+      <code>defaults.merge(overrides)</code>.</li>
+</ol>`,
+
+  starter: `# 1. swap: a, b = pair, then return them in the other order.
+def swap(pair)
+  raise NotImplementedError, "TODO: a, b = pair; return [b, a]"
+end
+
+# 2. head_tail: first, *rest = list, then return [first, rest].
+def head_tail(list)
+  raise NotImplementedError, "TODO: first, *rest = list; return [first, rest]"
+end
+
+# 3. sum: a variadic method — gather args with a splat parameter.
+def sum(*nums)
+  raise NotImplementedError, "TODO: add up nums"
+end
+
+# 4. merge_settings: overrides win over defaults.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: defaults.merge(overrides)"
+end
+`,
+
+  requirements: [
+    { pattern: /\*\w+/, message: "Use a splat (*rest / *nums) somewhere" },
+    { pattern: /,\s*\*/, message: "Collect the tail with first, *rest = list" },
+    { pattern: /\.merge/, message: "Combine the hashes with .merge" },
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Define sum with a splat parameter: def sum(*nums)" },
+  ],
+
+  tests: [
+    { name: 'swap reverses a pair without a temp',
+      code: '  expect_eq(swap([1, 2]), [2, 1])' },
+    { name: 'swap works on strings too',
+      code: '  expect_eq(swap(["left", "right"]), ["right", "left"])' },
+    { name: 'head_tail splits head from the rest',
+      code: '  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])' },
+    { name: 'head_tail on a single element gives an empty rest',
+      code: '  expect_eq(head_tail([9]), [9, []])' },
+    { name: 'sum adds a variable number of arguments',
+      code: '  expect_eq(sum(1, 2, 3, 4), 10)' },
+    { name: 'merge_settings lets overrides win',
+      code: '  expect_eq(merge_settings({a: 1, b: 2}, {b: 3, c: 4}), {a: 1, b: 3, c: 4})' },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  [b, a]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Operation</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Unpack an array</td><td><code>[$a, $b] = $pair</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td>Swap</td><td><code>[$a, $b] = [$b, $a]</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Head + rest</td><td><code>$list[0]</code> + <code>array_slice</code></td><td><code>first, *rest = list</code></td></tr>
+  <tr><td>Variadic parameter</td><td><code>function f(...$xs)</code></td><td><code>def f(*xs)</code></td></tr>
+  <tr><td>Spread into a call</td><td><code>f(...$args)</code></td><td><code>f(*args)</code></td></tr>
+  <tr><td>Concatenate arrays</td><td><code>[...$a, ...$b]</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td>Merge hashes (right wins)</td><td><code>array_merge($a, $b)</code></td><td><code>a.merge(b)</code></td></tr>
+  <tr><td>Keyword splat</td><td><code>function f(...$kw)</code> (named)</td><td><code>def f(**opts)</code></td></tr>
+</table>
+<p>One operator, <code>*</code>, reads in two directions: on the left of an
+assignment or in a parameter list it <em>gathers</em> loose values into an array;
+in a call or a literal it <em>scatters</em> an array back into loose values. Once
+that symmetry clicks, the bracket ceremony PHP still carries — and the
+<code>array_slice</code> you reached for to fake a rest — both fall away.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

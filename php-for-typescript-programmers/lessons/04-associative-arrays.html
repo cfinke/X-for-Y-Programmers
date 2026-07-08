@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Associative Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Associative Arrays",
+
+  intro: `
+<p>Everything TypeScript splits into <code>Record&lt;string, number&gt;</code>,
+<code>Map&lt;string, number&gt;</code>, and plain object literals collapses
+into the same PHP <code>array</code> from last lesson — just with explicit
+keys: <code>['apples' =&gt; 3, 'pears' =&gt; 5]</code>. Reads look like
+indexing (<code>$inv['apples']</code>), writes too
+(<code>$inv['kiwi'] = 4;</code>), and a missing key is a warning plus
+<code>null</code> — which is why the idiomatic read is
+<code>$inv[$k] ?? 0</code>. Yes, that's the same <code>??</code> null
+coalescing operator TypeScript has; in PHP it additionally suppresses the
+missing-key warning, making it <em>the</em> way to read with a default.</p>
+<table>
+  <tr><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td><code>const inv: Record&lt;string, number&gt; = { apples: 3 };</code></td><td><code>$inv = ['apples' =&gt; 3];</code></td></tr>
+  <tr><td><code>inv["apples"]</code> / <code>map.get(k)</code></td><td><code>$inv['apples']</code></td></tr>
+  <tr><td><code>inv[k] ?? 0</code></td><td><code>$inv[$k] ?? 0</code> (same operator!)</td></tr>
+  <tr><td><code>for (const [k, v] of Object.entries(inv))</code></td><td><code>foreach ($inv as $k =&gt; $v)</code></td></tr>
+  <tr><td><code>Object.keys(inv)</code></td><td><code>array_keys($inv)</code></td></tr>
+  <tr><td><code>k in inv</code> / <code>map.has(k)</code></td><td><code>array_key_exists($k, $inv)</code></td></tr>
+</table>
+<p><code>foreach ($inv as $name =&gt; $count)</code> is
+<code>Object.entries</code> as syntax — no destructuring dance, key and value
+both named directly. And the value semantics from lesson 3 still apply:
+associative arrays are copied on assignment and on every function call, so
+"add a key" functions take the copy, modify it, and return it. No spread
+gymnastics (<code>{ ...inv, [name]: n }</code>) needed — mutating your local
+copy <em>is</em> the immutable update.</p>`,
+
+  typescript: `function buildInventory(): Record<string, number> {
+  return { apples: 3, pears: 5 };
+}
+
+function getCount(inv: Record<string, number>, name: string): number {
+  return inv[name] ?? 0;
+}
+
+function addStock(inv: Record<string, number>, name: string, n: number) {
+  return { ...inv, [name]: (inv[name] ?? 0) + n }; // copy to avoid mutation
+}
+
+function totalStock(inv: Record<string, number>): number {
+  let sum = 0;
+  for (const [name, count] of Object.entries(inv)) sum += count;
+  return sum;
+}`,
+
+  task: `
+<p>Port the inventory helpers. All four functions traffic in one shape:
+<code>['apples' =&gt; 3, 'pears' =&gt; 5]</code>.</p>
+<ol>
+  <li><code>build_inventory(): array</code> — return exactly
+      <code>['apples' =&gt; 3, 'pears' =&gt; 5]</code>.</li>
+  <li><code>get_count(array $inv, string $name): int</code> — read with a
+      default: <code>$inv[$name] ?? 0</code>. Unknown items count as 0.</li>
+  <li><code>add_stock(array $inv, string $name, int $n): array</code> — add
+      <code>$n</code> to the item's count (creating the key at 0 if new),
+      then return the array. <code>$inv</code> is already your private copy —
+      just modify it and return it; no <code>{ ...spread }</code> ritual.</li>
+  <li><code>total_stock(array $inv): int</code> — sum all counts with
+      <code>foreach ($inv as $name =&gt; $count)</code>, PHP's built-in
+      <code>Object.entries</code> loop.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. TS: { apples: 3, pears: 5 }  ->  PHP: ['apples' => 3, 'pears' => 5]
+function build_inventory(): array {
+    throw new Exception("TODO: implement build_inventory");
+}
+
+// 2. Missing keys: read with $inv[$name] ?? 0 — same ?? you know.
+function get_count(array $inv, string $name): int {
+    throw new Exception("TODO: implement get_count");
+}
+
+// 3. $inv is a copy — modify it, return it. That IS the immutable update.
+function add_stock(array $inv, string $name, int $n): array {
+    throw new Exception("TODO: implement add_stock");
+}
+
+// 4. TS: for (const [k, v] of Object.entries(inv))
+//    PHP: foreach ($inv as $name => $count)
+function total_stock(array $inv): int {
+    throw new Exception("TODO: implement total_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /=>/, message: "Build the inventory with => key arrows: ['apples' => 3, ...]" },
+    { pattern: /\?\?/, message: "Read missing keys with the ?? null coalescing operator" },
+    { pattern: /foreach\s*\(|array_keys/, message: "Iterate with foreach ($inv as $k => $v) (or use array_keys)" },
+  ],
+
+  tests: [
+    { name: "build_inventory() returns ['apples' => 3, 'pears' => 5]",
+      code: "expect_eq(build_inventory(), ['apples' => 3, 'pears' => 5]);" },
+    { name: "get_count finds apples: 3",
+      code: "expect_eq(get_count(build_inventory(), 'apples'), 3);" },
+    { name: "get_count of a missing item returns 0 (via ??)",
+      code: "expect_eq(get_count(build_inventory(), 'bananas'), 0);" },
+    { name: "add_stock bumps an existing item and adds a new one",
+      code: "$inv = add_stock(build_inventory(), 'apples', 2);\nexpect_eq(get_count($inv, 'apples'), 5);\n$inv = add_stock($inv, 'kiwi', 4);\nexpect_eq(get_count($inv, 'kiwi'), 4);" },
+    { name: "add_stock does not mutate the caller's array (value semantics)",
+      code: "$before = build_inventory();\nadd_stock($before, 'apples', 100);\nexpect_eq(get_count($before, 'apples'), 3);" },
+    { name: "total_stock(build_inventory()) returns 8",
+      code: "expect_eq(total_stock(build_inventory()), 8);\nexpect_eq(total_stock([]), 0);" },
+  ],
+
+  solution: `<?php
+
+function build_inventory(): array {
+    return ['apples' => 3, 'pears' => 5];
+}
+
+function get_count(array $inv, string $name): int {
+    return $inv[$name] ?? 0;
+}
+
+function add_stock(array $inv, string $name, int $n): array {
+    $inv[$name] = ($inv[$name] ?? 0) + $n;
+    return $inv;
+}
+
+function total_stock(array $inv): int {
+    $sum = 0;
+    foreach ($inv as $name => $count) {
+        $sum += $count;
+    }
+    return $sum;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>Dictionary literal</td><td><code>{ apples: 3 }</code> / <code>new Map()</code></td><td><code>['apples' =&gt; 3]</code></td></tr>
+  <tr><td>Read</td><td><code>inv[k]</code> / <code>map.get(k)</code></td><td><code>$inv[$k]</code> (warns if missing)</td></tr>
+  <tr><td>Read with default</td><td><code>inv[k] ?? 0</code></td><td><code>$inv[$k] ?? 0</code> (also silences the warning)</td></tr>
+  <tr><td>Write</td><td><code>inv[k] = v</code> / <code>map.set(k, v)</code></td><td><code>$inv[$k] = $v;</code></td></tr>
+  <tr><td>Entries loop</td><td><code>for (const [k, v] of Object.entries(inv))</code></td><td><code>foreach ($inv as $k =&gt; $v)</code></td></tr>
+  <tr><td>Keys / has-key</td><td><code>Object.keys(inv)</code> / <code>k in inv</code></td><td><code>array_keys($inv)</code> / <code>array_key_exists($k, $inv)</code></td></tr>
+  <tr><td>Non-mutating update</td><td><code>{ ...inv, [k]: v }</code></td><td>modify your copy, <code>return $inv;</code></td></tr>
+</table>
+<p>One structure playing every role is PHP's signature trade. You lose the
+type-level distinction TypeScript gives you between a tuple, a list, a
+record, and a Map — <code>array</code> covers all four, and only docblocks
+(<code>array&lt;string, int&gt;</code> under PHPStan/Psalm) recover the
+precision. You gain a uniform toolbox: the same <code>foreach</code>, the
+same <code>??</code>, the same 80-odd <code>array_*</code> functions work on
+everything, and value semantics mean handing an "object" to a function never
+risks it being mutated behind your back.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

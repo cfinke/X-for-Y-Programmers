@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p><code>HashMap&lt;K, V&gt;</code> is <code>std::unordered_map&lt;K, V&gt;</code>:
+hash table, unordered, average O(1). One import —
+<code>use std::collections::HashMap;</code> — and you're home. The big
+behavioral difference is the one you've been burned by:
+<strong>there is no <code>operator[]</code> that inserts on read</strong>. In
+C++, <code>inv["typo"]</code> on a const-less map silently default-constructs a
+value and inserts it; every C++ team has a war story about that. Rust's read
+path is <code>.get(key)</code>, which returns <code>Option&lt;&amp;V&gt;</code>
+— the <code>find()</code>-and-compare-to-<code>end()</code> dance, collapsed
+into a type.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>std::unordered_map&lt;std::string, int&gt;</code></td><td><code>HashMap&lt;String, u32&gt;</code></td></tr>
+  <tr><td><code>m.insert({k, v})</code> / <code>m[k] = v</code></td><td><code>m.insert(k, v)</code></td></tr>
+  <tr><td><code>auto it = m.find(k); it != m.end() ? it-&gt;second : 0</code></td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>m[k]</code> — inserts a default on miss!</td><td>no such trap; <code>m[&amp;k]</code> panics on miss instead</td></tr>
+  <tr><td><code>m.try_emplace(k, 0).first-&gt;second += n</code></td><td><code>*m.entry(k).or_insert(0) += n</code></td></tr>
+</table>
+<p>The <code>entry</code> API is <code>try_emplace</code> done right:
+<code>m.entry(key).or_insert(0)</code> means "find or insert, then hand me a
+mutable reference" — one hash lookup, no iterator plumbing. It's the idiom for
+counters and accumulators, and once it clicks you'll miss it every time you're
+back in C++.</p>`,
+
+  cpp: `#include <unordered_map>
+#include <string>
+
+std::unordered_map<std::string, int> build_inventory() {
+    return {{"hammer", 10}, {"nails", 250}};
+}
+
+int get_count(const std::unordered_map<std::string, int>& inv,
+              const std::string& name) {
+    auto it = inv.find(name);       // operator[] would insert 0 on a miss!
+    return it != inv.end() ? it->second : 0;
+}
+
+void add_stock(std::unordered_map<std::string, int>& inv,
+               const std::string& name, int n) {
+    inv.try_emplace(name, 0).first->second += n;
+}`,
+
+  task: `
+<p>Port the inventory code on the left to Rust:</p>
+<ol>
+  <li><code>build_inventory() -&gt; HashMap&lt;String, u32&gt;</code> — create
+      a map, <code>.insert()</code> two items — <code>"hammer"</code> with
+      count <code>10</code> and <code>"nails"</code> with count
+      <code>250</code> — and return it. String keys are
+      <code>String::from("hammer")</code> or
+      <code>"hammer".to_string()</code>.</li>
+  <li><code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str) -&gt; u32</code>
+      — look up <code>name</code>, returning <code>0</code> if absent. The
+      whole find/end dance is
+      <code>inv.get(name).copied().unwrap_or(0)</code>.</li>
+  <li><code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str, n: u32)</code>
+      — add <code>n</code> to the existing count, or insert <code>n</code> if
+      the key is new. Use the entry API:
+      <code>*inv.entry(name.to_string()).or_insert(0) += n;</code></li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: HashMap::new(), then .insert two items:
+//    "hammer" -> 10 and "nails" -> 250. Keys are String, not &str.
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: .get returns Option<&u32> — no end() comparisons.
+//    .copied() turns Option<&u32> into Option<u32>; .unwrap_or(0) defaults.
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: the entry API — find-or-insert in one lookup.
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Use HashMap<String, u32> (the unordered_map of Rust)" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Insert with .insert() and update with .entry()" },
+    { pattern: /unwrap_or/, message: "Default missing keys to 0 with unwrap_or" },
+  ],
+
+  tests: [
+    { name: "build_inventory() holds exactly two items",
+      code: "assert_eq!(build_inventory().len(), 2);" },
+    { name: 'get_count finds "hammer" (10) and "nails" (250)',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "hammer"), 10);\nassert_eq!(get_count(&inv, "nails"), 250);' },
+    { name: "get_count returns 0 for a missing key (no phantom insert!)",
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "banana"), 0);\nassert_eq!(inv.len(), 2);' },
+    { name: 'add_stock adds to an existing count: hammer 10 + 5 = 15',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "hammer", 5);\nassert_eq!(get_count(&inv, "hammer"), 15);' },
+    { name: "add_stock inserts a brand-new key",
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "saw", 2);\nassert_eq!(get_count(&inv, "saw"), 2);' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert(String::from("hammer"), 10);
+    inv.insert(String::from("nails"), 250);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Type</td><td><code>std::unordered_map&lt;std::string, int&gt;</code></td><td><code>HashMap&lt;String, u32&gt;</code> (needs <code>use std::collections::HashMap;</code>)</td></tr>
+  <tr><td>Insert / overwrite</td><td><code>m[k] = v;</code></td><td><code>m.insert(k, v);</code></td></tr>
+  <tr><td>Lookup</td><td><code>m.find(k)</code> + <code>end()</code> check</td><td><code>m.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>Lookup with default</td><td>the four-line <code>find</code> dance</td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Find-or-insert, then mutate</td><td><code>m.try_emplace(k, 0).first-&gt;second += n</code></td><td><code>*m.entry(k).or_insert(0) += n</code></td></tr>
+  <tr><td>Read that inserts</td><td><code>m[k]</code> — the classic footgun</td><td>doesn't exist</td></tr>
+</table>
+<p><code>or_insert</code> returns <code>&amp;mut V</code>, a mutable reference
+to the value in place — hence the <code>*</code> to assign through it, exactly
+like dereferencing the iterator <code>try_emplace</code> hands back. One
+subtlety: <code>entry</code> takes the key by value (it may need to store it),
+which is why the solution passes <code>name.to_string()</code> rather than the
+borrowed <code>&amp;str</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits & Derive</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>You know the ritual. A ten-line value type grows a defaulted copy
+constructor, a defaulted default constructor, an <code>operator==</code>
+(memberwise, obviously — <code>= default</code> since C++20 if you're lucky
+enough to be on it), and an <code>operator&lt;&lt;</code> for logging that
+someone writes by hand and forgets to update when a field is added. None of
+it is interesting; all of it is mandatory. Rust compresses the whole ritual
+into one attribute: <code>#[derive(Debug, Clone, PartialEq, Default)]</code>,
+and the compiler writes the memberwise implementations — and rewrites them
+when the fields change.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>ostream&amp; operator&lt;&lt;(...)</code> by hand</td><td><code>#[derive(Debug)]</code> → print with <code>{:?}</code></td></tr>
+  <tr><td>Copy constructor (implicit, runs anywhere)</td><td><code>#[derive(Clone)]</code> → explicit <code>.clone()</code> at call sites</td></tr>
+  <tr><td><code>bool operator==(...) = default;</code> (C++20)</td><td><code>#[derive(PartialEq)]</code> → <code>a == b</code></td></tr>
+  <tr><td><code>Point() = default;</code></td><td><code>#[derive(Default)]</code> → <code>Point::default()</code></td></tr>
+</table>
+<p>Two differences worth noticing. First, nothing is implicit: a plain
+<code>struct</code> starts with <em>no</em> copying, no equality, no
+printing — you opt in per capability, so a type that shouldn't be compared
+simply can't be. Second, <code>Clone</code> is C++'s copy constructor with
+the call site made visible: <code>p.clone()</code> is the deep copy you
+asked for, and passing <code>p</code> without it is a move. It's the
+"expensive copies should be greppable" guideline, enforced.</p>`,
+
+  cpp: `#include <ostream>
+
+struct Point {
+    int x = 0;
+    int y = 0;
+
+    Point() = default;                          // default ctor
+    Point(const Point&) = default;              // copy ctor
+    Point& operator=(const Point&) = default;   // copy assign
+
+    bool operator==(const Point& o) const {     // C++20: = default
+        return x == o.x && y == o.y;
+    }
+};
+
+// The logging operator someone forgets to update:
+std::ostream& operator<<(std::ostream& os, const Point& p) {
+    return os << "Point { x: " << p.x << ", y: " << p.y << " }";
+}`,
+
+  task: `
+<p>The starter defines <code>Point</code> with no traits at all — a struct
+that can't be printed, copied, or compared. Fix that with one
+<code>#[derive(...)]</code> line, then use each derived capability:</p>
+<ol>
+  <li>Add <code>#[derive(Debug, Clone, PartialEq)]</code> above
+      <code>struct Point</code>.</li>
+  <li><code>points_equal(a: &amp;Point, b: &amp;Point) -&gt; bool</code> —
+      just <code>a == b</code>; <code>PartialEq</code> supplies the
+      memberwise <code>operator==</code>.</li>
+  <li><code>debug_string(p: &amp;Point) -&gt; String</code> — return
+      <code>format!("{:?}", p)</code>; <code>Debug</code> is the
+      <code>operator&lt;&lt;</code> you never have to write (output looks
+      like <code>Point { x: 3, y: 4 }</code>).</li>
+  <li><code>duplicate(p: &amp;Point) -&gt; Point</code> — return
+      <code>p.clone()</code>; the copy constructor, invoked explicitly.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Rule-of-five boilerplate, Rust edition: add ONE attribute line here.
+// You need Debug, Clone, and PartialEq.
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// 1. points_equal: with PartialEq derived, == just works (memberwise).
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// 2. debug_string: with Debug derived, format!("{:?}", p) prints the struct.
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// 3. duplicate: with Clone derived, .clone() is the explicit copy ctor.
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Add a #[derive(...)] attribute to Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == works on Point" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} works on Point" },
+    { pattern: /Clone/, message: "Derive Clone so .clone() works on Point" },
+  ],
+
+  tests: [
+    { name: "points_equal is true for memberwise-equal points",
+      code: 'let a = Point { x: 1, y: 2 };\nlet b = Point { x: 1, y: 2 };\nassert!(points_equal(&a, &b));' },
+    { name: "points_equal is false when any field differs",
+      code: 'let a = Point { x: 1, y: 2 };\nlet b = Point { x: 1, y: 3 };\nassert!(!points_equal(&a, &b));' },
+    { name: 'debug_string(&Point { x: 3, y: 4 }) is "Point { x: 3, y: 4 }"',
+      code: 'assert_eq!(debug_string(&Point { x: 3, y: 4 }), "Point { x: 3, y: 4 }");' },
+    { name: "duplicate returns an equal copy",
+      code: 'let p = Point { x: 7, y: -2 };\nlet q = duplicate(&p);\nassert_eq!(q.x, 7);\nassert_eq!(q.y, -2);' },
+    { name: "duplicate leaves the original usable (a real copy, not a move)",
+      code: 'let p = Point { x: 5, y: 6 };\nlet q = duplicate(&p);\nassert!(points_equal(&p, &q));\nassert_eq!(p.x, 5);' },
+  ],
+
+  solution: `#[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Capability</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Print for debugging</td><td>Hand-written <code>operator&lt;&lt;</code></td><td><code>#[derive(Debug)]</code> + <code>{:?}</code></td></tr>
+  <tr><td>Copy</td><td>Copy ctor, implicit at call sites</td><td><code>#[derive(Clone)]</code> + explicit <code>.clone()</code></td></tr>
+  <tr><td>Equality</td><td><code>operator==</code> (or <code>&lt;=&gt;</code>)</td><td><code>#[derive(PartialEq)]</code> + <code>==</code></td></tr>
+  <tr><td>Default construction</td><td><code>T() = default;</code></td><td><code>#[derive(Default)]</code> + <code>T::default()</code></td></tr>
+  <tr><td>Ordering</td><td><code>operator&lt;=&gt; = default;</code></td><td><code>#[derive(PartialOrd, Ord)]</code></td></tr>
+  <tr><td>Field added later</td><td>Update every hand-written op</td><td>Derives regenerate automatically</td></tr>
+</table>
+<p>The mental model: a fresh Rust struct is like a C++ class where every
+special member and operator is <code>= delete</code> until you say otherwise
+— and "otherwise" is one attribute, not five defaulted declarations plus a
+stream operator. The derives are memberwise, like <code>= default</code>,
+and they stay correct as the struct evolves, which is exactly the part the
+hand-written <code>operator&lt;&lt;</code> never managed.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

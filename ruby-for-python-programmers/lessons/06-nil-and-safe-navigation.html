@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Nil &amp; Safe Navigation</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Nil & Safe Navigation",
+
+  intro: `
+<p>Python's <code>None</code> is Ruby's <code>nil</code> — same job, but Ruby
+shipped the operator Python never did. You know the dance:
+<code>user.address.city if user and user.address else None</code>. PEP 505
+proposed <code>?.</code> for Python and was rejected; Ruby has had
+<code>&amp;.</code> (safe navigation) since 2.3 — <code>user&amp;.address&amp;.city</code>
+returns <code>nil</code> the moment any link in the chain is <code>nil</code>,
+instead of blowing up.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>None</code></td><td><code>nil</code></td></tr>
+  <tr><td><code>x.attr if x else None</code></td><td><code>x&amp;.attr</code></td></tr>
+  <tr><td><code>x is None</code></td><td><code>x.nil?</code></td></tr>
+  <tr><td><code>value or default</code> (swallows <code>0</code>, <code>""</code>, <code>[]</code>)</td><td><code>value || default</code> (only <code>nil</code>/<code>false</code> fall through)</td></tr>
+  <tr><td><code>x = x if x else compute()</code></td><td><code>x ||= compute()</code></td></tr>
+</table>
+<p>The bigger surprise is truthiness. In Python, <code>0</code>, <code>""</code>,
+<code>[]</code>, and <code>{}</code> are all falsy, so <code>value or default</code>
+is a famous bug factory. In Ruby, <strong>only <code>nil</code> and
+<code>false</code> are falsy</strong> — <code>0</code>, <code>""</code>, and
+<code>[]</code> are all truthy. That makes <code>value || default</code> safe
+for "use the default only when there is no value at all", and makes
+<code>x ||= expensive_call</code> the standard one-line memoization idiom.
+To ask the question explicitly, every object answers <code>.nil?</code>.</p>`,
+
+  python: `class Address:
+    def __init__(self, city):
+        self.city = city
+
+class User:
+    def __init__(self, address=None):
+        self.address = address
+
+def get_city(user):
+    # PEP 505 would have made this user?.address?.city — rejected.
+    if user is not None and user.address is not None:
+        return user.address.city
+    return "Unknown"
+
+def pick(d, key, default):
+    return d.get(key) or default  # bug! loses 0, "", [] ...
+
+print(pick({"count": 0}, "count", 5))  # 5 — the 0 is gone`,
+
+  task: `
+<p>Port the Python to Ruby — the starter already defines <code>Address</code>
+and <code>User</code> for you:</p>
+<ol>
+  <li><code>get_city(user)</code> — return the user's address's city, or
+      <code>"Unknown"</code> if the user or the address is <code>nil</code>.
+      One line: chain <code>&amp;.</code> twice, then <code>|| "Unknown"</code>.</li>
+  <li><code>pick(hash, key, default)</code> — return <code>hash[key]</code>,
+      falling back to <code>default</code> when the key is missing. In Ruby,
+      <code>hash[key] || default</code> is actually correct: a stored
+      <code>0</code> is truthy and survives. The tests prove it with
+      <code>pick({ count: 0 }, :count, 5)</code>, which must return
+      <code>0</code> — Python's <code>or</code> version returns 5!</li>
+  <li><code>first_or_default(arr, default)</code> — the first element of the
+      array, or <code>default</code> when the array is empty
+      (<code>arr.first</code> returns <code>nil</code> for an empty array; ask
+      with <code>.nil?</code>).</li>
+</ol>`,
+
+  starter: `class Address
+  attr_reader :city
+
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+# 1. Chain &. twice, then fall back with ||.
+def get_city(user)
+  raise NotImplementedError, "TODO: implement get_city"
+end
+
+# 2. hash[key] || default — safe in Ruby because 0 is truthy!
+def pick(hash, key, default)
+  raise NotImplementedError, "TODO: implement pick"
+end
+
+# 3. arr.first is nil for an empty array — check with .nil?
+def first_or_default(arr, default)
+  raise NotImplementedError, "TODO: implement first_or_default"
+end
+`,
+
+  requirements: [
+    { pattern: /&\./, message: "Use the &. safe-navigation operator in get_city" },
+    { pattern: /\|\|/, message: "Use || to provide a fallback value" },
+    { pattern: /nil/, message: "Ask about nil explicitly with .nil? somewhere" },
+  ],
+
+  tests: [
+    { name: 'get_city with a full user returns the city',
+      code: '  expect_eq(get_city(User.new(Address.new("Oslo"))), "Oslo")' },
+    { name: 'get_city with an address-less user returns "Unknown"',
+      code: '  expect_eq(get_city(User.new), "Unknown")' },
+    { name: 'get_city(nil) returns "Unknown" — no crash',
+      code: '  expect_eq(get_city(nil), "Unknown")' },
+    { name: "pick({ count: 0 }, :count, 5) returns 0 — Ruby's || keeps the 0",
+      code: '  expect_eq(pick({ count: 0 }, :count, 5), 0)' },
+    { name: "pick({}, :count, 5) returns the default 5",
+      code: '  expect_eq(pick({}, :count, 5), 5)' },
+    { name: 'first_or_default handles empty arrays and a leading 0',
+      code: '  expect_eq(first_or_default([], "none"), "none")\n  expect_eq(first_or_default([0, 1], -1), 0)' },
+  ],
+
+  solution: `class Address
+  attr_reader :city
+
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+def get_city(user)
+  user&.address&.city || "Unknown"
+end
+
+def pick(hash, key, default)
+  hash[key] || default
+end
+
+def first_or_default(arr, default)
+  arr.first.nil? ? default : arr.first
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>The nothing value</td><td><code>None</code></td><td><code>nil</code> (an object: <code>NilClass</code>)</td></tr>
+  <tr><td>Safe attribute chain</td><td>rejected (PEP 505)</td><td><code>a&amp;.b&amp;.c</code></td></tr>
+  <tr><td>Is it nothing?</td><td><code>x is None</code></td><td><code>x.nil?</code></td></tr>
+  <tr><td>Falsy values</td><td><code>None False 0 "" [] {}</code> …</td><td><code>nil</code> and <code>false</code> — that's all</td></tr>
+  <tr><td>Default fallback</td><td><code>x or d</code> (buggy for 0/"")</td><td><code>x || d</code> (safe)</td></tr>
+  <tr><td>Assign if unset</td><td><code>x = x if x else d</code></td><td><code>x ||= d</code></td></tr>
+</table>
+<p>Because only <code>nil</code> and <code>false</code> are falsy,
+<code>@rows ||= load_rows</code> is everyday Ruby for lazy initialization —
+it can never misfire on an empty array or zero, the way Python's
+<code>self.rows = self.rows or load_rows()</code> can. The one caution:
+<code>||=</code> <em>will</em> recompute when the cached value is legitimately
+<code>nil</code> or <code>false</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

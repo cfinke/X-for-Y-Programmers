@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Static, Constants &amp; readonly</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Static, Constants & readonly",
+
+  intro: `
+<p>Class-level members work like C#'s, with one syntactic swap to internalize:
+for anything static — constants, static properties, static methods — the
+<code>::</code> operator replaces the dot. <code>const MAX = 10;</code> inside
+a class is your <code>public const</code>, read as <code>Config::MAX</code>
+(constants take no <code>$</code>). Static properties and methods are declared
+with <code>static</code> just like C#, and inside the class you reach them via
+<code>self::</code> — <code>self::$count</code>, <code>self::increment()</code> —
+where C# lets you use the bare name.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>Config.MaxRetries</code> (const)</td><td><code>Config::MAX_RETRIES</code></td></tr>
+  <tr><td><code>Counter.Increment()</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td>inside the class: <code>_count</code></td><td><code>self::$count</code> (sigil kept)</td></tr>
+  <tr><td><code>string Name { get; init; }</code></td><td><code>public readonly string $name</code> (PHP 8.1)</td></tr>
+  <tr><td>later write: compile error CS8852</td><td>later write: <code>Error</code> thrown at runtime</td></tr>
+</table>
+<p>PHP 8.1's <code>readonly</code> is the <code>init</code>-only setter idea,
+applied per property and enforced by the engine: the property can be written
+once (in the constructor, typically via promotion), and any later assignment
+throws an <code>Error</code> — the engine-level branch of last lesson's
+<code>Throwable</code> tree, not a catchable-by-accident
+<code>Exception</code>. Combined with constructor promotion,
+<code>public function __construct(public readonly string $name) {}</code>
+reads a lot like a positional record parameter.</p>`,
+
+  csharp: `class Counter
+{
+    private static int _count = 0;
+    public static int Increment() => ++_count;
+    public static int Current => _count;
+}
+
+class Config
+{
+    public const string DefaultName = "guest";
+    public string Name { get; init; }
+    public Config(string name) => Name = name;
+}
+
+Console.WriteLine(Counter.Increment());   // 1
+Console.WriteLine(Counter.Increment());   // 2
+Console.WriteLine(Config.DefaultName);    // guest
+var c = new Config("ada");
+// c.Name = "x";   // CS8852: init-only property`,
+
+  task: `
+<p>Port both classes:</p>
+<ol>
+  <li><code>Counter</code> — keep the declared
+      <code>private static int $count = 0;</code>. Implement
+      <code>public static function increment(): int</code> (add 1 to
+      <code>self::$count</code> and return it — the <code>++_count</code>
+      move) and <code>public static function current(): int</code>. Remember:
+      <code>self::$count</code>, never plain <code>$count</code>, which would
+      be a fresh local.</li>
+  <li><code>Config</code> — add the class constant
+      <code>const DEFAULT_NAME = "guest";</code> (SCREAMING_SNAKE by
+      convention, read as <code>Config::DEFAULT_NAME</code>), and change the
+      promoted constructor property to
+      <code>public readonly string $name</code> so later writes throw.</li>
+</ol>
+<p>The tests call <code>Counter::increment()</code> across several test
+blocks — static state lives on the class for the whole program run, exactly
+like a C# static field — and verify that assigning to <code>$name</code>
+after construction throws an <code>Error</code>.</p>`,
+
+  starter: `<?php
+
+// 1. All state on the class itself; use self::$count inside.
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        throw new Exception("TODO: implement increment");
+    }
+
+    public static function current(): int {
+        throw new Exception("TODO: implement current");
+    }
+}
+
+// 2. Add the DEFAULT_NAME class constant ("guest"), and make $name
+//    write-once so assigning to it after construction throws.
+class Config {
+    public function __construct(public string $name) {}
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+/, message: "Use static members (Counter's state and methods live on the class)" },
+    { pattern: /const\s+[A-Z_]+/, message: "Declare a SCREAMING_SNAKE class constant with const" },
+    { pattern: /readonly/, message: "Mark Config's $name property readonly (PHP 8.1)" },
+  ],
+
+  tests: [
+    { name: "Counter::current() starts at 0",
+      code: "expect_eq(Counter::current(), 0);" },
+    { name: "Counter::increment() returns 1, then 2",
+      code: "expect_eq(Counter::increment(), 1);\nexpect_eq(Counter::increment(), 2);" },
+    { name: "static state persists across calls: current() is now 2",
+      code: "expect_eq(Counter::current(), 2);" },
+    { name: 'Config::DEFAULT_NAME is "guest", and ->name reads back',
+      code: 'expect_eq(Config::DEFAULT_NAME, "guest");\n$c = new Config("ada");\nexpect_eq($c->name, "ada");' },
+    { name: "writing $c->name after construction throws Error (readonly)",
+      code: '$c = new Config("ada");\ntry { $c->name = "x"; throw new Exception("no error"); } catch (Error $e) {}\nexpect_eq($c->name, "ada");' },
+  ],
+
+  solution: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        self::$count += 1;
+        return self::$count;
+    }
+
+    public static function current(): int {
+        return self::$count;
+    }
+}
+
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Class constant</td><td><code>public const int Max = 10;</code></td><td><code>const MAX = 10;</code> (public by default, no <code>$</code>)</td></tr>
+  <tr><td>Read a constant</td><td><code>Config.Max</code></td><td><code>Config::MAX</code></td></tr>
+  <tr><td>Static property</td><td><code>private static int _count;</code></td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td>Static access, outside</td><td><code>Counter.Increment()</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td>Static access, inside</td><td><code>_count</code> / <code>Increment()</code></td><td><code>self::$count</code> / <code>self::increment()</code></td></tr>
+  <tr><td>Init-only member</td><td><code>{ get; init; }</code></td><td><code>readonly</code> on the property (8.1)</td></tr>
+  <tr><td>Violation caught</td><td>at compile time</td><td>at runtime — throws <code>Error</code></td></tr>
+</table>
+<p>The mental model for <code>::</code> vs <code>-&gt;</code>: C# overloads
+the dot for both instance and static access and lets the compiler sort it
+out; PHP splits them syntactically. Anything reached through the class name —
+constants, statics, enum cases from lesson 11 — uses <code>::</code>;
+anything reached through an instance uses <code>-&gt;</code>. And because
+<code>readonly</code> is enforced at runtime rather than compile time, a
+violation is a thrown <code>Error</code> you'd see in tests, not a red
+squiggle — the guarantee is just as hard, it just arrives later.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

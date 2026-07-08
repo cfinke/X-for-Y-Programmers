@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Generators & Iterables</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Generators & Iterables",
+
+  intro: `
+<p>Go 1.23 finally gave you lazy sequences: range-over-func iterators, where
+you hand-write a <code>func(yield func(int) bool)</code> and remember to
+check <code>yield</code>'s return value so <code>break</code> works. PHP has
+had the same idea for over a decade, with the callback machinery folded into
+a keyword. Put <code>yield</code> anywhere in a function body and that
+function becomes a <em>generator</em>: calling it runs no code, it just hands
+back a <code>Generator</code> object; each <code>foreach</code> iteration
+resumes the body until the next <code>yield</code>. Lazy by construction —
+a generator over a billion numbers costs nothing until someone pulls from
+it.</p>
+<table>
+  <tr><th>Go 1.23</th><th>PHP</th></tr>
+  <tr><td><code>func(yield func(int) bool)</code></td><td><code>function f(): Generator</code></td></tr>
+  <tr><td><code>if !yield(i) { return }</code></td><td><code>yield $i;</code> (stop handling is automatic)</td></tr>
+  <tr><td><code>for n := range seq { ... }</code></td><td><code>foreach ($seq as $n) { ... }</code></td></tr>
+  <tr><td><code>break</code> (makes yield return false)</td><td><code>break</code> (suspends the generator, done)</td></tr>
+  <tr><td><code>slices.Collect(seq)</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td><code>iter.Seq[int]</code> vs <code>[]int</code> — different types</td><td><code>iterable</code> accepts arrays <em>and</em> generators</td></tr>
+</table>
+<p>Two conveniences round it out. <code>iterator_to_array($gen)</code> drains
+a generator into a plain array when you do want everything (Go's
+<code>slices.Collect</code>). And the <code>iterable</code> type declaration
+unifies both worlds: a parameter typed <code>iterable</code> takes a plain
+array or a generator, and <code>foreach</code> treats them identically — no
+adapter between your slice-shaped code and your sequence-shaped code.</p>`,
+
+  go: `// Go 1.23: an iterator is a func taking a yield callback.
+func EvensUpTo(max int) iter.Seq[int] {
+    return func(yield func(int) bool) {
+        for i := 2; i <= max; i += 2 {
+            if !yield(i) {
+                return // consumer said stop
+            }
+        }
+    }
+}
+
+// break makes yield return false; nothing past 6 is produced.
+for n := range EvensUpTo(1_000_000_000) {
+    if n > 6 {
+        break
+    }
+    fmt.Println(n) // 2, 4, 6 — lazily, no slice built
+}`,
+
+  task: `
+<p>Build the lazy pipeline:</p>
+<ol>
+  <li><code>evens_up_to(int $max): Generator</code> — <code>yield</code> the
+      even numbers from 2 up to <code>$max</code> inclusive, using a
+      <code>for</code> loop. No callback plumbing: the <code>yield</code>
+      keyword <em>is</em> the whole pattern.</li>
+  <li><code>squares(array $nums): Generator</code> — <code>foreach</code>
+      over <code>$nums</code> and <code>yield $n * $n;</code> for each.</li>
+  <li><code>take(iterable $items, int $n): array</code> — collect at most the
+      first <code>$n</code> items into a fresh array: a counter, an append,
+      and <code>break</code> once you have enough. Note the
+      <code>iterable</code> type — the same function consumes arrays and
+      generators, and <code>break</code> is all it takes to stop a generator
+      early (no <code>yield</code>-returned-false bookkeeping).</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. The whole func(yield func(int) bool) dance is one keyword:
+//    for loop from 2 to $max step 2, yield each value.
+function evens_up_to(int $max): Generator {
+    throw new Exception("TODO: implement evens_up_to");
+}
+
+// 2. foreach over $nums, yield each square.
+function squares(array $nums): Generator {
+    throw new Exception("TODO: implement squares");
+}
+
+// 3. Works on arrays AND generators thanks to iterable.
+//    Append to a result array, break when you have $n items.
+function take(iterable $items, int $n): array {
+    throw new Exception("TODO: implement take");
+}
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Use the yield keyword to produce values lazily" },
+    { pattern: /:\s*Generator/, message: "Declare : Generator return types on the generator functions" },
+    { pattern: /iterable/, message: "Type take's first parameter as iterable" },
+  ],
+
+  tests: [
+    { name: "iterator_to_array(evens_up_to(10)) collects [2, 4, 6, 8, 10]",
+      code: "expect_eq(iterator_to_array(evens_up_to(10)), [2, 4, 6, 8, 10]);" },
+    { name: "evens_up_to returns a Generator object (no code has run yet)",
+      code: "expect_true(evens_up_to(4) instanceof Generator);" },
+    { name: "iterator_to_array(squares([1, 2, 3])) collects [1, 4, 9]",
+      code: "expect_eq(iterator_to_array(squares([1, 2, 3])), [1, 4, 9]);" },
+    { name: "take(evens_up_to(2000000000), 4) proves laziness — only 4 values are ever produced",
+      code: "expect_eq(take(evens_up_to(2000000000), 4), [2, 4, 6, 8]);" },
+    { name: "take also accepts a plain array (iterable)",
+      code: "expect_eq(take([7, 8, 9], 2), [7, 8]);\nexpect_eq(take([7, 8, 9], 5), [7, 8, 9]);" },
+  ],
+
+  solution: `<?php
+
+function evens_up_to(int $max): Generator {
+    for ($i = 2; $i <= $max; $i += 2) {
+        yield $i;
+    }
+}
+
+function squares(array $nums): Generator {
+    foreach ($nums as $n) {
+        yield $n * $n;
+    }
+}
+
+function take(iterable $items, int $n): array {
+    $result = [];
+    $taken = 0;
+    foreach ($items as $item) {
+        if ($taken >= $n) {
+            break;
+        }
+        $result[] = $item;
+        $taken += 1;
+    }
+    return $result;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go 1.23</th><th>PHP</th></tr>
+  <tr><td>Define an iterator</td><td><code>func(yield func(int) bool)</code></td><td>any function containing <code>yield</code></td></tr>
+  <tr><td>Produce a value</td><td><code>if !yield(v) { return }</code></td><td><code>yield $v;</code></td></tr>
+  <tr><td>Return type</td><td><code>iter.Seq[int]</code></td><td><code>Generator</code></td></tr>
+  <tr><td>Consume</td><td><code>for v := range seq</code></td><td><code>foreach ($gen as $v)</code></td></tr>
+  <tr><td>Early stop</td><td><code>break</code> → yield returns false</td><td><code>break</code> — generator stays suspended</td></tr>
+  <tr><td>Collect all</td><td><code>slices.Collect(seq)</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td>Array-or-sequence param</td><td>two signatures (or convert)</td><td><code>iterable</code> accepts both</td></tr>
+</table>
+<p>The mental model transfer is direct: PHP's <code>yield</code> is Go's
+<code>yield(v)</code> callback call, with the compiler writing the callback,
+the bool check, and the early-return for you. Laziness is the point — a
+generator over two billion numbers starts instantly, and <code>take</code>
+pulls exactly four values before walking away. One caveat: a generator is a
+one-shot cursor, not a rewindable collection. Iterate it twice and PHP throws
+an exception — call the generator function again for a fresh one, the same
+way you'd call <code>EvensUpTo(...)</code> again in Go.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

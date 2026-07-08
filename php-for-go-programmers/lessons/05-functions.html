@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>The shape translates directly: <code>func f(x int) string</code> becomes
+<code>function f(int $x): string</code> — types move in front of the
+parameter, and the return type trails after a colon. Declare those types and
+PHP 8 enforces them at the call boundary, which is exactly the safety net
+you want when the rest of the language is dynamic.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>func f(x int) string</code></td><td><code>function f(int $x): string</code></td></tr>
+  <tr><td>no default parameters — pass everything</td><td><code>string $greeting = "Hello"</code></td></tr>
+  <tr><td><code>last *string</code> (pointer for "optional")</td><td><code>?string $last = null</code></td></tr>
+  <tr><td><code>id any</code> + type switch</td><td><code>int|string $id</code> + <code>is_int($id)</code></td></tr>
+  <tr><td>functional-options pattern</td><td>named arguments: <code>greet(name: "Ada")</code></td></tr>
+</table>
+<p>Then PHP hands you things Go deliberately left out. <em>Default
+parameters</em> exist: <code>string $greeting = "Hello"</code> means callers
+can skip the argument. A <em>nullable type</em> <code>?string</code> is your
+<code>*string</code>-as-optional without the pointer ceremony — it accepts a
+string or <code>null</code>, nothing else. <em>Union types</em> like
+<code>int|string</code> replace <code>any</code>-plus-type-switch for the
+"one of these two" case, narrowed at runtime with <code>is_int()</code>. And
+<em>named arguments</em> — <code>greet(name: "Ada", greeting: "Hi")</code> —
+give you the readable, order-free call sites that Go needs the whole
+functional-options pattern to simulate.</p>`,
+
+  go: `func greet(name string, greeting string) string {
+    // No defaults: every caller passes everything.
+    return greeting + ", " + name + "!"
+}
+
+// "Optional" parameter? Reach for a pointer:
+func formatName(first string, last *string) string {
+    if last == nil {
+        return first
+    }
+    return first + " " + *last
+}
+
+// int-or-string? any + a type switch:
+func describe(id any) string {
+    if n, ok := id.(int); ok {
+        return fmt.Sprintf("id number %d", n)
+    }
+    return fmt.Sprintf("id string %v", id)
+}`,
+
+  task: `
+<p>Port the three signatures, using each PHP feature Go lacks:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      return <code>"$greeting, $name!"</code> (e.g.
+      <code>greet("Ada")</code> gives <code>"Hello, Ada!"</code>). The
+      default replaces Go's pass-everything rule, and named-argument calls
+      like <code>greet(greeting: "Hi", name: "Grace")</code> must work — they
+      will, for free.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      if <code>$last</code> is <code>null</code> return just
+      <code>$first</code>, otherwise <code>"$first $last"</code>. The
+      <code>?string</code> is your <code>*string</code> without the
+      pointer.</li>
+  <li><code>describe(int|string $id): string</code> — return
+      <code>"id number $id"</code> when <code>is_int($id)</code>, otherwise
+      <code>"id string $id"</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Default parameter value - no Go equivalent
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. ?string = *string without the pointer
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. Union type + is_int() instead of any + type switch
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give $greeting the default value "Hello"' },
+    { pattern: /\?string/, message: "Declare $last as nullable with ?string" },
+    { pattern: /int\|string/, message: "Declare $id with the union type int|string" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default greeting',
+      code: "expect_eq(greet('Ada'), 'Hello, Ada!');" },
+    { name: 'greet("Ada", "Howdy") overrides the default',
+      code: "expect_eq(greet('Ada', 'Howdy'), 'Howdy, Ada!');" },
+    { name: "named arguments work in any order",
+      code: "expect_eq(greet(greeting: 'Hi', name: 'Grace'), 'Hi, Grace!');" },
+    { name: "format_name with and without a last name",
+      code: "expect_eq(format_name('Ada', 'Lovelace'), 'Ada Lovelace');\nexpect_eq(format_name('Ada'), 'Ada');\nexpect_eq(format_name('Ada', null), 'Ada');" },
+    { name: "describe(42) takes the int branch",
+      code: "expect_eq(describe(42), 'id number 42');" },
+    { name: "describe('abc123') takes the string branch",
+      code: "expect_eq(describe('abc123'), 'id string abc123');" },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    return $last === null ? $first : "$first $last";
+}
+
+function describe(int|string $id): string {
+    return is_int($id) ? "id number $id" : "id string $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Signature</td><td><code>func f(x int) string</code></td><td><code>function f(int $x): string</code></td></tr>
+  <tr><td>Default value</td><td>— (write a wrapper)</td><td><code>string $g = "Hello"</code></td></tr>
+  <tr><td>Optional / nullable</td><td><code>*string</code> + nil check</td><td><code>?string $x = null</code></td></tr>
+  <tr><td>Either-or type</td><td><code>any</code> + type switch</td><td><code>int|string</code> + <code>is_int()</code></td></tr>
+  <tr><td>Readable call sites</td><td>functional-options pattern</td><td><code>f(name: "Ada")</code></td></tr>
+  <tr><td>No return value</td><td>omit the type</td><td><code>: void</code></td></tr>
+  <tr><td>Multiple returns</td><td><code>(int, error)</code></td><td>return an array, or throw (Lesson 16)</td></tr>
+</table>
+<p>The mental shift: in Go, flexible call sites are a <em>pattern</em> you
+build — option structs, functional options, pointer-for-optional. In PHP
+they're <em>syntax</em>. A signature like
+<code>function connect(string $host, int $port = 5432, ?string $user =
+null)</code> plus named arguments covers what a Go package would need a
+config struct for. The one thing you lose is multiple return values —
+PHP functions return exactly one value, so "value plus error" becomes either
+a returned array or, more idiomatically, an exception.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Generators &amp; Iterables</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Generators & Iterables",
+
+  intro: `
+<p>You know generators: <code>function*</code>, <code>yield</code>, lazy
+sequences that produce values only when asked. PHP has the same machine with
+one syntactic surprise — <strong>there is no asterisk</strong>. Any plain
+<code>function</code> with a <code>yield</code> inside it <em>is</em> a
+generator; PHP infers it from the body. Calling it runs none of your code and
+hands back a <code>Generator</code> object, which you consume with the same
+<code>foreach</code> you use for arrays.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>function* evens(max) { ... }</code></td><td><code>function evens(int $max): Generator { ... }</code></td></tr>
+  <tr><td><code>yield i;</code></td><td><code>yield $i;</code> — this line is what makes it a generator</td></tr>
+  <tr><td><code>for (const x of gen)</code></td><td><code>foreach ($gen as $x)</code></td></tr>
+  <tr><td><code>[...gen]</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td><code>Iterable</code> (TS) / duck-typed</td><td><code>iterable</code> type — accepts arrays <em>and</em> generators</td></tr>
+</table>
+<p>Since the asterisk is gone, the convention is to declare the return type:
+<code>: Generator</code> tells the reader (and the engine) what's coming. The
+companion type <code>iterable</code> is the "anything foreach-able" union —
+an <code>iterable</code> parameter takes a plain array or a generator with
+equal grace, which is how you write functions like <code>take()</code> that
+can pull the first few items off an <em>infinite</em> lazy sequence without
+ever materializing it.</p>`,
+
+  javascript: `function* evensUpTo(max) {
+  for (let i = 2; i <= max; i += 2) yield i;
+}
+
+function* squares(nums) {
+  for (const n of nums) yield n * n;
+}
+
+function take(items, n) {
+  const out = [];
+  for (const item of items) {
+    if (out.length >= n) break;   // stop pulling — laziness pays off
+    out.push(item);
+  }
+  return out;
+}
+
+console.log([...evensUpTo(10)]);       // [2, 4, 6, 8, 10]
+console.log([...squares([1, 2, 3])]);  // [1, 4, 9]
+console.log(take(evensUpTo(1e9), 3));  // [2, 4, 6] — instant, lazy`,
+
+  task: `
+<p>Port all three, minus the asterisks:</p>
+<ol>
+  <li><code>evens_up_to(int $max): Generator</code> — <code>yield</code> the
+      even numbers from 2 up to and including <code>$max</code>. A
+      <code>for</code> loop stepping by 2 is all it takes; the
+      <code>yield</code> inside is what makes this a generator.</li>
+  <li><code>squares(array $nums): Generator</code> — <code>foreach</code> over
+      the input and <code>yield</code> each square.</li>
+  <li><code>take(iterable $items, int $n): array</code> — collect at most
+      <code>$n</code> items into an array: keep a counter (or check
+      <code>count($out)</code>), <code>break</code> once you have
+      <code>$n</code>, and append with <code>$out[] =</code>. The
+      <code>iterable</code> type means the tests can feed it a plain array
+      <em>or</em> an infinite generator — your <code>break</code> is the only
+      thing standing between you and forever.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. evens_up_to: no asterisk — the yield inside makes it a generator.
+function evens_up_to(int $max): Generator {
+    throw new Exception("TODO: implement evens_up_to");
+}
+
+// 2. squares: foreach + yield.
+function squares(array $nums): Generator {
+    throw new Exception("TODO: implement squares");
+}
+
+// 3. take: iterable accepts arrays AND generators. Count, append, break.
+function take(iterable $items, int $n): array {
+    throw new Exception("TODO: implement take");
+}
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Use yield — that's what turns a function into a generator" },
+    { pattern: /:\s*Generator/, message: "Declare : Generator return types on the generator functions" },
+    { pattern: /iterable/, message: "take() must accept iterable (arrays and generators alike)" },
+  ],
+
+  tests: [
+    { name: "iterator_to_array(evens_up_to(10)) is [2, 4, 6, 8, 10]",
+      code: `expect_eq(iterator_to_array(evens_up_to(10)), [2, 4, 6, 8, 10]);` },
+    { name: "evens_up_to(1) yields nothing",
+      code: `expect_eq(iterator_to_array(evens_up_to(1)), []);` },
+    { name: "calling evens_up_to(1000000000) is instant — it returns a lazy Generator",
+      code: `expect_true(evens_up_to(1000000000) instanceof Generator);` },
+    { name: "squares([1, 2, 3, 4]) yields [1, 4, 9, 16]",
+      code: `expect_eq(iterator_to_array(squares([1, 2, 3, 4])), [1, 4, 9, 16]);` },
+    { name: "take() works on a plain array, and short input stays short",
+      code: `expect_eq(take([10, 20, 30, 40, 50], 3), [10, 20, 30]);
+expect_eq(take([1, 2], 5), [1, 2]);` },
+    { name: "take() pulls just 4 items from an INFINITE generator",
+      code: `$naturals = (function () { $i = 1; while (true) { yield $i; $i += 1; } })();
+expect_eq(take($naturals, 4), [1, 2, 3, 4]);` },
+  ],
+
+  solution: `<?php
+
+function evens_up_to(int $max): Generator {
+    for ($i = 2; $i <= $max; $i += 2) {
+        yield $i;
+    }
+}
+
+function squares(array $nums): Generator {
+    foreach ($nums as $n) {
+        yield $n * $n;
+    }
+}
+
+function take(iterable $items, int $n): array {
+    $out = [];
+    foreach ($items as $item) {
+        if (count($out) >= $n) {
+            break;
+        }
+        $out[] = $item;
+    }
+    return $out;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Declare a generator</td><td><code>function* g() {}</code></td><td><code>function g(): Generator {}</code> — inferred from <code>yield</code></td></tr>
+  <tr><td>Produce a value</td><td><code>yield x;</code></td><td><code>yield $x;</code></td></tr>
+  <tr><td>Consume</td><td><code>for...of</code>, <code>[...g]</code></td><td><code>foreach</code>, <code>iterator_to_array($g)</code></td></tr>
+  <tr><td>Delegate</td><td><code>yield* other()</code></td><td><code>yield from other();</code></td></tr>
+  <tr><td>Accept array-or-lazy</td><td>duck typing</td><td><code>iterable</code> type declaration</td></tr>
+  <tr><td>Key/value yield</td><td>(yield pairs manually)</td><td><code>yield $key =&gt; $value;</code></td></tr>
+</table>
+<p>The deep insight: generators are the escape hatch from PHP's
+copy-on-assign array semantics. An array of a million rows is a million rows
+in memory, copied when passed around — a generator is one row at a time, on
+demand, and <code>iterable</code> lets your APIs accept either without
+caring. One gotcha to file away: <code>iterator_to_array()</code> preserves
+the generator's keys by default, so if you yield duplicate keys, pass
+<code>false</code> as its second argument to just collect values.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

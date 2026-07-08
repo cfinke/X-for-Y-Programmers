@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>No new concepts this time — this is the course's material assembled into
+one small inventory system: a class with <code>attr_reader</code> and
+<code>initialize</code>, Enumerable doing the work LINQ used to do, and
+blocks everywhere a lambda would have been. The C# on the left is the
+program you'd write today; your job is the Ruby you'd write instead.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>items.Sum(i =&gt; ...)</code></td><td><code>items.sum { |i| ... }</code></td></tr>
+  <tr><td><code>items.FirstOrDefault(...)</code> → <code>null</code></td><td><code>items.find { ... }</code> → <code>nil</code></td></tr>
+  <tr><td><code>i with { Count = ... }</code></td><td><code>Item.new(...)</code> — the with-expression, hand-rolled</td></tr>
+  <tr><td><code>.Where(...).Select(...)</code></td><td><code>.select { ... }.map { ... }</code></td></tr>
+</table>
+<p>One thing to carry from C#: objects are references in Ruby too. The
+<code>restock</code> method must not mutate the items it's given — like a
+record's <code>with</code> expression, it should build a <em>new</em>
+<code>Item</code> for the match and return a <em>new</em> array, leaving
+the caller's objects exactly as they were. Ruby won't enforce immutability
+for you the way <code>record</code> does; the discipline is yours.</p>`,
+
+  csharp: `record Item(string Name, int PriceCents, int Count);
+
+int TotalValue(List<Item> items) =>
+    items.Sum(i => i.PriceCents * i.Count);
+
+Item? FindItem(List<Item> items, string name) =>
+    items.FirstOrDefault(i => i.Name == name);
+
+List<Item> Restock(List<Item> items, string name, int amount) =>
+    items.Select(i => i.Name == name
+                        ? i with { Count = i.Count + amount }
+                        : i)
+         .ToList();
+
+List<string> NamesInStock(List<Item> items) =>
+    items.Where(i => i.Count > 0)
+         .Select(i => i.Name)
+         .ToList();`,
+
+  task: `
+<p>The <code>Item</code> class in the starter is complete — write the four
+methods that use it:</p>
+<ol>
+  <li><code>total_value(items)</code> — <code>sum</code> with a block:
+      <code>price_cents * count</code> for each item.</li>
+  <li><code>find_item(items, name)</code> — <code>.find</code> returns the
+      first match or <code>nil</code>; <code>FirstOrDefault</code> where
+      default is <code>nil</code>, no <code>?</code> annotation needed.</li>
+  <li><code>restock(items, name, amount)</code> — return a <strong>new</strong>
+      array in which the matching item is replaced by a <strong>new</strong>
+      <code>Item</code> with <code>count + amount</code>. Non-matching items
+      pass through unchanged, and nothing in <code>items</code> may be
+      mutated — build with <code>Item.new(...)</code>, don't assign into the
+      old object.</li>
+  <li><code>names_in_stock(items)</code> — <code>select</code> the items with
+      <code>count &gt; 0</code>, then <code>map</code> their names.</li>
+</ol>`,
+
+  starter: `# Item is complete — read it, use it, don't change it.
+class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+# 1. total_value: sum of price_cents * count across the items.
+def total_value(items)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 2. find_item: .find is FirstOrDefault — first match, or nil.
+def find_item(items, name)
+  raise NotImplementedError, "TODO: implement find_item"
+end
+
+# 3. restock: a NEW array; a NEW Item (count + amount) for the match.
+#    Do not mutate the originals — this is "i with { Count = ... }" by hand.
+def restock(items, name, amount)
+  raise NotImplementedError, "TODO: implement restock"
+end
+
+# 4. names_in_stock: select count > 0, then map the names.
+def names_in_stock(items)
+  raise NotImplementedError, "TODO: implement names_in_stock"
+end
+`,
+
+  requirements: [
+    { pattern: /\.find\b/, message: "Use .find for find_item" },
+    { pattern: /\.select/, message: "Use .select for names_in_stock" },
+    { pattern: /\.sum/, message: "Use .sum for total_value" },
+    { pattern: /Item\.new/, message: "Build a new Item in restock instead of mutating" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count",
+      code: `  items = [Item.new("widget", 250, 4), Item.new("gadget", 1000, 2)]
+  expect_eq(total_value(items), 3000)` },
+    { name: "find_item returns the match, or nil like FirstOrDefault",
+      code: `  items = [Item.new("widget", 250, 4), Item.new("gadget", 1000, 2)]
+  expect_eq(find_item(items, "gadget").price_cents, 1000)
+  expect_eq(find_item(items, "bolt"), nil)` },
+    { name: "restock builds a new Item with the bumped count",
+      code: `  items = [Item.new("widget", 250, 4), Item.new("gadget", 1000, 2)]
+  restocked = restock(items, "widget", 6)
+  expect_eq(restocked[0].count, 10)
+  expect_eq(restocked[0].name, "widget")
+  expect_true(!restocked[0].equal?(items[0]))` },
+    { name: "restock never mutates the original items",
+      code: `  items = [Item.new("widget", 250, 4)]
+  restock(items, "widget", 6)
+  expect_eq(items[0].count, 4)` },
+    { name: "restock with an unknown name changes no counts",
+      code: `  items = [Item.new("widget", 250, 4), Item.new("gadget", 1000, 2)]
+  expect_eq(restock(items, "bolt", 5).map { |i| i.count }, [4, 2])` },
+    { name: "names_in_stock selects count > 0 and maps names",
+      code: `  items = [Item.new("widget", 250, 4), Item.new("gadget", 1000, 0), Item.new("bolt", 5, 12)]
+  expect_eq(names_in_stock(items), ["widget", "bolt"])` },
+  ],
+
+  solution: `class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+def total_value(items)
+  items.sum { |item| item.price_cents * item.count }
+end
+
+def find_item(items, name)
+  items.find { |item| item.name == name }
+end
+
+def restock(items, name, amount)
+  items.map do |item|
+    if item.name == name
+      Item.new(item.name, item.price_cents, item.count + amount)
+    else
+      item
+    end
+  end
+end
+
+def names_in_stock(items)
+  items.select { |item| item.count > 0 }.map { |item| item.name }
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Aggregate</td><td><code>items.Sum(i =&gt; ...)</code></td><td><code>items.sum { |i| ... }</code></td></tr>
+  <tr><td>First match or default</td><td><code>FirstOrDefault</code> → <code>null</code></td><td><code>find</code> → <code>nil</code></td></tr>
+  <tr><td>Non-destructive update</td><td><code>i with { Count = c }</code></td><td><code>Item.new(...)</code> with the changed value</td></tr>
+  <tr><td>Filter + project</td><td><code>.Where(...).Select(...).ToList()</code></td><td><code>.select { ... }.map { ... }</code> (already an Array)</td></tr>
+  <tr><td>Transform each</td><td><code>.Select(...).ToList()</code></td><td><code>.map { ... }</code></td></tr>
+  <tr><td>Data holder</td><td><code>record Item(...)</code></td><td><code>class</code> + <code>attr_reader</code>, or a <code>Struct</code></td></tr>
+</table>
+<p>Notice what didn't survive the translation: the type annotations, the
+<code>?</code> nullability marker, the <code>ToList()</code> calls, and the
+compiler standing behind them. Everything else mapped one-to-one —
+<code>Sum</code>, <code>FirstOrDefault</code>, <code>with</code>,
+<code>Where</code>/<code>Select</code> all have direct, shorter Ruby
+spellings. That's the C#-to-Ruby trade in a single exercise: you give up the
+proofs, you keep the vocabulary, and the discipline the compiler used to
+supply — like <code>restock</code> not mutating its inputs — becomes a
+convention you uphold yourself.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

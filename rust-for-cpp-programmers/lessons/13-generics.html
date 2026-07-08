@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Generics & Trait Bounds</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Generics & Trait Bounds",
+
+  intro: `
+<p>Rust generics compile exactly like templates: monomorphization stamps out
+a specialized copy per concrete type, so <code>largest::&lt;i32&gt;</code> is
+as fast as a hand-written <code>i32</code> version — same zero-cost story
+you rely on. The difference is <em>when</em> they're type-checked. A template
+is checked at instantiation, so a bad call detonates 400 lines deep inside
+the STL with an error novel naming types you never wrote. A generic function
+is checked once, at its <em>definition</em>, against its declared bounds —
+it's C++20 concepts made mandatory. If the body compiles, every instantiation
+works; if a call site passes the wrong type, the error is one line at the
+call site.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>template&lt;typename T&gt;</code></td><td><code>fn first&lt;T&gt;(…)</code></td></tr>
+  <tr><td><code>template&lt;std::totally_ordered T&gt;</code></td><td><code>fn largest&lt;T: PartialOrd&gt;(…)</code></td></tr>
+  <tr><td>checked at instantiation (duck-typed)</td><td>checked at definition (bounds are the contract)</td></tr>
+  <tr><td>unconstrained use compiles until someone calls it</td><td><code>a &gt; b</code> without a bound: error in <em>your</em> code, now</td></tr>
+  <tr><td>monomorphized, zero cost</td><td>monomorphized, zero cost — identical model</td></tr>
+</table>
+<p>The flip side of the bargain: inside <code>fn largest&lt;T: PartialOrd&gt;</code>
+you can <em>only</em> compare — no <code>+</code>, no printing, nothing you
+didn't declare. Where a template body can call anything and hope, a generic
+body is limited to what the bounds promise. That's the concepts discipline
+you already want (<code>-fconcepts-diagnostics</code> and all), enforced.</p>`,
+
+  cpp: `#include <concepts>
+#include <span>
+#include <optional>
+
+// Unconstrained: any misuse explodes at instantiation, not here.
+template<typename T>
+std::optional<T> first(std::span<const T> items) {
+    if (items.empty()) return std::nullopt;
+    return items.front();
+}
+
+// C++20 finally lets you state the contract — if you remember to.
+template<std::totally_ordered T>
+const T& largest(std::span<const T> items) {
+    const T* best = &items.front();
+    for (const T& item : items)
+        if (item > *best) best = &item;
+    return *best;
+}`,
+
+  task: `
+<p>Write the two functions as Rust generics:</p>
+<ol>
+  <li><code>first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code> —
+      a reference to the first element, or <code>None</code> for an empty
+      slice. No bounds needed: you never compare or copy a <code>T</code>,
+      so you declare nothing.</li>
+  <li><code>largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code> —
+      a reference to the largest element. The <code>PartialOrd</code> bound is
+      what lets the body use <code>&gt;</code>; assume the slice is non-empty.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. No bounds: the body never compares or clones a T.
+fn first<T>(items: &[T]) -> Option<&T> {
+    todo!()
+}
+
+// 2. T: PartialOrd is what unlocks \`>\` inside the body —
+//    template<std::totally_ordered T>, but the compiler makes you write it.
+//    Assume the slice is non-empty.
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<T\s*:\s*PartialOrd>/, message: "Constrain largest with <T: PartialOrd>" },
+    { pattern: /<T>/, message: "Declare first with an unconstrained <T>" },
+    { pattern: /Option<&T>/, message: "first should return Option<&T>" },
+  ],
+
+  tests: [
+    { name: "first(&[1, 2, 3]) returns Some(&1)",
+      code: "assert_eq!(first(&[1, 2, 3]), Some(&1));" },
+    { name: "first of an empty i32 slice returns None",
+      code: "assert_eq!(first::<i32>(&[]), None);" },
+    { name: 'first(&["a", "b"]) works for &str too',
+      code: 'assert_eq!(first(&["a", "b"]), Some(&"a"));' },
+    { name: "largest(&[1, 5, 3]) returns &5",
+      code: "assert_eq!(largest(&[1, 5, 3]), &5);" },
+    { name: 'largest(&["apple", "pear", "banana"]) compares strings',
+      code: 'assert_eq!(largest(&["apple", "pear", "banana"]), &"pear");' },
+  ],
+
+  solution: `fn first<T>(items: &[T]) -> Option<&T> {
+    items.first()
+}
+
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    let mut best = &items[0];
+    for item in items {
+        if item > best {
+            best = item;
+        }
+    }
+    best
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Type parameter</td><td><code>template&lt;typename T&gt;</code></td><td><code>fn f&lt;T&gt;(…)</code></td></tr>
+  <tr><td>Constraint</td><td><code>template&lt;std::totally_ordered T&gt;</code> (optional)</td><td><code>&lt;T: PartialOrd&gt;</code> (mandatory to use <code>&gt;</code>)</td></tr>
+  <tr><td>Several bounds</td><td><code>requires A&lt;T&gt; &amp;&amp; B&lt;T&gt;</code></td><td><code>&lt;T: A + B&gt;</code>, or a <code>where</code> clause</td></tr>
+  <tr><td>Checked</td><td>at instantiation — errors point into the callee</td><td>at definition — errors point at the caller</td></tr>
+  <tr><td>Explicit instantiation</td><td><code>first&lt;int&gt;(xs)</code></td><td>the turbofish: <code>first::&lt;i32&gt;(&amp;[])</code></td></tr>
+  <tr><td>Codegen</td><td>monomorphized</td><td>monomorphized — same binary-size trade-offs too</td></tr>
+</table>
+<p>Note the turbofish in the empty-slice test: <code>first::&lt;i32&gt;(&amp;[])</code>.
+An empty literal gives inference nothing to work with, so you name
+<code>T</code> explicitly — the <code>::</code> before <code>&lt;</code> is
+just disambiguation, Rust's answer to the <code>template</code>-keyword
+gymnastics in dependent contexts. And <code>largest</code> returning
+<code>&amp;T</code> instead of <code>T</code> is the same move as returning
+<code>const T&amp;</code>: no copy, no <code>T: Clone</code> bound needed —
+the borrow checker, not code review, guarantees the reference stays
+valid.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

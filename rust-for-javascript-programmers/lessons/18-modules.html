@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules &amp; Visibility</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules & Visibility",
+
+  intro: `
+<p>You know this system — Rust just inverts the default. In an ES module,
+everything you declare is private to the file until you <code>export</code>
+it; but <em>within</em> the file, everything is reachable from everywhere.
+Rust's unit of privacy is the <em>module</em>, and a module can live right
+inside a file: <code>mod inventory { ... }</code> carves out a namespace
+the way a separate <code>inventory.js</code> file would. Inside it,
+everything is <strong>private by default</strong>, and <code>pub</code>
+is your <code>export</code> — the opt-in that makes an item visible from
+outside.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>a file <code>inventory.js</code></td><td><code>mod inventory { ... }</code> (a file works too)</td></tr>
+  <tr><td><code>export function itemCount()</code></td><td><code>pub fn item_count()</code></td></tr>
+  <tr><td>un-exported = file-private</td><td>un-<code>pub</code>bed = module-private (the default)</td></tr>
+  <tr><td><code>import { itemCount } from "./inventory.js"</code></td><td><code>use inventory::item_count;</code> (or call <code>inventory::item_count(...)</code>)</td></tr>
+</table>
+<p>Paths use <code>::</code> where JS uses property dots:
+<code>inventory::describe(...)</code> reads like
+<code>inventory.describe(...)</code>. Writing the full path every time
+gets old, so <code>use</code> plays the role of <code>import</code> —
+it shortens a path into the current scope. The payoff of
+private-by-default is the same one you get from not exporting helpers:
+callers can only see the surface you chose, so everything else is
+yours to refactor freely.</p>`,
+
+  javascript: `// inventory.js — the file is the privacy boundary.
+export function itemCount(items) {
+  return items.length;
+}
+
+export function describe(items) {
+  return items.length + " items: " + joinNames(items);
+}
+
+// Not exported: private to this file. Callers can't reach it.
+function joinNames(items) {
+  return items.join(", ");
+}
+
+// app.js
+// import { itemCount, describe } from "./inventory.js";
+// console.log(describe(["apple", "banana"]));`,
+
+  task: `
+<p>Port <code>inventory.js</code> to an inline Rust module. The starter
+gives you the shape; make it work:</p>
+<ol>
+  <li>Inside <code>mod inventory</code>, implement
+      <code>pub fn item_count(items: &amp;Vec&lt;String&gt;) -&gt; usize</code>
+      returning how many items there are (<code>.len()</code>).</li>
+  <li>Implement <code>pub fn describe(items: &amp;Vec&lt;String&gt;) -&gt; String</code>
+      returning e.g. <code>"2 items: apple, banana"</code> — and just
+      <code>"0 items"</code> when the list is empty. Build the name list by
+      calling the <em>private</em> helper <code>join_names</code> (already
+      stubbed, no <code>pub</code> — implement it with
+      <code>items.join(", ")</code>).</li>
+</ol>
+<p>The tests call <code>inventory::item_count(...)</code> and
+<code>inventory::describe(...)</code> from outside the module — so the
+<code>pub</code> keywords matter. Don't write <code>fn main</code> —
+the lesson's tests call your functions directly.</p>`,
+
+  starter: `// mod carves a namespace inside the file, like a separate inventory.js.
+// Everything inside is PRIVATE unless marked pub.
+mod inventory {
+    // pub = export. Callers reach this as inventory::item_count(...).
+    pub fn item_count(items: &Vec<String>) -> usize {
+        todo!()
+    }
+
+    // "2 items: apple, banana" — or "0 items" when empty.
+    // Use the private helper below for the name list.
+    pub fn describe(items: &Vec<String>) -> String {
+        todo!()
+    }
+
+    // No pub: private to the module, like an un-exported JS function.
+    fn join_names(items: &Vec<String>) -> String {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /mod\s+inventory/, message: "Define the module with mod inventory { ... }" },
+    { pattern: /pub\s+fn/, message: "Mark item_count and describe pub so callers outside the module can see them" },
+  ],
+
+  tests: [
+    { name: 'inventory::item_count(["apple", "banana"]) returns 2',
+      code: 'let items = vec!["apple".to_string(), "banana".to_string()];\nassert_eq!(inventory::item_count(&items), 2);' },
+    { name: "inventory::item_count of an empty list returns 0",
+      code: 'let items: Vec<String> = Vec::new();\nassert_eq!(inventory::item_count(&items), 0);' },
+    { name: 'inventory::describe(["apple", "banana"]) returns "2 items: apple, banana"',
+      code: 'let items = vec!["apple".to_string(), "banana".to_string()];\nassert_eq!(inventory::describe(&items), "2 items: apple, banana");' },
+    { name: 'inventory::describe(["cherry"]) returns "1 items: cherry"',
+      code: 'let items = vec!["cherry".to_string()];\nassert_eq!(inventory::describe(&items), "1 items: cherry");' },
+    { name: 'inventory::describe of an empty list returns "0 items"',
+      code: 'let items: Vec<String> = Vec::new();\nassert_eq!(inventory::describe(&items), "0 items");' },
+  ],
+
+  solution: `mod inventory {
+    pub fn item_count(items: &Vec<String>) -> usize {
+        items.len()
+    }
+
+    pub fn describe(items: &Vec<String>) -> String {
+        if items.is_empty() {
+            return "0 items".to_string();
+        }
+        format!("{} items: {}", items.len(), join_names(items))
+    }
+
+    // Private: only code inside mod inventory can call this.
+    fn join_names(items: &Vec<String>) -> String {
+        items.join(", ")
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Namespace unit</td><td>the file</td><td><code>mod</code> — per file <em>or</em> inline in one</td></tr>
+  <tr><td>Make something public</td><td><code>export</code></td><td><code>pub</code></td></tr>
+  <tr><td>Default visibility</td><td>private to the file (once you use modules)</td><td>private to the module — always</td></tr>
+  <tr><td>Path separator</td><td><code>inventory.describe</code></td><td><code>inventory::describe</code></td></tr>
+  <tr><td>Shorten a path</td><td><code>import { describe } from ...</code></td><td><code>use inventory::describe;</code></td></tr>
+</table>
+<p>The mental flip is small but real: JS makes you <em>ask</em> for privacy
+(don't export it), while Rust makes you ask for exposure
+(<code>pub</code> it). Same design pressure you already respect — keep the
+public surface small — but the compiler enforces it: call
+<code>inventory::join_names</code> from outside and the error says
+"function <code>join_names</code> is private." Your helper functions are
+no longer private by convention; they're private by construction.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

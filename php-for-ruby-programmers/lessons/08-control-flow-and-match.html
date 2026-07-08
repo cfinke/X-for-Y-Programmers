@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; match</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & match",
+
+  intro: `
+<p>PHP's <code>if</code> is Ruby's <code>if</code> with the explicitness
+dial turned up: parentheses around the condition, braces around the body,
+<code>elseif</code> spelled as one word instead of <code>elsif</code>.
+What you lose are Ruby's shorthands — there is no modifier-if
+(<code>return x if done</code>), no <code>unless</code>, and no
+<code>if</code>-as-expression. Conditions are statements; expressions are
+<code>match</code>'s job.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>if x &gt; 1 ... elsif ... else ... end</code></td><td><code>if ($x &gt; 1) { ... } elseif (...) { ... } else { ... }</code></td></tr>
+  <tr><td><code>return x if done</code> (modifier)</td><td>no equivalent — write the full <code>if</code></td></tr>
+  <tr><td><code>unless x</code></td><td><code>if (!$x)</code></td></tr>
+  <tr><td><code>case day when "sat", "sun" then ...</code></td><td><code>match($day) { "sat", "sun" =&gt; ... }</code></td></tr>
+  <tr><td><code>case</code> with no subject + conditional <code>when</code>s</td><td><code>match(true) { $score &gt;= 90 =&gt; ... }</code></td></tr>
+  <tr><td>unmatched <code>case</code> returns <code>nil</code></td><td>unmatched <code>match</code> throws <code>UnhandledMatchError</code></td></tr>
+</table>
+<p>The star here is PHP 8's <code>match</code>, and it will feel like
+<code>case/when</code> done right. Like <code>case</code>, it's an
+<em>expression</em> — you can <code>return match(...)</code> directly. Arms
+compare with strict <code>===</code> (no juggling), there's no fallthrough
+and no <code>break</code> (that's old <code>switch</code> baggage), a comma
+groups values just like <code>when "sat", "sun"</code>, and — more explicit
+than Ruby — a value nothing matches <em>throws</em> instead of quietly
+producing <code>nil</code>. Ruby's subject-less <code>case</code> trick
+carries over too: <code>match(true)</code> selects the first arm whose
+condition is <code>true</code>, perfect for ranges.</p>`,
+
+  ruby: `def grade(score)
+  case # subject-less case: first truthy when wins
+  when score >= 90 then "A"
+  when score >= 80 then "B"
+  when score >= 70 then "C"
+  else "F"
+  end
+end
+
+def day_type(day)
+  case day
+  when "sat", "sun" then "weekend"
+  else "weekday"
+  end
+end
+
+grade(95)       # "A"
+grade(64)       # "F"
+day_type("sat") # "weekend"
+day_type("wed") # "weekday"`,
+
+  task: `
+<p>Port both <code>case</code> statements to <code>match</code>:</p>
+<ol>
+  <li><code>grade(int $score): string</code> — Ruby's subject-less
+      <code>case</code> becomes <code>match(true)</code>: each arm is a
+      condition like <code>$score &gt;= 90 =&gt; "A"</code>, and the first
+      arm whose condition <code>=== true</code> wins. Finish with
+      <code>default =&gt; "F"</code>. Remember <code>match</code> is an
+      expression: <code>return match(true) { ... };</code></li>
+  <li><code>day_type(string $day): string</code> — a straight
+      <code>match($day)</code>. Group the weekend just like
+      <code>when "sat", "sun"</code>: the arm
+      <code>"sat", "sun" =&gt; "weekend"</code>, then
+      <code>default =&gt; "weekday"</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Subject-less case  ->  match(true) { condition => value, ... }
+//    Don't forget: match is an expression — return it.
+function grade(int $score): string {
+    throw new Exception("TODO: implement grade");
+}
+
+// 2. case day when "sat", "sun"  ->  match($day) { "sat", "sun" => ... }
+//    Arms compare with === and never fall through — no break needed.
+function day_type(string $day): string {
+    throw new Exception("TODO: implement day_type");
+}
+`,
+
+  requirements: [
+    { pattern: /match\s*\(/, message: "Use a match expression" },
+    { pattern: /match\s*\(\s*true\s*\)/, message: "Use match(true) for the range-style grade arms" },
+    { pattern: /default\s*=>/, message: "Include a default => arm" },
+  ],
+
+  tests: [
+    { name: "grade covers each band",
+      code: "expect_eq(grade(95), 'A');\nexpect_eq(grade(85), 'B');\nexpect_eq(grade(72), 'C');" },
+    { name: "grade falls back to F via the default arm",
+      code: "expect_eq(grade(64), 'F');\nexpect_eq(grade(0), 'F');" },
+    { name: "boundary scores land in the higher band",
+      code: "expect_eq(grade(90), 'A');\nexpect_eq(grade(80), 'B');\nexpect_eq(grade(70), 'C');" },
+    { name: "day_type groups sat and sun in one arm",
+      code: "expect_eq(day_type('sat'), 'weekend');\nexpect_eq(day_type('sun'), 'weekend');" },
+    { name: "everything else is a weekday",
+      code: "expect_eq(day_type('mon'), 'weekday');\nexpect_eq(day_type('wed'), 'weekday');" },
+  ],
+
+  solution: `<?php
+
+function grade(int $score): string {
+    return match(true) {
+        $score >= 90 => "A",
+        $score >= 80 => "B",
+        $score >= 70 => "C",
+        default => "F",
+    };
+}
+
+function day_type(string $day): string {
+    return match($day) {
+        "sat", "sun" => "weekend",
+        default => "weekday",
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Branching</td><td><code>if / elsif / else / end</code></td><td><code>if (...) { } elseif (...) { } else { }</code></td></tr>
+  <tr><td>Modifier if / unless</td><td><code>x if y</code>, <code>unless</code></td><td>not available — full <code>if</code> only</td></tr>
+  <tr><td>Value dispatch</td><td><code>case x when a, b then r</code></td><td><code>match($x) { a, b =&gt; r }</code></td></tr>
+  <tr><td>Condition dispatch</td><td><code>case when cond then r</code></td><td><code>match(true) { cond =&gt; r }</code></td></tr>
+  <tr><td>Comparison used</td><td><code>===</code> (case equality — ranges, classes, regexes)</td><td><code>===</code> (strict identity — values only)</td></tr>
+  <tr><td>No arm matches</td><td>returns <code>nil</code></td><td>throws <code>UnhandledMatchError</code></td></tr>
+  <tr><td>Fallthrough</td><td>never</td><td>never in <code>match</code> (only in legacy <code>switch</code>)</td></tr>
+</table>
+<p>One nuance hides in that table: both languages dispatch with something
+called <code>===</code>, but they're different beasts. Ruby's case equality
+lets a <code>when</code> take a <code>Range</code> or a class; PHP's
+<code>===</code> is plain strict identity, which is why range logic needs
+the <code>match(true)</code> pattern instead of <code>when 90..100</code>.
+And the throwing <code>default</code>-less <code>match</code> is a feature,
+not a hazard: leave the <code>default</code> off when every case
+<em>should</em> be covered, and PHP will loudly tell you the moment a new
+value sneaks in — the explicit-over-implicit philosophy applied to control
+flow.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

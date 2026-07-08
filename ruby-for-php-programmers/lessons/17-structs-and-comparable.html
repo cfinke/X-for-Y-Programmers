@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Structs &amp; Comparable</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Structs & Comparable",
+
+  intro: `
+<p>You know the ceremony for a PHP value object: promote a few typed properties
+in the constructor, then hand-write an <code>equals()</code> so two points with
+the same coordinates compare equal (because <code>==</code> on objects only
+checks identity). Ruby collapses the whole thing into one line:
+<code>Point = Struct.new(:x, :y)</code> gives you accessors <em>and</em>
+value-based <code>==</code> for free. Two structs with equal fields are equal,
+no <code>equals()</code> to write.</p>
+<p>Need behaviour too? <code>Struct.new</code> takes a block, and any methods
+you define inside become instance methods on the struct. And to make your own
+type <em>sortable</em>, Ruby reuses an operator PHP already has — the spaceship
+<code>&lt;=&gt;</code>. In PHP <code>&lt;=&gt;</code> is just an expression that
+returns -1/0/1; in Ruby you define <code>&lt;=&gt;</code> as a method and
+<code>include Comparable</code>, and that single method unlocks
+<code>&lt;</code>, <code>&gt;</code>, <code>==</code>, <code>between?</code>,
+<code>clamp</code>, and <code>sort</code> — all derived from it.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>promoted ctor + hand-written <code>equals()</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td>methods in the class body</td><td>methods in the <code>Struct.new do ... end</code> block</td></tr>
+  <tr><td><code>$a &lt;=&gt; $b</code> (an expression)</td><td><code>def &lt;=&gt;(other)</code> (a method)</td></tr>
+  <tr><td>implement <code>Stringable</code>, <code>Comparable</code>… by hand</td><td><code>include Comparable</code> derives them all</td></tr>
+  <tr><td><code>usort($xs, fn($a, $b) =&gt; $a &lt;=&gt; $b)</code></td><td><code>xs.sort</code></td></tr>
+</table>
+<p>The payoff: define one comparison method, get the whole comparison API.
+Where PHP asks you to pass a comparator into every <code>usort</code>, Ruby
+learns how your objects order once and applies it everywhere.</p>`,
+
+  php: `<?php
+final class Point {
+    public function __construct(
+        public readonly int $x,
+        public readonly int $y,
+    ) {}
+
+    // Object == checks identity, so equality is hand-written:
+    public function equals(Point $o): bool {
+        return $this->x === $o->x && $this->y === $o->y;
+    }
+
+    public function distanceTo(Point $o): float {
+        return sqrt(($this->x - $o->x) ** 2 + ($this->y - $o->y) ** 2);
+    }
+}
+
+$a = new Point(0, 0);
+$b = new Point(3, 4);
+echo $a->distanceTo($b);                 // 5
+var_dump($a->equals(new Point(0, 0)));   // true`,
+
+  task: `
+<p>Recreate the value objects the Ruby way:</p>
+<ol>
+  <li><code>Point = Struct.new(:x, :y)</code> — take the block form and define
+      <code>distance_to(other)</code> inside it, using
+      <code>Math.sqrt((x - other.x)**2 + (y - other.y)**2)</code>. You get
+      <code>x</code>/<code>y</code> accessors and value equality for free.</li>
+  <li><code>class Version</code> — <code>include Comparable</code>, define
+      <code>initialize(major, minor)</code> with <code>attr_reader :major,
+      :minor</code>, and implement <code>&lt;=&gt;</code> by comparing the
+      arrays <code>[major, minor] &lt;=&gt; [other.major, other.minor]</code>.
+      That one method gives you <code>&lt;</code>, <code>sort</code>, and
+      <code>between?</code>.</li>
+</ol>`,
+
+  starter: `# 1. Point: a Struct with x and y, plus distance_to defined in the block.
+Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    raise NotImplementedError, "TODO: implement distance_to"
+  end
+end
+
+# 2. Version: a Comparable value object ordered by [major, minor].
+class Version
+  include Comparable
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  # Compare [major, minor] against the other version's [major, minor].
+  def <=>(other)
+    raise NotImplementedError, "TODO: implement <=>"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /Struct\.new/, message: "Build Point with Struct.new(:x, :y)" },
+    { pattern: /include\s+Comparable/, message: "include Comparable in Version" },
+    { pattern: /<=>/, message: "Define the <=> spaceship method" },
+    { pattern: /def\s+distance_to/, message: "Define distance_to inside the Struct block" },
+  ],
+
+  tests: [
+    { name: "distance_to gives the 3-4-5 result (5.0)",
+      code: "  expect_eq(Point.new(0, 0).distance_to(Point.new(3, 4)), 5.0)" },
+    { name: "Structs with equal fields are == (value equality, free)",
+      code: "  expect_true(Point.new(1, 2) == Point.new(1, 2))" },
+    { name: "Version.new(1, 2) < Version.new(1, 10)",
+      code: "  expect_true(Version.new(1, 2) < Version.new(1, 10))" },
+    { name: "sort orders versions by [major, minor]",
+      code: "  sorted = [Version.new(2, 0), Version.new(1, 10), Version.new(1, 2)].sort\n  expect_eq(sorted.map { |v| [v.major, v.minor] }, [[1, 2], [1, 10], [2, 0]])" },
+    { name: "between? comes free from Comparable",
+      code: "  expect_true(Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0)))" },
+  ],
+
+  solution: `Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    Math.sqrt((x - other.x)**2 + (y - other.y)**2)
+  end
+end
+
+class Version
+  include Comparable
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  def <=>(other)
+    [major, minor] <=> [other.major, other.minor]
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Value object</td><td>promoted-ctor class</td><td><code>Struct.new(:a, :b)</code></td></tr>
+  <tr><td>Value equality</td><td>hand-written <code>equals()</code></td><td>built into <code>Struct</code></td></tr>
+  <tr><td>Add methods</td><td>class body</td><td><code>Struct.new(...) do ... end</code></td></tr>
+  <tr><td>Ordering hook</td><td><code>&lt;=&gt;</code> expression per call</td><td><code>def &lt;=&gt;(other)</code> once</td></tr>
+  <tr><td>Derived operators</td><td>implement each yourself</td><td><code>include Comparable</code></td></tr>
+  <tr><td>Sort</td><td><code>usort($xs, $cmp)</code></td><td><code>xs.sort</code></td></tr>
+  <tr><td>Range check</td><td><code>$lo &lt;= $x &amp;&amp; $x &lt;= $hi</code></td><td><code>x.between?(lo, hi)</code></td></tr>
+</table>
+<p>The lesson underneath both features is the same: define the minimum and let
+the language derive the rest. <code>Struct</code> derives accessors and
+equality from a field list; <code>Comparable</code> derives an entire family of
+operators from one <code>&lt;=&gt;</code>. That is why idiomatic Ruby rarely
+passes comparators around the way PHP threads a callable through every
+<code>usort</code> — the object already knows how it sorts.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

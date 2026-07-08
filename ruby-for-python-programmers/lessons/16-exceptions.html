@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>Ruby's exception machinery is Python's with the keywords renamed:
+<code>try</code> becomes <code>begin</code>, <code>except</code> becomes
+<code>rescue</code>, <code>finally</code> becomes <code>ensure</code> — and
+<code>else</code> is still <code>else</code>. <code>raise</code> keeps its
+name, though the invocation changes shape: Python constructs the exception
+(<code>raise ValueError("bad")</code>) while Ruby passes the class and message
+as two arguments (<code>raise ArgumentError, "bad"</code>). Watch the class
+names too — Python's <code>ValueError</code> for "right type, wrong content"
+is Ruby's <code>ArgumentError</code>.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>try:</code></td><td><code>begin</code></td></tr>
+  <tr><td><code>except ValueError as e:</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td><code>finally:</code></td><td><code>ensure</code></td></tr>
+  <tr><td><code>raise ValueError("bad")</code></td><td><code>raise ArgumentError, "bad"</code></td></tr>
+  <tr><td><code>class ParseError(Exception):</code></td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+</table>
+<p>Two pleasant upgrades. First, a method body is already an implicit
+<code>begin</code> block, so you can hang <code>rescue</code> straight off the
+<code>def</code> — no wrapping the whole body in <code>begin/end</code> like
+Python forces with <code>try:</code>. Second, a bare <code>rescue</code>
+catches <code>StandardError</code> and below, <em>not</em> everything — it
+behaves like <code>except Exception</code>, not
+<code>except BaseException</code>, so interrupts and exits sail past it.
+That's why custom errors subclass <code>StandardError</code>, the way Python
+custom errors subclass <code>Exception</code>.</p>`,
+
+  python: `import re
+
+class EmptyCartError(Exception):
+    pass
+
+def parse_age(s):
+    if not re.fullmatch(r"\\d+", s.strip()):
+        raise ValueError(f"not a number: {s!r}")
+    return int(s)
+
+def safe_parse_age(s, default):
+    try:
+        return parse_age(s)
+    except ValueError:
+        return default
+
+def checkout(items):
+    if not items:
+        raise EmptyCartError("cart is empty")
+    return sum(item["price"] for item in items)`,
+
+  task: `
+<p>Rewrite the Python on the left as Ruby:</p>
+<ol>
+  <li><code>parse_age(s)</code> — <code>raise ArgumentError, "..."</code>
+      unless <code>s.strip.match?(/\\A\\d+\\z/)</code> (Ruby's
+      <code>re.fullmatch</code>: <code>\\A</code> and <code>\\z</code> anchor
+      the whole string). Otherwise return <code>s.to_i</code>.</li>
+  <li><code>safe_parse_age(s, default)</code> — call <code>parse_age(s)</code>
+      and use a <strong>def-level rescue</strong>: write
+      <code>rescue ArgumentError</code> at the same indentation as
+      <code>def</code>, return <code>default</code> from the rescue branch.
+      No <code>begin</code> anywhere.</li>
+  <li><code>checkout(items)</code> — the starter already defines
+      <code>class EmptyCartError &lt; StandardError; end</code>. Raise it with
+      the message <code>"cart is empty"</code> if <code>items.empty?</code>;
+      otherwise sum each hash's <code>item[:price]</code>.</li>
+</ol>`,
+
+  starter: `# 1. parse_age: raise ArgumentError, "message" unless the string is all
+#    digits. Python: raise ValueError(f"...") -> Ruby: raise ArgumentError, "..."
+#    Full-string check: s.strip.match?(/\\A\\d+\\z/)
+def parse_age(s)
+  raise NotImplementedError, "TODO: implement parse_age"
+end
+
+# 2. safe_parse_age: def-level rescue — the method body is an implicit
+#    begin block, so rescue attaches directly to the def:
+#      def safe_parse_age(s, default)
+#        ...happy path...
+#      rescue ArgumentError
+#        ...fallback...
+#      end
+def safe_parse_age(s, default)
+  raise NotImplementedError, "TODO: implement safe_parse_age"
+end
+
+# 3. class EmptyCartError(Exception) -> < StandardError. Done for you:
+class EmptyCartError < StandardError; end
+
+# 4. checkout: raise EmptyCartError, "cart is empty" if the cart is empty;
+#    otherwise sum item[:price] across the hashes.
+def checkout(items)
+  raise NotImplementedError, "TODO: implement checkout"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+\w*Error/, message: "Rescue a specific error class (rescue ArgumentError)" },
+    { pattern: /raise\s+/, message: "Raise an error with raise" },
+    { pattern: /<\s*StandardError/, message: "Custom errors subclass StandardError with <" },
+    { pattern: /match\?|to_i/, message: "Validate with match? and convert with to_i" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns the Integer 42',
+      code: '  expect_eq(parse_age("42"), 42)\n  expect_eq(parse_age(" 7 "), 7)' },
+    { name: 'parse_age("abc") raises ArgumentError',
+      code: "  begin\n    parse_age(\"abc\")\n    raise 'expected ArgumentError, but nothing was raised'\n  rescue ArgumentError\n  end" },
+    { name: 'safe_parse_age("abc", 18) falls back to 18',
+      code: '  expect_eq(safe_parse_age("abc", 18), 18)' },
+    { name: 'safe_parse_age("30", 0) parses normally',
+      code: '  expect_eq(safe_parse_age("30", 0), 30)' },
+    { name: "checkout sums the prices",
+      code: "  expect_eq(checkout([{ price: 500 }, { price: 250 }]), 750)" },
+    { name: "checkout([]) raises EmptyCartError",
+      code: "  begin\n    checkout([])\n    raise 'expected EmptyCartError, but nothing was raised'\n  rescue EmptyCartError\n  end" },
+  ],
+
+  solution: `def parse_age(s)
+  raise ArgumentError, "not a number: #{s.inspect}" unless s.strip.match?(/\\A\\d+\\z/)
+  s.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError; end
+
+def checkout(items)
+  raise EmptyCartError, "cart is empty" if items.empty?
+  items.sum { |item| item[:price] }
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Guarded block</td><td><code>try:</code></td><td><code>begin</code></td></tr>
+  <tr><td>Catch</td><td><code>except ValueError as e:</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td>Always runs</td><td><code>finally:</code></td><td><code>ensure</code></td></tr>
+  <tr><td>Only if no error</td><td><code>else:</code></td><td><code>else</code></td></tr>
+  <tr><td>Raise</td><td><code>raise ValueError("bad")</code></td><td><code>raise ArgumentError, "bad"</code></td></tr>
+  <tr><td>Custom error</td><td><code>class ParseError(Exception)</code></td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+  <tr><td>Bare catch</td><td><code>except Exception</code></td><td><code>rescue</code> (StandardError only)</td></tr>
+  <tr><td>Re-raise</td><td><code>raise</code></td><td><code>raise</code></td></tr>
+</table>
+<p>The def-level rescue is the habit worth stealing: any method whose whole
+body would be one <code>try</code> block just gets <code>rescue</code> clauses
+between the last expression and <code>end</code>, flush with the
+<code>def</code>. And the hierarchy lesson transfers exactly: rescuing
+<code>Exception</code> in Ruby is as rude as catching <code>BaseException</code>
+in Python — it swallows Ctrl-C (<code>Interrupt</code>) and
+<code>exit</code> (<code>SystemExit</code>). Stick to
+<code>StandardError</code> and its children, which is what a bare
+<code>rescue</code> already does for you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

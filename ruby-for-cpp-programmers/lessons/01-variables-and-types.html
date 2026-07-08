@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Ruby sits at the opposite pole from C++: there is no compilation step, no
+declarations, and no types written anywhere. The file is a script that runs
+top to bottom, and a variable exists the moment you assign to it —
+<code>int age = 36;</code> becomes simply <code>age = 36</code>. If you have
+been writing <code>auto</code> everywhere since C++11, Ruby is
+<code>auto</code> taken to its logical conclusion: the objects carry their
+types, and you ask <em>them</em> at runtime — <code>x.class</code>,
+<code>x.is_a?(String)</code>. Nothing is stack-allocated, nothing needs
+freeing: every value lives on the heap and the garbage collector owns it.</p>
+<table>
+  <tr><th>C++</th><th>Ruby</th></tr>
+  <tr><td><code>int age = 36;</code></td><td><code>age = 36</code></td></tr>
+  <tr><td><code>auto name = std::string{"Ada"};</code></td><td><code>name = "Ada"</code></td></tr>
+  <tr><td><code>int</code> / <code>long</code> / <code>int64_t</code></td><td><code>Integer</code> — arbitrary precision, one class</td></tr>
+  <tr><td><code>typeid(x).name()</code></td><td><code>x.class</code>, <code>x.is_a?(String)</code></td></tr>
+  <tr><td><code>std::format("{} is {}", name, age)</code></td><td><code>"#{name} is #{age}"</code></td></tr>
+</table>
+<p>Two things to internalize immediately. First, <code>Integer</code> has no
+width: <code>2 ** 100</code> just works — no overflow, no UB, ever. Second —
+the habit this whole course builds on — a method's <strong>last expression is
+its return value</strong>. Idiomatic Ruby almost never writes the keyword;
+the value simply falls out of the bottom of <code>def ... end</code>.</p>`,
+
+  cpp: `#include <format>
+#include <iostream>
+#include <string>
+
+std::string describe_user(const std::string& name, int age) {
+    return std::format("{} is {} years old", name, age);
+}
+
+int birthday(int age) {
+    int next_age = age;
+    next_age += 1;
+    return next_age;          // overflow on INT_MAX would be UB
+}
+
+int main() {
+    auto name = std::string{"Ada"};
+    int age = 36;
+    std::cout << describe_user(name, age) << '\\n';
+}`,
+
+  task: `
+<p>Rewrite the C++ on the left as Ruby:</p>
+<ol>
+  <li>Write a method <code>describe_user(name, age)</code> that produces
+      <code>"Ada is 36 years old"</code>-style text. Your
+      <code>std::format</code> is string interpolation:
+      <code>"#{name} is #{age} years old"</code> — the expressions are
+      evaluated right inside the double-quoted string. No parameter types, no
+      return type, and make the interpolated string the method's
+      <em>last expression</em> instead of writing any keyword.</li>
+  <li>Write a method <code>birthday(age)</code> that copies the argument into
+      a local variable, bumps it with <code>+=</code>, and lets that local be
+      the last expression. Feed it a number bigger than
+      <code>INT64_MAX</code> and it still works — <code>Integer</code> never
+      overflows.</li>
+</ol>
+<p>Conventions carry over nicely: methods are <code>snake_case</code>, just
+like yours. Gone: semicolons, braces (<code>def ... end</code>), and the
+compiler.</p>`,
+
+  starter: `# 1. describe_user: interpolate with #{} — the last expression is the value
+#    the caller gets. std::format("{} is {}", name, age)
+#    ->  "#{name} is #{age} years old"
+def describe_user(name, age)
+  raise NotImplementedError, "TODO: implement describe_user"
+end
+
+# 2. birthday: copy into a local, bump it with +=, let it be the last
+#    expression. No int width to worry about.
+def birthday(age)
+  raise NotImplementedError, "TODO: implement birthday"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+describe_user\s*\(\s*name\s*,\s*age\s*\)/, message: "Define describe_user(name, age) with def" },
+    { pattern: /#\{\s*name\s*\}/, message: "Build the string with #{} interpolation" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: '  expect_eq(describe_user("Ada", 36), "Ada is 36 years old")' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: '  expect_eq(describe_user("Grace", 52), "Grace is 52 years old")' },
+    { name: "birthday(36) returns 37",
+      code: "  expect_eq(birthday(36), 37)" },
+    { name: "birthday(2 ** 64) returns 18446744073709551617 — no overflow, ever",
+      code: "  expect_eq(birthday(2 ** 64), 18446744073709551617)" },
+  ],
+
+  solution: `def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Declare a variable</td><td><code>int x = 1;</code> / <code>auto x = 1;</code></td><td><code>x = 1</code> (assignment is declaration)</td></tr>
+  <tr><td>Constant</td><td><code>const int X = 1;</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+  <tr><td>Integers</td><td><code>int</code>, <code>long</code>, <code>int64_t</code>, overflow UB</td><td><code>Integer</code> — arbitrary precision, <code>2 ** 100</code> just works</td></tr>
+  <tr><td>Floating point</td><td><code>double</code></td><td><code>Float</code> (a 64-bit double underneath)</td></tr>
+  <tr><td>Format a string</td><td><code>std::format("{}!", name)</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+  <tr><td>Check a type</td><td><code>typeid(x)</code>, <code>std::is_same_v</code></td><td><code>x.class</code>, <code>x.is_a?(String)</code></td></tr>
+  <tr><td>Give back a value</td><td><code>return</code> required</td><td>last expression; the keyword exists only for early exit</td></tr>
+  <tr><td>Memory</td><td>stack / heap / RAII, your problem</td><td>everything heap-allocated, GC's problem</td></tr>
+</table>
+<p>The trade you are making: C++ catches a wrong-typed argument before the
+program exists; Ruby raises a <code>NoMethodError</code> at the moment an
+object doesn't respond to a message. What replaces the compiler is the test
+suite — which is why every lesson here is driven by one. In exchange you get
+maximum expressiveness per line: no headers, no declarations, no build
+step.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

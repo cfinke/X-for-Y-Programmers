@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Option: The End of Null</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Option: The End of Null",
+
+  intro: `
+<p>You have spent a career defending against
+<code>NullReferenceException</code>, and C# 8's nullable reference types were
+a real improvement: <code>string?</code> made null opt-in, with annotations
+and compiler <em>warnings</em> when you dereference without checking. But
+they are still warnings — the runtime representation is the same old null,
+one <code>#nullable disable</code> or unannotated library away from the
+familiar crash. Rust never had null. Absence is a real type:
+<code>Option&lt;T&gt;</code> is an enum with two variants,
+<code>Some(value)</code> and <code>None</code>, and using the value without
+handling <code>None</code> is a compile <em>error</em>, not a warning.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>string?</code> (maybe null)</td><td><code>Option&lt;String&gt;</code></td></tr>
+  <tr><td><code>"Ada"</code> / <code>null</code></td><td><code>Some("Ada".to_string())</code> / <code>None</code></td></tr>
+  <tr><td><code>name ?? "anonymous"</code></td><td><code>name.unwrap_or("anonymous".to_string())</code></td></tr>
+  <tr><td><code>name?.Length</code></td><td><code>name.map(|n| n.len())</code></td></tr>
+  <tr><td><code>if (name != null) ... else ...</code></td><td><code>match name { Some(n) =&gt; ..., None =&gt; ... }</code></td></tr>
+</table>
+<p>Your null-handling toolbox maps over directly. <code>??</code> becomes
+<code>.unwrap_or(default)</code>; the null-conditional <code>?.</code> becomes
+<code>.map(|x| ...)</code>, which transforms the value inside a
+<code>Some</code> and passes <code>None</code> through untouched; and when you
+need both arms explicitly, <code>match</code> handles <code>Some(x)</code> and
+<code>None</code> the way an <code>if (x != null)</code>/<code>else</code>
+does — except the compiler makes sure you wrote both.</p>`,
+
+  csharp: `#nullable enable
+
+string? FindUser(uint id) => id switch
+{
+    1 => "Ada",
+    2 => "Grace",
+    _ => null,
+};
+
+string DisplayName(string? name) => name ?? "anonymous";
+
+char? FirstChar(string s) => s.Length > 0 ? s[0] : null;
+
+var name = FindUser(3);
+Console.WriteLine(name.Length);        // CS8602 warning... and still a
+                                       // NullReferenceException at runtime
+Console.WriteLine(DisplayName(name));  // "anonymous"`,
+
+  task: `
+<p>Rewrite the nullable C# with <code>Option</code>:</p>
+<ol>
+  <li>Write <code>find_user(id: u32) -&gt; Option&lt;String&gt;</code>
+      returning <code>Some("Ada".to_string())</code> for id <code>1</code>,
+      <code>Some("Grace".to_string())</code> for <code>2</code>, and
+      <code>None</code> otherwise — a <code>match</code> on <code>id</code>
+      mirrors the C# <code>switch</code> expression.</li>
+  <li>Write <code>display_name(name: Option&lt;String&gt;) -&gt; String</code>
+      returning the name or <code>"anonymous"</code> — this is the
+      <code>??</code> operator, spelled <code>unwrap_or</code>.</li>
+  <li>Write <code>first_char(s: &amp;str) -&gt; Option&lt;char&gt;</code>
+      returning the first character if there is one —
+      <code>s.chars().next()</code> already returns exactly this, no length
+      check required.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. find_user: Some("Ada") for 1, Some("Grace") for 2, None otherwise.
+//    match id { 1 => ..., 2 => ..., _ => ... } — like the C# switch expression.
+//    Remember .to_string(): Option<String> owns its contents.
+fn find_user(id: u32) -> Option<String> {
+    todo!()
+}
+
+// 2. display_name: the name, or "anonymous" if None.
+//    C#: name ?? "anonymous"  ->  Rust: name.unwrap_or(...)
+fn display_name(name: Option<String>) -> String {
+    todo!()
+}
+
+// 3. first_char: the first character, if any.
+//    .chars().next() is the whole body — it already returns Option<char>.
+fn first_char(s: &str) -> Option<char> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option</, message: "Return Option<T> types" },
+    { pattern: /Some\(/, message: "Produce present values with Some(...)" },
+    { pattern: /None/, message: "Produce absence with None" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or (the ?? of Rust) in display_name" },
+  ],
+
+  tests: [
+    { name: 'find_user(1) returns Some("Ada")',
+      code: 'assert_eq!(find_user(1), Some("Ada".to_string()));' },
+    { name: 'find_user(2) returns Some("Grace")',
+      code: 'assert_eq!(find_user(2), Some("Grace".to_string()));' },
+    { name: "find_user(99) returns None",
+      code: "assert_eq!(find_user(99), None);" },
+    { name: 'display_name(Some("Ada")) returns "Ada"',
+      code: 'assert_eq!(display_name(Some("Ada".to_string())), "Ada");' },
+    { name: 'display_name(None) returns "anonymous"',
+      code: 'assert_eq!(display_name(None), "anonymous");' },
+    { name: "first_char works on \"hello\" and \"\"",
+      code: 'assert_eq!(first_char("hello"), Some(\'h\'));\nassert_eq!(first_char(""), None);' },
+  ],
+
+  solution: `fn find_user(id: u32) -> Option<String> {
+    match id {
+        1 => Some("Ada".to_string()),
+        2 => Some("Grace".to_string()),
+        _ => None,
+    }
+}
+
+fn display_name(name: Option<String>) -> String {
+    name.unwrap_or("anonymous".to_string())
+}
+
+fn first_char(s: &str) -> Option<char> {
+    s.chars().next()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Maybe-absent type</td><td><code>string?</code> (annotation + warnings)</td><td><code>Option&lt;String&gt;</code> (a real enum, errors)</td></tr>
+  <tr><td>Present / absent</td><td><code>"Ada"</code> / <code>null</code></td><td><code>Some("Ada".to_string())</code> / <code>None</code></td></tr>
+  <tr><td>Default if absent</td><td><code>name ?? "anonymous"</code></td><td><code>name.unwrap_or("anonymous".to_string())</code></td></tr>
+  <tr><td>Null-conditional</td><td><code>name?.Length</code></td><td><code>name.map(|n| n.len())</code></td></tr>
+  <tr><td>Both arms</td><td><code>if (name != null) ... else ...</code></td><td><code>match name { Some(n) =&gt; ..., None =&gt; ... }</code></td></tr>
+  <tr><td>"I know it's there"</td><td><code>name!</code> (suppresses the warning)</td><td><code>name.unwrap()</code> (panics loudly if wrong)</td></tr>
+</table>
+<p>The philosophical difference: C# 8 kept null in the runtime and layered
+analysis on top, so the guarantees erode at every unannotated boundary. Rust
+made absence part of the value itself — an <code>Option&lt;String&gt;</code>
+and a <code>String</code> are different types, and the compiler simply will
+not let you use one as the other. There is no
+<code>NullReferenceException</code> in Rust because there is nothing to
+throw it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Borrowing & References</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Borrowing & References",
+
+  intro: `
+<p>Last lesson, passing a <code>Vec</code> into a function consumed it, and
+we clawed it back by returning it. That's clearly not how you'd want to write
+every function. The real tool is <em>borrowing</em>: lend a function access
+with a reference and keep ownership yourself. <code>&amp;T</code> is a
+read-only borrow — look, don't touch. <code>&amp;mut T</code> is a mutable
+borrow — exclusive permission to modify.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>total(nums)</code> — callee could mutate; you hope it doesn't</td><td><code>total(&amp;nums)</code> — read-only borrow, mutation impossible</td></tr>
+  <tr><td><code>addItem(items, x)</code> — mutation is invisible at the call site</td><td><code>add_item(&amp;mut items, x)</code> — mutation announced on both ends</td></tr>
+  <tr><td>any number of live references, all writable</td><td>many readers <em>or</em> one writer — never both</td></tr>
+  <tr><td>list of numbers: <code>number[]</code>, sort of</td><td>borrowed slice: <code>&amp;[i32]</code> (a view into a Vec or array)</td></tr>
+</table>
+<p>The compiler enforces one rule: at any moment a value has <em>either</em>
+any number of <code>&amp;</code> borrows <em>or</em> exactly one
+<code>&amp;mut</code> borrow. That rule is precisely the shared-mutable-state
+bug class from JS — the helper that empties the array you're iterating, the
+two callbacks fighting over one object — turned into compile errors. And
+mutation is visible where it happens: if a call site doesn't say
+<code>&amp;mut</code>, that function cannot change your data. Period.</p>
+<p>One new type here: <code>&amp;[i32]</code>, a <em>slice</em> — a borrowed
+view of "some <code>i32</code>s in a row". Like <code>&amp;str</code> for
+strings, it's the flexible parameter type: <code>&amp;vec</code> and
+<code>&amp;[1, 2, 3]</code> both coerce to it.</p>`,
+
+  javascript: `// Every JS argument is a live, writable reference:
+function total(numbers) {
+  return numbers.reduce((sum, n) => sum + n, 0);
+}
+
+function addItem(items, item) {
+  items.push(item);       // mutates the caller's array — invisible at the call site
+}
+
+function sneaky(numbers) {
+  numbers.length = 0;     // also allowed! Nothing stops any function
+  return 0;               // from destroying what you lent it.
+}
+
+const nums = [1, 2, 3];
+console.log(total(nums)); // 6
+sneaky(nums);             // silently empties nums
+console.log(nums);        // [] — good luck finding this in a big codebase
+
+const longer = (a, b) => Math.max(a.length, b.length);`,
+
+  task: `
+<p>Rewrite the JavaScript on the left as Rust, borrowing instead of taking:</p>
+<ol>
+  <li><code>total(numbers: &amp;[i32]) -> i32</code> — sum the slice with a
+      read-only borrow. A <code>for n in numbers { ... }</code> loop over a
+      <code>let mut sum = 0</code> works nicely.</li>
+  <li><code>add_item(items: &amp;mut Vec&lt;String&gt;, item: String)</code>
+      — push <code>item</code> onto the borrowed vector. No return value: the
+      caller keeps ownership, you're mutating in place — but this time the
+      <code>&amp;mut</code> at the call site announces it.</li>
+  <li><code>longer(a: &amp;str, b: &amp;str) -> usize</code> — return the
+      length of the longer string. <code>.len()</code> returns
+      <code>usize</code>, the integer type Rust uses for sizes and indexes.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. total: read-only borrow of a slice of i32s.
+fn total(numbers: &[i32]) -> i32 {
+    todo!()
+}
+
+// 2. add_item: mutable borrow — push item onto the caller's vector.
+fn add_item(items: &mut Vec<String>, item: String) {
+    todo!()
+}
+
+// 3. longer: two read-only string borrows; return the larger .len().
+fn longer(a: &str, b: &str) -> usize {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&\[i32\]/, message: "Take total's parameter as a borrowed slice: &[i32]" },
+    { pattern: /&mut\s/, message: "Take add_item's vector as a mutable borrow: &mut Vec<String>" },
+  ],
+
+  tests: [
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total(&[]) returns 0 and negatives work",
+      code: "assert_eq!(total(&[]), 0);\nassert_eq!(total(&[-2, 5]), 3);" },
+    { name: 'add_item pushes onto the borrowed vector',
+      code: 'let mut items = vec![String::from("bread")];\nadd_item(&mut items, String::from("milk"));\nassert_eq!(items, vec!["bread", "milk"]);' },
+    { name: "add_item works on an empty vector too",
+      code: 'let mut items: Vec<String> = Vec::new();\nadd_item(&mut items, String::from("first"));\nassert_eq!(items.len(), 1);' },
+    { name: 'longer("hi", "hello") returns 5',
+      code: 'assert_eq!(longer("hi", "hello"), 5);\nassert_eq!(longer("abcd", "xy"), 4);' },
+  ],
+
+  solution: `fn total(numbers: &[i32]) -> i32 {
+    let mut sum = 0;
+    for n in numbers {
+        sum += n;
+    }
+    sum
+}
+
+fn add_item(items: &mut Vec<String>, item: String) {
+    items.push(item);
+}
+
+fn longer(a: &str, b: &str) -> usize {
+    if a.len() > b.len() { a.len() } else { b.len() }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Pass without giving up</td><td>automatic (and always writable)</td><td><code>&amp;value</code> — read-only borrow</td></tr>
+  <tr><td>Let a function mutate</td><td>automatic (and invisible)</td><td><code>&amp;mut value</code> — declared by caller <em>and</em> callee</td></tr>
+  <tr><td>How many at once</td><td>unlimited, all writable</td><td>many <code>&amp;</code> <em>or</em> one <code>&amp;mut</code></td></tr>
+  <tr><td>List parameter</td><td><code>numbers</code> (an array, you hope)</td><td><code>&amp;[i32]</code> — borrowed slice, accepts <code>&amp;vec</code> too</td></tr>
+  <tr><td>No return value</td><td><code>undefined</code></td><td>omit the <code>-&gt;</code>: the function returns <code>()</code></td></tr>
+</table>
+<p>Read a Rust call site and you know exactly what can happen:
+<code>total(&amp;nums)</code> cannot change <code>nums</code>;
+<code>add_item(&amp;mut items, x)</code> visibly can. The <code>sneaky</code>
+function from the JS panel is unwritable against a <code>&amp;</code> borrow —
+it doesn't fail at runtime, it fails to exist. This borrow-checking is the
+same machinery that later makes Rust's fearless concurrency work: "many
+readers or one writer" is exactly the rule that prevents data races.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

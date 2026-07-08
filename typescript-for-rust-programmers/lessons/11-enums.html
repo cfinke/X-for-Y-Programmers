@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Literal Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Literal Types",
+
+  intro: `
+<p>A fieldless enum is one of Rust's workhorses: <code>enum Status { Pending,
+Shipped }</code>, a <code>match</code>, done. TypeScript gives you two ways to
+say the same thing. The first looks familiar: an <code>enum</code> keyword.
+Use a <em>string enum</em> and each variant carries its own label as its
+runtime value — <code>OrderStatus.Pending</code> <em>is</em> the string
+<code>"pending"</code>, so the <code>impl Display</code> ceremony you would
+write in Rust simply disappears.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>enum Status { Pending, Shipped }</code></td><td><code>enum Status { Pending = "pending", Shipped = "shipped" }</code></td></tr>
+  <tr><td><code>Status::Pending</code></td><td><code>Status.Pending</code></td></tr>
+  <tr><td><code>match status { ... }</code></td><td><code>switch (status) { case ...: }</code></td></tr>
+  <tr><td><code>impl Display for Status { ... }</code></td><td>Not needed — the variant's value is already its label</td></tr>
+  <tr><td>Fieldless enum, minus the ceremony</td><td><code>type Status = "pending" | "shipped";</code></td></tr>
+</table>
+<p>The second way is the one idiomatic TypeScript usually reaches for: a
+<em>string-literal union</em>. <code>type Status = "pending" | "shipped"</code>
+is your fieldless enum with zero type ceremony — no declaration block, no
+variant paths, just the strings themselves, checked by the compiler. One
+caveat for Rust instincts: neither TS enums nor literal unions carry data.
+<code>Shipped(TrackingId)</code> has no direct equivalent here — data-carrying
+enums are rebuilt as discriminated unions in lesson 17.</p>`,
+
+  rust: `enum OrderStatus {
+    Pending,
+    Shipped,
+    Delivered,
+}
+
+// Want the variant's name as a string? That's a whole impl.
+impl std::fmt::Display for OrderStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            OrderStatus::Pending => write!(f, "pending"),
+            OrderStatus::Shipped => write!(f, "shipped"),
+            OrderStatus::Delivered => write!(f, "delivered"),
+        }
+    }
+}
+
+fn status_label(status: &OrderStatus) -> String {
+    format!("Order is {status}")
+}`,
+
+  task: `
+<p>Port the enum both ways — the <code>enum</code> keyword for
+<code>OrderStatus</code>, and a literal union for a priority level:</p>
+<ol>
+  <li>Declare a string enum <code>OrderStatus</code> with variants
+      <code>Pending = "pending"</code>, <code>Shipped = "shipped"</code>, and
+      <code>Delivered = "delivered"</code>. No <code>Display</code> impl:
+      the string <em>is</em> the value.</li>
+  <li>Declare a type alias <code>Priority</code> as the literal union
+      <code>"low" | "normal" | "high"</code> — the ceremony-free fieldless
+      enum.</li>
+  <li>Write <code>statusLabel(status: OrderStatus): string</code> using a
+      <code>switch</code> (your <code>match</code>) that returns
+      <code>"Order is pending"</code>, <code>"Order is shipped"</code>, or
+      <code>"Order is delivered"</code>.</li>
+  <li>Write <code>priorityRank(priority: Priority): number</code> returning
+      <code>1</code> for <code>"low"</code>, <code>2</code> for
+      <code>"normal"</code>, <code>3</code> for <code>"high"</code>.</li>
+</ol>
+<p>Note there is no exhaustiveness wildcard needed: once every variant has a
+<code>case</code>, you are done — and the compiler knows it.</p>`,
+
+  starter: `// 1. A string enum: each variant carries its label as its value.
+//    Rust: enum OrderStatus { Pending, Shipped, Delivered } + impl Display
+enum OrderStatus {
+  // TODO: Pending = "pending", Shipped = "shipped", Delivered = "delivered"
+}
+
+// 2. The lighter idiom: a string-literal union type alias.
+// TODO: type Priority = "low" | "normal" | "high";
+
+// 3. match -> switch. Return "Order is pending" / "Order is shipped" / "Order is delivered".
+function statusLabel(status: OrderStatus): string {
+  // TODO: switch (status) { case OrderStatus.Pending: ... }
+  return "";
+}
+
+// 4. Take the literal union as the parameter type: "low" -> 1, "normal" -> 2, "high" -> 3.
+function priorityRank(priority: string): number {
+  // TODO: change the parameter type to Priority, then switch on it
+  return 0;
+}
+`,
+
+  exportNames: ["OrderStatus", "statusLabel", "priorityRank"],
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus/, message: "Declare OrderStatus with the enum keyword" },
+    { pattern: /"\w+"\s*\|\s*"/, message: "Declare a string-literal union type (e.g. \"low\" | \"normal\" | \"high\")" },
+    { pattern: /switch\s*\(/, message: "Use a switch statement — the TypeScript match" },
+  ],
+
+  tests: [
+    { name: 'OrderStatus.Pending is the string "pending"', run: (x) => expectEqual(x.OrderStatus.Pending, "pending") },
+    { name: 'OrderStatus.Delivered is the string "delivered"', run: (x) => expectEqual(x.OrderStatus.Delivered, "delivered") },
+    { name: 'statusLabel(OrderStatus.Shipped) returns "Order is shipped"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Shipped), "Order is shipped") },
+    { name: 'statusLabel(OrderStatus.Pending) returns "Order is pending"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Pending), "Order is pending") },
+    { name: 'priorityRank("high") returns 3', run: (x) => expectEqual(x.priorityRank("high"), 3) },
+    { name: 'priorityRank("low") returns 1', run: (x) => expectEqual(x.priorityRank("low"), 1) },
+  ],
+
+  solution: `enum OrderStatus {
+  Pending = "pending",
+  Shipped = "shipped",
+  Delivered = "delivered",
+}
+
+type Priority = "low" | "normal" | "high";
+
+function statusLabel(status: OrderStatus): string {
+  switch (status) {
+    case OrderStatus.Pending:
+      return "Order is pending";
+    case OrderStatus.Shipped:
+      return "Order is shipped";
+    case OrderStatus.Delivered:
+      return "Order is delivered";
+  }
+}
+
+function priorityRank(priority: Priority): number {
+  switch (priority) {
+    case "low":
+      return 1;
+    case "normal":
+      return 2;
+    case "high":
+      return 3;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Fieldless enum</td><td><code>enum Status { Pending, Shipped }</code></td><td><code>enum Status { Pending = "pending", ... }</code></td></tr>
+  <tr><td>Lightweight alternative</td><td>— (still an enum)</td><td><code>type Status = "pending" | "shipped";</code></td></tr>
+  <tr><td>Variant access</td><td><code>Status::Pending</code></td><td><code>Status.Pending</code></td></tr>
+  <tr><td>Branching</td><td><code>match status { ... }</code></td><td><code>switch (status) { case ...: }</code></td></tr>
+  <tr><td>Variant → string</td><td><code>impl Display</code> or a derive crate</td><td>Free: a string enum's value is its label</td></tr>
+  <tr><td>Data in variants</td><td><code>Shipped(TrackingId)</code></td><td>Not here — discriminated unions (lesson 17)</td></tr>
+</table>
+<p>Idiomatic TypeScript reaches for the literal union first: it costs nothing
+at runtime (the type is erased) and plain strings flow in and out of JSON
+untouched. An <code>enum</code>, by contrast, is a real runtime object — it
+compiles to JavaScript you can iterate over and pass around, which is exactly
+why the tests above can inspect <code>OrderStatus.Pending</code>. Pick the
+union by default; pick the enum when you want one canonical namespace for the
+variants.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

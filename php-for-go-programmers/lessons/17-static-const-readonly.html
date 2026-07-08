@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Static, Constants & readonly</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Static, Constants & readonly",
+
+  intro: `
+<p>Go hangs shared state and constants off the <em>package</em>:
+<code>const DefaultName = "guest"</code> and <code>var count int</code> at
+the top level, reached as <code>pkg.DefaultName</code>. PHP has no
+package-level home for these — the class plays that role. A class constant
+(<code>const DEFAULT_NAME = "guest";</code>) is your package const, and a
+<code>static</code> property is your package var; both are reached with
+<code>::</code>, PHP's path separator for class-level things, so
+<code>Config::DEFAULT_NAME</code> reads just like
+<code>config.DefaultName</code>. Inside the class you say
+<code>self::$count</code> — <code>self</code> is "this class", the way an
+unqualified name refers to the current package in Go.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>const DefaultName = "guest"</code></td><td><code>const DEFAULT_NAME = "guest";</code> (inside a class)</td></tr>
+  <tr><td><code>var count int</code> (package var)</td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td><code>counter.Increment()</code></td><td><code>Counter::increment()</code> — no instance needed</td></tr>
+  <tr><td><code>count++</code> (inside the package)</td><td><code>self::$count += 1;</code> (inside the class)</td></tr>
+  <tr><td>immutability by convention/linter</td><td><code>readonly</code> — engine-enforced, write-once</td></tr>
+</table>
+<p>The third piece has no Go equivalent at all. Go structs are always mutable;
+"don't touch this field after construction" is a comment and a hope. PHP 8.1's
+<code>readonly</code> properties are write-once-in-the-constructor: any later
+assignment throws an <code>Error</code> at runtime. That's real immutability,
+enforced by the engine rather than a linter — and combined with constructor
+promotion, <code>public readonly string $name</code> in the parameter list
+declares, assigns, and freezes the property in one line.</p>`,
+
+  go: `const DefaultName = "guest"
+
+// Package-level state, shared by every caller:
+var count int
+
+func Increment() int {
+    count++
+    return count
+}
+
+func Current() int { return count }
+
+type Config struct {
+    Name string
+}
+
+// Nothing stops later mutation:
+// cfg.Name = "changed"  // compiles, runs, silently fine`,
+
+  task: `
+<p>Move the package-level pieces into classes:</p>
+<ol>
+  <li><code>class Counter</code> — keep the provided
+      <code>private static int $count = 0;</code>, then implement
+      <code>public static function increment(): int</code> (bump
+      <code>self::$count</code> and return the new value) and
+      <code>public static function current(): int</code> (return it).
+      Callers use <code>Counter::increment()</code> — class name,
+      <code>::</code>, no instance.</li>
+  <li><code>class Config</code> — add
+      <code>const DEFAULT_NAME = "guest";</code> and change the constructor
+      to a promoted <em>readonly</em> property:
+      <code>public function __construct(public readonly string $name) {}</code>.
+      After construction, any write to <code>-&gt;name</code> must throw an
+      <code>Error</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. The package var + funcs become a class with static members.
+//    Inside the class, the "package-qualified" name is self::
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        throw new Exception("TODO: bump the static count and return it");
+    }
+
+    public static function current(): int {
+        throw new Exception("TODO: return the static count");
+    }
+}
+
+// 2. Add const DEFAULT_NAME = "guest"; and make the promoted
+//    property readonly so later writes throw an Error.
+class Config {
+    public function __construct(public string $name) {}
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+/, message: "Use static members on Counter" },
+    { pattern: /const\s+[A-Z_]+/, message: "Declare a class constant like const DEFAULT_NAME" },
+    { pattern: /readonly/, message: "Make Config's $name property readonly" },
+  ],
+
+  tests: [
+    { name: "Counter::increment() returns the new count",
+      code: "$before = Counter::current();\nexpect_eq(Counter::increment(), $before + 1);" },
+    { name: "static state persists across calls, like a package var",
+      code: "$a = Counter::current();\nCounter::increment();\nCounter::increment();\nexpect_eq(Counter::current(), $a + 2);" },
+    { name: 'Config::DEFAULT_NAME is "guest"',
+      code: 'expect_eq(Config::DEFAULT_NAME, "guest");' },
+    { name: "the promoted readonly property is readable via ->name",
+      code: '$c = new Config("ada");\nexpect_eq($c->name, "ada");\n$d = new Config(Config::DEFAULT_NAME);\nexpect_eq($d->name, "guest");' },
+    { name: "writing to a readonly property throws an Error",
+      code: '$c = new Config("ada");\ntry { $c->name = "grace"; throw new Exception("no error"); } catch (Error $e) {}\nexpect_eq($c->name, "ada");' },
+  ],
+
+  solution: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        self::$count += 1;
+        return self::$count;
+    }
+
+    public static function current(): int {
+        return self::$count;
+    }
+}
+
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Constant</td><td><code>const DefaultName = "guest"</code></td><td><code>const DEFAULT_NAME = "guest";</code> in a class</td></tr>
+  <tr><td>Access it</td><td><code>pkg.DefaultName</code></td><td><code>Config::DEFAULT_NAME</code></td></tr>
+  <tr><td>Shared state</td><td><code>var count int</code></td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td>Call without instance</td><td><code>pkg.Increment()</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td>Self-reference</td><td>unqualified name in package</td><td><code>self::$count</code>, <code>self::CONST</code></td></tr>
+  <tr><td>Write-once field</td><td>— (convention only)</td><td><code>public readonly string $name</code></td></tr>
+  <tr><td>Violation caught</td><td>never</td><td><code>Error</code> thrown at runtime</td></tr>
+</table>
+<p>Note the two separator worlds: <code>-&gt;</code> reaches into an
+<em>instance</em> (<code>$config-&gt;name</code>), while <code>::</code>
+reaches into the <em>class itself</em> (<code>Config::DEFAULT_NAME</code>,
+<code>Counter::increment()</code>, <code>self::$count</code>). If you find
+yourself with mutable static state, treat it with the same suspicion you'd
+give a package-level <code>var</code> in Go — handy for counters and caches,
+a liability everywhere else. <code>readonly</code> pulls in the opposite,
+safer direction: constructor-injected, frozen-after-birth values that make a
+class as trustworthy as an immutable value type.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

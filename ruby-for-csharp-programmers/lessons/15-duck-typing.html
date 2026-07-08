@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Duck Typing &amp; respond_to?</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Duck Typing & respond_to?",
+
+  intro: `
+<p>Interfaces are gone. There is no <code>: ISpeaker</code> after the class
+name, no cast before the call — in Ruby, polymorphism is simply
+<strong>method presence</strong>. If an object has a <code>speak</code> method,
+you may call <code>speak</code> on it; nothing else was ever checked. Two
+classes that never heard of each other are interchangeable the moment they
+answer the same messages — the duck test, applied to objects.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>class Dog : ISpeaker</code></td><td><code>class Dog</code> — just define <code>speak</code></td></tr>
+  <tr><td><code>thing is ISpeaker s ? s.Speak() : "..."</code></td><td><code>thing.respond_to?(:speak) ? thing.speak : "..."</code></td></tr>
+  <tr><td><code>things.OfType&lt;ISpeaker&gt;()</code></td><td><code>things.select { |t| t.respond_to?(:speak) }</code></td></tr>
+  <tr><td><code>thing is Dog</code></td><td><code>thing.is_a?(Dog)</code> (nominal — used sparingly)</td></tr>
+</table>
+<p>When you must probe at runtime, <code>respond_to?(:speak)</code> replaces
+the <code>is</code>-pattern — but note what it asks. Not "are you an
+ISpeaker?" but "<em>can you speak?</em>" — capability, not ancestry.
+(<code>is_a?</code> still exists for nominal checks; idiomatic Ruby reaches for
+it far less often.) If this feels like C#'s <code>dynamic</code> keyword, it
+is — as the whole language. The safety the compiler provided doesn't vanish;
+it moves into conventions (consistent method names across substitutable
+objects) and tests, which exercise real behavior rather than declared
+shapes.</p>`,
+
+  csharp: `interface ISpeaker
+{
+    string Speak();
+}
+
+class Dog : ISpeaker  { public string Speak() => "Woof"; }
+class Robot : ISpeaker { public string Speak() => "Beep"; }
+class Rock { }  // does not implement ISpeaker
+
+static string MakeSpeak(object thing) =>
+    thing is ISpeaker s ? s.Speak() : "...";  // is-pattern + cast
+
+static List<string> AllSpeakers(List<object> things) =>
+    things.OfType<ISpeaker>()
+          .Select(s => s.Speak())
+          .ToList();`,
+
+  task: `
+<p>Port the menagerie, minus the interface:</p>
+<ol>
+  <li><code>Dog</code> — a class whose <code>speak</code> returns
+      <code>"Woof"</code>. No <code>: ISpeaker</code>, nothing to declare.</li>
+  <li><code>Robot</code> — <code>speak</code> returns <code>"Beep"</code>.
+      Dog and Robot share no ancestor; the shared method name <em>is</em> the
+      interface.</li>
+  <li><code>Rock</code> — an empty class with no <code>speak</code> at all.</li>
+  <li><code>make_speak(thing)</code> — the is-pattern becomes a question:
+      <code>thing.respond_to?(:speak) ? thing.speak : "..."</code>.</li>
+  <li><code>all_speakers(things)</code> — <code>OfType&lt;ISpeaker&gt;</code>
+      becomes <code>select { |t| t.respond_to?(:speak) }</code>, then
+      <code>map(&amp;:speak)</code>.</li>
+</ol>`,
+
+  starter: `# 1. Dog and Robot both answer speak — no interface declares it anywhere.
+class Dog
+  def speak
+    raise NotImplementedError, "TODO: return the string Woof"
+  end
+end
+
+class Robot
+  def speak
+    raise NotImplementedError, "TODO: return the string Beep"
+  end
+end
+
+# 2. Rock deliberately has NO speak method.
+class Rock
+end
+
+# 3. make_speak: respond_to?(:speak) is the is-pattern turned into a question.
+def make_speak(thing)
+  raise NotImplementedError, "TODO: implement make_speak"
+end
+
+# 4. all_speakers: OfType<ISpeaker> -> select by capability, then map(&:speak).
+def all_speakers(things)
+  raise NotImplementedError, "TODO: implement all_speakers"
+end
+`,
+
+  requirements: [
+    { pattern: /respond_to\?/, message: "Probe for the method with respond_to?(:speak)" },
+    { pattern: /class\s+Dog/, message: "Define a Dog class" },
+    { pattern: /class\s+Robot/, message: "Define a Robot class" },
+    { pattern: /\.speak/, message: "Call .speak on the object once it answers to it" },
+  ],
+
+  tests: [
+    { name: 'make_speak(Dog.new) returns "Woof"',
+      code: '  expect_eq(make_speak(Dog.new), "Woof")' },
+    { name: 'make_speak(Robot.new) returns "Beep"',
+      code: '  expect_eq(make_speak(Robot.new), "Beep")' },
+    { name: 'make_speak(Rock.new) returns "..." (and Rock has no speak)',
+      code: '  expect_true(!Rock.new.respond_to?(:speak))\n  expect_eq(make_speak(Rock.new), "...")' },
+    { name: "all_speakers skips the Rock and collects the rest",
+      code: '  expect_eq(all_speakers([Dog.new, Rock.new, Robot.new]), ["Woof", "Beep"])' },
+    { name: "all_speakers([Rock.new]) returns []",
+      code: "  expect_eq(all_speakers([Rock.new]), [])" },
+  ],
+
+  solution: `class Dog
+  def speak
+    "Woof"
+  end
+end
+
+class Robot
+  def speak
+    "Beep"
+  end
+end
+
+class Rock
+end
+
+def make_speak(thing)
+  thing.respond_to?(:speak) ? thing.speak : "..."
+end
+
+def all_speakers(things)
+  things.select { |t| t.respond_to?(:speak) }.map(&:speak)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Declare a capability</td><td><code>interface ISpeaker</code> + <code>: ISpeaker</code></td><td>just define the method</td></tr>
+  <tr><td>Check a capability</td><td><code>thing is ISpeaker s</code></td><td><code>thing.respond_to?(:speak)</code></td></tr>
+  <tr><td>Nominal type check</td><td><code>thing is Dog</code></td><td><code>thing.is_a?(Dog)</code></td></tr>
+  <tr><td>Filter by capability</td><td><code>OfType&lt;ISpeaker&gt;()</code></td><td><code>select { |t| t.respond_to?(:speak) }</code></td></tr>
+  <tr><td>Wrong-type failure</td><td>compile error</td><td><code>NoMethodError</code> at call time</td></tr>
+  <tr><td>Whole-language analogue</td><td><code>dynamic</code></td><td>the default — with conventions and tests as the net</td></tr>
+</table>
+<p>Resist the urge to sprinkle <code>respond_to?</code> everywhere — it's for
+genuine boundaries where heterogeneous objects meet, like
+<code>make_speak</code>. Inside code you control, idiomatic Ruby just calls the
+method and lets a <code>NoMethodError</code> surface a real bug, the way a
+compile error would have. Checking <code>is_a?</code> to branch on class is
+the strongest smell of all: in Ruby, that branch usually wants to be a method
+the objects each define for themselves.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

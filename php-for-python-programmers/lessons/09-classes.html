@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes &amp; Objects</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>PHP classes will feel like Python classes with the naming shuffled.
+<code>__init__</code> becomes <code>__construct</code>, the explicit
+<code>self</code> parameter becomes the implicit <code>$this</code>, and the
+member-access dot becomes an arrow: <code>$account-&gt;deposit(50)</code>.
+One rename to burn in early: PHP's <code>self::</code> does <em>not</em>
+mean the current instance — it's <em>static</em> access to the class itself,
+closer to Python's <code>cls</code>. Instance access is always
+<code>$this-&gt;</code>.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>def __init__(self, owner):</code></td><td><code>public function __construct(string $owner)</code></td></tr>
+  <tr><td><code>self.balance</code></td><td><code>$this-&gt;balance</code> (no <code>$</code> after the arrow)</td></tr>
+  <tr><td><code>account.deposit(50)</code></td><td><code>$account-&gt;deposit(50);</code></td></tr>
+  <tr><td><code>BankAccount("Ada")</code></td><td><code>new BankAccount("Ada")</code></td></tr>
+  <tr><td><code>self._balance</code> (convention)</td><td><code>private int $balance;</code> (enforced)</td></tr>
+  <tr><td><code>@dataclass</code> field boilerplate</td><td>constructor property promotion</td></tr>
+</table>
+<p>Two genuine upgrades over Python's model. First, visibility is
+<em>real</em>: <code>private</code> and <code>protected</code> are enforced
+by the engine — accessing <code>$account-&gt;balance</code> from outside
+throws an <code>Error</code>, where Python's <code>_underscore</code> is a
+polite request. Second, PHP 8's <em>constructor property promotion</em> is
+the same boilerplate-killer as <code>@dataclass</code>: write
+<code>public function __construct(private int $balance = 0) {}</code> and
+the parameter <em>is</em> the property — declared, typed, and assigned in
+one place.</p>`,
+
+  python: `class BankAccount:
+    def __init__(self, owner: str, balance: int = 0):
+        self._owner = owner      # "_private" by convention only
+        self._balance = balance
+
+    def owner(self) -> str:
+        return self._owner
+
+    def deposit(self, amount: int) -> None:
+        self._balance += amount
+
+    def withdraw(self, amount: int) -> bool:
+        if amount > self._balance:
+            return False
+        self._balance -= amount
+        return True
+
+    def balance(self) -> int:
+        return self._balance`,
+
+  task: `
+<p>Port <code>BankAccount</code> to PHP:</p>
+<ol>
+  <li>Class <code>BankAccount</code> with a <em>promoted</em> constructor:
+      <code>private string $owner</code> and
+      <code>private int $balance = 0</code>, declared right in the
+      <code>__construct</code> parameter list — really private this
+      time.</li>
+  <li><code>owner(): string</code> and <code>balance(): int</code> — plain
+      getters via <code>$this-&gt;</code>.</li>
+  <li><code>deposit(int $amount): void</code> — add to the balance.</li>
+  <li><code>withdraw(int $amount): bool</code> — return <code>false</code>
+      and leave the balance untouched if funds are insufficient; otherwise
+      subtract and return <code>true</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+class BankAccount {
+    // Promotion: the parameters below ARE the (private) properties.
+    public function __construct(
+        private string $owner,
+        private int $balance = 0,
+    ) {}
+
+    public function owner(): string {
+        throw new Exception("TODO: return the owner");
+    }
+
+    public function deposit(int $amount): void {
+        throw new Exception("TODO: add to \$this->balance");
+    }
+
+    public function withdraw(int $amount): bool {
+        throw new Exception("TODO: false if insufficient, else subtract and true");
+    }
+
+    public function balance(): int {
+        throw new Exception("TODO: return the balance");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /__construct\s*\(\s*(private|public)/, message: "Use constructor property promotion (visibility keyword on the __construct parameters)" },
+    { pattern: /private/, message: "Make the properties private — enforced, not _convention" },
+    { pattern: /->/, message: "Use -> for member access ($this->balance, not $this.balance)" },
+  ],
+
+  tests: [
+    { name: 'owner() returns the promoted constructor argument',
+      code: '$a = new BankAccount("Ada"); expect_eq($a->owner(), "Ada");' },
+    { name: 'a new account starts at balance 0',
+      code: '$a = new BankAccount("Ada"); expect_eq($a->balance(), 0);' },
+    { name: 'deposit(100) brings the balance to 100',
+      code: '$a = new BankAccount("Ada"); $a->deposit(100); expect_eq($a->balance(), 100);' },
+    { name: 'withdraw(40) after deposit(100) returns true, leaving 60',
+      code: '$a = new BankAccount("Ada"); $a->deposit(100); expect_true($a->withdraw(40)); expect_eq($a->balance(), 60);' },
+    { name: 'a failed withdraw returns false and leaves the balance unchanged',
+      code: '$a = new BankAccount("Ada"); $a->deposit(50); expect_true(!$a->withdraw(100)); expect_eq($a->balance(), 50);' },
+  ],
+
+  solution: `<?php
+
+class BankAccount {
+    public function __construct(
+        private string $owner,
+        private int $balance = 0,
+    ) {}
+
+    public function owner(): string {
+        return $this->owner;
+    }
+
+    public function deposit(int $amount): void {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): bool {
+        if ($amount > $this->balance) {
+            return false;
+        }
+        $this->balance -= $amount;
+        return true;
+    }
+
+    public function balance(): int {
+        return $this->balance;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Constructor</td><td><code>def __init__(self, ...):</code></td><td><code>public function __construct(...)</code></td></tr>
+  <tr><td>Current instance</td><td><code>self</code> (explicit param)</td><td><code>$this</code> (implicit)</td></tr>
+  <tr><td>Member access</td><td><code>obj.attr</code></td><td><code>$obj-&gt;attr</code></td></tr>
+  <tr><td>Instantiate</td><td><code>BankAccount("Ada")</code></td><td><code>new BankAccount("Ada")</code></td></tr>
+  <tr><td>Privacy</td><td><code>_name</code> / <code>__name</code> convention</td><td><code>private</code> / <code>protected</code>, enforced</td></tr>
+  <tr><td>Field boilerplate killer</td><td><code>@dataclass</code></td><td>promoted constructor properties</td></tr>
+  <tr><td>Class-level access</td><td><code>cls</code>, <code>ClassName.x</code></td><td><code>self::</code>, <code>static::</code>, <code>ClassName::x</code></td></tr>
+</table>
+<p>Watch the arrow's spelling: it's <code>$this-&gt;balance</code>, with no
+<code>$</code> after the arrow — <code>$this-&gt;$balance</code> is legal
+but means "the property whose <em>name</em> is stored in
+<code>$balance</code>", a dynamic-attribute lookup like Python's
+<code>getattr(self, balance)</code>. And keep the <code>self</code>
+false-friend straight: in PHP, <code>self::CONSTANT</code> and
+<code>self::method()</code> reach the <em>class</em> (static context), never
+the instance. If you catch yourself typing <code>self-&gt;</code>, you meant
+<code>$this-&gt;</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

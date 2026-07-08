@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Spread & Rest</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Spread & Rest",
+
+  intro: `
+<p>You already know this idiom — Rust calls it struct update syntax.
+<code>Point { x: 10, ..old }</code> becomes <code>{ ...old, x: 10 }</code>:
+the same "copy the rest from here" dots, except they move onto the
+<em>source</em> and come first, with overrides after. Two deeper differences:
+spread <em>clones</em> (shallowly) instead of moving, so <code>old</code>
+stays fully usable afterwards — no <code>#[derive(Clone)]</code>, no borrow
+checker sign-off — and because later fields win, order matters:
+<code>{ ...defaults, theme: "dark" }</code> overrides,
+<code>{ theme: "dark", ...defaults }</code> gets silently clobbered.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>Point { x: 10, ..old }</code></td><td><code>{ ...old, x: 10 }</code> — dots move to the source</td></tr>
+  <tr><td><code>old</code> moved out (unless Clone)</td><td><code>old</code> untouched — spread is a shallow copy</td></tr>
+  <tr><td><code>[a, b].concat()</code> / <code>v.extend_from_slice(&amp;b)</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td><code>v.push(x)</code> (needs <code>mut</code>)</td><td><code>[...items, x]</code> — a new array, original intact</td></tr>
+  <tr><td>No variadics — pass a slice: <code>fn sum(nums: &amp;[f64])</code></td><td><code>function sum(...nums: number[])</code> — real rest params</td></tr>
+</table>
+<p>The same three dots work on arrays — <code>[...a, ...b]</code> is your
+<code>concat</code> / <code>extend_from_slice</code> — and, flipped around in a
+parameter list, they become <em>rest parameters</em>: the variadic functions
+Rust deliberately doesn't have. Where a Rust API takes <code>&amp;[f64]</code>
+and callers write <code>sum(&amp;[1.0, 2.0])</code>, TypeScript writes
+<code>sum(...nums: number[])</code> and callers just write
+<code>sum(1, 2)</code>. Same dots, two jobs: in a call or literal they
+<em>scatter</em>, in a parameter list they <em>gather</em>.</p>`,
+
+  rust: `#[derive(Clone)]
+struct Settings {
+    theme: String,
+    font_size: u32,
+    autosave: bool,
+}
+
+fn merge_settings(defaults: &Settings, theme: String) -> Settings {
+    // Struct update: take theme, copy the rest. Clone, or lose defaults.
+    Settings { theme, ..defaults.clone() }
+}
+
+// No variadics in Rust — callers hand you a slice.
+fn sum(nums: &[f64]) -> f64 {
+    nums.iter().sum()
+}
+
+fn append_item(items: &[i32], item: i32) -> Vec<i32> {
+    let mut out = items.to_vec();
+    out.push(item);
+    out
+}`,
+
+  task: `
+<p>Port all three, using the dots for each job. The starter defines a
+<code>Settings</code> interface:</p>
+<ol>
+  <li>Write <code>sum(...nums: number[]): number</code> as a true variadic:
+      <code>sum(1, 2, 3)</code> is <code>6</code>, <code>sum()</code> is
+      <code>0</code>. Inside the body, <code>nums</code> is an ordinary
+      array.</li>
+  <li>Write <code>mergeSettings(defaults: Settings, overrides:
+      Partial&lt;Settings&gt;): Settings</code> using object spread —
+      struct update syntax with the dots first: <code>{ ...defaults,
+      ...overrides }</code>. It must return a <em>new</em> object and leave
+      <code>defaults</code> unmodified.</li>
+  <li>Write <code>appendItem&lt;T&gt;(items: T[], item: T): T[]</code> that
+      returns a new array with <code>item</code> at the end — array spread,
+      no <code>push</code> on the argument.</li>
+</ol>
+<p>The tests verify the originals survive: spread copies, so nothing you were
+handed should change.</p>`,
+
+  starter: `interface Settings {
+  theme: string;
+  fontSize: number;
+  autosave: boolean;
+}
+
+// 1. Rust has no variadics; TypeScript does: gather args with a rest parameter.
+function sum(): number {
+  // TODO: change the signature to (...nums: number[]) and total them
+  return 0;
+}
+
+// 2. Point { x: 10, ..old } -> { ...old, x: 10 }. Later fields win!
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  // TODO: one line of object spread; do NOT mutate defaults
+  return defaults;
+}
+
+// 3. push mutates — spread into a new array instead.
+function appendItem<T>(items: T[], item: T): T[] {
+  // TODO: return a new array; leave items untouched
+  return items;
+}
+`,
+
+  exportNames: ["sum", "mergeSettings", "appendItem"],
+
+  requirements: [
+    { pattern: /\(\s*\.\.\.nums\s*:\s*number\s*\[\s*\]/, message: "Give sum a rest parameter: (...nums: number[])" },
+    { pattern: /\{\s*\.\.\./, message: "Use object spread ({ ...defaults, ... }) — struct update syntax, dots first" },
+    { pattern: /\[\s*\.\.\./, message: "Use array spread ([...items, ...]) to build the new array" },
+  ],
+
+  tests: [
+    { name: "sum(1, 2, 3) returns 6", run: (x) => expectEqual(x.sum(1, 2, 3), 6) },
+    { name: "sum() with no arguments returns 0", run: (x) => expectEqual(x.sum(), 0) },
+    { name: "mergeSettings applies overrides on top of defaults", run: (x) => {
+        const defaults = { theme: "light", fontSize: 14, autosave: true };
+        const merged = x.mergeSettings(defaults, { theme: "dark" });
+        expectDeepEqual(merged, { theme: "dark", fontSize: 14, autosave: true });
+      } },
+    { name: "mergeSettings does NOT mutate defaults (old stays usable)", run: (x) => {
+        const defaults = { theme: "light", fontSize: 14, autosave: true };
+        const merged = x.mergeSettings(defaults, { theme: "dark", fontSize: 16 });
+        expectEqual(defaults.theme, "light");
+        expectEqual(defaults.fontSize, 14);
+        expectTruthy(merged !== defaults);
+      } },
+    { name: "appendItem([1, 2], 3) returns [1, 2, 3]", run: (x) => expectDeepEqual(x.appendItem([1, 2], 3), [1, 2, 3]) },
+    { name: "appendItem does NOT mutate the original array", run: (x) => {
+        const items = ["a", "b"];
+        const grown = x.appendItem(items, "c");
+        expectDeepEqual(items, ["a", "b"]);
+        expectDeepEqual(grown, ["a", "b", "c"]);
+      } },
+  ],
+
+  solution: `interface Settings {
+  theme: string;
+  fontSize: number;
+  autosave: boolean;
+}
+
+function sum(...nums: number[]): number {
+  return nums.reduce((acc, n) => acc + n, 0);
+}
+
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  return { ...defaults, ...overrides };
+}
+
+function appendItem<T>(items: T[], item: T): T[] {
+  return [...items, item];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Struct update</td><td><code>Point { x: 10, ..old }</code></td><td><code>{ ...old, x: 10 }</code> (dots first, overrides after)</td></tr>
+  <tr><td>What happens to the source</td><td>Moved (or explicitly cloned)</td><td>Shallow-copied; source stays usable</td></tr>
+  <tr><td>Concatenate</td><td><code>[a, b].concat()</code>, <code>extend_from_slice</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td>Append immutably</td><td><code>let mut v = items.to_vec(); v.push(x);</code></td><td><code>[...items, x]</code></td></tr>
+  <tr><td>Variadic function</td><td>None — take <code>&amp;[T]</code></td><td><code>function f(...args: T[])</code></td></tr>
+  <tr><td>Merge with defaults</td><td>Builder pattern / <code>..Default::default()</code></td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+</table>
+<p>One habit to keep from Rust: spread is a <em>shallow</em> copy, roughly a
+memberwise <code>Clone</code> one level deep. Nested objects and arrays are
+shared by reference between the old and new values, so mutating
+<code>merged.nested</code> also changes <code>defaults.nested</code>. As long
+as you keep treating data as immutable — spread to change, never assign into
+what you were handed — the sharing is invisible, and you get Rust-flavored
+safety with none of the ceremony.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

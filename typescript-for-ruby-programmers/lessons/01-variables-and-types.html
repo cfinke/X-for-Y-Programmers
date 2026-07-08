@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Basic Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Basic Types",
+
+  intro: `
+<p>In Ruby, a local variable is a label that can point at anything:
+<code>x = 36</code> now, <code>x = "thirty-six"</code> a line later, and Ruby
+never blinks. TypeScript variables carry a <em>type</em> — declared or
+inferred — and the compiler refuses code that violates it, before anything
+runs. Two of Ruby's numeric classes also merge: <code>Integer</code> and
+<code>Float</code> collapse into a single <code>number</code> type.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>name = "Ada"</code></td><td><code>const name: string = "Ada";</code></td></tr>
+  <tr><td><code>age = 36</code> (Integer)</td><td><code>let age: number = 36;</code></td></tr>
+  <tr><td><code>price = 9.99</code> (Float)</td><td><code>let price: number = 9.99;</code> (same type!)</td></tr>
+  <tr><td><code>active = true</code></td><td><code>let active: boolean = true;</code></td></tr>
+  <tr><td><code>MAX_USERS = 100</code> (reassignment only warns)</td><td><code>const maxUsers = 100;</code> (reassignment is an error)</td></tr>
+</table>
+<p>Ruby's constants are SHOUTING_SNAKE_CASE by convention and only produce a
+warning when reassigned. TypeScript's <code>const</code> is lowercase,
+actually enforced, and is the <em>default</em> way to declare a variable —
+reach for <code>let</code> only when you genuinely reassign. And the naming
+convention flips from <code>snake_case</code> to <code>camelCase</code>:
+<code>user_name</code> becomes <code>userName</code>.</p>`,
+
+  ruby: `user_name = "Ada"     # a local can hold anything
+user_age = 36         # Integer
+price = 9.99          # Float — a whole separate class
+
+user_age = "thirty-six"   # Ruby shrugs; the bug waits for runtime
+
+MAX_USERS = 100       # "constant" by SHOUTING convention
+MAX_USERS = 200       # warning: already initialized constant (but it works!)
+
+def describe_user(name, age)
+  "#{name} is #{age} years old"   # last expression is the return value
+end
+
+puts describe_user(user_name, user_age)`,
+
+  task: `
+<p>Rewrite the Ruby on the left as TypeScript:</p>
+<ol>
+  <li>Declare a constant <code>userName</code> of type <code>string</code>
+      with the value <code>"Ada"</code>, and a constant <code>userAge</code>
+      of type <code>number</code> with the value <code>36</code>. Write the
+      type annotations explicitly, and note the rename:
+      <code>user_name</code> → <code>userName</code>.</li>
+  <li>Write a function <code>describeUser</code> that takes
+      <code>name: string</code> and <code>age: number</code> and returns a
+      <code>string</code> like <code>"Ada is 36 years old"</code>. Unlike
+      Ruby, you must write <code>return</code> — TypeScript does not return
+      the last expression implicitly.</li>
+</ol>
+<p>Once these compile, try adding <code>userAge = "thirty-six"</code> —
+TypeScript rejects both the reassignment of a <code>const</code> and the
+string-into-number, at compile time.</p>`,
+
+  starter: `// 1. Declare userName (string) and userAge (number) with explicit types.
+//    Ruby: user_name = "Ada"  ->  TypeScript: const userName: string = "Ada";
+
+
+// 2. Write describeUser with typed parameters and a typed return value.
+//    Ruby: def describe_user(name, age) ... end
+function describeUser(name, age) {
+  // TODO: return "<name> is <age> years old" — with an explicit return!
+  return "";
+}
+`,
+
+  exportNames: ["userName", "userAge", "describeUser"],
+
+  requirements: [
+    { pattern: /const\s+userName\s*:\s*string/, message: "Declare userName as a const with an explicit : string annotation" },
+    { pattern: /const\s+userAge\s*:\s*number/, message: "Declare userAge as a const with an explicit : number annotation" },
+    { pattern: /describeUser\s*\(\s*name\s*:\s*string\s*,\s*age\s*:\s*number\s*\)\s*:\s*string/, message: "Give describeUser typed parameters (name: string, age: number) and a : string return type" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', run: (x) => expectEqual(x.userName, "Ada") },
+    { name: "userAge is 36", run: (x) => expectEqual(x.userAge, 36) },
+    { name: 'describeUser("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.describeUser("Ada", 36), "Ada is 36 years old") },
+    { name: 'describeUser("Matz", 61) returns "Matz is 61 years old"', run: (x) => expectEqual(x.describeUser("Matz", 61), "Matz is 61 years old") },
+  ],
+
+  solution: `const userName: string = "Ada";
+const userAge: number = 36;
+
+function describeUser(name: string, age: number): string {
+  return name + " is " + age + " years old";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Variable</td><td><code>x = 1</code> (holds anything)</td><td><code>let x: number = 1;</code> (holds numbers, forever)</td></tr>
+  <tr><td>Constant</td><td><code>MAX = 1</code> (reassignment warns)</td><td><code>const max = 1;</code> (reassignment is a compile error)</td></tr>
+  <tr><td>Integer / Float</td><td>Two classes</td><td>One <code>number</code> type</td></tr>
+  <tr><td>Booleans</td><td><code>true</code> / <code>false</code></td><td><code>true</code> / <code>false</code> (same!)</td></tr>
+  <tr><td>Naming</td><td><code>snake_case</code>, <code>SCREAMING_CONSTANTS</code></td><td><code>camelCase</code>, even for consts</td></tr>
+  <tr><td>Returning</td><td>Last expression, implicitly</td><td>Explicit <code>return</code> required</td></tr>
+</table>
+<p>Like Ruby, TypeScript rarely needs you to spell types out —
+<code>const name = "Ada"</code> is already known to be a string via
+<em>inference</em>, so idiomatic code omits obvious annotations. This lesson
+asks for explicit ones purely to get the syntax into your fingers; the
+duck-typing feel survives, it just gets checked before runtime.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

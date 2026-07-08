@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put the course together: a small inventory system built from a
+class with promoted constructor properties (lesson 9), the
+<code>array_map</code>/<code>array_filter</code> toolkit (lesson 13),
+nullable returns (lesson 6), and — the real boss fight — PHP's split value
+semantics. Recall the rule: <strong>arrays copy, objects are handles</strong>.
+Assigning or passing an array of <code>Item</code> objects copies the
+<em>array</em>, but every slot still points at the <em>same</em>
+<code>Item</code> — exactly like copying a Go slice of
+<code>*Item</code> pointers. Mutate an element through the copy and the
+original sees it.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>type Item struct { ... }</code></td><td><code>class Item { public function __construct(...promoted props) {} }</code></td></tr>
+  <tr><td><code>[]*Item</code> — copying the slice shares the Items</td><td><code>array</code> of objects — copying the array shares the Items</td></tr>
+  <tr><td><code>copied := *it; copied.Count += n</code></td><td><code>$copy = clone $it; $copy-&gt;count += $n;</code></td></tr>
+  <tr><td><code>func find(...) *Item</code> (nil if absent)</td><td><code>function find_item(...): ?Item</code> (null if absent)</td></tr>
+  <tr><td>explicit <code>for</code> loops</td><td><code>array_map</code> / <code>array_filter</code> / <code>array_reduce</code></td></tr>
+</table>
+<p>The interesting function is <code>restock</code>: it must return an
+updated inventory <em>without touching the original Items</em>. Copying the
+array is free (value semantics does that for you), but the matched
+<code>Item</code> needs an explicit <code>clone</code> — the shallow copy
+that stands in for Go's <code>*it</code> dereference-and-copy. Everything
+else is lessons you've already done, composed.</p>`,
+
+  go: `type Item struct {
+    Name       string
+    PriceCents int
+    Count      int
+}
+
+func totalValue(items []*Item) int {
+    total := 0
+    for _, it := range items {
+        total += it.PriceCents * it.Count
+    }
+    return total
+}
+
+// Return a new inventory; the original Items must not change.
+func restock(items []*Item, name string, amount int) []*Item {
+    out := make([]*Item, len(items))
+    for i, it := range items {
+        if it.Name == name {
+            copied := *it // explicit dereference-copy
+            copied.Count += amount
+            out[i] = &copied
+        } else {
+            out[i] = it
+        }
+    }
+    return out
+}`,
+
+  task: `
+<p>The <code>Item</code> class is given, complete, in the starter. Write four
+functions that operate on arrays of <code>Item</code>s:</p>
+<ol>
+  <li><code>total_value(array $items): int</code> — sum of
+      <code>price_cents * count</code> over every item. Use
+      <code>array_reduce</code> (or a loop, but reduce is more fun).</li>
+  <li><code>find_item(array $items, string $name): ?Item</code> — return the
+      first item whose <code>name</code> matches, or <code>null</code>.
+      The <code>?Item</code> return type is Go's <code>*Item</code>-maybe-nil,
+      made explicit.</li>
+  <li><code>restock(array $items, string $name, int $amount): array</code> —
+      return a <em>new</em> array where the matching item's
+      <code>count</code> is increased by <code>$amount</code>. Build it with
+      <code>array_map</code>; when the name matches, <code>clone</code> the
+      item and bump the clone. The original array — and the original
+      <code>Item</code> objects — must be left exactly as they were.</li>
+  <li><code>names_in_stock(array $items): array</code> — the names of items
+      with <code>count &gt; 0</code>, as a clean list. Remember the lesson 13
+      gotcha: <code>array_filter</code> keeps the original keys, so wrap the
+      result in <code>array_values</code> to reindex.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Given, complete — promoted constructor properties from lesson 9.
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+// 1. Sum of price_cents * count across the inventory.
+function total_value(array $items): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// 2. Go: func find(items []*Item, name string) *Item (nil if absent)
+function find_item(array $items, string $name): ?Item {
+    throw new Exception("TODO: implement find_item");
+}
+
+// 3. New array via array_map; clone the matched Item before
+//    changing it. Copying the array does NOT copy the objects.
+function restock(array $items, string $name, int $amount): array {
+    throw new Exception("TODO: implement restock");
+}
+
+// 4. array_filter for count > 0, array_map to the names,
+//    array_values to reindex.
+function names_in_stock(array $items): array {
+    throw new Exception("TODO: implement names_in_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /\?Item/, message: "find_item must declare the nullable return type ?Item" },
+    { pattern: /array_(map|filter|reduce|values)/, message: "Use the array_* toolkit (map/filter/reduce/values) rather than only bare loops" },
+    { pattern: /clone/, message: "clone the matched Item in restock — objects are handles, so the array copy alone does not protect them" },
+  ],
+
+  tests: [
+    { name: 'total_value multiplies price by count and sums',
+      code: '$items = [new Item("hammer", 1500, 3), new Item("nails", 300, 0)];\nexpect_eq(total_value($items), 4500);' },
+    { name: 'total_value of an empty inventory is 0',
+      code: 'expect_eq(total_value([]), 0);' },
+    { name: 'find_item returns the matching Item',
+      code: '$items = [new Item("hammer", 1500, 3), new Item("nails", 300, 0)];\n$found = find_item($items, "nails");\nexpect_true($found instanceof Item);\nexpect_eq($found->price_cents, 300);' },
+    { name: 'find_item returns null when nothing matches',
+      code: '$items = [new Item("hammer", 1500, 3)];\nexpect_eq(find_item($items, "wrench"), null);' },
+    { name: 'restock bumps the matched item in the NEW array only',
+      code: '$items = [new Item("hammer", 1500, 3), new Item("nails", 300, 0)];\n$after = restock($items, "nails", 10);\nexpect_eq($after[1]->count, 10);\nexpect_eq($after[0]->count, 3);\nexpect_eq($items[1]->count, 0);\nexpect_true($after[1] !== $items[1]);' },
+    { name: 'restock with an unknown name changes nothing, and names_in_stock reindexes',
+      code: '$items = [new Item("hammer", 1500, 0), new Item("nails", 300, 5)];\n$after = restock($items, "ghost", 5);\nexpect_eq($after[0]->count, 0);\nexpect_eq($after[1]->count, 5);\nexpect_eq(names_in_stock($items), ["nails"]);' },
+  ],
+
+  solution: `<?php
+
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+function total_value(array $items): int {
+    return array_reduce(
+        $items,
+        fn($total, $it) => $total + $it->price_cents * $it->count,
+        0,
+    );
+}
+
+function find_item(array $items, string $name): ?Item {
+    foreach ($items as $it) {
+        if ($it->name === $name) {
+            return $it;
+        }
+    }
+    return null;
+}
+
+function restock(array $items, string $name, int $amount): array {
+    return array_map(function ($it) use ($name, $amount) {
+        if ($it->name !== $name) {
+            return $it;
+        }
+        $copy = clone $it;
+        $copy->count += $amount;
+        return $copy;
+    }, $items);
+}
+
+function names_in_stock(array $items): array {
+    $in_stock = array_filter($items, fn($it) => $it->count > 0);
+    return array_values(array_map(fn($it) => $it->name, $in_stock));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Copying a collection of objects</td><td><code>[]*Item</code> copy shares the pointees</td><td>array copy shares the objects</td></tr>
+  <tr><td>Shallow copy of one object</td><td><code>copied := *it</code></td><td><code>$copy = clone $it;</code></td></tr>
+  <tr><td>Maybe-absent result</td><td><code>*Item</code>, check <code>nil</code></td><td><code>?Item</code>, check <code>null</code> (or chain with <code>?-&gt;</code>)</td></tr>
+  <tr><td>Sum a field</td><td><code>for</code> loop + accumulator</td><td><code>array_reduce($items, fn(...), 0)</code></td></tr>
+  <tr><td>Transform</td><td><code>for</code> loop building a new slice</td><td><code>array_map(fn($it) =&gt; ..., $items)</code></td></tr>
+  <tr><td>Select + reindex</td><td><code>for</code> loop with <code>append</code></td><td><code>array_values(array_filter(...))</code></td></tr>
+  <tr><td>Deep-copy hook</td><td>write it by hand</td><td><code>__clone()</code> method, called on <code>clone</code></td></tr>
+</table>
+<p>If one mental model from this course sticks, make it the one
+<code>restock</code> exercises: PHP arrays behave like values (copied on
+assignment, like Go arrays — not slices), while PHP objects behave like
+pointers. An array of objects is therefore a value-shell around shared
+handles — precisely a copied <code>[]*Item</code> — and immutability
+requires cloning the objects you touch, not just rebuilding the array.
+From here, real-world PHP is mostly more of what you now know: Composer
+(their <code>go mod</code>), PSR interfaces (their <code>io.Reader</code>
+culture), and frameworks like Laravel and Symfony stacked on exactly these
+primitives. Happy shipping.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

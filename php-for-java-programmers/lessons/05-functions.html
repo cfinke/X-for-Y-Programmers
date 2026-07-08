@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>You have been writing them for four lessons, so let's say it out loud:
+PHP has <em>free functions</em>. No class, no <code>static</code>, no
+<code>StringUtils</code> wrapper — a function simply lives in the file. The
+other habit to unlearn is overloading, because PHP doesn't have it: one name,
+one function. What replaces Java's overload sets is a richer signature —
+default values, nullable types, and union types.</p>
+<table>
+  <tr><th>Java</th><th>PHP</th></tr>
+  <tr><td><code>static</code> method in a wrapper class</td><td>a free <code>function</code> in the file</td></tr>
+  <tr><td><code>greet(n)</code> + <code>greet(n, g)</code> overloads</td><td><code>function greet(string $n, string $g = "Hello")</code></td></tr>
+  <tr><td>overload minus a trailing param</td><td>nullable default: <code>?string $last = null</code></td></tr>
+  <tr><td><code>describe(int)</code> / <code>describe(String)</code></td><td>union type: <code>function describe(int|string $id)</code></td></tr>
+  <tr><td>builder pattern for many params</td><td>named arguments: <code>greet(name: "Ada")</code></td></tr>
+</table>
+<p>Defaults collapse the classic "telescoping overloads": one signature with
+<code>string $greeting = "Hello"</code> serves both call shapes.
+<code>?string</code> means "string or null" — the usual way to say "this
+argument is optional and might be absent." <code>int|string</code> accepts
+either type; inside, <code>is_int($x)</code> tells you which one arrived.
+And PHP 8's named arguments — <code>greet(greeting: "Hi", name: "Ada")</code>
+— let callers skip and reorder optional parameters, which is most of what the
+builder pattern was for.</p>`,
+
+  java: `class Greeter {                     // methods need a class to live in
+    static String greet(String name) {          // overload #1
+        return greet(name, "Hello");
+    }
+    static String greet(String name, String greeting) {
+        return greeting + ", " + name + "!";
+    }
+
+    static String formatName(String first) {    // overloads again,
+        return first;                           // just to drop a param
+    }
+    static String formatName(String first, String last) {
+        return first + " " + last;
+    }
+
+    static String describe(int id)    { return "id number " + id; }
+    static String describe(String id) { return "id code " + id; }
+}`,
+
+  task: `
+<p>Collapse the <code>Greeter</code> class — three overload pairs — into three
+free functions:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      the default parameter replaces the two-overload pair. Return
+      <code>"Hello, Ada!"</code>-style text. The tests also call it with a
+      <em>named argument</em>: <code>greet(greeting: "Howdy", name: "Ada")</code>.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      <code>?string</code> means the last name may be null. Return just the
+      first name when <code>$last</code> is null, otherwise
+      <code>"First Last"</code>.</li>
+  <li><code>describe(int|string $id): string</code> — one union-typed function
+      replaces the int/String overloads. Use <code>is_int($id)</code> to
+      return <code>"id number 7"</code> for ints and <code>"id code A7"</code>
+      for strings.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. One function, one default — no overload pair.
+//    Callers may also use named arguments: greet(greeting: "Hi", name: "Ada")
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. ?string $last = null: "string or null", defaulting to null.
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. int|string: both overloads in one signature; is_int() dispatches.
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give $greeting a default value of "Hello"' },
+    { pattern: /\?string/, message: "Declare $last as nullable with ?string" },
+    { pattern: /int\|string/, message: "Use the int|string union type on describe" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Ada", "Hi") returns "Hi, Ada!"',
+      code: 'expect_eq(greet("Ada", "Hi"), "Hi, Ada!");' },
+    { name: 'named arguments: greet(greeting: "Howdy", name: "Ada") returns "Howdy, Ada!"',
+      code: 'expect_eq(greet(greeting: "Howdy", name: "Ada"), "Howdy, Ada!");' },
+    { name: 'format_name("Ada", "Lovelace") returns "Ada Lovelace"',
+      code: 'expect_eq(format_name("Ada", "Lovelace"), "Ada Lovelace");' },
+    { name: 'format_name("Ada") returns "Ada" (null last name)',
+      code: 'expect_eq(format_name("Ada"), "Ada");' },
+    { name: 'describe(7) and describe("A7") take both branches',
+      code: 'expect_eq(describe(7), "id number 7");\nexpect_eq(describe("A7"), "id code A7");' },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    if ($last === null) {
+        return $first;
+    }
+    return "$first $last";
+}
+
+function describe(int|string $id): string {
+    return is_int($id) ? "id number $id" : "id code $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>PHP</th></tr>
+  <tr><td>Where functions live</td><td><code>static</code> methods in a class</td><td>free functions in the file</td></tr>
+  <tr><td>Optional trailing arg</td><td>overload that forwards</td><td>default value: <code>string $g = "Hello"</code></td></tr>
+  <tr><td>Maybe-absent value</td><td><code>@Nullable</code> / <code>Optional&lt;String&gt;</code></td><td><code>?string</code> (enforced at runtime)</td></tr>
+  <tr><td>Same name, different types</td><td>overloading</td><td>union type <code>int|string</code> + <code>is_int()</code></td></tr>
+  <tr><td>Many optional params</td><td>builder pattern</td><td>named arguments: <code>greet(name: "Ada")</code></td></tr>
+  <tr><td>Runtime type test</td><td><code>x instanceof Integer</code></td><td><code>is_int($x)</code>, <code>is_string($x)</code>, …</td></tr>
+</table>
+<p>The theme: Java resolves "which version of this function runs" at compile
+time from static types, so it needs overload sets and builders. PHP has only
+runtime types, so all the flexibility moves into a single signature — defaults
+for arity, unions for type, named arguments for call-site clarity — and any
+branching on the actual type happens explicitly in the body with
+<code>is_int</code>-style checks. One name, one function, one place to
+read.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

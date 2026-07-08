@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>Ruby's <code>Array#first</code> works on any array, and <em>you</em> always
+know what comes back: call it on an array of prices, you get a price; on an
+array of users, a user. Duck typing makes that knowledge free — but it lives
+only in your head. TypeScript generics put the same knowledge in the
+compiler's head: <code>firstItem&lt;T&gt;(items: T[]): T | undefined</code>
+says "whatever element type <code>T</code> goes in, that same <code>T</code>
+comes out." Call it with <code>number[]</code> and the result is typed
+<code>number | undefined</code> — no casting, no guessing.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>arr.first</code> (you just know the type)</td><td><code>firstItem&lt;T&gt;(items: T[]): T | undefined</code></td></tr>
+  <tr><td><code>users.map(&amp;:name)</code></td><td><code>pluck(users, "name")</code> — typed as <code>string[]</code></td></tr>
+  <tr><td><code>users.map { |u| u[:naem] }</code> → array of nils</td><td><code>pluck(users, "naem")</code> — compile error</td></tr>
+  <tr><td>"It responds to the method, trust me"</td><td><code>K extends keyof T</code> — the compiler verifies it</td></tr>
+</table>
+<p>Generics also take <em>constraints</em> via <code>extends</code>.
+<code>K extends keyof T</code> reads as "K must be one of T's actual property
+names" — which turns <code>Symbol#to_proc</code>-style plucking into a
+compile-checked operation. Where <code>users.map(&amp;:naem)</code> hands you
+an array of <code>nil</code>s and a debugging session,
+<code>pluck(users, "naem")</code> refuses to build. It is the type
+information duck typing always dropped on the floor, picked up and carried
+through.</p>`,
+
+  ruby: `numbers = [5, 10, 15]
+words   = %w[ruby type script]
+
+numbers.first  # => 5        (an Integer — you know because you looked)
+words.first    # => "ruby"   (a String — same reason)
+
+users = [
+  { name: "Ada",   age: 36 },
+  { name: "Grace", age: 45 },
+]
+
+users.map(&:name) rescue nil  # symbols only work on real methods
+users.map { |u| u[:name] }    # => ["Ada", "Grace"]
+users.map { |u| u[:naem] }    # => [nil, nil] — typo, silently swallowed`,
+
+  task: `
+<p>Teach the compiler what Ruby made you keep in your head:</p>
+<ol>
+  <li>Write <code>firstItem&lt;T&gt;(items: T[]): T | undefined</code> that
+      returns the first element, or <code>undefined</code> for an empty
+      array (Ruby's <code>first</code> returns <code>nil</code> there —
+      lesson 6's split applies).</li>
+  <li>Write <code>pluck&lt;T, K extends keyof T&gt;(items: T[], key: K): T[K][]</code>
+      that maps an array of objects to an array of one property's values —
+      a compile-checked <code>users.map { |u| u[:name] }</code>. The
+      constraint <code>K extends keyof T</code> is what makes the typo'd key
+      impossible.</li>
+</ol>`,
+
+  starter: `// 1. firstItem: works on an array of anything, and the compiler should
+//    know the element type of what comes back.
+//    Ruby: arr.first  (nil when empty)
+function firstItem(items: unknown[]): unknown {
+  // TODO: add a type parameter <T>, take items: T[], return T | undefined
+  return items[0];
+}
+
+// 2. pluck: users.map { |u| u[:name] }, but the key is compile-checked.
+//    Constrain K with "extends keyof T" so only real keys are accepted.
+function pluck(items: object[], key: string): unknown[] {
+  // TODO: pluck<T, K extends keyof T>(items: T[], key: K): T[K][]
+  return [];
+}
+`,
+
+  exportNames: ["firstItem", "pluck"],
+
+  requirements: [
+    { pattern: /<T\b/, message: "Declare a generic type parameter <T>" },
+    { pattern: /:\s*T\s*\|\s*undefined/, message: "firstItem must declare the return type T | undefined" },
+    { pattern: /extends\s+keyof/, message: "Constrain pluck's key parameter with K extends keyof T" },
+  ],
+
+  tests: [
+    { name: "firstItem([5, 10, 15]) returns 5", run: (x) => expectEqual(x.firstItem([5, 10, 15]), 5) },
+    { name: 'firstItem(["ruby", "ts"]) returns "ruby"', run: (x) => expectEqual(x.firstItem(["ruby", "ts"]), "ruby") },
+    { name: "firstItem([]) returns undefined", run: (x) => expectEqual(x.firstItem([]), undefined) },
+    {
+      name: 'pluck(users, "name") returns ["Ada", "Grace"]',
+      run: (x) => expectDeepEqual(
+        x.pluck([{ name: "Ada", age: 36 }, { name: "Grace", age: 45 }], "name"),
+        ["Ada", "Grace"]
+      ),
+    },
+    {
+      name: 'pluck(users, "age") returns [36, 45]',
+      run: (x) => expectDeepEqual(
+        x.pluck([{ name: "Ada", age: 36 }, { name: "Grace", age: 45 }], "age"),
+        [36, 45]
+      ),
+    },
+  ],
+
+  solution: `function firstItem<T>(items: T[]): T | undefined {
+  return items.length > 0 ? items[0] : undefined;
+}
+
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Works for any element type</td><td>Duck typing — implicit</td><td><code>function f&lt;T&gt;(items: T[])</code> — explicit parameter</td></tr>
+  <tr><td>"Same type out as in"</td><td>Known only to the reader</td><td><code>(items: T[]): T</code> — known to the compiler</td></tr>
+  <tr><td>Pluck a property</td><td><code>users.map(&amp;:name)</code> / <code>map { |u| u[:name] }</code></td><td><code>pluck&lt;T, K extends keyof T&gt;(items, key)</code></td></tr>
+  <tr><td>Constraint</td><td><code>raise unless u.respond_to?(:name)</code></td><td><code>K extends keyof T</code>, checked at compile time</td></tr>
+  <tr><td>Typo'd key</td><td><code>[nil, nil]</code> at runtime</td><td>Compile error at the call site</td></tr>
+</table>
+<p>The insight: you rarely <em>write</em> the angle brackets at call sites —
+<code>firstItem([5, 10])</code> lets TypeScript <em>infer</em>
+<code>T = number</code>, the same way Ruby never asked you to say what the
+array held. Generics are not extra ceremony on every call; they are a
+one-time declaration on the function that lets every call stay as terse as
+Ruby while keeping the element type attached to the result. When you need to
+narrow what <code>T</code> can be, reach for <code>extends</code> — a
+constraint is just <code>respond_to?</code> moved to compile time.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>In C#, interpolation is opt-in: forget the <code>$</code> prefix and
+<code>"{name}"</code> is just seven literal characters. In Ruby, <em>every</em>
+double-quoted string interpolates — there is no prefix to forget. Write
+<code>"#{name} is #{age}"</code> and it just works. (Single-quoted strings are
+the opt-out: <code>'#{name}'</code> stays literal.)</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>$"{name} is {age}"</code></td><td><code>"#{name} is #{age}"</code></td></tr>
+  <tr><td><code>s.ToUpper()</code></td><td><code>s.upcase</code></td></tr>
+  <tr><td><code>s.Contains("x")</code></td><td><code>s.include?("x")</code></td></tr>
+  <tr><td><code>s.Length</code></td><td><code>s.length</code></td></tr>
+  <tr><td><code>string.Join(", ", list)</code></td><td><code>list.join(", ")</code></td></tr>
+</table>
+<p>The method names shrink to snake_case — <code>ToUpper</code> becomes
+<code>upcase</code>, the <code>Length</code> property becomes the
+<code>length</code> method (no parentheses needed) — and two conventions
+appear. First: methods that answer yes/no end in <code>?</code>, so
+<code>Contains</code> becomes <code>include?</code>. Second: watch
+<code>string.Join</code> flip inside out — the static helper on
+<code>string</code> becomes a message you send to <em>the collection</em>:
+<code>list.join(", ")</code>. That receiver flip is pure Ruby: no static
+helper classes, just objects answering messages.</p>`,
+
+  csharp: `var name = "Ada";
+var age = 36;
+
+var sentence = $"{name} is {age}";       // needs the $ prefix
+var loud = name.ToUpper();                // "ADA"
+var hasA = name.Contains("A");            // true
+var len = name.Length;                    // 3
+
+var words = new List<string> { "one", "two", "three" };
+var joined = string.Join(", ", words);    // "one, two, three"
+
+Console.WriteLine($"{loud} ({len} letters): {joined}");`,
+
+  task: `
+<p>Rewrite the string toolkit in Ruby:</p>
+<ol>
+  <li><code>shout(s)</code> — the string in caps: <code>ToUpper()</code>
+      becomes <code>upcase</code>.</li>
+  <li><code>greet(name)</code> — <code>"Hello, Ada!"</code> built with
+      <code>#{}</code> interpolation (no <code>$</code> prefix exists).</li>
+  <li><code>contains_word?(haystack, needle)</code> — true when
+      <code>haystack</code> contains <code>needle</code>. Note the
+      <code>?</code> is part of the method name: predicates advertise
+      themselves.</li>
+  <li><code>join_words(words)</code> — join with <code>", "</code>, sending
+      <code>join</code> to the array instead of calling
+      <code>string.Join</code>.</li>
+</ol>`,
+
+  starter: `# 1. shout: ToUpper() -> upcase (no parens needed).
+def shout(s)
+  raise NotImplementedError, "TODO: implement shout"
+end
+
+# 2. greet: $"Hello, {name}!" -> "Hello, #{name}!"
+def greet(name)
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 3. contains_word?: Contains -> include? — the ? is part of the name.
+def contains_word?(haystack, needle)
+  raise NotImplementedError, "TODO: implement contains_word?"
+end
+
+# 4. join_words: string.Join(", ", words) -> words.join(", ")
+def join_words(words)
+  raise NotImplementedError, "TODO: implement join_words"
+end
+`,
+
+  requirements: [
+    { pattern: /#\{/, message: "Use #{} interpolation in greet" },
+    { pattern: /\.upcase/, message: "Use .upcase in shout" },
+    { pattern: /\.include\?/, message: "Use .include? in contains_word?" },
+    { pattern: /\.join/, message: "Send .join to the words array" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: '  expect_eq(shout("hello"), "HELLO")' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: '  expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'contains_word?("the quick brown fox", "quick") is true',
+      code: '  expect_true(contains_word?("the quick brown fox", "quick"))' },
+    { name: 'contains_word?("the quick brown fox", "slow") is false',
+      code: '  expect_eq(contains_word?("the quick brown fox", "slow"), false)' },
+    { name: 'join_words(["one", "two", "three"]) returns "one, two, three"',
+      code: '  expect_eq(join_words(["one", "two", "three"]), "one, two, three")' },
+  ],
+
+  solution: `def shout(s)
+  s.upcase
+end
+
+def greet(name)
+  "Hello, #{name}!"
+end
+
+def contains_word?(haystack, needle)
+  haystack.include?(needle)
+end
+
+def join_words(words)
+  words.join(", ")
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Interpolation</td><td><code>$"{x}"</code> (opt-in)</td><td><code>"#{x}"</code> (every double-quoted string)</td></tr>
+  <tr><td>No interpolation</td><td>plain <code>"{x}"</code></td><td>single quotes: <code>'#{x}'</code></td></tr>
+  <tr><td>Upper / lower</td><td><code>ToUpper()</code> / <code>ToLower()</code></td><td><code>upcase</code> / <code>downcase</code></td></tr>
+  <tr><td>Substring test</td><td><code>s.Contains(x)</code></td><td><code>s.include?(x)</code></td></tr>
+  <tr><td>Length</td><td><code>s.Length</code> (property)</td><td><code>s.length</code> (method, parens optional)</td></tr>
+  <tr><td>Join</td><td><code>string.Join(", ", list)</code></td><td><code>list.join(", ")</code></td></tr>
+  <tr><td>Trim / split</td><td><code>Trim()</code>, <code>Split(',')</code></td><td><code>strip</code>, <code>split(",")</code></td></tr>
+</table>
+<p>The <code>?</code> suffix is the convention to internalize: where C# leans
+on naming (<code>IsAdult</code>, <code>HasValue</code>) and the
+<code>bool</code> return type, Ruby bakes the question mark right into the
+method name — <code>include?</code>, <code>empty?</code>,
+<code>start_with?</code>. Once you trust it, code reads like prose:
+<code>haystack.include?(needle)</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

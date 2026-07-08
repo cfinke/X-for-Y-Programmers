@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>Ruby strings will feel familiar, with one quoting rule to internalize:
+<strong>double quotes interpolate, single quotes are literal</strong>. Where
+JavaScript needs backticks for <code>\`\${name}\`</code>, Ruby's everyday
+<code>"..."</code> already does it: <code>"Hello, #{name}!"</code>. Write
+<code>'Hello, #{name}!'</code> in single quotes and you get those exact
+characters back — single quotes mean "no funny business".</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>\`Hello, \${name}!\`</code></td><td><code>"Hello, #{name}!"</code></td></tr>
+  <tr><td><code>s.toUpperCase()</code></td><td><code>s.upcase</code></td></tr>
+  <tr><td><code>s.includes("ruby")</code></td><td><code>s.include?("ruby")</code></td></tr>
+  <tr><td><code>s.length</code></td><td><code>s.length</code> (same!)</td></tr>
+  <tr><td><code>arr.join(", ")</code></td><td><code>arr.join(", ")</code> (same!)</td></tr>
+  <tr><td><code>s.repeat(3)</code></td><td><code>s * 3</code></td></tr>
+</table>
+<p>The method names shrink — <code>.toUpperCase()</code> becomes
+<code>.upcase</code> (no parentheses needed when there are no arguments) —
+and some don't change at all: <code>.length</code> is <code>.length</code>,
+<code>arr.join(", ")</code> is the same call. The interesting new convention
+is the question mark: methods that answer yes/no <em>end in <code>?</code></em>,
+so <code>.includes()</code> becomes <code>.include?</code>. It is just part of
+the method name, but it makes call sites read like questions. And operators
+are methods too, so they get overloaded tastefully: <code>"ab" * 3</code> is
+<code>"ababab"</code> — a string times a number repeats it.</p>`,
+
+  javascript: `const name = "ada";
+
+function shout(s) {
+  return s.toUpperCase();
+}
+
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+
+function containsWord(haystack, needle) {
+  return haystack.includes(needle);
+}
+
+function repeat(s, n) {
+  return s.repeat(n);
+}
+
+console.log(greet(shout(name)));   // "Hello, ADA!"
+console.log(repeat("na", 4) + " Batman!");`,
+
+  task: `
+<p>Port the string helpers to Ruby:</p>
+<ol>
+  <li><code>shout(s)</code> — uppercase the string with <code>.upcase</code>
+      (no parentheses required).</li>
+  <li><code>greet(name)</code> — produce <code>"Hello, Ada!"</code> using
+      <code>#{}</code> interpolation inside <em>double</em> quotes.</li>
+  <li><code>contains_word?(haystack, needle)</code> — note the <code>?</code>
+      in the method name: it returns true/false, so by convention it reads as
+      a question. Use <code>.include?</code>, the same convention on
+      String.</li>
+  <li><code>repeat(s, n)</code> — no <code>.repeat()</code> method call
+      needed: multiply the string, <code>s * n</code>.</li>
+</ol>`,
+
+  starter: `# 1. shout: .toUpperCase() -> .upcase
+def shout(s)
+  raise NotImplementedError, "TODO: implement shout"
+end
+
+# 2. greet: double quotes + #{} (single quotes would print #{name} literally!)
+def greet(name)
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 3. contains_word?: predicates end in ? — use String#include?
+def contains_word?(haystack, needle)
+  raise NotImplementedError, "TODO: implement contains_word?"
+end
+
+# 4. repeat: strings multiply — "ab" * 3 == "ababab"
+def repeat(s, n)
+  raise NotImplementedError, "TODO: implement repeat"
+end
+`,
+
+  requirements: [
+    { pattern: /#\{/, message: "Interpolate with #{} in greet (double quotes!)" },
+    { pattern: /\.upcase/, message: "Use .upcase in shout" },
+    { pattern: /\.include\?/, message: "Use .include? in contains_word?" },
+    { pattern: /\*\s*n|s\s*\*/, message: "Repeat by multiplying: s * n" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: '  expect_eq(shout("hello"), "HELLO")' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: '  expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'contains_word?("ruby is fun", "fun") is true',
+      code: '  expect_true(contains_word?("ruby is fun", "fun"))' },
+    { name: 'contains_word?("ruby is fun", "boring") is false',
+      code: '  expect_eq(contains_word?("ruby is fun", "boring"), false)' },
+    { name: 'repeat("na", 4) returns "nananana"',
+      code: '  expect_eq(repeat("na", 4), "nananana")' },
+    { name: 'repeat("-", 5) returns "-----"',
+      code: '  expect_eq(repeat("-", 5), "-----")' },
+  ],
+
+  solution: `def shout(s)
+  s.upcase
+end
+
+def greet(name)
+  "Hello, #{name}!"
+end
+
+def contains_word?(haystack, needle)
+  haystack.include?(needle)
+end
+
+def repeat(s, n)
+  s * n
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Interpolation</td><td><code>\`\${x}\`</code> (backticks)</td><td><code>"#{x}"</code> (double quotes)</td></tr>
+  <tr><td>Literal string</td><td>'...' or "..." (same thing)</td><td><code>'...'</code> — no interpolation, no escapes</td></tr>
+  <tr><td>Uppercase / lowercase</td><td><code>.toUpperCase()</code> / <code>.toLowerCase()</code></td><td><code>.upcase</code> / <code>.downcase</code></td></tr>
+  <tr><td>Contains?</td><td><code>.includes(x)</code></td><td><code>.include?(x)</code></td></tr>
+  <tr><td>Length</td><td><code>.length</code></td><td><code>.length</code> (also <code>.size</code>)</td></tr>
+  <tr><td>Repeat</td><td><code>.repeat(3)</code></td><td><code>s * 3</code></td></tr>
+  <tr><td>Trim / strip</td><td><code>.trim()</code></td><td><code>.strip</code></td></tr>
+</table>
+<p>The <code>?</code> suffix is pure convention — the parser treats it as part
+of the method name — but it is a convention the whole ecosystem honors:
+<code>include?</code>, <code>empty?</code>, <code>start_with?</code>,
+<code>even?</code>. Its sibling is <code>!</code>, which marks the
+"dangerous" variant of a method (usually: mutates in place, like
+<code>s.upcase!</code>). Between the two, a Ruby call site tells you whether
+it asks a question or changes something — information JavaScript method names
+keep to themselves.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>No new concepts — this is the course's toolkit applied to one small,
+Go-shaped problem: an inventory of items, each with a name, a price in
+cents, and a count. In Go this is a struct, a handful of loops, and the
+comma-ok pattern for lookups. In Ruby it's a class with
+<code>attr_reader</code>, and every loop collapses into an Enumerable call
+with a block.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>for _, it := range items { total += ... }</code></td><td><code>items.sum { |i| ... }</code></td></tr>
+  <tr><td><code>it, ok := FindItem(items, name)</code></td><td><code>items.find { ... }</code> — the item, or <code>nil</code></td></tr>
+  <tr><td>filter loop + <code>append</code></td><td><code>items.select { ... }.map { ... }</code></td></tr>
+  <tr><td><code>it.PriceCents</code></td><td><code>i.price_cents</code></td></tr>
+</table>
+<p>One Go instinct to keep and one to translate. Keep: value-style updates.
+Ruby objects are <em>references</em> — an <code>Item</code> in two arrays is
+the same object in both, so "change the count" done naively mutates shared
+state. The functional habit is to build a <em>new</em>
+<code>Item.new(...)</code> and a new array, like copying a Go struct value.
+Translate: the found-bool. <code>find</code> returns the element or
+<code>nil</code>, and lesson 6's nil-handling replaces the
+<code>ok</code> flag.</p>`,
+
+  go: `type Item struct {
+	Name       string
+	PriceCents int
+	Count      int
+}
+
+func TotalValue(items []Item) int {
+	total := 0
+	for _, it := range items {
+		total += it.PriceCents * it.Count
+	}
+	return total
+}
+
+func FindItem(items []Item, name string) (Item, bool) {
+	for _, it := range items {
+		if it.Name == name {
+			return it, true // the comma-ok pattern
+		}
+	}
+	return Item{}, false
+}
+
+func Restock(items []Item, name string, amount int) []Item {
+	out := make([]Item, len(items))
+	for i, it := range items {
+		if it.Name == name {
+			it.Count += amount // it is a copy — originals untouched
+		}
+		out[i] = it
+	}
+	return out
+}`,
+
+  task: `
+<p>The <code>Item</code> class is complete in the starter. Implement four
+functions over arrays of items:</p>
+<ol>
+  <li><code>total_value(items)</code> — the sum of
+      <code>price_cents * count</code> across all items, via
+      <code>items.sum { |i| ... }</code>.</li>
+  <li><code>find_item(items, name)</code> — the first item whose name
+      matches, via <code>.find</code>. On a miss it returns <code>nil</code>;
+      that's the whole comma-ok pattern, ending in <code>nil</code>.</li>
+  <li><code>restock(items, name, amount)</code> — a <strong>new</strong>
+      array where the matching item is replaced by a <strong>new</strong>
+      <code>Item.new(name, price, count + amount)</code> and every other item
+      passes through unchanged. Do not mutate the originals — objects are
+      shared references, so build fresh ones (<code>.map</code> with a
+      ternary or <code>if</code> works nicely).</li>
+  <li><code>names_in_stock(items)</code> — the names of items with
+      <code>count &gt; 0</code>, via <code>.select</code> then
+      <code>.map</code>.</li>
+</ol>`,
+
+  starter: `# Item is complete — nothing to change here.
+class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+# 1. total_value: sum of price_cents * count.
+def total_value(items)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 2. find_item: .find returns the item or nil — no comma-ok bool.
+def find_item(items, name)
+  raise NotImplementedError, "TODO: implement find_item"
+end
+
+# 3. restock: a NEW array; a NEW Item for the match. No mutation.
+def restock(items, name, amount)
+  raise NotImplementedError, "TODO: implement restock"
+end
+
+# 4. names_in_stock: select count > 0, then map to names.
+def names_in_stock(items)
+  raise NotImplementedError, "TODO: implement names_in_stock"
+end
+`,
+
+  requirements: [
+    { pattern: /\.find\b/, message: "Use .find in find_item" },
+    { pattern: /\.select/, message: "Use .select in names_in_stock" },
+    { pattern: /\.sum/, message: "Use .sum in total_value" },
+    { pattern: /Item\.new/, message: "Build a new Item in restock (don't mutate the old one)" },
+  ],
+
+  tests: [
+    { name: "total_value: 4 apples at 50 + 2 pears at 80 = 360",
+      code: '  items = [Item.new("apple", 50, 4), Item.new("pear", 80, 2)]\n  expect_eq(total_value(items), 360)\n  expect_eq(total_value([]), 0)' },
+    { name: "find_item returns the matching item",
+      code: '  items = [Item.new("apple", 50, 4), Item.new("pear", 80, 2)]\n  expect_eq(find_item(items, "pear").price_cents, 80)' },
+    { name: "find_item returns nil on a miss (the comma-ok, ending in nil)",
+      code: '  items = [Item.new("apple", 50, 4)]\n  expect_true(find_item(items, "kiwi").nil?)' },
+    { name: "restock bumps the matching item's count in a new array",
+      code: '  items = [Item.new("apple", 50, 4), Item.new("pear", 80, 2)]\n  restocked = restock(items, "apple", 6)\n  expect_eq(restocked.map { |i| i.count }, [10, 2])\n  expect_eq(restocked.map { |i| i.name }, ["apple", "pear"])' },
+    { name: "restock does not mutate the original items",
+      code: '  items = [Item.new("apple", 50, 4), Item.new("pear", 80, 2)]\n  restock(items, "apple", 6)\n  expect_eq(items.map { |i| i.count }, [4, 2])\n  expect_eq(restock(items, "kiwi", 5).map { |i| i.count }, [4, 2])' },
+    { name: "names_in_stock skips items with count 0",
+      code: '  items = [Item.new("apple", 50, 4), Item.new("pear", 80, 0), Item.new("fig", 30, 1)]\n  expect_eq(names_in_stock(items), ["apple", "fig"])' },
+  ],
+
+  solution: `class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+def total_value(items)
+  items.sum { |i| i.price_cents * i.count }
+end
+
+def find_item(items, name)
+  items.find { |i| i.name == name }
+end
+
+def restock(items, name, amount)
+  items.map do |i|
+    i.name == name ? Item.new(i.name, i.price_cents, i.count + amount) : i
+  end
+end
+
+def names_in_stock(items)
+  items.select { |i| i.count > 0 }.map { |i| i.name }
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Aggregate</td><td>accumulator <code>for</code> loop</td><td><code>.sum { |i| ... }</code></td></tr>
+  <tr><td>Lookup</td><td><code>(Item, bool)</code> comma-ok</td><td><code>.find { ... }</code> → item or <code>nil</code></td></tr>
+  <tr><td>Filter + project</td><td>loop + <code>append</code></td><td><code>.select { }.map { }</code></td></tr>
+  <tr><td>Update a copy</td><td>struct values copy on assignment</td><td>objects are references — build <code>Item.new(...)</code></td></tr>
+  <tr><td>Safe use of a miss</td><td><code>if !ok { ... }</code></td><td><code>item&amp;.count</code>, <code>if item.nil?</code></td></tr>
+</table>
+<p>That reference semantics point is the one real trap for a Go programmer
+here: in Go, <code>it.Count += amount</code> inside <code>Restock</code> was
+safe <em>because</em> <code>it</code> was a copy. In Ruby the equivalent
+mutation would silently edit the item inside the caller's array too — so the
+idiom is to make copying explicit with <code>Item.new</code>. Everything
+else you wrote today — <code>attr_reader</code>, blocks, chained
+Enumerable, nil instead of ok-flags — is the whole course in one file.
+Nicely done.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Modules & Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Modules & Capstone",
+
+  intro: `
+<p>Last mechanic, then the capstone. In Go, visibility is spelled with a
+shift key: <code>AddItem</code> is public because it is capitalized,
+<code>total</code> is private because it is not, and the unit of privacy is
+the <em>package</em> — every file in the directory sees everything.
+TypeScript uses ES modules: each <em>file</em> is its own scope, everything
+is private by default, and you publish a symbol with the <code>export</code>
+keyword. Naming and visibility decouple — <code>deposit</code> can stay
+lowercase (idiomatic camelCase) and still be public.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>func AddItem(...)</code> — capital letter = exported</td><td><code>export function addItem(...)</code> — keyword = exported, name is free</td></tr>
+  <tr><td><code>func total(...)</code> — lowercase = package-private</td><td><code>function total(...)</code> — no export = file-private</td></tr>
+  <tr><td><code>import "shop/inventory"</code> then <code>inventory.AddItem</code></td><td><code>import { addItem } from "./inventory"</code> — names come in directly</td></tr>
+  <tr><td>Scope of privacy: the package (directory)</td><td>Scope of privacy: the single file</td></tr>
+  <tr><td><code>go.mod</code> + <code>go get</code></td><td><code>package.json</code> + <code>npm install</code></td></tr>
+</table>
+<p>Now the capstone: build a small inventory module that uses one tool from
+each part of the course — an <code>interface</code> for the data shape, a
+generic function with a constraint, array methods instead of loops, spread
+instead of mutation, and <code>typeof</code> narrowing on a union — with
+every public symbol published via <code>export</code>. (In this editor there
+is no second file to <code>import</code> from, so write only the exports;
+the tests import you, so to speak.)</p>`,
+
+  go: `// inventory/inventory.go
+package inventory
+
+// Capitalized = exported; lowercase = private to the package.
+type Product struct {
+	ID    int
+	Name  string
+	Price float64
+}
+
+func AddItem(cart []Product, p Product) []Product {
+	return append(cart, p)
+}
+
+func CartTotal(cart []Product) float64 {
+	sum := 0.0
+	for _, p := range cart {
+		sum += p.Price
+	}
+	return sum
+}
+
+// elsewhere: import "shop/inventory"  ->  inventory.AddItem(...)`,
+
+  task: `
+<p>Write the inventory module. Every public symbol must use the
+<code>export</code> keyword — and may stay camelCase:</p>
+<ol>
+  <li><code>export interface Product</code> with <code>id: number</code>,
+      <code>name: string</code>, <code>price: number</code>.</li>
+  <li><code>export function addItem(cart: Product[], item: Product):
+      Product[]</code> — returns a <em>new</em> array via spread
+      (<code>[...cart, item]</code>); the original cart must not change.</li>
+  <li><code>export function cartTotal(cart: Product[]): number</code> —
+      sum the prices with <code>reduce</code> (lesson 13, not a for loop).</li>
+  <li><code>export function findById&lt;T extends { id: number }&gt;(items:
+      T[], id: number): T | undefined</code> — generic over anything with an
+      <code>id</code>, using <code>.find(...)</code>.</li>
+  <li><code>export function describeItem(value: Product | string):
+      string</code> — narrow with <code>typeof</code>: for a string return
+      <code>"Unknown item: gum"</code> style; for a product return
+      <code>"Mouse ($25.00)"</code> — name, space, price in parentheses with
+      <code>.toFixed(2)</code> and a leading dollar sign.</li>
+</ol>`,
+
+  starter: `// The export KEYWORD replaces the capital letter — addItem stays
+// lowercase and is still public.
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+}
+
+// 2. TODO: return a NEW array with item appended (spread, no push).
+export function addItem(cart: Product[], item: Product): Product[] {
+  return cart; // TODO
+}
+
+// 3. TODO: sum the prices with reduce.
+export function cartTotal(cart: Product[]): number {
+  return 0; // TODO
+}
+
+// 4. TODO: make this generic: <T extends { id: number }> so it works
+//    for products, users, anything with an id. Use .find().
+export function findById(items: Product[], id: number): Product | undefined {
+  return undefined; // TODO
+}
+
+// 5. TODO: narrow the union with typeof.
+//    string  -> "Unknown item: " + value
+//    Product -> name + " ($" + price.toFixed(2) + ")"
+export function describeItem(value: Product | string): string {
+  return ""; // TODO
+}
+`,
+
+  exportNames: ["addItem", "cartTotal", "findById", "describeItem"],
+
+  requirements: [
+    { pattern: /export\s+(function|const)/, message: "Publish your symbols with the export keyword — the capital letter, replaced" },
+    { pattern: /<\s*T\s+extends\s*\{/, message: "Make findById generic with a constraint: <T extends { id: number }>" },
+    { pattern: /\[\s*\.\.\./, message: "Build the new cart with array spread — no mutation" },
+    { pattern: /typeof/, message: "Narrow the Product | string union with typeof" },
+  ],
+
+  tests: [
+    { name: "addItem appends and returns a new array without mutating the cart", run: (x) => {
+        const cart = [{ id: 1, name: "Keyboard", price: 49.5 }];
+        const result = x.addItem(cart, { id: 2, name: "Mouse", price: 25 });
+        expectEqual(result.length, 2);
+        expectEqual(result[1].name, "Mouse");
+        expectEqual(cart.length, 1);
+        expectEqual(result === cart, false);
+      } },
+    { name: "cartTotal sums prices (and an empty cart totals 0)", run: (x) => {
+        const cart = [
+          { id: 1, name: "Keyboard", price: 49.5 },
+          { id: 2, name: "Mouse", price: 25 },
+        ];
+        expectEqual(x.cartTotal(cart), 74.5);
+        expectEqual(x.cartTotal([]), 0);
+      } },
+    { name: "findById finds a product by id", run: (x) => {
+        const cart = [
+          { id: 1, name: "Keyboard", price: 49.5 },
+          { id: 2, name: "Mouse", price: 25 },
+        ];
+        const found = x.findById(cart, 2);
+        expectTruthy(found);
+        expectEqual(found.name, "Mouse");
+      } },
+    { name: "findById returns undefined when nothing matches", run: (x) => {
+        expectEqual(x.findById([{ id: 1, name: "Keyboard", price: 49.5 }], 99), undefined);
+      } },
+    { name: "findById is generic — it works on non-Product items too", run: (x) => {
+        const users = [{ id: 10, email: "ada@example.com" }, { id: 11, email: "ken@example.com" }];
+        const found = x.findById(users, 11);
+        expectTruthy(found);
+        expectEqual(found.email, "ken@example.com");
+      } },
+    { name: 'describeItem narrows: product -> "Mouse ($25.00)", string -> "Unknown item: gum"', run: (x) => {
+        expectEqual(x.describeItem({ id: 2, name: "Mouse", price: 25 }), "Mouse ($25.00)");
+        expectEqual(x.describeItem("gum"), "Unknown item: gum");
+      } },
+  ],
+
+  solution: `// Everything public is published with export — no capital letters
+// required. Anything without export stays private to this file.
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+}
+
+export function addItem(cart: Product[], item: Product): Product[] {
+  // Spread, not push: the caller's cart is untouched.
+  return [...cart, item];
+}
+
+export function cartTotal(cart: Product[]): number {
+  return cart.reduce((sum, p) => sum + p.price, 0);
+}
+
+// Generic with a constraint — Go's [T any] plus an interface, in one.
+export function findById<T extends { id: number }>(
+  items: T[],
+  id: number
+): T | undefined {
+  return items.find((item) => item.id === id);
+}
+
+export function describeItem(value: Product | string): string {
+  if (typeof value === "string") {
+    return "Unknown item: " + value;
+  }
+  // Narrowed: value is a Product here.
+  return value.name + " ($" + value.price.toFixed(2) + ")";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Make something public</td><td>Capitalize it: <code>AddItem</code></td><td><code>export function addItem</code></td></tr>
+  <tr><td>Keep something private</td><td>lowercase: <code>total</code></td><td>Just don't export it</td></tr>
+  <tr><td>Privacy boundary</td><td>The package (whole directory)</td><td>The single file</td></tr>
+  <tr><td>Consume</td><td><code>import "shop/inventory"</code>; qualified <code>inventory.AddItem</code></td><td><code>import { addItem } from "./inventory"</code>; unqualified</td></tr>
+  <tr><td>Dependencies</td><td><code>go.mod</code>, <code>go get</code></td><td><code>package.json</code>, <code>npm install</code></td></tr>
+  <tr><td>Entry point</td><td><code>package main</code>, <code>func main()</code></td><td>Whatever file you tell node/the bundler to run</td></tr>
+</table>
+<p>That completes the course, and the capstone is the course in miniature:
+an interface where Go had a struct, a constrained generic where Go had
+<code>[T any]</code>, <code>reduce</code> where Go had
+<code>for range</code> with an accumulator, spread where Go had
+<code>append</code>, and <code>typeof</code> narrowing where Go had a type
+switch. The through-line is the compiler moving work off your shoulders:
+exhaustiveness, absence, mutation, and visibility are all things you
+<em>declare</em> in TypeScript where in Go you <em>police</em> them by
+convention. Keep writing Go on the backend — but let tsc be as paranoid as
+you always were.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

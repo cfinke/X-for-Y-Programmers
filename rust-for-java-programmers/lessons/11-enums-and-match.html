@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums &amp; Pattern Matching</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Pattern Matching",
+
+  intro: `
+<p>Java 17 finally gave you sealed interfaces, records, and pattern-matching
+<code>switch</code> — a closed set of shapes the compiler can check
+exhaustively. That trio is Java's recent arrival at what Rust enums have been
+all along. Where Java needs a <code>sealed interface</code> plus one
+<code>record</code> per case, a Rust <code>enum</code> declares the whole
+sealed hierarchy in four lines, with each variant carrying its own data.</p>
+<table>
+  <tr><th>Java</th><th>Rust</th></tr>
+  <tr><td><code>sealed interface Shape permits Circle, Rectangle {}</code><br><code>record Circle(double radius) implements Shape {}</code></td><td><code>enum Shape { Circle { radius: f64 }, ... }</code></td></tr>
+  <tr><td><code>switch (shape) { case Circle c -> ... }</code></td><td><code>match shape { Shape::Circle { radius } => ... }</code></td></tr>
+  <tr><td>Exhaustive over a sealed hierarchy</td><td>Exhaustive over every variant, always</td></tr>
+  <tr><td><code>new Circle(2.0)</code></td><td><code>Shape::Circle { radius: 2.0 }</code></td></tr>
+</table>
+<p><code>match</code> is your exhaustive <code>switch</code>: leave out a
+variant and you get a compile error, exactly like a sealed
+<code>switch</code> with a missing case. The patterns also destructure —
+<code>Shape::Circle { radius }</code> binds the variant's field in the same
+breath, like Java 21's record patterns (<code>case Circle(double radius)</code>).
+You've already met this machinery: <code>Option</code> and <code>Result</code>
+from earlier lessons are just enums like this one.</p>`,
+
+  java: `sealed interface Shape permits Circle, Rectangle {}
+record Circle(double radius) implements Shape {}
+record Rectangle(double width, double height) implements Shape {}
+
+static double area(Shape shape) {
+    return switch (shape) {
+        case Circle c    -> Math.PI * c.radius() * c.radius();
+        case Rectangle r -> r.width() * r.height();
+        // No default branch needed: the hierarchy is sealed,
+        // so the compiler knows these two cases are exhaustive.
+    };
+}
+
+Shape s = new Circle(2.0);
+System.out.println(area(s)); // 12.566...`,
+
+  task: `
+<p>The Rust side of the sealed hierarchy is already written for you:</p>
+<ol>
+  <li>Keep the <code>enum Shape</code> definition from the starter — the tests
+      construct <code>Shape::Circle { radius: 1.0 }</code> and
+      <code>Shape::Rectangle { width: 3.0, height: 4.0 }</code> directly.</li>
+  <li>Implement <code>area(shape: &amp;Shape) -&gt; f64</code> using a
+      <code>match</code> expression. A circle's area is
+      <code>std::f64::consts::PI * radius * radius</code>; a rectangle's is
+      <code>width * height</code>. Destructure the fields right in the match
+      arms, like a record pattern.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The whole sealed hierarchy — interface + two records — in four lines:
+enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+// area: match on the shape and destructure each variant's fields.
+// Circle: std::f64::consts::PI * radius * radius. Rectangle: width * height.
+fn area(shape: &Shape) -> f64 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+Shape/, message: "Keep the enum Shape definition" },
+    { pattern: /match\b/, message: "Use a match expression in area" },
+    { pattern: /Circle\s*\{/, message: "Handle the Circle variant with a destructuring pattern" },
+  ],
+
+  tests: [
+    { name: "area of Circle { radius: 1.0 } is about PI",
+      code: 'assert!((area(&Shape::Circle { radius: 1.0 }) - std::f64::consts::PI).abs() < 0.001, "expected about 3.14159");' },
+    { name: "area of Circle { radius: 2.0 } is about 4*PI",
+      code: 'assert!((area(&Shape::Circle { radius: 2.0 }) - 4.0 * std::f64::consts::PI).abs() < 0.001, "expected about 12.566");' },
+    { name: "area of Rectangle { width: 3.0, height: 4.0 } is 12.0",
+      code: "assert_eq!(area(&Shape::Rectangle { width: 3.0, height: 4.0 }), 12.0);" },
+    { name: "area of Rectangle { width: 2.5, height: 2.0 } is 5.0",
+      code: "assert_eq!(area(&Shape::Rectangle { width: 2.5, height: 2.0 }), 5.0);" },
+  ],
+
+  solution: `enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
+        Shape::Rectangle { width, height } => width * height,
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Rust</th></tr>
+  <tr><td>Closed hierarchy</td><td><code>sealed interface</code> + <code>record</code> per case</td><td>one <code>enum</code>, variants carry data</td></tr>
+  <tr><td>Construct a case</td><td><code>new Circle(2.0)</code></td><td><code>Shape::Circle { radius: 2.0 }</code></td></tr>
+  <tr><td>Branch on the case</td><td><code>switch (shape) { case Circle c -> ... }</code></td><td><code>match shape { Shape::Circle { radius } => ... }</code></td></tr>
+  <tr><td>Destructure fields</td><td><code>case Circle(double r)</code> (Java 21 record patterns)</td><td><code>Shape::Circle { radius }</code> — any pattern, anywhere</td></tr>
+  <tr><td>Missing case</td><td>compile error (sealed switch only)</td><td>compile error, always</td></tr>
+</table>
+<p>Note that <code>match</code> is an expression, so each arm's value becomes
+the function's return value with no <code>return</code> in sight — the same
+trick as Java's arrow-style <code>switch</code> expression. Try deleting the
+<code>Rectangle</code> arm and running the tests: the compiler names the exact
+variant you forgot, which is precisely the safety sealed switches brought to
+Java.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

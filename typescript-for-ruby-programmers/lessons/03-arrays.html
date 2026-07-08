@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays",
+
+  intro: `
+<p>Ruby arrays cheerfully mix anything: <code>[1, "two", :three]</code> is a
+perfectly legal Tuesday. TypeScript arrays are <em>typed</em>:
+<code>number[]</code> means numbers all the way down, and pushing a string
+into one is a compile error. This is the first place the type system pays
+real rent — a whole class of "undefined method for String" surprises simply
+cannot be written.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>scores = [86, 92, 78]</code></td><td><code>const scores: number[] = [86, 92, 78];</code></td></tr>
+  <tr><td><code>arr &lt;&lt; x</code></td><td><code>arr.push(x);</code></td></tr>
+  <tr><td><code>arr.size</code> / <code>arr.length</code></td><td><code>arr.length</code> (property only)</td></tr>
+  <tr><td><code>arr.include?(x)</code></td><td><code>arr.includes(x)</code></td></tr>
+  <tr><td><code>arr.first</code> / <code>arr.last</code></td><td><code>arr[0]</code> / <code>arr.at(-1)</code></td></tr>
+</table>
+<p>The everyday verbs map over directly. The shovel operator
+<code>&lt;&lt;</code> has no equivalent — you write <code>push</code>, which
+Ruby also has. <code>size</code> and <code>length</code> collapse to just
+<code>length</code>. <code>first</code>/<code>last</code> become index
+access; note that plain <code>arr[-1]</code> does <em>not</em> count from the
+end in JavaScript (it's <code>undefined</code>) — use <code>arr.at(-1)</code>
+for Ruby-style negative indexing.</p>`,
+
+  ruby: `scores = [86, 92, 78]
+scores << 95              # the shovel appends
+scores.push(100)          # push exists in Ruby too
+
+puts scores.size          # 5  (size and length are aliases)
+puts scores.first         # 86
+puts scores.last          # 100
+puts scores.include?(92)  # true
+
+mixed = [1, "two", :three]   # Ruby doesn't mind at all
+
+def total(nums)
+  sum = 0
+  nums.each { |n| sum += n }
+  sum
+end`,
+
+  task: `
+<p>Translate the array code on the left, with types this time:</p>
+<ol>
+  <li>Declare a constant <code>scores</code> with an explicit
+      <code>number[]</code> annotation, holding <code>[86, 92, 78]</code>.</li>
+  <li>Declare a constant <code>languages</code> with an explicit
+      <code>string[]</code> annotation, holding
+      <code>["Ruby", "TypeScript"]</code>.</li>
+  <li>Write a function <code>addScore</code> that takes a
+      <code>number[]</code> and a <code>number</code>, appends the number
+      with <code>.push(...)</code> (the shovel's replacement), and returns
+      the array.</li>
+  <li>Write a function <code>total</code> that takes a <code>number[]</code>
+      and returns the sum as a <code>number</code>. A
+      <code>for (const n of nums)</code> loop is the <code>each</code>
+      equivalent — and remember the explicit <code>return</code>.</li>
+</ol>
+<p>Note that <code>const scores</code> still allows <code>.push</code>:
+<code>const</code> locks the <em>binding</em>, not the contents — like a
+frozen variable pointing at an unfrozen array.</p>`,
+
+  starter: `// 1. Ruby: scores = [86, 92, 78] — annotate as number[]
+const scores = [86, 92, 78]; // TODO: add the : number[] annotation
+
+// 2. Annotate as string[]
+const languages = ["Ruby", "TypeScript"]; // TODO: add the annotation
+
+// 3. Ruby: list << score — becomes .push
+function addScore(list: number[], score: number): number[] {
+  // TODO: push, then return the list
+  return list;
+}
+
+// 4. Ruby: nums.each { |n| sum += n }; sum
+function total(nums: number[]): number {
+  // TODO: loop with for..of and return the sum
+  return 0;
+}
+`,
+
+  exportNames: ["scores", "languages", "addScore", "total"],
+
+  requirements: [
+    { pattern: /scores\s*:\s*number\s*\[\s*\]/, message: "Annotate scores explicitly as number[]" },
+    { pattern: /languages\s*:\s*string\s*\[\s*\]/, message: "Annotate languages explicitly as string[]" },
+    { pattern: /\.push\s*\(/, message: "Use .push(...) — TypeScript's shovel operator" },
+  ],
+
+  tests: [
+    { name: "scores is [86, 92, 78]", run: (x) => expectDeepEqual(x.scores, [86, 92, 78]) },
+    { name: 'languages is ["Ruby", "TypeScript"]', run: (x) => expectDeepEqual(x.languages, ["Ruby", "TypeScript"]) },
+    { name: "addScore([1, 2], 3) returns [1, 2, 3]", run: (x) => expectDeepEqual(x.addScore([1, 2], 3), [1, 2, 3]) },
+    { name: "addScore([], 42) returns [42]", run: (x) => expectDeepEqual(x.addScore([], 42), [42]) },
+    { name: "total([86, 92, 78]) returns 256", run: (x) => expectEqual(x.total([86, 92, 78]), 256) },
+    { name: "total([]) returns 0", run: (x) => expectEqual(x.total([]), 0) },
+  ],
+
+  solution: `const scores: number[] = [86, 92, 78];
+const languages: string[] = ["Ruby", "TypeScript"];
+
+function addScore(list: number[], score: number): number[] {
+  list.push(score);
+  return list;
+}
+
+function total(nums: number[]): number {
+  let sum = 0;
+  for (const n of nums) {
+    sum += n;
+  }
+  return sum;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Typed array</td><td><code>[1, "two", :three]</code> — anything goes</td><td><code>number[]</code>, <code>string[]</code> — one type per array</td></tr>
+  <tr><td>Append</td><td><code>arr &lt;&lt; x</code> or <code>arr.push(x)</code></td><td><code>arr.push(x)</code> only</td></tr>
+  <tr><td>Count</td><td><code>.size</code> / <code>.length</code> / <code>.count</code></td><td><code>.length</code> (a property)</td></tr>
+  <tr><td>First / last</td><td><code>arr.first</code> / <code>arr.last</code></td><td><code>arr[0]</code> / <code>arr.at(-1)</code></td></tr>
+  <tr><td>Negative index</td><td><code>arr[-1]</code> works</td><td><code>arr[-1]</code> is <code>undefined</code>! Use <code>.at(-1)</code></td></tr>
+  <tr><td>Membership</td><td><code>arr.include?(x)</code></td><td><code>arr.includes(x)</code></td></tr>
+</table>
+<p>When you genuinely need a mixed collection, TypeScript makes you say so:
+<code>(number | string)[]</code> for a union-typed array, or a
+<em>tuple</em> like <code>[number, string]</code> for a fixed shape — both
+coming in later lessons. The point isn't that mixing is forbidden; it's that
+it must be declared, so every reader (and the compiler) knows what can come
+out.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

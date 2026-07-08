@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>PHP functions look like Ruby methods wearing a seatbelt: same snake_case
+names, same default parameter values, but everything implicit becomes
+explicit. Parentheses are <strong>required</strong> at every call site —
+<code>greet;</code> is not a call, it's an error. And the big one: a PHP
+function without a <code>return</code> statement returns <code>null</code>.
+The last expression is <em>not</em> the return value. Forgetting
+<code>return</code> is <em>the</em> classic Rubyist-in-PHP bug.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>def greet(name, greeting = "Hello")</code></td><td><code>function greet(string $name, string $greeting = "Hello"): string</code></td></tr>
+  <tr><td>last expression is returned</td><td><code>return</code> required — otherwise <code>null</code></td></tr>
+  <tr><td><code>greet "Ada"</code> (parens optional)</td><td><code>greet("Ada")</code> — parens mandatory</td></tr>
+  <tr><td><code>greet(name: "Ada")</code> (keyword args)</td><td><code>greet(name: "Ada")</code> — same syntax!</td></tr>
+  <tr><td><code>last = nil</code> default</td><td><code>?string $last = null</code> — nullable type</td></tr>
+  <tr><td><code>id.is_a?(Integer)</code></td><td><code>is_int($id)</code></td></tr>
+</table>
+<p>The type declarations (<code>string $name</code>, <code>: string</code>)
+are optional, but they are not decorative comments — PHP <em>enforces them
+at runtime</em>, throwing a <code>TypeError</code> on mismatch. A
+<code>?string</code> is a string-or-null, and <code>int|string</code> is a
+real union type. Best of all for a Rubyist: PHP 8's named arguments use
+exactly Ruby's keyword-call syntax, and they work on <em>any</em> function
+without declaring keyword parameters first.</p>`,
+
+  ruby: `def greet(name, greeting = "Hello")
+  "#{greeting}, #{name}!" # last expression IS the return value
+end
+
+def format_name(first, last = nil)
+  return first if last.nil?
+  "#{first} #{last}"
+end
+
+def describe(id)
+  id.is_a?(Integer) ? "numeric id #{id}" : "string id #{id}"
+end
+
+greet("Ada")                   # "Hello, Ada!"
+greet("Ada", "Howdy")          # "Howdy, Ada!"
+format_name("Ada")             # "Ada"
+format_name("Ada", "Lovelace") # "Ada Lovelace"
+describe(42)                   # "numeric id 42"
+describe("x-1")                # "string id x-1"`,
+
+  task: `
+<p>Port the Ruby to PHP:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      return <code>"$greeting, $name!"</code>. The default value carries over
+      from Ruby unchanged; just remember the explicit <code>return</code>.
+      A test calls it with named arguments — no extra work needed, every
+      PHP function supports them.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      Ruby's <code>last = nil</code> becomes a nullable <code>?string</code>
+      with a <code>null</code> default. Return just <code>$first</code> when
+      <code>$last</code> is <code>null</code>, otherwise
+      <code>"$first $last"</code>.</li>
+  <li><code>describe(int|string $id): string</code> — a union type takes the
+      place of duck typing. Use <code>is_int($id)</code> (Ruby's
+      <code>is_a?(Integer)</code>) to return <code>"numeric id $id"</code>
+      or <code>"string id $id"</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Default values work like Ruby's — but you MUST write return,
+//    and callers MUST use parentheses.
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. last = nil  ->  ?string $last = null (nullable type, null default)
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. int|string is a union type; is_int() is is_a?(Integer).
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: "Give $greeting a default value of \"Hello\"" },
+    { pattern: /\?string/, message: "Declare $last as a nullable ?string" },
+    { pattern: /int\|string/, message: "Use an int|string union type for describe" },
+  ],
+
+  tests: [
+    { name: "greet('Ada') uses the default greeting",
+      code: "expect_eq(greet('Ada'), 'Hello, Ada!');" },
+    { name: "greet('Ada', 'Howdy') overrides the default",
+      code: "expect_eq(greet('Ada', 'Howdy'), 'Howdy, Ada!');" },
+    { name: "named arguments work, in any order: greet(greeting: 'Yo', name: 'Ada')",
+      code: "expect_eq(greet(greeting: 'Yo', name: 'Ada'), 'Yo, Ada!');" },
+    { name: "format_name handles a null last name",
+      code: "expect_eq(format_name('Ada'), 'Ada');\nexpect_eq(format_name('Ada', 'Lovelace'), 'Ada Lovelace');" },
+    { name: "describe accepts both int and string",
+      code: "expect_eq(describe(42), 'numeric id 42');\nexpect_eq(describe('x-1'), 'string id x-1');" },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    if ($last === null) {
+        return $first;
+    }
+    return "$first $last";
+}
+
+function describe(int|string $id): string {
+    return is_int($id) ? "numeric id $id" : "string id $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Definition</td><td><code>def greet(name)</code></td><td><code>function greet(string $name): string</code></td></tr>
+  <tr><td>Return value</td><td>last expression, implicitly</td><td><code>return</code> keyword — no return means <code>null</code></td></tr>
+  <tr><td>Call</td><td><code>greet "Ada"</code> or <code>greet("Ada")</code></td><td><code>greet("Ada")</code> only</td></tr>
+  <tr><td>Default value</td><td><code>greeting = "Hello"</code></td><td><code>$greeting = "Hello"</code></td></tr>
+  <tr><td>Keyword / named args</td><td><code>greet(name: "Ada")</code> (must declare <code>name:</code>)</td><td><code>greet(name: "Ada")</code> (works on any parameter)</td></tr>
+  <tr><td>Nullable</td><td><code>last = nil</code>, unchecked</td><td><code>?string $last = null</code>, enforced</td></tr>
+  <tr><td>Union type</td><td>duck typing / <code>is_a?</code> checks</td><td><code>int|string $id</code>, enforced</td></tr>
+</table>
+<p>The mental switch is <em>explicit over implicit</em>. Ruby trusts you:
+no parens, no types, the last thing you touched is the return value. PHP
+makes you say it: parens on every call, <code>return</code> on every path,
+and — if you opt in — parameter and return types the runtime will actually
+check. Once burned by an accidental <code>null</code> return, most PHP
+developers declare types everywhere and let <code>TypeError</code> catch the
+bug at the boundary instead of three calls later.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

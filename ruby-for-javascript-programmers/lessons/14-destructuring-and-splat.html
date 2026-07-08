@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring &amp; Splat</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>Array destructuring crosses over almost intact — minus the brackets.
+<code>const [a, b] = pair</code> becomes <code>a, b = pair</code>: bare names
+on the left, <strong>no brackets</strong>. Multiple assignment is the same
+feature, which gives you the classic swap without a temp:
+<code>a, b = b, a</code>. The <code>...rest</code> operator is Ruby's
+<code>*</code>, the <em>splat</em> — and here Ruby pulls ahead: JavaScript
+only allows the rest element in the final position, while Ruby's splat can
+sit <em>anywhere</em>. <code>first, *rest = list</code> works, and so does
+<code>*init, last = list</code> — grab everything up to the last element,
+something JS simply can't destructure.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>const [a, b] = pair;</code></td><td><code>a, b = pair</code> — no brackets on the left</td></tr>
+  <tr><td><code>[a, b] = [b, a];</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td><code>const [first, ...rest] = list;</code></td><td><code>first, *rest = list</code></td></tr>
+  <tr><td><code>[...init, last]</code> — SyntaxError!</td><td><code>*init, last = list</code> — works</td></tr>
+  <tr><td><code>function sum(...nums)</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td><code>{ ...defaults, ...overrides }</code></td><td><code>defaults.merge(overrides)</code></td></tr>
+</table>
+<p>The splat does double duty exactly like <code>...</code>: in a parameter
+list, <code>def sum(*nums)</code> collects arguments into an array; in an
+array literal, <code>[*a, *b]</code> spreads them back out. There's a
+double-splat sibling, <code>**opts</code>, that collects keyword arguments
+into a hash. For merging hashes, though, idiomatic Ruby usually skips the
+spread entirely: <code>defaults.merge(overrides)</code> is the
+<code>{ ...defaults, ...overrides }</code> pattern, later keys winning, as a
+plain method.</p>`,
+
+  javascript: `const pair = [1, 2];
+let [a, b] = pair;
+[a, b] = [b, a];                 // swap
+
+const [first, ...rest] = [1, 2, 3, 4];
+// first === 1, rest is [2, 3, 4]
+
+// const [...init, last] = list;
+// SyntaxError: rest element must be last!
+
+function sum(...nums) {
+  return nums.reduce((t, n) => t + n, 0);
+}
+sum(1, 2, 3);                    // 6
+
+function mergeSettings(defaults, overrides) {
+  return { ...defaults, ...overrides };
+}`,
+
+  task: `
+<p>Translate the destructuring toolkit:</p>
+<ol>
+  <li><code>swap(pair)</code> — destructure with <code>a, b = pair</code>
+      (no brackets!), swap with <code>a, b = b, a</code>, and return
+      <code>[a, b]</code>.</li>
+  <li><code>head_tail(list)</code> — split off the first element with
+      <code>first, *rest = list</code> and return the two-element array
+      <code>[first, rest]</code>.</li>
+  <li><code>sum(*nums)</code> — a variadic method: the splat parameter
+      collects every argument into the <code>nums</code> array; total it
+      (<code>nums.sum</code>).</li>
+  <li><code>merge_settings(defaults, overrides)</code> — combine two hashes
+      with <code>.merge</code>; keys in <code>overrides</code> win.</li>
+</ol>`,
+
+  starter: `# 1. a, b = pair -- destructure with NO brackets, then a, b = b, a to swap.
+def swap(pair)
+  raise NotImplementedError, "TODO: implement swap"
+end
+
+# 2. first, *rest = list -- then return [first, rest].
+def head_tail(list)
+  raise NotImplementedError, "TODO: implement head_tail"
+end
+
+# 3. The splat parameter is ...nums: it collects arguments into an array.
+def sum(*nums)
+  raise NotImplementedError, "TODO: implement sum"
+end
+
+# 4. defaults.merge(overrides) -- { ...defaults, ...overrides }, as a method.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: implement merge_settings"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Give sum a splat parameter: def sum(*nums)" },
+    { pattern: /,\s*\*/, message: "Use a rest destructure like first, *rest = list" },
+    { pattern: /\*\w+/, message: "Use the splat (*) to collect values into an array" },
+    { pattern: /\.merge/, message: "Combine the hashes with .merge" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "  expect_eq(swap([1, 2]), [2, 1])" },
+    { name: 'swap(["left", "right"]) returns ["right", "left"]',
+      code: '  expect_eq(swap(["left", "right"]), ["right", "left"])' },
+    { name: "head_tail([1, 2, 3, 4]) returns [1, [2, 3, 4]]",
+      code: "  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])" },
+    { name: "head_tail([9]) returns [9, []] — the rest splat yields an empty array",
+      code: "  expect_eq(head_tail([9]), [9, []])" },
+    { name: "sum(1, 2, 3) returns 6; sum() returns 0",
+      code: "  expect_eq(sum(1, 2, 3), 6)\n  expect_eq(sum(), 0)\n  expect_eq(sum(42), 42)" },
+    { name: 'merge_settings({ theme: "light", size: 12 }, { theme: "dark" }) returns { theme: "dark", size: 12 }',
+      code: '  expect_eq(merge_settings({ theme: "light", size: 12 }, { theme: "dark" }), { theme: "dark", size: 12 })\n  expect_eq(merge_settings({}, { a: 1 }), { a: 1 })' },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  a, b = b, a
+  [a, b]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Destructure a pair</td><td><code>const [a, b] = pair;</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td>Swap</td><td><code>[a, b] = [b, a];</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Leading rest</td><td><code>const [x, ...rest] = xs;</code></td><td><code>x, *rest = xs</code></td></tr>
+  <tr><td>Trailing rest</td><td>SyntaxError</td><td><code>*init, last = xs</code></td></tr>
+  <tr><td>Variadic parameter</td><td><code>function f(...nums)</code></td><td><code>def f(*nums)</code></td></tr>
+  <tr><td>Keyword rest</td><td><code>function f({ ...opts })</code></td><td><code>def f(**opts)</code> — a hash</td></tr>
+  <tr><td>Spread into an array</td><td><code>[...a, ...b]</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td>Merge hashes</td><td><code>{ ...defaults, ...overrides }</code></td><td><code>defaults.merge(overrides)</code></td></tr>
+</table>
+<p>One splat per destructure, but it can sit anywhere — leading, middle
+(<code>first, *middle, last = xs</code>), or trailing. Unfilled names become
+<code>nil</code> and extra values are quietly dropped, mirroring JavaScript's
+<code>undefined</code> behavior. The asymmetry to remember is spelling only:
+collect with <code>*</code>/<code>**</code> in a parameter list, spread with
+the same characters at a call site or in a literal — precisely the two hats
+<code>...</code> wears.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

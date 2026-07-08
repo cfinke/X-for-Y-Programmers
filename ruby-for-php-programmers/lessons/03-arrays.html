@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays",
+
+  intro: `
+<p>PHP's <code>array</code> is famously two data structures in a trench coat:
+a list and a dictionary. Ruby splits them apart. This lesson is the list half
+— <code>Array</code>, written <code>[1, 2, 3]</code> just like a modern PHP
+list. (The dictionary half becomes <code>Hash</code>, next lesson.) The
+<code>array_*</code> function zoo becomes methods, and a few new idioms
+appear: <code>arr &lt;&lt; x</code> — "the shovel" — pushes where PHP writes
+<code>$arr[] = $x;</code>, and negative indexes finally work:
+<code>arr[-1]</code> is the last element, no <code>count($arr) - 1</code>
+arithmetic.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td><code>$arr = [1, 2, 3];</code></td><td><code>arr = [1, 2, 3]</code></td></tr>
+  <tr><td><code>$arr[] = $x;</code></td><td><code>arr &lt;&lt; x</code> (the shovel)</td></tr>
+  <tr><td><code>count($arr)</code></td><td><code>arr.size</code> or <code>arr.length</code></td></tr>
+  <tr><td><code>in_array($x, $arr, true)</code></td><td><code>arr.include?(x)</code> (strict by default — no juggling!)</td></tr>
+  <tr><td><code>$arr[count($arr) - 1]</code></td><td><code>arr[-1]</code> or <code>arr.last</code></td></tr>
+  <tr><td><code>array_slice($arr, 1, 2)</code></td><td><code>arr[1..2]</code> (range slice)</td></tr>
+  <tr><td><code>array_sum($arr)</code></td><td><code>arr.sum</code></td></tr>
+</table>
+<p>One shift is bigger than syntax. PHP arrays are <em>values</em>: assign or
+pass one and copy-on-write gives the callee its own copy, so
+<code>$arr[] = $x</code> inside a function never touches the caller. Ruby
+arrays are <em>references</em>, like PHP objects have been since PHP 5:
+passing an array shares it, and <code>arr &lt;&lt; x</code> inside a method
+mutates the caller's array. The tests below demonstrate this on purpose —
+it is the number-one source of surprise for PHP developers.</p>`,
+
+  php: `<?php
+$scores = [10, 20, 30];
+$scores[] = 40;                        // push
+
+$n = count($scores);                   // 4
+$has = in_array(20, $scores, true);    // true — third arg for strict!
+$last = $scores[count($scores) - 1];   // 40 — no negative indexes
+$middle = array_slice($scores, 1, 2);  // [20, 30]
+$total = array_sum($scores);           // 100
+
+// PHP arrays are values: the caller's array is untouched.
+function append_score($arr, $x) {
+    $arr[] = $x;
+    return $arr;   // a modified COPY comes back
+}
+
+$copy = append_score($scores, 50);
+count($scores);   // still 4`,
+
+  task: `
+<p>Rebuild the score toolkit the Ruby way:</p>
+<ol>
+  <li><code>make_scores</code> — start from an empty array and shovel
+      <code>10</code>, <code>20</code>, <code>30</code> into it with
+      <code>&lt;&lt;</code>, then let the array be the last expression.</li>
+  <li><code>append(arr, x)</code> — push <code>x</code> with the shovel and
+      hand the array back. Conveniently, <code>arr &lt;&lt; x</code> already
+      evaluates to the array — one line. Unlike PHP, this <em>mutates the
+      caller's array</em>: there is no copy-on-write, and the tests prove
+      it.</li>
+  <li><code>total(nums)</code> — <code>array_sum($nums)</code> becomes
+      <code>nums.sum</code>.</li>
+  <li><code>ends(arr)</code> — a two-element array of the first and last
+      items: <code>[arr.first, arr.last]</code>. No index arithmetic.</li>
+</ol>`,
+
+  starter: `# 1. make_scores: [] then shovel 10, 20, 30 in with <<.
+def make_scores
+  raise NotImplementedError, "TODO: implement make_scores"
+end
+
+# 2. append: arr << x pushes AND evaluates to the array itself.
+#    (And it mutates the caller's array — no copy-on-write here!)
+def append(arr, x)
+  raise NotImplementedError, "TODO: implement append"
+end
+
+# 3. array_sum($nums) -> nums.sum
+def total(nums)
+  raise NotImplementedError, "TODO: implement total"
+end
+
+# 4. ends: [arr.first, arr.last] — arr[-1] also reaches the last element.
+def ends(arr)
+  raise NotImplementedError, "TODO: implement ends"
+end
+`,
+
+  requirements: [
+    { pattern: /<</, message: "Push with the << shovel operator" },
+    { pattern: /\.sum/, message: "Use .sum in total" },
+    { pattern: /\.first/, message: "Use .first in ends" },
+    { pattern: /\[-1\]|\.last/, message: "Reach the last element with arr[-1] or .last" },
+  ],
+
+  tests: [
+    { name: "make_scores returns [10, 20, 30]",
+      code: "  expect_eq(make_scores, [10, 20, 30])" },
+    { name: "append([1, 2], 3) returns [1, 2, 3]",
+      code: "  expect_eq(append([1, 2], 3), [1, 2, 3])" },
+    { name: "append mutates the caller's array (no copy-on-write!)",
+      code: "  a = [1, 2]\n  append(a, 3)\n  expect_eq(a, [1, 2, 3])" },
+    { name: "total([10, 20, 30, 40]) returns 100",
+      code: "  expect_eq(total([10, 20, 30, 40]), 100)" },
+    { name: "ends([5, 6, 7]) returns [5, 7]",
+      code: "  expect_eq(ends([5, 6, 7]), [5, 7])" },
+  ],
+
+  solution: `def make_scores
+  scores = []
+  scores << 10
+  scores << 20
+  scores << 30
+  scores
+end
+
+def append(arr, x)
+  arr << x
+end
+
+def total(nums)
+  nums.sum
+end
+
+def ends(arr)
+  [arr.first, arr.last]
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Literal</td><td><code>[1, 2, 3]</code></td><td><code>[1, 2, 3]</code> (same!)</td></tr>
+  <tr><td>Push</td><td><code>$arr[] = $x;</code></td><td><code>arr &lt;&lt; x</code> (also <code>arr.push(x)</code>)</td></tr>
+  <tr><td>Count</td><td><code>count($arr)</code></td><td><code>arr.size</code> / <code>arr.length</code></td></tr>
+  <tr><td>Membership</td><td><code>in_array($x, $arr, true)</code></td><td><code>arr.include?(x)</code> — strict, always</td></tr>
+  <tr><td>Last element</td><td><code>$arr[count($arr) - 1]</code>, <code>end($arr)</code></td><td><code>arr[-1]</code> / <code>arr.last</code>; also <code>arr.first</code></td></tr>
+  <tr><td>Slice</td><td><code>array_slice($arr, 1, 2)</code></td><td><code>arr[1..2]</code> (or <code>arr[1, 2]</code>)</td></tr>
+  <tr><td>Sum</td><td><code>array_sum($arr)</code></td><td><code>arr.sum</code></td></tr>
+  <tr><td>Semantics</td><td>value (copy-on-write)</td><td><strong>reference</strong> — passing shares the array</td></tr>
+</table>
+<p>The last row deserves a habit: in PHP you lean on the engine copying
+arrays for you; in Ruby every method that receives an array can mutate the
+original. Rubyists manage this with a naming convention you'll meet later —
+mutators are either obvious (<code>&lt;&lt;</code>, <code>push</code>) or end
+in <code>!</code> — and by preferring non-mutating methods (<code>+</code>,
+<code>map</code>) when they want PHP-style value behavior. When you truly
+need a copy: <code>arr.dup</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

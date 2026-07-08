@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: array_map, array_filter &amp; Friends</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "array_map, array_filter & Friends",
+
+  intro: `
+<p>Every Go service is full of the same three-line loop: make a slice
+(capacity hint optional), <code>range</code> over the input, conditionally
+<code>append</code>. Go chose loops over generics-powered helpers for years,
+so your fingers type that pattern automatically. PHP ships the helpers:
+<code>array_map($fn, $arr)</code> transforms every element,
+<code>array_filter($arr, $fn)</code> keeps the ones the callback approves,
+<code>array_reduce($arr, $fn, $init)</code> folds, and
+<code>array_sum($arr)</code> handles the most common fold outright. The
+callbacks are arrow closures — <code>fn($p) =&gt; $p['name']</code> — short
+enough to write inline.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>for … append(out, f(v))</code></td><td><code>array_map($fn, $arr)</code> — callback <strong>first</strong></td></tr>
+  <tr><td><code>for … if ok { append }</code></td><td><code>array_filter($arr, $fn)</code> — callback <strong>second</strong></td></tr>
+  <tr><td>accumulator loop</td><td><code>array_reduce($arr, $fn, $init)</code> / <code>array_sum($arr)</code></td></tr>
+  <tr><td>func literal</td><td><code>fn($x) =&gt; $x * 2</code></td></tr>
+  <tr><td>slices reindex themselves</td><td><code>array_filter</code> keeps keys — <code>array_values()</code> reindexes</td></tr>
+</table>
+<p>Two traps. First, the argument orders <strong>flip</strong>:
+<code>array_map</code> takes the callback first, <code>array_filter</code>
+takes the array first. Everyone gets bitten; now you won't be. Second,
+<code>array_filter</code> <strong>preserves keys</strong>: filter
+<code>[10, 15, 20]</code> for evens and you get <code>[0 =&gt; 10, 2 =&gt;
+20]</code> — a gap at index 1. A Go slice could never do that, and code
+expecting a clean list (or <code>json_encode</code> expecting to emit a JSON
+array) will misbehave. Wrap the result in <code>array_values()</code> to
+reindex from zero.</p>`,
+
+  go: `names := make([]string, 0, len(products))
+for _, p := range products {
+    if p.InStock {
+        names = append(names, p.Name)
+    }
+}
+
+total := 0
+for _, p := range products {
+    total += p.PriceCents
+}
+
+doubled := []int{}
+for _, n := range nums {
+    if n%2 == 0 {
+        doubled = append(doubled, n*2)
+    }
+}`,
+
+  task: `
+<p>Products are associative arrays shaped like
+<code>['name' =&gt; 'Widget', 'price_cents' =&gt; 500, 'in_stock' =&gt;
+true]</code>. Replace each loop with one-call transforms:</p>
+<ol>
+  <li><code>in_stock_names(array $products): array</code> —
+      <code>array_filter</code> down to products whose
+      <code>'in_stock'</code> is true, <code>array_map</code> out the
+      <code>'name'</code>s, and <code>array_values</code> the result so the
+      keys run 0, 1, 2… again.</li>
+  <li><code>total_value(array $products): int</code> — sum every product's
+      <code>'price_cents'</code> via <code>array_map</code> +
+      <code>array_sum</code> (or a single <code>array_reduce</code>).</li>
+  <li><code>evens_doubled(array $nums): array</code> — keep the even
+      numbers, double them, and reindex with <code>array_values</code> —
+      the filter-then-map gap-in-the-keys trap, dodged.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. filter -> map -> array_values (keys must be 0, 1, 2...)
+function in_stock_names(array $products): array {
+    throw new Exception("TODO: implement in_stock_names");
+}
+
+// 2. the accumulator loop -> array_map + array_sum (or array_reduce)
+function total_value(array $products): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// 3. filter evens, double them, reindex
+function evens_doubled(array $nums): array {
+    throw new Exception("TODO: implement evens_doubled");
+}
+`,
+
+  requirements: [
+    { pattern: /array_map/, message: "Transform with array_map (callback first!)" },
+    { pattern: /array_filter/, message: "Select with array_filter (array first!)" },
+    { pattern: /array_values/, message: "Reindex filtered results with array_values" },
+    { pattern: /array_reduce|array_sum/, message: "Fold with array_sum or array_reduce" },
+  ],
+
+  tests: [
+    { name: "in_stock_names keeps only in-stock products, reindexed",
+      code: "$products = [\n  ['name' => 'Widget', 'price_cents' => 500, 'in_stock' => true],\n  ['name' => 'Gadget', 'price_cents' => 1200, 'in_stock' => false],\n  ['name' => 'Doohickey', 'price_cents' => 250, 'in_stock' => true],\n];\nexpect_eq(in_stock_names($products), ['Widget', 'Doohickey']);" },
+    { name: "in_stock_names returns [] when nothing is in stock",
+      code: "expect_eq(in_stock_names([['name' => 'Gadget', 'price_cents' => 1200, 'in_stock' => false]]), []);" },
+    { name: "total_value sums price_cents across all products",
+      code: "$products = [\n  ['name' => 'Widget', 'price_cents' => 500, 'in_stock' => true],\n  ['name' => 'Gadget', 'price_cents' => 1200, 'in_stock' => false],\n  ['name' => 'Doohickey', 'price_cents' => 250, 'in_stock' => true],\n];\nexpect_eq(total_value($products), 1950);" },
+    { name: "total_value([]) returns int 0",
+      code: "expect_eq(total_value([]), 0);" },
+    { name: "evens_doubled([1, 2, 3, 4, 5]) returns [4, 8] with keys 0 and 1",
+      code: "expect_eq(evens_doubled([1, 2, 3, 4, 5]), [4, 8]);\nexpect_eq(array_keys(evens_doubled([1, 2, 3, 4, 5])), [0, 1]);" },
+    { name: "evens_doubled with no evens returns []",
+      code: "expect_eq(evens_doubled([1, 3, 5]), []);" },
+  ],
+
+  solution: `<?php
+
+function in_stock_names(array $products): array {
+    $in_stock = array_filter($products, fn($p) => $p['in_stock']);
+    return array_values(array_map(fn($p) => $p['name'], $in_stock));
+}
+
+function total_value(array $products): int {
+    return array_sum(array_map(fn($p) => $p['price_cents'], $products));
+}
+
+function evens_doubled(array $nums): array {
+    $evens = array_filter($nums, fn($n) => $n % 2 === 0);
+    return array_values(array_map(fn($n) => $n * 2, $evens));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Transform</td><td><code>for range</code> + <code>append</code></td><td><code>array_map($fn, $arr)</code></td></tr>
+  <tr><td>Select</td><td><code>for range</code> + <code>if</code> + <code>append</code></td><td><code>array_filter($arr, $fn)</code></td></tr>
+  <tr><td>Fold</td><td>accumulator loop</td><td><code>array_reduce($arr, $fn, $init)</code></td></tr>
+  <tr><td>Sum</td><td>accumulator loop</td><td><code>array_sum($arr)</code></td></tr>
+  <tr><td>Inline callback</td><td><code>func(p Product) string { … }</code></td><td><code>fn($p) =&gt; $p['name']</code></td></tr>
+  <tr><td>Argument order</td><td>n/a</td><td>map: callback first; filter: array first</td></tr>
+  <tr><td>Keys after filter</td><td>slices reindex by nature</td><td>preserved — call <code>array_values()</code></td></tr>
+  <tr><td>Sort with comparator</td><td><code>slices.SortFunc</code></td><td><code>usort($arr, $fn)</code> (in place, by reference)</td></tr>
+</table>
+<p>The key-preservation rule is worth internalizing rather than memorizing
+away: PHP arrays are ordered dictionaries (Lesson 4), so
+<code>array_filter</code> removing entries without renumbering the rest is
+consistent behavior, not a quirk — the "list" was always keys in disguise.
+<code>filter → map → array_values</code> is the everyday pipeline shape, and
+the habit of finishing with <code>array_values()</code> whenever downstream
+code (or <code>json_encode</code>) expects a true list will save you a
+production incident or two.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

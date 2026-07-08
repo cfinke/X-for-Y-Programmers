@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Enumerators &amp; Lazy</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Enumerators & Lazy",
+
+  intro: `
+<p>PHP generators and Ruby enumerators are close cousins. Where PHP writes
+<code>function fib(): Generator { yield $a; }</code> and drains it with
+<code>iterator_to_array()</code>, Ruby writes
+<code>Enumerator.new { |y| y &lt;&lt; a }</code> and drains it with
+<code>.to_a</code> — or, better, stops early with <code>.first(n)</code>. The
+<code>y</code> is a yielder, and <code>y &lt;&lt; value</code> is Ruby's
+<code>yield value</code>.</p>
+<p>The part PHP genuinely lacks is <em>lazy chaining</em>. Call
+<code>.lazy</code> on any enumerable — even an infinite range like
+<code>(1..Float::INFINITY)</code> — and every <code>map</code>/<code>select</code>
+after it stays demand-driven: nothing is computed until a terminal call like
+<code>first(n)</code> pulls exactly as many values as it needs. In PHP you'd
+hand-roll a <code>for</code> loop with a running counter to get the same
+"generate until I have enough" behaviour; in Ruby the pipeline reads like an
+ordinary <code>map.select.first</code>, it just never runs off the end.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td><code>function f(): Generator { yield $x; }</code></td><td><code>Enumerator.new { |y| y &lt;&lt; x }</code></td></tr>
+  <tr><td><code>iterator_to_array($gen)</code></td><td><code>enum.to_a</code></td></tr>
+  <tr><td>manual counter to stop early</td><td><code>enum.first(n)</code></td></tr>
+  <tr><td>hand-rolled loop over an infinite source</td><td><code>(1..Float::INFINITY).lazy.select { }.first(n)</code></td></tr>
+  <tr><td><code>array_chunk($a, 2)</code></td><td><code>a.each_slice(2).to_a</code></td></tr>
+</table>
+<p>Lazy is the headline: the same combinators you already use eagerly
+(<code>map</code>, <code>select</code>, <code>take</code>) become streaming
+just by inserting <code>.lazy</code>, and they compose over infinite sequences
+without a single explicit loop counter.</p>`,
+
+  php: `<?php
+function multiplesOf(int $k, int $count): array {
+    $out = [];
+    // Hand-rolled: keep generating until we have enough.
+    for ($n = 1; count($out) < $count; $n++) {
+        if ($n % $k === 0) {
+            $out[] = $n;
+        }
+    }
+    return $out;
+}
+
+function fibonacci(int $count): Generator {
+    [$a, $b] = [0, 1];
+    for ($i = 0; $i < $count; $i++) {
+        yield $a;
+        [$a, $b] = [$b, $a + $b];
+    }
+}
+
+$firstSeven = iterator_to_array(fibonacci(7)); // [0,1,1,2,3,5,8]
+$pairs = array_chunk([1, 2, 3, 4], 2);         // [[1,2],[3,4]]`,
+
+  task: `
+<p>Rebuild the PHP with enumerators and lazy sequences:</p>
+<ol>
+  <li><code>multiples_of(k, count)</code> — start from an
+      <em>infinite</em> source, <code>(1..Float::INFINITY).lazy</code>,
+      <code>select</code> the multiples of <code>k</code>, then take
+      <code>first(count)</code>. No loop counter.</li>
+  <li><code>fibonacci(count)</code> — build an
+      <code>Enumerator.new do |y| ... end</code> that seeds
+      <code>a, b = 0, 1</code> and <code>loop do</code> pushing
+      <code>y &lt;&lt; a</code> then advancing <code>a, b = b, a + b</code>.
+      Return <code>first(count)</code>.</li>
+  <li><code>pairs(arr)</code> — group into consecutive pairs with
+      <code>each_slice(2).to_a</code> (Ruby's <code>array_chunk($a, 2)</code>).</li>
+</ol>`,
+
+  starter: `# 1. multiples_of: an INFINITE lazy sequence, filtered, then first(count).
+#    (1..Float::INFINITY).lazy.select { ... }.first(count)
+def multiples_of(k, count)
+  raise NotImplementedError, "TODO: implement multiples_of"
+end
+
+# 2. fibonacci: Enumerator.new { |y| a, b = 0, 1; loop { y << a; ... } }
+#    then take first(count).
+def fibonacci(count)
+  raise NotImplementedError, "TODO: implement fibonacci"
+end
+
+# 3. pairs: chunk into consecutive pairs with each_slice(2).to_a.
+def pairs(arr)
+  raise NotImplementedError, "TODO: implement pairs"
+end
+`,
+
+  requirements: [
+    { pattern: /\.lazy/, message: "Use .lazy to stream over the infinite range" },
+    { pattern: /Enumerator\.new/, message: "Build the fib sequence with Enumerator.new" },
+    { pattern: /first\(/, message: "Pull exactly count values with first(count)" },
+    { pattern: /each_slice/, message: "Group pairs with each_slice(2)" },
+  ],
+
+  tests: [
+    { name: "multiples_of(3, 4) => [3, 6, 9, 12]",
+      code: "  expect_eq(multiples_of(3, 4), [3, 6, 9, 12])" },
+    { name: "multiples_of(5, 3) => [5, 10, 15]",
+      code: "  expect_eq(multiples_of(5, 3), [5, 10, 15])" },
+    { name: "fibonacci(7) => [0, 1, 1, 2, 3, 5, 8]",
+      code: "  expect_eq(fibonacci(7), [0, 1, 1, 2, 3, 5, 8])" },
+    { name: "fibonacci(1) => [0]",
+      code: "  expect_eq(fibonacci(1), [0])" },
+    { name: "pairs([1, 2, 3, 4]) => [[1, 2], [3, 4]]",
+      code: "  expect_eq(pairs([1, 2, 3, 4]), [[1, 2], [3, 4]])" },
+    { name: "pairs([1, 2, 3]) leaves a trailing single => [[1, 2], [3]]",
+      code: "  expect_eq(pairs([1, 2, 3]), [[1, 2], [3]])" },
+  ],
+
+  solution: `def multiples_of(k, count)
+  (1..Float::INFINITY).lazy.select { |n| n % k == 0 }.first(count)
+end
+
+def fibonacci(count)
+  fib = Enumerator.new do |y|
+    a, b = 0, 1
+    loop do
+      y << a
+      a, b = b, a + b
+    end
+  end
+  fib.first(count)
+end
+
+def pairs(arr)
+  arr.each_slice(2).to_a
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Define a sequence</td><td><code>function f(): Generator { yield }</code></td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+  <tr><td>Yield a value</td><td><code>yield $v</code></td><td><code>y &lt;&lt; v</code></td></tr>
+  <tr><td>Drain fully</td><td><code>iterator_to_array($g)</code></td><td><code>enum.to_a</code></td></tr>
+  <tr><td>Take some</td><td>manual loop + counter</td><td><code>enum.first(n)</code></td></tr>
+  <tr><td>Infinite + filter</td><td>hand-rolled loop</td><td><code>range.lazy.select { }.first(n)</code></td></tr>
+  <tr><td>Chunk</td><td><code>array_chunk($a, 2)</code></td><td><code>a.each_slice(2).to_a</code></td></tr>
+</table>
+<p>The insight is that <code>.lazy</code> turns Ruby's ordinary collection
+methods into a streaming pipeline. A plain <code>map</code>/<code>select</code>
+chain builds a full intermediate array at each step and would spin forever on
+an infinite range; the lazy version threads one element through the entire
+pipeline at a time and stops the instant <code>first(n)</code> is satisfied.
+PHP generators give you laziness at the <em>source</em>, but the moment you
+want to <code>map</code> or <code>filter</code> the stream you write the loop
+yourself — Ruby lets the combinators stay lazy all the way down.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p>Every JavaScript programmer has used a plain object as a dictionary:
+<code>{ apples: 10, bananas: 5 }</code>, read with <code>obj[key]</code>,
+patched with <code>?? 0</code> when the key might be missing. Rust's
+equivalent is <code>HashMap&lt;K, V&gt;</code> — like <code>Vec</code>,
+it commits to one key type and one value type, and like everything else
+in Rust it's honest about absence: <code>.get(key)</code> returns an
+<code>Option&lt;&amp;V&gt;</code>, never a silent <code>undefined</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>const inv = {};</code></td><td><code>let mut inv: HashMap&lt;String, u32&gt; = HashMap::new();</code></td></tr>
+  <tr><td><code>inv.apples = 10;</code></td><td><code>inv.insert("apples".to_string(), 10);</code></td></tr>
+  <tr><td><code>inv.cherries ?? 0</code></td><td><code>inv.get("cherries").copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>inv[k] = (inv[k] || 0) + n;</code></td><td><code>*inv.entry(k).or_insert(0) += n;</code></td></tr>
+</table>
+<p>The last row deserves a look. The read-check-write upsert you've typed a
+hundred times — <code>obj[k] = (obj[k] || 0) + n</code> — has a dedicated
+API in Rust: <code>.entry(k).or_insert(0)</code> means "give me the slot
+for <code>k</code>, inserting 0 first if it's empty," and it hands back a
+mutable reference you can <code>+=</code> straight into (the leading
+<code>*</code> follows the reference to the value, the way the whole
+expression already did implicitly in JS). One more difference:
+<code>HashMap</code> isn't ambient like <code>Object</code>. You bring it
+into scope with <code>use std::collections::HashMap;</code> — the starter
+does this for you.</p>`,
+
+  javascript: `const inventory = { apples: 10, bananas: 5 };
+
+// Reads that miss just hand you undefined:
+console.log(inventory.cherries);          // undefined
+const count = inventory.cherries ?? 0;    // the ?? 0 patch
+
+// The upsert dance, typed from muscle memory:
+function addStock(inv, name, n) {
+  inv[name] = (inv[name] || 0) + n;
+}
+
+addStock(inventory, "apples", 5);
+addStock(inventory, "cherries", 7);
+console.log(inventory);
+// { apples: 15, bananas: 5, cherries: 7 }`,
+
+  task: `
+<p>Port the inventory to a <code>HashMap&lt;String, u32&gt;</code>:</p>
+<ol>
+  <li>Write <code>build_inventory()</code> returning a
+      <code>HashMap&lt;String, u32&gt;</code> with two entries:
+      <code>"apples"</code> → <code>10</code> and <code>"bananas"</code> →
+      <code>5</code>. Use <code>HashMap::new()</code> plus
+      <code>.insert()</code> — and remember the keys are owned
+      <code>String</code>s, so it's <code>"apples".to_string()</code>.</li>
+  <li>Write <code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str)
+      -&gt; u32</code> that returns the count for <code>name</code>, or
+      <code>0</code> if it's missing —
+      <code>.get(name).copied().unwrap_or(0)</code> is Rust's
+      <code>?? 0</code>.</li>
+  <li>Write <code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str,
+      n: u32)</code> that adds <code>n</code> to the count for
+      <code>name</code>, starting from 0 if absent. Use the
+      <code>.entry()</code> API — the whole upsert is one line.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "apples" -> 10 and "bananas" -> 5.
+//    Keys are owned Strings: inv.insert("apples".to_string(), 10);
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: the ?? 0 idiom.
+//    .get(name) gives an Option<&u32>; .copied().unwrap_or(0) finishes the job.
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: the one-line upsert.
+//    *inv.entry(name.to_string()).or_insert(0) += n;
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Work with the HashMap<String, u32> type" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Use .insert() to build the map and/or .entry() to upsert" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or(0) as the ?? 0 for missing keys" },
+  ],
+
+  tests: [
+    { name: "build_inventory() has exactly two entries",
+      code: "assert_eq!(build_inventory().len(), 2);" },
+    { name: 'get_count finds "apples" -> 10 and "bananas" -> 5',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "apples"), 10);\nassert_eq!(get_count(&inv, "bananas"), 5);' },
+    { name: "get_count returns 0 for a missing key",
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "cherries"), 0);' },
+    { name: "add_stock adds to an existing count",
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "apples", 5);\nassert_eq!(get_count(&inv, "apples"), 15);' },
+    { name: "add_stock inserts a brand-new key",
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "cherries", 7);\nassert_eq!(get_count(&inv, "cherries"), 7);' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert("apples".to_string(), 10);
+    inv.insert("bananas".to_string(), 5);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Dictionary type</td><td>plain object (or <code>Map</code>)</td><td><code>HashMap&lt;K, V&gt;</code> — needs <code>use std::collections::HashMap;</code></td></tr>
+  <tr><td>Insert</td><td><code>obj[k] = v;</code></td><td><code>map.insert(k, v);</code> (needs <code>let mut</code>)</td></tr>
+  <tr><td>Read</td><td><code>obj[k]</code> → value or <code>undefined</code></td><td><code>map.get(&amp;k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>Default on miss</td><td><code>obj[k] ?? 0</code></td><td><code>map.get(&amp;k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Upsert</td><td><code>obj[k] = (obj[k] || 0) + n;</code></td><td><code>*map.entry(k).or_insert(0) += n;</code></td></tr>
+</table>
+<p>Why <code>.copied()</code>? Because <code>.get()</code> returns a
+<em>reference</em> into the map (<code>Option&lt;&amp;u32&gt;</code>), and
+we want a plain number out. For small copyable types like <code>u32</code>,
+<code>.copied()</code> turns <code>Option&lt;&amp;u32&gt;</code> into
+<code>Option&lt;u32&gt;</code>, and <code>unwrap_or(0)</code> does the rest.
+That chain — get, adapt, default — replaces JS's <code>??</code> with steps
+you can see and the compiler can check.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: array_map, array_filter &amp; Friends</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "array_map, array_filter & Friends",
+
+  intro: `
+<p>This is LINQ without the fluency. PHP has the same functional vocabulary —
+map, filter, reduce, sum — but as free functions over arrays, not extension
+methods. There's no chaining, so a C# pipeline reads <em>outside-in</em> when
+ported: <code>.Where(...).Select(...).ToList()</code> becomes
+<code>array_values(array_map($select, array_filter($arr, $where)))</code>.
+Same data flow, nested instead of chained.</p>
+<table>
+  <tr><th>C# (LINQ)</th><th>PHP</th></tr>
+  <tr><td><code>xs.Select(f)</code></td><td><code>array_map($f, $xs)</code> — callback <em>first</em></td></tr>
+  <tr><td><code>xs.Where(p)</code></td><td><code>array_filter($xs, $p)</code> — array <em>first</em> (!)</td></tr>
+  <tr><td><code>.ToList()</code></td><td><code>array_values(...)</code> — reindex 0, 1, 2…</td></tr>
+  <tr><td><code>xs.Aggregate(seed, f)</code></td><td><code>array_reduce($xs, $f, $seed)</code></td></tr>
+  <tr><td><code>xs.Sum(f)</code></td><td><code>array_sum(array_map($f, $xs))</code></td></tr>
+</table>
+<p>Two traps for the C# hand. First, the argument orders <em>flip</em>
+between the two workhorses: <code>array_map(callback, array)</code> but
+<code>array_filter(array, callback)</code> — a historical accident you just
+memorize. Second, and the real bug factory:
+<strong><code>array_filter</code> preserves keys</strong>. Filter
+<code>[10, 15, 20]</code> for evens and you get <code>[0 =&gt; 10, 2 =&gt; 20]</code>
+— a gap at index 1. In LINQ, <code>.ToList()</code> silently rebuilds a dense
+list for free; in PHP that's a job you do by hand with
+<code>array_values()</code>, and forgetting it breaks anything that expects a
+clean 0-based list (including <code>json_encode</code>, which turns a gapped
+array into an object).</p>`,
+
+  csharp: `record Product(string Name, int PriceCents, bool InStock);
+
+List<string> InStockNames(List<Product> products) =>
+    products.Where(p => p.InStock)
+            .Select(p => p.Name)
+            .ToList();
+
+int TotalValue(List<Product> products) =>
+    products.Sum(p => p.PriceCents);
+
+List<int> EvensDoubled(List<int> nums) =>
+    nums.Where(n => n % 2 == 0)
+        .Select(n => n * 2)
+        .ToList();`,
+
+  task: `
+<p>Products here are associative arrays:
+<code>['name' =&gt; 'Widget', 'price_cents' =&gt; 500, 'in_stock' =&gt; true]</code>.
+Port the three pipelines using short closures (<code>fn($p) =&gt; ...</code>,
+from Lesson 5):</p>
+<ol>
+  <li><code>in_stock_names(array $products): array</code> — the names of the
+      in-stock products, as a clean 0-indexed list. That's
+      <code>array_filter</code> inside <code>array_map</code> inside
+      <code>array_values</code> — Where, Select, ToList, inside-out.</li>
+  <li><code>total_value(array $products): int</code> — the sum of every
+      product's <code>price_cents</code>. <code>array_sum</code> over an
+      <code>array_map</code> (or <code>array_reduce</code> if you want the
+      full <code>Aggregate</code> experience).</li>
+  <li><code>evens_doubled(array $nums): array</code> — keep the even numbers,
+      double them, and <em>reindex</em>. The tests compare with
+      <code>===</code>, so leftover filter keys fail.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Products are associative arrays:
+//   ['name' => 'Widget', 'price_cents' => 500, 'in_stock' => true]
+
+// 1. Where -> Select -> ToList, nested inside-out:
+//    array_values(array_map($select, array_filter($products, $where)))
+//    Mind the flip: map takes callback first, filter takes array first.
+function in_stock_names(array $products): array {
+    throw new Exception("TODO: implement in_stock_names");
+}
+
+// 2. Sum(p => p.PriceCents): array_sum over array_map,
+//    or array_reduce($products, $f, 0) for the Aggregate flavor.
+function total_value(array $products): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// 3. Evens, doubled — and array_filter keeps keys, so
+//    array_values() is your ToList.
+function evens_doubled(array $nums): array {
+    throw new Exception("TODO: implement evens_doubled");
+}
+`,
+
+  requirements: [
+    { pattern: /array_map/, message: "Use array_map (Select)" },
+    { pattern: /array_filter/, message: "Use array_filter (Where)" },
+    { pattern: /array_values/, message: "Reindex filtered results with array_values (the ToList step)" },
+    { pattern: /array_reduce|array_sum/, message: "Total the prices with array_sum or array_reduce (Sum / Aggregate)" },
+  ],
+
+  tests: [
+    { name: 'in_stock_names picks in-stock names as a clean list: ["Widget", "Gizmo"]',
+      code: `$products = [
+    ["name" => "Widget", "price_cents" => 500, "in_stock" => true],
+    ["name" => "Gadget", "price_cents" => 250, "in_stock" => false],
+    ["name" => "Gizmo",  "price_cents" => 999, "in_stock" => true],
+];
+expect_eq(in_stock_names($products), ["Widget", "Gizmo"]);` },
+    { name: "in_stock_names([]) returns []",
+      code: 'expect_eq(in_stock_names([]), []);' },
+    { name: "total_value sums price_cents: 500 + 250 + 999 = 1749",
+      code: `$products = [
+    ["name" => "Widget", "price_cents" => 500, "in_stock" => true],
+    ["name" => "Gadget", "price_cents" => 250, "in_stock" => false],
+    ["name" => "Gizmo",  "price_cents" => 999, "in_stock" => true],
+];
+expect_eq(total_value($products), 1749);` },
+    { name: "total_value([]) returns 0",
+      code: 'expect_eq(total_value([]), 0);' },
+    { name: "evens_doubled([1, 2, 3, 4]) returns [4, 8] — reindexed from 0",
+      code: 'expect_eq(evens_doubled([1, 2, 3, 4]), [4, 8]);' },
+    { name: "evens_doubled([5, 6]) returns [12] at key 0, not key 1",
+      code: 'expect_eq(evens_doubled([5, 6]), [12]);' },
+  ],
+
+  solution: `<?php
+
+function in_stock_names(array $products): array {
+    return array_values(array_map(
+        fn(array $p) => $p['name'],
+        array_filter($products, fn(array $p) => $p['in_stock'])
+    ));
+}
+
+function total_value(array $products): int {
+    return array_sum(array_map(fn(array $p) => $p['price_cents'], $products));
+}
+
+function evens_doubled(array $nums): array {
+    return array_values(array_map(
+        fn(int $n) => $n * 2,
+        array_filter($nums, fn(int $n) => $n % 2 === 0)
+    ));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C# (LINQ)</th><th>PHP</th></tr>
+  <tr><td>Map</td><td><code>xs.Select(f)</code></td><td><code>array_map($f, $xs)</code></td></tr>
+  <tr><td>Filter</td><td><code>xs.Where(p)</code></td><td><code>array_filter($xs, $p)</code> — args flipped vs map, keys preserved</td></tr>
+  <tr><td>Materialize / reindex</td><td><code>.ToList()</code></td><td><code>array_values($xs)</code></td></tr>
+  <tr><td>Fold</td><td><code>xs.Aggregate(seed, (acc, x) =&gt; ...)</code></td><td><code>array_reduce($xs, fn($acc, $x) =&gt; ..., $seed)</code></td></tr>
+  <tr><td>Sum</td><td><code>xs.Sum()</code> / <code>xs.Sum(f)</code></td><td><code>array_sum($xs)</code> / <code>array_sum(array_map($f, $xs))</code></td></tr>
+  <tr><td>Sort</td><td><code>xs.OrderBy(f).ToList()</code></td><td><code>usort($xs, $cmp)</code> — mutates, in place</td></tr>
+  <tr><td>Laziness</td><td>deferred until enumerated</td><td>none — every call builds a full array</td></tr>
+</table>
+<p>The habit to build: whenever <code>array_filter</code> feeds anything that
+cares about indexes — <code>===</code> comparisons, <code>json_encode</code>,
+positional access — wrap it in <code>array_values()</code>. LINQ trained you
+to think of reindexing as free; PHP makes it a visible step. Also unlike
+LINQ, nothing here is lazy: each call materializes an array immediately (PHP
+generators, a later lesson, are the <code>IEnumerable</code> analog).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

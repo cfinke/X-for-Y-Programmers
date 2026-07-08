@@ -90,13 +90,9 @@ h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
 
 .compare {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 1.25rem;
-}
-
-@media (max-width: 800px) {
-  .compare { grid-template-columns: 1fr; }
 }
 
 .panel {
@@ -108,11 +104,16 @@ h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
 }
 
 .source-panel { border-top: 3px solid var(--source-accent); }
+.source-panel > summary {
+  cursor: pointer;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.source-panel[open] > summary { margin-bottom: 0.6rem; }
 .task-panel { border-top: 3px solid var(--ts); }
 .task-standalone { margin-bottom: 1.25rem; }
 
-/* Source code and the editor sit side by side; the editor stretches to
-   match the source panel's height so the columns stay comparable. */
+/* Source code and the editor stack full width, one above the other. */
 .editor-panel {
   border-top: 3px solid var(--ts);
   display: flex;
@@ -191,6 +192,8 @@ h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
 .btn-ghost:hover { border-color: var(--ts); }
 
 .hint-key { color: var(--muted); font-size: 0.8rem; }
+
+.run-status { color: var(--muted); font-style: italic; margin: 0.75rem 0 0; }
 
 .test-results {
   list-style: none;

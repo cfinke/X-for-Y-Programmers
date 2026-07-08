@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Structs &amp; Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A C# class bundles data, constructors, and methods in one body. Rust
+splits the two halves: <code>struct</code> declares the data — just fields —
+and an <code>impl</code> block attaches the behavior. There is no special
+constructor syntax; by convention you write an associated function named
+<code>new</code>, called as <code>BankAccount::new("Ada")</code> — the
+<code>::</code> marking a call on the type, like a C# static method, versus
+<code>.</code> for calls on an instance.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>class BankAccount { ... }</code> (data + methods)</td><td><code>struct BankAccount { ... }</code> + <code>impl BankAccount { ... }</code></td></tr>
+  <tr><td><code>new BankAccount("Ada")</code></td><td><code>BankAccount::new("Ada")</code> (convention, not keyword)</td></tr>
+  <tr><td><code>this</code> (implicit parameter)</td><td><code>&amp;self</code> / <code>&amp;mut self</code> (explicit, first parameter)</td></tr>
+  <tr><td>Read-only method</td><td><code>fn balance(&amp;self)</code></td></tr>
+  <tr><td>Mutating method</td><td><code>fn deposit(&amp;mut self, ...)</code></td></tr>
+</table>
+<p>The interesting part is <code>self</code>. Every method names its receiver
+explicitly, and the choice between <code>&amp;self</code> and
+<code>&amp;mut self</code> declares in the signature whether the method
+mutates — like C#'s <code>readonly</code> members on structs, but applied
+uniformly to everything. Callers need a mutable binding
+(<code>let mut acct</code>) to call a <code>&amp;mut self</code> method at
+all. One more shift: a Rust struct is a value with an owner, not a GC'd
+reference — when its owner goes out of scope it is dropped, deterministically,
+closer to a struct with <code>IDisposable</code> semantics built in than to a
+class on the heap.</p>`,
+
+  csharp: `public class BankAccount
+{
+    public string Owner { get; }
+    public long Balance { get; private set; }
+
+    public BankAccount(string owner) => Owner = owner;   // Balance starts at 0
+
+    public void Deposit(long amount) => Balance += amount;
+
+    public void Withdraw(long amount)
+    {
+        if (amount > Balance)
+            throw new InvalidOperationException("insufficient funds");
+        Balance -= amount;
+    }
+}
+
+var acct = new BankAccount("Ada");
+acct.Deposit(100);`,
+
+  task: `
+<p>The <code>struct BankAccount</code> definition is complete in the starter.
+Fill in the <code>impl BankAccount</code> block:</p>
+<ol>
+  <li><code>new(owner: &amp;str) -&gt; BankAccount</code> — build an account
+      with <code>owner: owner.to_string()</code> and <code>balance: 0</code>.</li>
+  <li><code>deposit(&amp;mut self, amount: i64)</code> — add
+      <code>amount</code> to <code>self.balance</code>.</li>
+  <li><code>withdraw(&amp;mut self, amount: i64) -&gt; Result&lt;(), String&gt;</code>
+      — where C# throws <code>InvalidOperationException</code>, return
+      <code>Err("insufficient funds".to_string())</code> when
+      <code>amount &gt; self.balance</code> (leaving the balance untouched);
+      otherwise subtract and return <code>Ok(())</code>.</li>
+  <li><code>balance(&amp;self) -&gt; i64</code> — a read-only accessor:
+      note <code>&amp;self</code>, not <code>&amp;mut self</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The data: fields only, no methods. (Complete — leave as is.)
+struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+// The behavior: methods live in an impl block.
+impl BankAccount {
+    // 1. new: the constructor by convention. balance starts at 0.
+    fn new(owner: &str) -> BankAccount {
+        todo!()
+    }
+
+    // 2. deposit: &mut self — mutation, declared in the signature.
+    fn deposit(&mut self, amount: i64) {
+        todo!()
+    }
+
+    // 3. withdraw: Err("insufficient funds") if amount > balance
+    //    (leave the balance alone), otherwise subtract and Ok(()).
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        todo!()
+    }
+
+    // 4. balance: read-only, so &self is enough.
+    fn balance(&self) -> i64 {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /struct\s+BankAccount/, message: "Keep the struct BankAccount definition (data only)" },
+    { pattern: /impl\s+BankAccount/, message: "Put the methods in an impl BankAccount block" },
+    { pattern: /&mut\s+self/, message: "Mutating methods take &mut self" },
+  ],
+
+  tests: [
+    { name: 'BankAccount::new("Ada") sets the owner and a 0 balance',
+      code: 'let acct = BankAccount::new("Ada");\nassert_eq!(acct.owner, "Ada");\nassert_eq!(acct.balance(), 0);' },
+    { name: "deposit(100) raises the balance to 100",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert_eq!(acct.balance(), 100);' },
+    { name: "withdraw(40) after deposit(100) is Ok and leaves 60",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert!(acct.withdraw(40).is_ok());\nassert_eq!(acct.balance(), 60);' },
+    { name: "overdrawing returns Err and leaves the balance untouched",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(50);\nassert!(acct.withdraw(100).is_err());\nassert_eq!(acct.balance(), 50);' },
+    { name: "deposits accumulate across calls",
+      code: 'let mut acct = BankAccount::new("Grace");\nacct.deposit(10);\nacct.deposit(20);\nacct.deposit(30);\nassert_eq!(acct.balance(), 60);' },
+  ],
+
+  solution: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: &str) -> BankAccount {
+        BankAccount {
+            owner: owner.to_string(),
+            balance: 0,
+        }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        if amount > self.balance {
+            return Err("insufficient funds".to_string());
+        }
+        self.balance -= amount;
+        Ok(())
+    }
+
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Data + behavior</td><td>one <code>class</code> body</td><td><code>struct</code> (data) + <code>impl</code> (behavior)</td></tr>
+  <tr><td>Constructor</td><td><code>new BankAccount("Ada")</code> (language feature)</td><td><code>BankAccount::new("Ada")</code> (naming convention)</td></tr>
+  <tr><td>Static vs instance call</td><td><code>Type.Method()</code> vs <code>obj.Method()</code></td><td><code>Type::function()</code> vs <code>value.method()</code></td></tr>
+  <tr><td>Receiver</td><td><code>this</code>, implicit</td><td><code>&amp;self</code> or <code>&amp;mut self</code>, explicit first parameter</td></tr>
+  <tr><td>"Does it mutate?"</td><td>read the body (or <code>readonly</code> struct members)</td><td>read the signature: <code>&amp;self</code> = no, <code>&amp;mut self</code> = yes</td></tr>
+  <tr><td>Failure in a method</td><td><code>throw new InvalidOperationException(...)</code></td><td><code>-&gt; Result&lt;(), String&gt;</code> with <code>Err(...)</code></td></tr>
+  <tr><td>Lifetime of the object</td><td>GC decides, eventually</td><td>dropped when the owner goes out of scope, deterministically</td></tr>
+</table>
+<p>The <code>&amp;self</code>/<code>&amp;mut self</code> split is the borrowing
+rules from Lesson 5 applied to methods: <code>balance(&amp;self)</code> can be
+called through any reference, while <code>deposit(&amp;mut self)</code>
+requires exclusive access — so "who can modify this account?" is answered by
+the type system, not by convention. And because a struct is an owned value
+rather than a GC'd reference, passing a <code>BankAccount</code> by value
+<em>moves</em> it; methods borrowing through <code>self</code> are what let
+you keep using it afterwards.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

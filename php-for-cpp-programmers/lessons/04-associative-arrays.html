@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Associative Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Associative Arrays",
+
+  intro: `
+<p>Here's the twist: PHP does not have a separate map type. The same
+<code>array</code> from last lesson is also your
+<code>std::unordered_map&lt;std::string, int&gt;</code> — write
+<code>['apples' =&gt; 3, 'pears' =&gt; 5]</code> and you have string keys
+pointing at values. A "list" is just the special case where the keys are
+<code>0, 1, 2, …</code>. Writing works like <code>operator[]</code>:
+<code>$m[$k] = $v;</code> inserts or overwrites. <em>Reading</em> does not:
+<code>$m['missing']</code> emits a warning and yields <code>null</code>
+instead of silently inserting a default-constructed value. There is no
+insert-on-read — the single most infamous <code>operator[]</code> footgun
+doesn't exist here.</p>
+<table>
+  <tr><th>C++17</th><th>PHP</th></tr>
+  <tr><td><code>std::unordered_map&lt;std::string, int&gt; m = {{"apples", 3}};</code></td><td><code>$m = ['apples' =&gt; 3];</code></td></tr>
+  <tr><td><code>m["pears"] = 5;</code></td><td><code>$m['pears'] = 5;</code></td></tr>
+  <tr><td><code>m.count(k) ? m.at(k) : 0</code></td><td><code>$m[$k] ?? 0</code></td></tr>
+  <tr><td><code>m.count(k)</code> / <code>m.contains(k)</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+  <tr><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>foreach ($m as $k =&gt; $v)</code></td></tr>
+  <tr><td>collect keys by hand</td><td><code>array_keys($m)</code></td></tr>
+</table>
+<p>Lookup-with-default — the <code>.count()</code>-then-<code>.at()</code>
+dance, or the <code>find</code>/<code>end</code>/<code>-&gt;second</code>
+three-step — collapses into one expression: <code>$m[$k] ?? 0</code>. The
+<code>??</code> null-coalescing operator checks existence without warning
+and supplies the fallback. Iteration is
+<code>foreach ($m as $k =&gt; $v)</code>, structured bindings built into the
+loop syntax since long before C++17 had them. And unlike
+<code>unordered_map</code>, PHP arrays remember <strong>insertion
+order</strong> — iteration is deterministic, in the order you added the
+keys.</p>`,
+
+  cpp: `#include <string>
+#include <unordered_map>
+#include <vector>
+
+std::unordered_map<std::string, int> build_inventory() {
+    return {{"apples", 3}, {"pears", 5}};
+}
+
+int get_count(const std::unordered_map<std::string, int>& inv,
+              const std::string& name) {
+    auto it = inv.find(name);          // the find-then-deref dance
+    return it == inv.end() ? 0 : it->second;
+}
+
+std::unordered_map<std::string, int>
+add_stock(std::unordered_map<std::string, int> inv,
+          const std::string& name, int n) {
+    inv[name] += n;                    // op[] default-constructs 0 first
+    return inv;
+}
+
+std::vector<std::string> item_names(
+        const std::unordered_map<std::string, int>& inv) {
+    std::vector<std::string> keys;
+    for (const auto& [name, count] : inv) keys.push_back(name);
+    return keys;                       // order: whatever the hash felt like
+}`,
+
+  task: `
+<p>Port the inventory to one PHP <code>array</code> (return type is plain
+<code>array</code> — same word as last lesson, different shape):</p>
+<ol>
+  <li><code>build_inventory(): array</code> — return
+      <code>['apples' =&gt; 3, 'pears' =&gt; 5]</code>.</li>
+  <li><code>get_count(array $inv, string $name): int</code> — the whole
+      find-then-deref dance is <code>$inv[$name] ?? 0</code>.</li>
+  <li><code>add_stock(array $inv, string $name, int $n): array</code> — add
+      <code>$n</code> to the existing count, treating a missing key as 0
+      (use <code>??</code> again — remember, reading a missing key warns
+      instead of inserting), then return the modified copy. Value semantics,
+      like lesson 3.</li>
+  <li><code>item_names(array $inv): array</code> — the hand-rolled key
+      collector is one call: <code>array_keys($inv)</code>. Insertion order,
+      guaranteed.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. {{"apples", 3}, {"pears", 5}}  ->  ['apples' => 3, 'pears' => 5]
+function build_inventory(): array {
+    throw new Exception("TODO: implement build_inventory");
+}
+
+// 2. find/end/->second in one expression: $inv[$name] ?? 0
+function get_count(array $inv, string $name): int {
+    throw new Exception("TODO: implement get_count");
+}
+
+// 3. Missing key counts as 0 (??), write with $inv[$name] = ...,
+//    return the modified copy.
+function add_stock(array $inv, string $name, int $n): array {
+    throw new Exception("TODO: implement add_stock");
+}
+
+// 4. The key-collecting loop is one call.
+function item_names(array $inv): array {
+    throw new Exception("TODO: implement item_names");
+}
+`,
+
+  requirements: [
+    { pattern: /=>/, message: "Build the map with 'key' => value syntax" },
+    { pattern: /\?\?/, message: "Use the ?? null-coalescing operator for lookup-with-default" },
+    { pattern: /foreach\s*\(|array_keys/, message: "Get the keys with array_keys (or a foreach loop)" },
+  ],
+
+  tests: [
+    { name: "build_inventory() returns ['apples' => 3, 'pears' => 5]",
+      code: "expect_eq(build_inventory(), ['apples' => 3, 'pears' => 5]);" },
+    { name: "get_count on an existing key returns its value",
+      code: "expect_eq(get_count(build_inventory(), 'pears'), 5);" },
+    { name: "get_count on a missing key returns 0 (no warning, no insert)",
+      code: "expect_eq(get_count(build_inventory(), 'plums'), 0);" },
+    { name: "add_stock adds to an existing count",
+      code: "$inv = add_stock(build_inventory(), 'apples', 2);\nexpect_eq($inv['apples'], 5);" },
+    { name: "add_stock creates a missing key from 0",
+      code: "$inv = add_stock(build_inventory(), 'plums', 4);\nexpect_eq($inv['plums'], 4);" },
+    { name: "item_names returns keys in insertion order",
+      code: "expect_eq(item_names(build_inventory()), ['apples', 'pears']);" },
+  ],
+
+  solution: `<?php
+
+function build_inventory(): array {
+    return ['apples' => 3, 'pears' => 5];
+}
+
+function get_count(array $inv, string $name): int {
+    return $inv[$name] ?? 0;
+}
+
+function add_stock(array $inv, string $name, int $n): array {
+    $inv[$name] = ($inv[$name] ?? 0) + $n;
+    return $inv;
+}
+
+function item_names(array $inv): array {
+    return array_keys($inv);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+  <tr><td>Map literal</td><td><code>{{"apples", 3}, {"pears", 5}}</code></td><td><code>['apples' =&gt; 3, 'pears' =&gt; 5]</code></td></tr>
+  <tr><td>Insert / overwrite</td><td><code>m[k] = v;</code></td><td><code>$m[$k] = $v;</code></td></tr>
+  <tr><td>Read a missing key</td><td><code>m[k]</code> silently inserts a default</td><td><code>$m[$k]</code> warns and yields <code>null</code> — no insert</td></tr>
+  <tr><td>Lookup with default</td><td><code>m.count(k) ? m.at(k) : 0</code></td><td><code>$m[$k] ?? 0</code></td></tr>
+  <tr><td>Has key?</td><td><code>m.contains(k)</code> (C++20) / <code>m.count(k)</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>foreach ($m as $k =&gt; $v)</code></td></tr>
+  <tr><td>All keys</td><td>manual loop</td><td><code>array_keys($m)</code>; values via <code>array_values($m)</code></td></tr>
+  <tr><td>Iteration order</td><td>unspecified (hash order)</td><td>insertion order, guaranteed</td></tr>
+</table>
+<p>One type, two personalities: under the hood every PHP array is an ordered
+hash table, and the "list" from lesson 3 is merely the case where keys
+happen to be consecutive integers. That's why <code>count</code>,
+<code>foreach</code>, and value semantics (copy-on-write included) work
+identically on both. The habits to swap: <code>??</code> replaces every
+lookup dance you've ever written, and because reading never inserts,
+<code>add_stock</code>-style code must handle the missing key explicitly —
+which <code>?? 0</code> makes a non-event.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

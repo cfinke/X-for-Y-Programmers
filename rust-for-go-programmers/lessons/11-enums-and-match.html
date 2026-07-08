@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums &amp; Pattern Matching</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Pattern Matching",
+
+  intro: `
+<p>When a Go value can be "one of several shapes", you have two options and
+you've probably shipped both. Option one: a fat struct with a
+<code>Kind</code> field, where a circle drags around an unused
+<code>Width</code> and <code>Height</code> and nothing stops you from
+reading them. Option two: an interface plus a type switch — cleaner, but
+the compiler never checks that your switch covers every implementation.
+Add a <code>Triangle</code> next month and every type switch in the
+codebase silently falls through to its <code>default</code>.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td>fat struct + <code>Kind</code> field (unused fields)</td><td><code>enum Shape { Circle { radius: f64 }, ... }</code> — each variant carries exactly its data</td></tr>
+  <tr><td>interface + <code>switch v := s.(type)</code></td><td><code>match shape { Shape::Circle { radius } =&gt; ... }</code></td></tr>
+  <tr><td>missing case → falls to <code>default</code> at runtime</td><td>missing variant → <strong>compile error</strong></td></tr>
+  <tr><td><code>case Circle:</code> then <code>v.Radius</code></td><td>pattern binds the fields: <code>Circle { radius }</code></td></tr>
+</table>
+<p>Rust's <code>enum</code> is both options done right. Each variant carries
+exactly its own data — <code>Circle</code> has a radius and nothing else,
+<code>Rectangle</code> has width and height and no radius — and there is no
+way to touch a rectangle's fields while holding a circle. Then
+<code>match</code> replaces the type switch, with one crucial upgrade: it
+<em>must</em> cover every variant. Forget one and it's a compile error, not
+a silent skip. The pattern on the left of <code>=&gt;</code> also
+destructures the variant's fields in the same breath, so there's no
+separate <code>v := s.(type)</code> step.</p>`,
+
+  go: `type Shape interface{ isShape() }
+
+type Circle struct{ Radius float64 }
+type Rectangle struct{ Width, Height float64 }
+
+func (Circle) isShape()    {}
+func (Rectangle) isShape() {}
+
+func area(s Shape) float64 {
+	switch v := s.(type) {
+	case Circle:
+		return math.Pi * v.Radius * v.Radius
+	case Rectangle:
+		return v.Width * v.Height
+	}
+	// The compiler can't know the switch was exhaustive,
+	// so we still need a fallthrough value:
+	return 0
+}`,
+
+  task: `
+<p>Build the exhaustive version:</p>
+<ol>
+  <li>The enum <code>Shape</code> is already defined in the starter, with two
+      variants: <code>Circle { radius: f64 }</code> and
+      <code>Rectangle { width: f64, height: f64 }</code>. Leave it as is —
+      the tests construct <code>Shape::Circle { radius: 1.0 }</code>
+      directly.</li>
+  <li>Write <code>area(shape: &amp;Shape) -&gt; f64</code> using a
+      <code>match</code> with one arm per variant. Destructure the fields in
+      the pattern: <code>Shape::Circle { radius } =&gt; ...</code>. For the
+      circle, use <code>std::f64::consts::PI</code> — Rust's
+      <code>math.Pi</code>.</li>
+</ol>
+<p>Try deleting the <code>Rectangle</code> arm once it works: the compiler
+will refuse, listing exactly which variant you missed. Don't write
+<code>fn main</code> — the lesson's tests call your functions directly.</p>`,
+
+  starter: `// The enum is complete — each variant carries exactly its own fields.
+enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+// area: match on the shape; the pattern binds the variant's fields.
+//   Shape::Circle { radius } => std::f64::consts::PI * ...
+fn area(shape: &Shape) -> f64 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+Shape/, message: "Keep the enum Shape definition" },
+    { pattern: /match\b/, message: "Use a match expression in area" },
+    { pattern: /Circle\s*\{/, message: "Destructure the Circle variant's fields in a pattern" },
+  ],
+
+  tests: [
+    { name: "area of Circle { radius: 1.0 } is π",
+      code: "let c = Shape::Circle { radius: 1.0 };\nassert!((area(&c) - std::f64::consts::PI).abs() < 0.001);" },
+    { name: "area of Circle { radius: 2.0 } is about 12.566",
+      code: "let c = Shape::Circle { radius: 2.0 };\nassert!((area(&c) - 12.566370).abs() < 0.001);" },
+    { name: "area of Rectangle { width: 3.0, height: 4.0 } is 12.0",
+      code: "let r = Shape::Rectangle { width: 3.0, height: 4.0 };\nassert_eq!(area(&r), 12.0);" },
+    { name: "area of Rectangle { width: 2.5, height: 4.0 } is 10.0",
+      code: "let r = Shape::Rectangle { width: 2.5, height: 4.0 };\nassert_eq!(area(&r), 10.0);" },
+  ],
+
+  solution: `enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+}
+
+fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
+        Shape::Rectangle { width, height } => width * height,
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>One-of-several types</td><td>interface + marker method, or Kind field</td><td><code>enum Shape { Circle { ... }, Rectangle { ... } }</code></td></tr>
+  <tr><td>Per-case data</td><td>separate structs (or unused fields)</td><td>fields live <em>on the variant</em></td></tr>
+  <tr><td>Branching on the case</td><td><code>switch v := s.(type)</code></td><td><code>match shape { Shape::Circle { radius } =&gt; ... }</code></td></tr>
+  <tr><td>Exhaustiveness</td><td>not checked — <code>default</code> catches strays at runtime</td><td>checked at compile time; every variant or <code>_</code> required</td></tr>
+  <tr><td>Constructing a case</td><td><code>Circle{Radius: 1.0}</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+</table>
+<p>You've already been using this machinery: <code>Option</code> is just
+<code>enum Option&lt;T&gt; { Some(T), None }</code> and <code>Result</code>
+is <code>enum Result&lt;T, E&gt; { Ok(T), Err(E) }</code> — plain enums from
+the standard library, no compiler magic. The exhaustiveness check is why
+adding a variant to a Rust enum is a refactoring tool, not a risk: the
+compiler hands you a to-do list of every <code>match</code> that needs a
+new arm, where Go would hand you a bug report.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Vectors → Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Vectors → Arrays",
+
+  intro: `
+<p><code>Vec&lt;i32&gt;</code> becomes <code>number[]</code>, and
+<code>vec![1, 2, 3]</code> becomes a plain literal <code>[1, 2, 3]</code>.
+So far, so mechanical. The part to internalize is the mutability story:
+in Rust, <code>v.push(4)</code> requires <code>let mut v</code>. In
+TypeScript, <code>push</code> works fine on a <code>const</code> array —
+because <code>const</code> only pins the <em>binding</em>, not the
+contents. There is no <code>&amp;mut</code>, no exclusive access, no
+"cannot borrow as mutable": every array is a shared mutable reference,
+and anyone holding it can grow it.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>let mut v: Vec&lt;i32&gt; = vec![1, 2, 3];</code></td><td><code>const v: number[] = [1, 2, 3];</code></td></tr>
+  <tr><td><code>v.push(4);</code> (needs <code>mut</code>)</td><td><code>v.push(4);</code> (works on a <code>const</code>!)</td></tr>
+  <tr><td><code>v.len()</code></td><td><code>v.length</code></td></tr>
+  <tr><td><code>v.get(i)</code> → <code>Option&lt;&amp;i32&gt;</code></td><td><code>v[i]</code> → <code>number | undefined</code></td></tr>
+  <tr><td><code>for x in &amp;v { }</code></td><td><code>for (const x of v) { }</code></td></tr>
+</table>
+<p>Indexing keeps the honesty you're used to, just in a different shape:
+where <code>v.get(i)</code> hands you an <code>Option</code>, an
+out-of-bounds <code>v[i]</code> evaluates to <code>undefined</code> — no
+panic, no exception. Model it as <code>T | undefined</code> (a union type;
+more on those soon), the direct analogue of <code>Option&lt;T&gt;</code>
+without the wrapper. And iteration needs no <code>.iter()</code>:
+<code>for...of</code> walks the values directly, no borrow to choose.</p>`,
+
+  rust: `let mut scores: Vec<i32> = vec![10, 20, 30];
+
+scores.push(40);        // needs the mut above
+let n = scores.len();   // 4
+
+let first = scores.get(0);    // Some(&10)
+let missing = scores.get(99); // None -- no panic, but you must check
+
+let mut total = 0;
+for s in &scores {      // borrow, or .iter(), or into_iter()...
+    total += s;
+}
+
+println!("{n} scores, total {total}, first {first:?} {missing:?}");`,
+
+  task: `
+<p>Port the vector code on the left:</p>
+<ol>
+  <li>Declare <code>scores</code> as a <code>const</code> with an explicit
+      <code>number[]</code> annotation, initialized to
+      <code>[10, 20, 30]</code>.</li>
+  <li>Write <code>addScore(n: number): number</code> — <code>push</code>
+      <code>n</code> onto <code>scores</code> and return the new
+      <code>scores.length</code>. Yes, onto the <code>const</code>: feel
+      the gotcha.</li>
+  <li>Write <code>getScore(i: number): number | undefined</code> — return
+      <code>scores[i]</code>. The return type is the point: it's
+      <code>Option&lt;number&gt;</code> spelled as a union.</li>
+  <li>Write <code>sum(values: number[]): number</code> — total the values
+      with a <code>for...of</code> loop. No <code>.iter()</code>, no
+      <code>&amp;</code>.</li>
+</ol>`,
+
+  starter: `// 1. let mut scores: Vec<i32> = vec![10, 20, 30];
+//    -> const with an explicit number[] annotation
+// TODO: declare scores
+
+
+// 2. Push onto the const array and return the new length.
+function addScore(n: number): number {
+  // TODO: scores.push(n); return scores.length;
+  return 0;
+}
+
+// 3. v.get(i): Option<&i32>  ->  v[i]: number | undefined
+function getScore(i: number): number | undefined {
+  return undefined; // TODO
+}
+
+// 4. Sum with for...of -- no .iter() needed.
+function sum(values: number[]): number {
+  let total = 0;
+  // TODO: for (const v of values) { ... }
+  return total;
+}
+`,
+
+  exportNames: ["scores", "addScore", "getScore", "sum"],
+
+  requirements: [
+    { pattern: /const\s+scores\s*:\s*number\[\]/, message: "Declare scores as a const with an explicit number[] annotation" },
+    { pattern: /scores\.push\s*\(/, message: "Use scores.push(...) in addScore — mutation through a const binding" },
+    { pattern: /:\s*number\s*\|\s*undefined/, message: "Give getScore the return type number | undefined — the Option<number> of TypeScript" },
+    { pattern: /values\s*:\s*number\[\]/, message: "Annotate sum's parameter as values: number[]" },
+  ],
+
+  tests: [
+    { name: "scores starts as [10, 20, 30]", run: (x) => expectDeepEqual(x.scores, [10, 20, 30]) },
+    { name: "addScore(40) pushes onto the const array and returns 4", run: (x) => expectEqual(x.addScore(40), 4) },
+    { name: "scores is now [10, 20, 30, 40] — const did not stop the mutation", run: (x) => expectDeepEqual(x.scores, [10, 20, 30, 40]) },
+    { name: "getScore(0) is 10; getScore(99) is undefined (no panic, no None — just undefined)", run: (x) => { expectEqual(x.getScore(0), 10); expectEqual(x.getScore(99), undefined); } },
+    { name: "sum([1, 2, 3]) is 6 and sum([]) is 0", run: (x) => { expectEqual(x.sum([1, 2, 3]), 6); expectEqual(x.sum([]), 0); } },
+  ],
+
+  solution: `const scores: number[] = [10, 20, 30];
+
+function addScore(n: number): number {
+  scores.push(n); // no mut required -- const only fixes the binding
+  return scores.length;
+}
+
+function getScore(i: number): number | undefined {
+  return scores[i];
+}
+
+function sum(values: number[]): number {
+  let total = 0;
+  for (const v of values) {
+    total += v;
+  }
+  return total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Declare</td><td><code>let mut v: Vec&lt;i32&gt; = vec![1, 2, 3];</code></td><td><code>const v: number[] = [1, 2, 3];</code></td></tr>
+  <tr><td>Grow</td><td><code>v.push(4)</code> — requires <code>mut</code></td><td><code>v.push(4)</code> — works on <code>const</code></td></tr>
+  <tr><td>Length</td><td><code>v.len()</code></td><td><code>v.length</code> (property)</td></tr>
+  <tr><td>Safe index</td><td><code>v.get(i)</code> → <code>Option&lt;&amp;T&gt;</code></td><td><code>v[i]</code> → <code>T | undefined</code> (checked with the flag <code>noUncheckedIndexedAccess</code>)</td></tr>
+  <tr><td>Panicking index</td><td><code>v[i]</code> — panics out of bounds</td><td>none — out of bounds is always <code>undefined</code></td></tr>
+  <tr><td>Iterate</td><td><code>for x in &amp;v</code></td><td><code>for (const x of v)</code></td></tr>
+</table>
+<p>The gotcha worth burning in: <code>const</code> ≠ immutable.
+<code>const scores</code> means <code>scores = otherArray</code> is a
+compile error, and nothing more — <code>push</code>, <code>pop</code>, and
+index assignment all sail through, from any alias, on any thread of
+control. When you genuinely want a Rust-style frozen vector, annotate it
+as <code>readonly number[]</code>: then <code>push</code> stops existing
+at compile time. (Runtime enforcement takes
+<code>Object.freeze</code> — the type system alone is the borrow checker
+you have here.)</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

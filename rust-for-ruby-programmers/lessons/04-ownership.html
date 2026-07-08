@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Ownership & Moves</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Ownership & Moves",
+
+  intro: `
+<p>In Ruby, every variable is a reference to a shared object. Assign
+<code>b = a</code> and both names point at the same array; pass it to a
+method and the method shares it too; the GC sweeps it up whenever nobody's
+looking. Convenient — until some method three calls deep does
+<code>list &lt;&lt; item</code> and every other holder of that array is
+quietly surprised. Rust replaces all of that with one rule: <strong>every
+value has exactly one owner</strong>. Assignment doesn't share — it
+<em>moves</em>. After <code>let b = a;</code>, the value belongs to
+<code>b</code> and <code>a</code> is dead: touching it is a compile error,
+not a runtime surprise. When the owner goes out of scope, the memory is
+freed right there — deterministically, no GC pauses.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>b = a</code> — both share one object</td><td><code>let b = a;</code> — value <em>moves</em> to <code>b</code>; <code>a</code> is dead</td></tr>
+  <tr><td><code>b = a.dup</code> — explicit copy</td><td><code>let b = a.clone();</code> — explicit copy</td></tr>
+  <tr><td>GC frees memory eventually</td><td>owner goes out of scope → freed immediately</td></tr>
+  <tr><td>Sharing is invisible</td><td>Copying is visible: you can grep for <code>.clone()</code></td></tr>
+</table>
+<p>When you genuinely want two independent values, say so:
+<code>.clone()</code> is Rust's <code>.dup</code>, and its explicitness is
+the point — every deep copy in the codebase is visible and greppable. One
+big exemption: simple scalar types like <code>i32</code> and <code>bool</code>
+are <code>Copy</code> — assignment duplicates them automatically, so numbers
+behave exactly like Ruby's integers and none of this lesson applies to them.
+Moves matter for heap-owning types: <code>String</code>, <code>Vec</code>,
+your structs.</p>`,
+
+  ruby: `def consume_and_shout(s)
+  "#{s.upcase}!!!"
+end
+
+s = "hello"
+puts consume_and_shout(s)
+puts s          # Ruby: s is still alive and well.
+                # Rust: s was MOVED into the function — using it
+                # here would be a compile error.
+
+# The classic Ruby sharing surprise:
+a = [1, 2, 3]
+b = a           # same array, two names
+b << 4
+p a             # [1, 2, 3, 4]  — who mutated my array?!
+
+# The fix Ruby makes you remember; Rust makes you write:
+c = a.dup       # independent copy, mutate freely
+c << 5
+p a             # unchanged`,
+
+  task: `
+<p>Two functions that make moves and clones concrete:</p>
+<ol>
+  <li><code>consume_and_shout</code> takes <code>s: String</code> — by value,
+      not <code>&amp;str</code>! It takes <em>ownership</em>: the caller's
+      variable is dead afterwards. Return the string uppercased with
+      <code>"!!!"</code> appended (a <code>String</code>).</li>
+  <li><code>keep_both</code> takes <code>v: Vec&lt;i32&gt;</code> and returns
+      a tuple <code>(Vec&lt;i32&gt;, Vec&lt;i32&gt;)</code>: the original
+      vector untouched, plus a <code>.clone()</code> of it with one extra
+      element — the value <code>0</code> — pushed onto the end with
+      <code>.push(0)</code>. This is Ruby's <code>a.dup &lt;&lt; 0</code>,
+      with the copy spelled out. (You'll need <code>let mut</code> for the
+      clone, and clone <em>before</em> you return: return values move too.)</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. consume_and_shout takes ownership of s (String, not &str).
+//    Return it uppercased with "!!!" on the end.
+fn consume_and_shout(s: String) -> String {
+    todo!()
+}
+
+// 2. keep_both: return (original, clone-with-0-pushed).
+//    .clone() is Rust's .dup — and the clone needs \`let mut\` to push.
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.clone\(\)/, message: "Use .clone() (Rust's explicit .dup) in keep_both" },
+    { pattern: /\.push\(/, message: "Push the extra element onto the clone with .push(...)" },
+  ],
+
+  tests: [
+    { name: 'consume_and_shout(String::from("hello")) returns "HELLO!!!"',
+      code: 'assert_eq!(consume_and_shout(String::from("hello")), "HELLO!!!");' },
+    { name: 'consume_and_shout(String::from("Ruby")) returns "RUBY!!!"',
+      code: 'assert_eq!(consume_and_shout(String::from("Ruby")), "RUBY!!!");' },
+    { name: "keep_both(vec![1, 2, 3]) returns ([1, 2, 3], [1, 2, 3, 0])",
+      code: "assert_eq!(keep_both(vec![1, 2, 3]), (vec![1, 2, 3], vec![1, 2, 3, 0]));" },
+    { name: "keep_both(vec![]) returns ([], [0])",
+      code: "assert_eq!(keep_both(vec![]), (vec![], vec![0]));" },
+    { name: "the original comes back unmodified",
+      code: "let (original, _copy) = keep_both(vec![7, 8]);\nassert_eq!(original, vec![7, 8]);" },
+  ],
+
+  solution: `fn consume_and_shout(s: String) -> String {
+    format!("{}!!!", s.to_uppercase())
+}
+
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    let mut copy = v.clone();
+    copy.push(0);
+    (v, copy)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Assignment</td><td>shares a reference</td><td>moves ownership (old name is dead)</td></tr>
+  <tr><td>Explicit copy</td><td><code>a.dup</code></td><td><code>a.clone()</code></td></tr>
+  <tr><td>Passing to a function</td><td>shares the object</td><td>moves it in (unless you borrow — next lesson)</td></tr>
+  <tr><td>Cleanup</td><td>GC, eventually</td><td>freed the instant the owner leaves scope</td></tr>
+  <tr><td>Numbers, bools</td><td>shared like everything</td><td><code>Copy</code> types: duplicated automatically, never moved</td></tr>
+  <tr><td>Use-after-move</td><td>(impossible to express)</td><td>compile error: "value borrowed here after move"</td></tr>
+</table>
+<p>Reframe the "borrow checker fights me" folklore: the compiler is enforcing
+the same discipline you already half-follow in Ruby — <em>don't mutate what
+you don't own; <code>.dup</code> before you modify a shared thing</em>. Ruby
+leaves that as convention and code review; Rust makes it a compile error.
+The "who mutated my array?!" bug from the left panel cannot be written in
+Rust: either you own the vector (so nobody else had it) or you cloned it
+(visibly). And when the error messages do arrive, read them — rustc's
+suggestions ("consider cloning the value") are the best in the business.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

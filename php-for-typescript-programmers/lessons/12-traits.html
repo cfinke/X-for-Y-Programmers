@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>TypeScript never shipped mixins. The "mixin pattern" you may have battled —
+a function that takes a class and returns a bigger class, complete with a
+<code>Constructor&lt;T&gt;</code> helper type — is a workaround for a feature
+PHP has had since 5.4: <strong>traits</strong>. A trait is a bundle of methods
+(and properties) that any class can paste into itself with <code>use</code>,
+no inheritance slot consumed.</p>
+<table>
+  <tr><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>mixin factory: <code>function Describable(Base) { return class extends Base {...} }</code></td><td><code>trait Describable { public function describe(): string {...} }</code></td></tr>
+  <tr><td><code>const Dog = Describable(DogBase);</code></td><td><code>class Dog { use Describable; }</code></td></tr>
+  <tr><td>one <code>extends</code> per class, mixins juggle it</td><td><code>use</code> as many traits as you like, <code>extends</code> stays free</td></tr>
+  <tr><td>constraint via <code>Constructor&lt;{ name(): string }&gt;</code></td><td>trait just calls <code>$this-&gt;name()</code>; the using class must supply it</td></tr>
+</table>
+<p>Inside a trait, <code>$this</code> means "whatever class I get pasted
+into." A trait can therefore call methods it doesn't define —
+<code>$this-&gt;name()</code> below — and each host class fills in the blank.
+That's the same contract your TS mixin expressed with a generic constraint,
+minus the type gymnastics. (If you want the contract enforced, a trait can
+declare <code>abstract public function name(): string;</code>, forcing hosts
+to implement it.)</p>`,
+
+  typescript: `// TypeScript's "mixin pattern" — the workaround for missing traits:
+type Constructor<T = {}> = new (...args: any[]) => T;
+
+function Describable<TBase extends Constructor<{ name(): string }>>(Base: TBase) {
+  return class extends Base {
+    describe(): string {
+      return "This is " + this.name();
+    }
+  };
+}
+
+class DogBase {
+  name(): string { return "Rex"; }
+}
+const Dog = Describable(DogBase);
+
+new Dog().describe(); // "This is Rex"`,
+
+  task: `
+<p>Replace the mixin factory with a real trait:</p>
+<ol>
+  <li>Fill in <code>trait Describable</code> with one method,
+      <code>describe(): string</code>, returning <code>"This is "</code>
+      concatenated (<code>.</code>, PHP's <code>+</code> for strings) with
+      <code>$this-&gt;name()</code>.</li>
+  <li>Class <code>Dog</code> keeps <code>use Describable;</code> and implements
+      <code>name(): string</code> returning <code>"Rex"</code>.</li>
+  <li>Class <code>Robot</code> also uses <code>Describable</code> and implements
+      <code>name(): string</code> returning <code>"Bender"</code>.</li>
+</ol>
+<p>The tests call both <code>-&gt;name()</code> and <code>-&gt;describe()</code>
+on a <code>new Dog()</code> and a <code>new Robot()</code> — one trait, two
+unrelated classes, zero inheritance.</p>`,
+
+  starter: `<?php
+
+// A trait: methods that get pasted into any class that says "use".
+// $this refers to the host class, so traits can call methods they
+// don't define — like $this->name() here.
+trait Describable {
+    public function describe(): string {
+        throw new Exception("TODO: return 'This is ' . \\$this->name()");
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return 'Rex'");
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return 'Bender'");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describable/, message: "Define trait Describable" },
+    { pattern: /use\s+Describable/, message: "Paste the trait into each class with use Describable;" },
+  ],
+
+  tests: [
+    { name: '(new Dog())->name() returns "Rex"',
+      code: 'expect_eq((new Dog())->name(), "Rex");' },
+    { name: '(new Dog())->describe() returns "This is Rex" via the trait',
+      code: 'expect_eq((new Dog())->describe(), "This is Rex");' },
+    { name: '(new Robot())->name() returns "Bender"',
+      code: 'expect_eq((new Robot())->name(), "Bender");' },
+    { name: '(new Robot())->describe() returns "This is Bender" — same trait, different host',
+      code: 'expect_eq((new Robot())->describe(), "This is Bender");' },
+  ],
+
+  solution: `<?php
+
+trait Describable {
+    public function describe(): string {
+        return "This is " . $this->name();
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        return "Rex";
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        return "Bender";
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>Horizontal reuse</td><td>mixin factory functions</td><td><code>trait Name { ... }</code></td></tr>
+  <tr><td>Apply it</td><td><code>class X extends Mixin(Base)</code></td><td><code>class X { use Name; }</code></td></tr>
+  <tr><td>Several at once</td><td>nested calls: <code>A(B(Base))</code></td><td><code>use A, B;</code></td></tr>
+  <tr><td>Require host methods</td><td>generic constraint on the base</td><td><code>abstract public function name(): string;</code> in the trait</td></tr>
+  <tr><td>Name collision</td><td>last mixin wins, silently</td><td>compile error; resolve with <code>insteadof</code> / <code>as</code></td></tr>
+  <tr><td>Is-a relationship</td><td>mixin classes appear in the chain</td><td>none — traits are invisible to <code>instanceof</code></td></tr>
+</table>
+<p>Traits are copy-paste at compile time, not delegation: after loading,
+<code>Dog::describe()</code> exists as if you had typed it in the class body.
+That's why <code>instanceof Describable</code> is not a thing — if you need a
+checkable type, pair the trait with an interface (<code>interface HasDescription</code>
++ <code>trait Describable</code> is a very common PHP duo, e.g. Laravel's
+<code>Notifiable</code>).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

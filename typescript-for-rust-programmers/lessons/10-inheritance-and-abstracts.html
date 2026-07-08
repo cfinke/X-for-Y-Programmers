@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance & Abstract Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Rust looked at classical inheritance and said no — you got traits and
+composition instead, and you have probably come to like it. TypeScript has
+inheritance, and you will meet it constantly in other people's code, so
+here is the map. <code>extends</code> shares implementation the way a trait
+never could; an <code>abstract class</code> is best understood as
+<em>a trait that can also carry state</em>: it declares required methods
+(<code>abstract area(): number</code> — exactly a required trait method,
+checked at compile time: forget to implement it in a subclass and the build
+fails), provides concrete methods (trait default methods), and, unlike a
+trait, can hold fields and a constructor.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>trait Shape { fn area(&amp;self) -&gt; f64; }</code></td><td><code>abstract class Shape { abstract area(): number; }</code></td></tr>
+  <tr><td>default method calling a required one</td><td>concrete method calling an abstract one (template method)</td></tr>
+  <tr><td><code>impl Shape for Circle { ... }</code></td><td><code>class Circle extends Shape { ... }</code></td></tr>
+  <tr><td>traits cannot hold fields</td><td>abstract classes can hold state and a constructor</td></tr>
+  <tr><td><code>Vec&lt;Box&lt;dyn Shape&gt;&gt;</code>, explicit vtable choice</td><td><code>Shape[]</code> — dynamic dispatch is just how method calls work</td></tr>
+</table>
+<p>The <code>dyn Trait</code> ceremony evaporates: a variable of type
+<code>Shape</code> holds any subclass, method calls dispatch dynamically,
+and there is no <code>Box</code>, no fat pointer, no
+<code>&amp;dyn</code>-vs-<code>Box&lt;dyn&gt;</code> decision — every object
+is already heap-allocated and every call is already virtual. One honest
+warning to close on: Rust rejected inheritance for good reasons, and deep
+<code>extends</code> hierarchies rot in TypeScript exactly the way the Rust
+designers feared. Your trait-and-composition instincts remain good here —
+use <code>extends</code> sparingly, one level deep, mostly for the
+abstract-base pattern this lesson teaches.</p>`,
+
+  rust: `trait Shape {
+    fn name(&self) -> &str;
+    fn area(&self) -> f64; // required method — compile error if missing
+
+    // default method calling a required one: the "template method"
+    fn describe(&self) -> String {
+        format!("{} with area {:.2}", self.name(), self.area())
+    }
+}
+
+struct Circle { radius: f64 }
+
+impl Shape for Circle {
+    fn name(&self) -> &str { "circle" }
+    fn area(&self) -> f64 { std::f64::consts::PI * self.radius * self.radius }
+}
+
+fn main() {
+    // dynamic dispatch demands an explicit trait object:
+    let shapes: Vec<Box<dyn Shape>> = vec![Box::new(Circle { radius: 1.0 })];
+    for s in &shapes { println!("{}", s.describe()); }
+}`,
+
+  task: `
+<p>Port the trait to an abstract base class:</p>
+<ol>
+  <li>Declare <code>abstract class Shape</code> with a constructor taking
+      <code>public readonly name: string</code> (state — the thing a trait
+      could never hold) and a required method
+      <code>abstract area(): number</code>.</li>
+  <li>Give <code>Shape</code> a concrete <code>describe(): string</code>
+      that returns <code>name + " with area " + rounded</code>, where
+      <code>rounded</code> is <code>Math.round(this.area() * 100) / 100</code>
+      — a template method: shared code calling the required method, exactly
+      like a trait default method.</li>
+  <li>Write <code>class Circle extends Shape</code> — constructor takes
+      <code>radius: number</code>, calls <code>super("circle")</code>, and
+      <code>area()</code> returns
+      <code>Math.PI * this.radius * this.radius</code>.</li>
+  <li>Write <code>class Rectangle extends Shape</code> — constructor takes
+      <code>width: number, height: number</code>, calls
+      <code>super("rectangle")</code>, and <code>area()</code> returns
+      <code>width * height</code>.</li>
+</ol>
+<p>Leave <code>area</code> out of a subclass and the compiler rejects it —
+the same guarantee as an unimplemented trait method.</p>`,
+
+  starter: `// A trait that can also carry state — Rust deliberately has no equivalent.
+abstract class Shape {
+  constructor(public readonly name: string) {}
+
+  // TODO: declare the required method:  abstract area(): number;
+
+  describe(): string {
+    // TODO: template method — name + " with area " + the result of
+    // this.area(), rounded via Math.round(this.area() * 100) / 100
+    return "";
+  }
+}
+
+// TODO: class Circle extends Shape
+//   constructor(radius) calls super("circle"); area() = PI * r * r
+
+// TODO: class Rectangle extends Shape
+//   constructor(width, height) calls super("rectangle"); area() = w * h
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class — a trait with required methods AND state" },
+    { pattern: /abstract\s+area\s*\(\s*\)\s*:\s*number/, message: "Declare abstract area(): number — the required trait method, checked at compile time" },
+    { pattern: /extends\s+Shape/, message: "Implement the contract with extends Shape (your impl Shape for ...)" },
+  ],
+
+  tests: [
+    { name: "new Circle(2).area() is about 12.57", run: (x) => expectEqual(Math.round(new x.Circle(2).area() * 100) / 100, 12.57) },
+    { name: "new Rectangle(3, 4).area() is 12", run: (x) => expectEqual(new x.Rectangle(3, 4).area(), 12) },
+    { name: 'new Circle(1).describe() is "circle with area 3.14"', run: (x) => expectEqual(new x.Circle(1).describe(), "circle with area 3.14") },
+    { name: "Rectangle inherits describe() without redefining it", run: (x) => expectEqual(new x.Rectangle(2, 3).describe(), "rectangle with area 6") },
+    { name: "a Circle is a Shape (base-typed references work)", run: (x) => expectTruthy(new x.Circle(1) instanceof x.Shape) },
+    { name: "mixed Shape[] dispatches dynamically — no Box<dyn Shape>", run: (x) => { const shapes = [new x.Circle(1), new x.Rectangle(2, 5)]; const total = shapes.reduce((sum, s) => sum + s.area(), 0); expectEqual(Math.round(total * 100) / 100, 13.14); } },
+  ],
+
+  solution: `abstract class Shape {
+  constructor(public readonly name: string) {}
+
+  abstract area(): number; // required — subclasses must implement
+
+  describe(): string {
+    const rounded = Math.round(this.area() * 100) / 100;
+    return this.name + " with area " + rounded;
+  }
+}
+
+class Circle extends Shape {
+  constructor(public readonly radius: number) {
+    super("circle");
+  }
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(public readonly width: number, public readonly height: number) {
+    super("rectangle");
+  }
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Behavior contract</td><td><code>trait Shape</code></td><td><code>abstract class Shape</code> (or an interface, if no shared code)</td></tr>
+  <tr><td>Required method</td><td><code>fn area(&amp;self) -&gt; f64;</code></td><td><code>abstract area(): number;</code></td></tr>
+  <tr><td>Shared implementation</td><td>trait default method</td><td>concrete method on the abstract class</td></tr>
+  <tr><td>Implementing it</td><td><code>impl Shape for Circle</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td>Contract + state</td><td>impossible — traits hold no fields</td><td>abstract classes hold fields and constructors</td></tr>
+  <tr><td>Heterogeneous collection</td><td><code>Vec&lt;Box&lt;dyn Shape&gt;&gt;</code></td><td><code>Shape[]</code></td></tr>
+  <tr><td>Dynamic dispatch</td><td>opt-in via trait objects</td><td>the only kind of method call there is</td></tr>
+</table>
+<p>Two fine points. <code>abstract</code> is a compile-time promise: the
+compiler stops <code>new Shape(...)</code> and unimplemented subclasses, but
+after erasure the base class is an ordinary constructor function — no
+runtime enforcement remains. And when there is no shared implementation to
+inherit, prefer an interface over an abstract class: <code>implements</code>
+(or plain structural typing) keeps the contract without coupling you to a
+base class — the closest thing TypeScript has to the trait-first design you
+are used to.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables, Mutability & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables, Mutability & Types",
+
+  intro: `
+<p>You already write <code>const int x = 5;</code> when you can, because
+const-correctness catches bugs. Rust agrees so strongly that it made
+immutability the default: <code>let x = 5;</code> is your <code>const</code>,
+and the plain mutable <code>int</code> you're used to costs an extra keyword —
+<code>let mut x = 5;</code>. The discipline you enforce in code review is now
+enforced by the compiler.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>const int x = 5;</code></td><td><code>let x = 5;</code></td></tr>
+  <tr><td><code>int x = 5;</code> (mutable)</td><td><code>let mut x = 5;</code></td></tr>
+  <tr><td><code>auto price = 9.99;</code></td><td><code>let price = 9.99;</code></td></tr>
+  <tr><td><code>int</code> / <code>long</code> / <code>double</code> / <code>size_t</code></td><td><code>i32</code> / <code>i64</code> / <code>f64</code> / <code>usize</code></td></tr>
+  <tr><td><code>std::format("{}", x)</code></td><td><code>format!("{}", x)</code></td></tr>
+</table>
+<p>The integer types drop the platform guesswork: <code>i32</code> is always
+32 bits, <code>i64</code> always 64, <code>usize</code> is your
+<code>size_t</code>. There is no implicit narrowing or promotion — assigning
+an <code>i64</code> to an <code>i32</code> is a compile error until you write
+<code>as i32</code>, so the <code>-Wconversion</code> warnings you turn on by
+hand are just the language. Type inference works like a stronger
+<code>auto</code>: annotate function signatures, let locals be deduced.
+And <code>format!</code> is <code>std::format</code> with the format string
+checked at compile time — a stray <code>{}</code> with no argument is an
+error, not a runtime exception.</p>`,
+
+  cpp: `#include <format>
+#include <string>
+
+const int x = 5;      // immutability: you had to ask for it
+int age = 36;         // mutable by default
+auto price = 9.99;    // double, deduced
+
+std::string describe_user(const std::string& name, unsigned age) {
+    return std::format("{} is {} years old", name, age);
+}
+
+unsigned birthday(unsigned age) {
+    unsigned next = age;
+    next += 1;
+    return next;
+}`,
+
+  task: `
+<p>Rewrite the C++ on the left as Rust:</p>
+<ol>
+  <li>Write a function <code>describe_user</code> that takes
+      <code>name: &amp;str</code> and <code>age: u32</code> and returns a
+      <code>String</code> like <code>"Ada is 36 years old"</code>. Use
+      <code>format!</code> — same format-string syntax as
+      <code>std::format</code>, but checked at compile time.</li>
+  <li>Write a function <code>birthday</code> that takes <code>age: u32</code>
+      and returns <code>u32</code>. Inside, bind the argument to a mutable
+      local with <code>let mut</code>, add 1 to it with <code>+=</code>, and
+      return it — parameters are immutable unless you rebind them.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. describe_user: takes name: &str and age: u32, returns String.
+//    std::format("{} is {} years old", name, age)  ->  format!(...)
+fn describe_user(name: &str, age: u32) -> String {
+    todo!()
+}
+
+// 2. birthday: bind age to a \`let mut\` local, increment with +=, return it.
+fn birthday(age: u32) -> u32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s+describe_user\s*\(\s*name\s*:\s*&str\s*,\s*age\s*:\s*u32\s*\)\s*->\s*String/, message: "Define describe_user(name: &str, age: u32) -> String" },
+    { pattern: /format!\s*\(/, message: "Use the format! macro to build the string" },
+    { pattern: /let\s+mut\b/, message: "Use a let mut binding inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: 'assert_eq!(describe_user("Ada", 36), "Ada is 36 years old");' },
+    { name: 'describe_user("Bjarne", 74) returns "Bjarne is 74 years old"',
+      code: 'assert_eq!(describe_user("Bjarne", 74), "Bjarne is 74 years old");' },
+    { name: "birthday(36) returns 37",
+      code: "assert_eq!(birthday(36), 37);" },
+    { name: "birthday(0) returns 1",
+      code: "assert_eq!(birthday(0), 1);" },
+  ],
+
+  solution: `fn describe_user(name: &str, age: u32) -> String {
+    format!("{} is {} years old", name, age)
+}
+
+fn birthday(age: u32) -> u32 {
+    let mut next = age;
+    next += 1;
+    next
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Immutable binding</td><td><code>const int x = 5;</code> (opt-in)</td><td><code>let x = 5;</code> (the default)</td></tr>
+  <tr><td>Mutable binding</td><td><code>int x = 5;</code> (the default)</td><td><code>let mut x = 5;</code> (opt-in)</td></tr>
+  <tr><td>Type deduction</td><td><code>auto x = f();</code></td><td><code>let x = f();</code> (annotation optional: <code>let x: i32</code>)</td></tr>
+  <tr><td>Integer types</td><td><code>int</code>, <code>long</code>, <code>size_t</code> (platform-dependent)</td><td><code>i32</code>, <code>i64</code>, <code>u32</code>, <code>usize</code> (exact widths)</td></tr>
+  <tr><td>Narrowing</td><td>Implicit (warning at best)</td><td>Compile error; explicit <code>as i32</code></td></tr>
+  <tr><td>Formatting</td><td><code>std::format("{}", x)</code> / <code>printf</code></td><td><code>format!("{}", x)</code>, checked at compile time</td></tr>
+</table>
+<p>Notice <code>birthday</code>'s last line has no <code>return</code> and no
+semicolon — a block's final expression is its value (more on that next
+lesson). The mental shift here is small but pervasive: in C++ you sprinkle
+<code>const</code> everywhere you can and hope reviewers catch the rest; in
+Rust every binding is const until you say otherwise, so <code>mut</code> in a
+signature or a <code>let</code> becomes a searchable flag for "state changes
+here".</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Interfaces, Inheritance & Abstracts</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Interfaces, Inheritance & Abstracts",
+
+  intro: `
+<p>Rust's traits map onto PHP's <code>interface</code>: a bundle of method
+signatures a class promises to provide. But where Rust writes
+<code>impl Speak for Dog</code> as a free-standing block — possibly in
+another file, for a type you didn't define — PHP declares conformance
+<em>in the class itself</em>: <code>class Dog implements Speak</code>. No
+orphan impls, no blanket impls, no implementing your interface for someone
+else's class. And PHP has the thing Rust deliberately left out:
+<em>inheritance</em>. <code>extends</code> pulls in a parent class's code and
+state, and an <code>abstract class</code> is the hybrid — think of it as a
+trait that carries state and forces you to subclass it.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>trait Shape { fn area(&amp;self) -&gt; f64; }</code></td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td><code>impl Shape for Circle</code> (outside the type)</td><td><code>class Circle extends Shape</code> (declared in the class)</td></tr>
+  <tr><td>default trait method</td><td>concrete method on the abstract class</td></tr>
+  <tr><td>(no inheritance — composition instead)</td><td><code>extends</code>: code <em>and</em> state reuse</td></tr>
+  <tr><td><code>fn print(s: &amp;dyn Shape)</code></td><td><code>function print(Shape $s)</code> — any subclass fits</td></tr>
+</table>
+<p>The pattern in this exercise is one you know intimately from traits: a
+<em>default method calling a required method</em>. <code>Shape</code>
+declares <code>abstract public function area(): float</code> (a required
+trait method — subclasses that skip it won't even load) and a concrete
+<code>describe()</code> that calls <code>$this-&gt;area()</code> — dynamic
+dispatch resolving to whichever subclass's implementation is behind
+<code>$this</code>. Type a parameter as <code>Shape</code> and you've written
+<code>&amp;dyn Shape</code>: any implementor is accepted.</p>`,
+
+  rust: `trait Shape {
+    fn area(&self) -> f64; // required method
+
+    // Default method calling the required one:
+    fn describe(&self) -> String {
+        format!("This shape has area {:.2}", self.area())
+    }
+}
+
+struct Circle { radius: f64 }
+struct Rectangle { width: f64, height: f64 }
+
+impl Shape for Circle {
+    fn area(&self) -> f64 {
+        std::f64::consts::PI * self.radius * self.radius
+    }
+}
+
+impl Shape for Rectangle {
+    fn area(&self) -> f64 { self.width * self.height }
+}`,
+
+  task: `
+<p>Port the trait hierarchy as an abstract class. The starter gives you the
+skeleton with promoted constructors — fill in the three method bodies:</p>
+<ol>
+  <li>In <code>abstract class Shape</code>, implement the concrete
+      <code>describe(): string</code> so it returns
+      <code>"This shape has area "</code> followed by the area formatted to
+      two decimals: <code>number_format($this-&gt;area(), 2)</code>. It calls
+      an abstract method — dispatch lands on the subclass.</li>
+  <li>In <code>Circle extends Shape</code>, implement
+      <code>area(): float</code> using the built-in <code>M_PI</code>
+      constant (your <code>std::f64::consts::PI</code>).</li>
+  <li>In <code>Rectangle extends Shape</code>, implement
+      <code>area(): float</code> as width × height.</li>
+</ol>
+<p>Note what you don't write: no separate <code>impl</code> blocks. Each
+subclass declares its parentage once, with <code>extends Shape</code>, right
+in its own header.</p>`,
+
+  starter: `<?php
+
+abstract class Shape {
+    // A required trait method: subclasses MUST implement this,
+    // or PHP refuses to load the class.
+    abstract public function area(): float;
+
+    // A default method calling the required one.
+    // Expected output: "This shape has area 3.14" (two decimals).
+    public function describe(): string {
+        throw new Exception("TODO: use number_format(\$this->area(), 2)");
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        throw new Exception("TODO: M_PI * radius squared");
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        throw new Exception("TODO: width times height");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Define Shape as an abstract class" },
+    { pattern: /extends\s+Shape/, message: "Subclass with extends Shape" },
+    { pattern: /abstract\s+(public\s+)?function\s+area/, message: "Declare area() as an abstract method (the required trait method)" },
+  ],
+
+  tests: [
+    { name: "a unit circle's area is pi (to 2 decimals)",
+      code: "$c = new Circle(1.0);\nexpect_eq(round($c->area(), 2), 3.14);" },
+    { name: "a 2x3 rectangle has area 6.0, exactly",
+      code: "expect_eq((new Rectangle(2.0, 3.0))->area(), 6.0);" },
+    { name: "describe() on a rectangle dispatches to Rectangle::area",
+      code: 'expect_eq((new Rectangle(2.0, 3.0))->describe(), "This shape has area 6.00");' },
+    { name: "describe() on a circle dispatches to Circle::area",
+      code: 'expect_eq((new Circle(1.0))->describe(), "This shape has area 3.14");' },
+    { name: "both concrete classes are Shapes (dyn Shape works)",
+      code: "expect_true(new Circle(1.0) instanceof Shape);\nexpect_true(new Rectangle(1.0, 1.0) instanceof Shape);" },
+  ],
+
+  solution: `<?php
+
+abstract class Shape {
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "This shape has area " . number_format($this->area(), 2);
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        return M_PI * $this->radius * $this->radius;
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        return $this->width * $this->height;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Behavioral contract</td><td><code>trait Shape</code></td><td><code>interface Shape</code> / <code>abstract class Shape</code></td></tr>
+  <tr><td>Conformance</td><td><code>impl Shape for Circle</code>, anywhere</td><td><code>implements</code> / <code>extends</code>, in the class header only</td></tr>
+  <tr><td>Required method</td><td><code>fn area(&amp;self) -&gt; f64;</code></td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td>Default method</td><td>body in the trait</td><td>concrete method on the abstract class</td></tr>
+  <tr><td>Trait with state</td><td>impossible (by design)</td><td>abstract class with properties</td></tr>
+  <tr><td>Trait object</td><td><code>&amp;dyn Shape</code></td><td>parameter typed <code>Shape</code></td></tr>
+  <tr><td>Multiple contracts</td><td>many trait impls</td><td>many <code>implements</code>, but <code>extends</code> exactly one</td></tr>
+</table>
+<p>Choosing between the two contract forms: an <code>interface</code> is a
+pure trait — signatures only, and a class can implement many. An
+<code>abstract class</code> buys you default methods and shared state, at the
+cost of PHP's single-inheritance slot. What you lose from Rust is
+extensibility-from-outside: you cannot retrofit conformance onto a class you
+don't own, and there's nothing like <code>impl&lt;T&gt;</code> blanket impls.
+What you gain is dead-simple dynamic dispatch — every method call is
+virtual, no <code>dyn</code>, no vtable ceremony. (PHP also has a feature
+literally named <code>trait</code> — it's a code-paste mixin, closer to
+macros than to Rust traits. Lesson 12.)</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

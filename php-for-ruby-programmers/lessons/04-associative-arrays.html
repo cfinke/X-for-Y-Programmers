@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Associative Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Associative Arrays",
+
+  intro: `
+<p>Ruby's <code>Hash</code> maps onto PHP's other half of <code>array</code>:
+the associative array. Even the arrow is the same —
+<code>{ "apples" =&gt; 3 }</code> becomes <code>['apples' =&gt; 3]</code>.
+What disappears is the symbol/string split: PHP has no <code>:symbol</code>,
+so <code>{ apples: 3 }</code>, <code>h[:apples]</code>, and
+<code>h["apples"]</code> all collapse into plain string keys —
+<code>$m['apples']</code>. One kind of key, no
+<code>symbolize_keys</code> ever again.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>{ "apples" =&gt; 3 }</code> or <code>{ apples: 3 }</code></td><td><code>['apples' =&gt; 3]</code></td></tr>
+  <tr><td><code>h[:k]</code> / <code>h["k"]</code></td><td><code>$m['k']</code></td></tr>
+  <tr><td><code>h.fetch(:k, 0)</code></td><td><code>$m['k'] ?? 0</code></td></tr>
+  <tr><td><code>h.each { |k, v| … }</code></td><td><code>foreach ($m as $k =&gt; $v) { … }</code></td></tr>
+  <tr><td><code>h.keys</code></td><td><code>array_keys($m)</code></td></tr>
+  <tr><td><code>h.key?(k)</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+</table>
+<p><code>fetch</code>-with-default is an operator here: <code>??</code>, the
+null coalescing operator, reads "the value if it exists and isn't null,
+otherwise this default" — and it doesn't warn on a missing key. Iteration is a
+dedicated statement, <code>foreach ($m as $k =&gt; $v)</code>, rather than a
+block. And last lesson's value semantics still apply: hashes-as-arrays copy on
+assignment too.</p>`,
+
+  ruby: `def build_inventory
+  { "apples" => 3, "bananas" => 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  copy = inv.dup
+  copy[name] = copy.fetch(name, 0) + n
+  copy
+end
+
+def total_stock(inv)
+  total = 0
+  inv.each { |name, count| total += count }
+  total
+end
+
+inv = build_inventory
+get_count(inv, "apples")  # 3
+get_count(inv, "pears")   # 0
+total_stock(inv)          # 8`,
+
+  task: `
+<p>Port the Ruby to PHP:</p>
+<ol>
+  <li><code>build_inventory(): array</code> — return
+      <code>['apples' =&gt; 3, 'bananas' =&gt; 5]</code>. Same arrow, square
+      brackets, string keys.</li>
+  <li><code>get_count(array $inv, string $name): int</code> — Ruby's
+      <code>fetch(name, 0)</code> is <code>$inv[$name] ?? 0</code>.</li>
+  <li><code>add_stock(array $inv, string $name, int $n): array</code> — bump
+      (or create) the entry using <code>??</code>, then return
+      <code>$inv</code>. No <code>.dup</code>: your parameter is already a
+      copy.</li>
+  <li><code>total_stock(array $inv): int</code> — sum the counts with
+      <code>foreach ($inv as $name =&gt; $count)</code>, PHP's
+      <code>each { |k, v| }</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. { "apples" => 3, "bananas" => 5 }  ->  ['apples' => 3, 'bananas' => 5]
+function build_inventory(): array {
+    throw new Exception("TODO: implement build_inventory");
+}
+
+// 2. inv.fetch(name, 0)  ->  $inv[$name] ?? 0
+function get_count(array $inv, string $name): int {
+    throw new Exception("TODO: implement get_count");
+}
+
+// 3. Bump the entry with ??, return $inv (already your own copy).
+function add_stock(array $inv, string $name, int $n): array {
+    throw new Exception("TODO: implement add_stock");
+}
+
+// 4. inv.each { |name, count| ... }  ->  foreach ($inv as $name => $count) { ... }
+function total_stock(array $inv): int {
+    throw new Exception("TODO: implement total_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /=>/, message: "Build the associative array with => (Ruby's own hash rocket)" },
+    { pattern: /\?\?/, message: "Use the ?? null coalescing operator for the fetch-with-default" },
+    { pattern: /foreach\s*\(|array_keys/, message: "Iterate with foreach ($m as $k => $v) (or use array_keys)" },
+  ],
+
+  tests: [
+    { name: "build_inventory() returns ['apples' => 3, 'bananas' => 5]",
+      code: "expect_eq(build_inventory(), ['apples' => 3, 'bananas' => 5]);" },
+    { name: "get_count(inv, 'apples') returns 3",
+      code: "expect_eq(get_count(build_inventory(), 'apples'), 3);" },
+    { name: "get_count(inv, 'pears') returns 0 (missing key, no error)",
+      code: "expect_eq(get_count(build_inventory(), 'pears'), 0);" },
+    { name: "add_stock adds to an existing entry",
+      code: "$inv = add_stock(build_inventory(), 'apples', 2);\nexpect_eq($inv['apples'], 5);" },
+    { name: "add_stock creates a missing entry and leaves the caller's copy alone",
+      code: "$before = build_inventory();\n$after = add_stock($before, 'pears', 4);\nexpect_eq($after['pears'], 4);\nexpect_eq($before, build_inventory());" },
+    { name: "total_stock(inv) returns 8",
+      code: "expect_eq(total_stock(build_inventory()), 8);" },
+  ],
+
+  solution: `<?php
+
+function build_inventory(): array {
+    return ['apples' => 3, 'bananas' => 5];
+}
+
+function get_count(array $inv, string $name): int {
+    return $inv[$name] ?? 0;
+}
+
+function add_stock(array $inv, string $name, int $n): array {
+    $inv[$name] = ($inv[$name] ?? 0) + $n;
+    return $inv;
+}
+
+function total_stock(array $inv): int {
+    $total = 0;
+    foreach ($inv as $name => $count) {
+        $total += $count;
+    }
+    return $total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Literal</td><td><code>{ "k" =&gt; v }</code> / <code>{ k: v }</code></td><td><code>['k' =&gt; $v]</code></td></tr>
+  <tr><td>Lookup</td><td><code>h[:k]</code> (nil if missing)</td><td><code>$m['k']</code> (warning if missing — prefer <code>??</code>)</td></tr>
+  <tr><td>Fetch with default</td><td><code>h.fetch(:k, 0)</code></td><td><code>$m['k'] ?? 0</code></td></tr>
+  <tr><td>Set</td><td><code>h[:k] = v</code></td><td><code>$m['k'] = $v;</code></td></tr>
+  <tr><td>Iterate</td><td><code>h.each { |k, v| … }</code></td><td><code>foreach ($m as $k =&gt; $v) { … }</code></td></tr>
+  <tr><td>Keys / values</td><td><code>h.keys</code> / <code>h.values</code></td><td><code>array_keys($m)</code> / <code>array_values($m)</code></td></tr>
+  <tr><td>Key present?</td><td><code>h.key?(k)</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+</table>
+<p>Lists and hashes being <em>one type</em> is PHP's most Ruby-alien idea:
+<code>[1, 2, 3]</code> is secretly <code>[0 =&gt; 1, 1 =&gt; 2, 2 =&gt; 3]</code>,
+an ordered map with integer keys. It means <code>foreach</code>,
+<code>count</code>, and the whole <code>array_*</code> toolbox work on both —
+and insertion order is preserved, just like a Ruby hash.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

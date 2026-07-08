@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring & Splat</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>Go's multiple assignment — <code>a, b := f()</code> — only works on multiple
+<em>return values</em>. Ruby generalizes it: <code>a, b = pair</code> unpacks
+any array into variables, whether it came from a method or a literal. The swap
+idiom is character-for-character identical: <code>a, b = b, a</code>. Then Ruby
+goes where Go can't: <code>first, *rest = list</code> splits a head off a list
+in one assignment — in Go that's <code>list[0]</code> plus a
+<code>list[1:]</code> slice expression, and only after a length check.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>a, b := f()</code> (returns only)</td><td><code>a, b = pair</code> — any array unpacks</td></tr>
+  <tr><td><code>a, b = b, a</code></td><td><code>a, b = b, a</code> — identical!</td></tr>
+  <tr><td><code>first, rest := list[0], list[1:]</code></td><td><code>first, *rest = list</code></td></tr>
+  <tr><td><code>func sum(nums ...int)</code></td><td><code>def sum(*nums)</code> — same dots, leading</td></tr>
+  <tr><td><code>sum(nums...)</code></td><td><code>sum(*nums)</code></td></tr>
+  <tr><td><code>append(a, b...)</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td>copy maps key by key</td><td><code>defaults.merge(overrides)</code></td></tr>
+</table>
+<p>The star is the <strong>splat</strong>, and it points both ways just like
+Go's dots. In a definition, <code>def sum(*nums)</code> collects any number of
+arguments into an array — Go's <code>nums ...int</code>, with the dots moved to
+the front. At a call site, <code>sum(*nums)</code> spreads an array back out
+into arguments — Go's <code>sum(nums...)</code>. Concatenation is
+<code>[*a, *b]</code> where Go writes <code>append(a, b...)</code>. Hashes get
+their own verb: <code>defaults.merge(overrides)</code> returns a new hash with
+the overrides winning — the config-merging loop you've written in Go, gone.</p>`,
+
+  go: `package main
+
+import "fmt"
+
+func sum(nums ...int) int { // variadic: Ruby puts the dots up front
+	total := 0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}
+
+func main() {
+	a, b := 1, 2
+	a, b = b, a // swap — Ruby is character-for-character the same
+	fmt.Println(a, b)
+
+	nums := []int{3, 4, 5}
+	fmt.Println(sum(nums...))                // call-site spread
+	fmt.Println(append([]int{a, b}, nums...)) // [*pair, *nums] in Ruby
+	// first, rest := nums[0], nums[1:]      // Ruby: first, *rest = nums
+}`,
+
+  task: `
+<p>Rewrite the Go on the left with Ruby's assignment and splat tricks:</p>
+<ol>
+  <li><code>swap(pair)</code> — unpack the two-element array with
+      <code>a, b = pair</code>, swap with <code>a, b = b, a</code>, and return
+      <code>[a, b]</code>.</li>
+  <li><code>head_tail(list)</code> — split with <code>first, *rest = list</code>
+      and return <code>[first, rest]</code>. One assignment, no slicing, no
+      length check.</li>
+  <li><code>sum(*nums)</code> — a variadic method: the splat parameter collects
+      the arguments into an array, then <code>nums.sum</code> totals it
+      (lesson 12 pays off).</li>
+  <li><code>merge_settings(defaults, overrides)</code> — return
+      <code>defaults.merge(overrides)</code>; keys in <code>overrides</code>
+      win, neither input hash is mutated.</li>
+</ol>`,
+
+  starter: `# 1. swap: a, b = pair to unpack, then the Go-identical a, b = b, a.
+def swap(pair)
+  raise NotImplementedError, "TODO: implement swap"
+end
+
+# 2. head_tail: first, *rest = list — the split Go can't do in one line.
+def head_tail(list)
+  raise NotImplementedError, "TODO: implement head_tail"
+end
+
+# 3. sum: def sum(*nums) collects the arguments; nums is a real array.
+def sum(*nums)
+  raise NotImplementedError, "TODO: implement sum"
+end
+
+# 4. merge_settings: .merge returns a new hash; overrides win.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: implement merge_settings"
+end
+`,
+
+  requirements: [
+    { pattern: /\*\w+/, message: "Use a splat (*name) somewhere" },
+    { pattern: /,\s*\*/, message: "Split head from tail with first, *rest = ..." },
+    { pattern: /\.merge/, message: "Combine the hashes with .merge" },
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Make sum variadic: def sum(*nums)" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "  expect_eq(swap([1, 2]), [2, 1])" },
+    { name: 'swap(["left", "right"]) returns ["right", "left"]',
+      code: '  expect_eq(swap(["left", "right"]), ["right", "left"])' },
+    { name: "head_tail([1, 2, 3, 4]) returns [1, [2, 3, 4]]",
+      code: "  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])" },
+    { name: "sum(1, 2, 3) returns 6 and sum() returns 0",
+      code: "  expect_eq(sum(1, 2, 3), 6)\n  expect_eq(sum, 0)" },
+    { name: "sum(*[4, 5]) — call-site splat — returns 9",
+      code: "  expect_eq(sum(*[4, 5]), 9)" },
+    { name: "merge_settings: overrides win, defaults survive",
+      code: '  expect_eq(merge_settings({ theme: "dark", font: 12 }, { font: 14 }), { theme: "dark", font: 14 })' },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  a, b = b, a
+  [a, b]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Multiple assignment</td><td><code>a, b := f()</code> (function returns only)</td><td><code>a, b = any_array</code></td></tr>
+  <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Head/tail split</td><td><code>list[0]</code>, <code>list[1:]</code> (two steps)</td><td><code>first, *rest = list</code></td></tr>
+  <tr><td>Variadic definition</td><td><code>func sum(nums ...int)</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td>Call-site spread</td><td><code>sum(nums...)</code></td><td><code>sum(*nums)</code></td></tr>
+  <tr><td>Concatenate</td><td><code>append(a, b...)</code></td><td><code>[*a, *b]</code> (or <code>a + b</code>)</td></tr>
+  <tr><td>Merge maps</td><td>range loop, key by key</td><td><code>defaults.merge(overrides)</code></td></tr>
+  <tr><td>Keyword options</td><td>an options struct</td><td><code>def f(**opts)</code> — double splat</td></tr>
+</table>
+<p>Extra values vanish and missing spots become <code>nil</code> —
+<code>a, b = [1, 2, 3]</code> quietly drops the 3, where Go would refuse to
+compile a mismatched assignment. That's this course's trade again in
+miniature: flexibility at the cost of a compiler double-checking your counts.
+The splat also underlies "returning two values": Ruby methods return one
+object, but <code>return a, b</code> builds an array and
+<code>x, y = f</code> unpacks it, so it feels the same at both ends.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

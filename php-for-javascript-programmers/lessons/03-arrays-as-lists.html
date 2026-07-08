@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays as Lists</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays as Lists",
+
+  intro: `
+<p>PHP list literals look exactly like JavaScript's: <code>[1, 2, 3]</code>.
+The everyday operations just move from methods to functions and one odd but
+lovable idiom — <code>$arr[] = $x</code> means "append", PHP's
+<code>push</code>:</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>const a = [1, 2, 3];</code></td><td><code>$a = [1, 2, 3];</code></td></tr>
+  <tr><td><code>arr.push(x)</code></td><td><code>$arr[] = $x;</code></td></tr>
+  <tr><td><code>arr.length</code></td><td><code>count($arr)</code></td></tr>
+  <tr><td><code>arr.includes(x)</code></td><td><code>in_array($x, $arr, true)</code></td></tr>
+  <tr><td><code>arr.reduce((s, n) =&gt; s + n, 0)</code></td><td><code>array_sum($arr)</code></td></tr>
+</table>
+<p>Now the big semantic difference — the one that changes how you design
+functions. In JavaScript, arrays are <em>references</em>: pass one to a
+function, and <code>arr.push(x)</code> inside mutates the caller's array. In
+PHP, <strong>arrays are values</strong>. Assigning or passing an array
+(logically) copies it — implemented efficiently as copy-on-write — so a callee
+appending to its parameter modifies <em>its own copy</em> and the caller's
+array is untouched. The whole "who mutated my array?" bug class simply doesn't
+exist. The flip side: a function that wants to "add to" an array must
+<em>return</em> the modified copy, and the caller must use the return value.</p>`,
+
+  javascript: `function makeScores() {
+  return [70, 85, 93];
+}
+
+function append(arr, x) {
+  arr.push(x);   // mutates the CALLER's array — arrays are references
+  return arr;
+}
+
+function total(nums) {
+  return nums.reduce((sum, n) => sum + n, 0);
+}
+
+const scores = makeScores();
+append(scores, 100);
+console.log(scores.length);        // 4 — the caller sees the mutation
+console.log(scores.includes(100)); // true
+console.log(total(scores));        // 348`,
+
+  task: `
+<p>Port the three functions to PHP — and notice how value semantics change
+<code>append</code>:</p>
+<ol>
+  <li><code>make_scores(): array</code> — return the list
+      <code>[70, 85, 93]</code>.</li>
+  <li><code>append(array $arr, int $x): array</code> — append with the
+      <code>$arr[] = $x</code> idiom and return the array. Because
+      <code>$arr</code> is a <em>copy</em>, this returns the modified copy and
+      leaves the caller's array alone — the tests check both sides of
+      that.</li>
+  <li><code>total(array $nums): int</code> — sum the numbers. No reduce
+      ceremony needed: <code>array_sum</code> is built in.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Return the list [70, 85, 93].
+function make_scores(): array {
+    throw new Exception("TODO: implement make_scores");
+}
+
+// 2. arr.push(x)  ->  $arr[] = $x
+//    $arr is a COPY — modify it and return it; the caller's array is safe.
+function append(array $arr, int $x): array {
+    throw new Exception("TODO: implement append");
+}
+
+// 3. nums.reduce((s, n) => s + n, 0)  ->  array_sum($nums)
+function total(array $nums): int {
+    throw new Exception("TODO: implement total");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\]\s*=/, message: "Append with the $arr[] = $x idiom (PHP's push)" },
+    { pattern: /count\(|array_sum\(/, message: "Use the built-in array toolbox (array_sum / count)" },
+    { pattern: /:\s*array/, message: "Declare : array return types on functions that return arrays" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [70, 85, 93]",
+      code: "expect_eq(make_scores(), [70, 85, 93]);" },
+    { name: "append([1, 2], 3) returns [1, 2, 3]",
+      code: "expect_eq(append([1, 2], 3), [1, 2, 3]);" },
+    { name: "append does NOT mutate the caller's array (value semantics)",
+      code: "$a = [1, 2];\n$b = append($a, 3);\nexpect_eq($a, [1, 2]);\nexpect_eq($b, [1, 2, 3]);" },
+    { name: "total([70, 85, 93]) returns 248",
+      code: "expect_eq(total([70, 85, 93]), 248);" },
+    { name: "total([]) returns 0",
+      code: "expect_eq(total([]), 0);" },
+  ],
+
+  solution: `<?php
+
+function make_scores(): array {
+    return [70, 85, 93];
+}
+
+function append(array $arr, int $x): array {
+    $arr[] = $x;
+    return $arr;
+}
+
+function total(array $nums): int {
+    return array_sum($nums);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>List literal</td><td><code>[1, 2, 3]</code></td><td><code>[1, 2, 3]</code> (identical)</td></tr>
+  <tr><td>Append</td><td><code>arr.push(x)</code></td><td><code>$arr[] = $x;</code></td></tr>
+  <tr><td>Length</td><td><code>arr.length</code></td><td><code>count($arr)</code></td></tr>
+  <tr><td>Membership</td><td><code>arr.includes(x)</code></td><td><code>in_array($x, $arr, true)</code> — pass <code>true</code> for strict comparison</td></tr>
+  <tr><td>Sum</td><td><code>arr.reduce((s, n) =&gt; s + n, 0)</code></td><td><code>array_sum($arr)</code></td></tr>
+  <tr><td>Passing to a function</td><td>by reference — callee can mutate</td><td>by value (copy-on-write) — callee gets its own copy</td></tr>
+</table>
+<p>Value semantics are the headline. In JavaScript, defensive copying
+(<code>[...arr]</code>) exists precisely because arrays are shared references;
+in PHP the copy happens for you, lazily, the moment someone writes. Design
+consequence: PHP functions that transform arrays take one in and
+<em>return a new one</em>, and the caller reassigns —
+<code>$scores = append($scores, 100);</code>. (If you truly want in-place
+mutation across the call boundary, PHP makes you say so with an explicit
+<code>&amp;$arr</code> reference parameter — it never happens by accident.)</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

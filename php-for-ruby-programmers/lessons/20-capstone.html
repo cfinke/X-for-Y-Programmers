@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put the course together: a small inventory module built from a
+promoted-constructor class, the <code>array_*</code> trio, nullable returns,
+and one last semantics lesson. The <code>Item</code> class is written for you
+— your job is the four functions around it.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>Struct.new(:name, :price_cents, :count)</code></td><td><code>__construct(public string $name, …)</code></td></tr>
+  <tr><td><code>items.sum { |i| … }</code></td><td><code>array_reduce($items, fn(…) =&gt; …, 0)</code></td></tr>
+  <tr><td><code>items.find { |i| … }</code> (or <code>nil</code>)</td><td><code>foreach</code> + <code>return null;</code>, typed <code>?Item</code></td></tr>
+  <tr><td><code>i.dup</code> before mutating</td><td><code>clone $i</code> — still required for objects!</td></tr>
+  <tr><td><code>items.select { … }.map(&amp;:name)</code></td><td><code>array_values(array_map(…, array_filter(…)))</code></td></tr>
+</table>
+<p>The semantics finale: lesson 3 taught you that PHP <em>arrays</em> copy on
+assignment — but <em>objects</em> travel by handle, exactly like Ruby objects.
+Pass an array of <code>Item</code>s into a function and you get a fresh array
+whose slots point at the <strong>same</strong> <code>Item</code> objects.
+Mutate one and the caller sees it. So the defensive-copy instinct Ruby taught
+you comes back for one final bow: to return an updated inventory without
+touching the original, <code>clone</code> the matched item (the
+<code>.dup</code>) and build a new array with <code>array_map</code>. The
+tests check both that the returned array is updated <em>and</em> that the
+original objects are untouched.</p>`,
+
+  ruby: `Item = Struct.new(:name, :price_cents, :count)
+
+def total_value(items)
+  items.sum { |i| i.price_cents * i.count }
+end
+
+def find_item(items, name)
+  items.find { |i| i.name == name }   # nil when absent
+end
+
+def restock(items, name, amount)
+  items.map do |i|
+    next i unless i.name == name
+    copy = i.dup                      # don't mutate the caller's Item!
+    copy.count += amount
+    copy
+  end
+end
+
+def names_in_stock(items)
+  items.select { |i| i.count > 0 }.map(&:name)
+end`,
+
+  task: `
+<p>Using the provided <code>Item</code> class, implement:</p>
+<ol>
+  <li><code>total_value(array $items): int</code> — sum of
+      <code>price_cents * count</code> over all items.
+      <code>array_reduce</code> is the <code>sum</code>-with-a-block.</li>
+  <li><code>find_item(array $items, string $name): ?Item</code> — first item
+      whose name matches, or <code>null</code>. The <code>?Item</code> return
+      type is the honest signature for <code>find</code>'s
+      item-or-<code>nil</code>.</li>
+  <li><code>restock(array $items, string $name, int $amount): array</code> —
+      return a new array where the matching item's <code>count</code> is
+      increased by <code>$amount</code>. Objects are references (like Ruby's),
+      so <code>clone</code> the matched item — the <code>.dup</code> — bump
+      the clone's count, and build the result with <code>array_map</code>.
+      The original <code>Item</code> objects must not change.</li>
+  <li><code>names_in_stock(array $items): array</code> — names of items with
+      <code>count &gt; 0</code>. Remember lesson 13:
+      <code>array_filter</code> keeps keys, so wrap in
+      <code>array_values</code> to reindex.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Provided — a Struct.new(:name, :price_cents, :count), PHP-style.
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+// items.sum { |i| i.price_cents * i.count }
+function total_value(array $items): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// items.find { |i| i.name == name } — item or null, hence ?Item
+function find_item(array $items, string $name): ?Item {
+    throw new Exception("TODO: implement find_item");
+}
+
+// Objects are references here too: clone (the .dup) before changing count,
+// and build a NEW array with array_map.
+function restock(array $items, string $name, int $amount): array {
+    throw new Exception("TODO: implement restock");
+}
+
+// select + map + reindex with array_values
+function names_in_stock(array $items): array {
+    throw new Exception("TODO: implement names_in_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /\?Item/, message: "find_item must declare the nullable ?Item return type" },
+    { pattern: /array_(map|filter|reduce|values)/, message: "Use the array_* toolbox (map/filter/reduce/values)" },
+    { pattern: /clone/, message: "restock must clone the matched Item (the .dup) instead of mutating it" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count across items",
+      code: "$items = [new Item(\"apple\", 100, 5), new Item(\"banana\", 50, 2)];\nexpect_eq(total_value($items), 600);\nexpect_eq(total_value([]), 0);" },
+    { name: "find_item returns the matching Item",
+      code: "$items = [new Item(\"apple\", 100, 5), new Item(\"banana\", 50, 2)];\n$found = find_item($items, \"banana\");\nexpect_true($found instanceof Item);\nexpect_eq($found->price_cents, 50);\nexpect_eq($found->count, 2);" },
+    { name: "find_item returns null when nothing matches",
+      code: "$items = [new Item(\"apple\", 100, 5)];\nexpect_eq(find_item($items, \"kiwi\"), null);" },
+    { name: "restock raises the count in the returned array",
+      code: "$items = [new Item(\"apple\", 100, 5), new Item(\"banana\", 50, 0)];\n$restocked = restock($items, \"banana\", 7);\nexpect_eq(count($restocked), 2);\nexpect_eq($restocked[1]->name, \"banana\");\nexpect_eq($restocked[1]->count, 7);\nexpect_eq($restocked[0]->name, \"apple\");\nexpect_eq($restocked[0]->count, 5);" },
+    { name: "restock does NOT mutate the original Item objects",
+      code: "$items = [new Item(\"apple\", 100, 5), new Item(\"banana\", 50, 0)];\n$restocked = restock($items, \"banana\", 7);\nexpect_eq($items[1]->count, 0);\nexpect_true($restocked[1] !== $items[1]);" },
+    { name: "restock with an unknown name changes nothing; names_in_stock filters and reindexes",
+      code: "$items = [new Item(\"apple\", 100, 5), new Item(\"banana\", 50, 0), new Item(\"cherry\", 25, 3)];\n$same = restock($items, \"kiwi\", 10);\nexpect_eq(count($same), 3);\nexpect_eq($same[0]->count, 5);\nexpect_eq(names_in_stock($items), [\"apple\", \"cherry\"]);\nexpect_eq(names_in_stock([]), []);" },
+  ],
+
+  solution: `<?php
+
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+function total_value(array $items): int {
+    return array_reduce($items, fn($sum, $i) => $sum + $i->price_cents * $i->count, 0);
+}
+
+function find_item(array $items, string $name): ?Item {
+    foreach ($items as $item) {
+        if ($item->name === $name) {
+            return $item;
+        }
+    }
+    return null;   // find's nil
+}
+
+function restock(array $items, string $name, int $amount): array {
+    return array_map(function ($item) use ($name, $amount) {
+        if ($item->name !== $name) {
+            return $item;
+        }
+        $copy = clone $item;   // the .dup — objects are shared references
+        $copy->count += $amount;
+        return $copy;
+    }, $items);
+}
+
+function names_in_stock(array $items): array {
+    $in_stock = array_filter($items, fn($i) => $i->count > 0);
+    return array_values(array_map(fn($i) => $i->name, $in_stock));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Value object</td><td><code>Struct.new(:a, :b)</code></td><td>promoted constructor properties</td></tr>
+  <tr><td>Sum with block</td><td><code>items.sum { |i| … }</code></td><td><code>array_reduce($items, fn($s, $i) =&gt; …, 0)</code></td></tr>
+  <tr><td>Find or nil</td><td><code>items.find { … }</code></td><td><code>foreach</code> + <code>return null;</code>, typed <code>?Item</code></td></tr>
+  <tr><td>Copy an object</td><td><code>i.dup</code></td><td><code>clone $i</code></td></tr>
+  <tr><td>Array semantics</td><td>reference — <code>.dup</code> the array too</td><td>value — arrays copy themselves</td></tr>
+  <tr><td>Object semantics</td><td>reference</td><td>reference — <code>clone</code> before mutating</td></tr>
+  <tr><td>Filter + map names</td><td><code>select { … }.map(&amp;:name)</code></td><td><code>array_values(array_map(…, array_filter(…)))</code></td></tr>
+</table>
+<p>The rule that ties the whole course together: PHP <em>arrays</em> are
+values, PHP <em>objects</em> are references. <code>restock</code> gets a free
+copy of the array — but its slots still point at the caller's
+<code>Item</code>s, so mutating <code>$item-&gt;count</code> in place would leak
+into the original inventory, exactly the bug <code>.dup</code> guards against
+in Ruby. <code>clone</code> the object you change, map into a fresh array, and
+both worlds stay clean. That copy-what-you-mutate discipline — plus typed
+signatures like <code>?Item</code> that make the nil-case explicit — is the
+heart of writing modern PHP with a Rubyist's instincts intact.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

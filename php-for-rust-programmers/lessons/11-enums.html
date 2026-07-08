@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums",
+
+  intro: `
+<p>Rust enums are full algebraic data types — each variant can carry its own
+payload, and <code>match</code> forces you to handle every case. PHP 8.1 enums
+are the humbler, C-like half of that: a closed set of named cases with
+<em>no per-variant payload</em>. For data-carrying variants you compose with
+classes instead. But for the everyday "one of these N states" enum, the
+mapping is close, and PHP adds one nicety Rust makes you derive by hand: a
+<em>backed</em> enum pairs each case with a string or int, giving you
+serialization for free.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>enum OrderStatus { Pending, .. }</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; .. }</code></td></tr>
+  <tr><td><code>impl OrderStatus { fn label(&amp;self) .. }</code></td><td>methods go right inside the <code>enum</code> block</td></tr>
+  <tr><td>hand-written <code>as_str()</code> / <code>FromStr</code></td><td><code>-&gt;value</code> reads the backing string; <code>::from()</code> / <code>::tryFrom()</code> parse it</td></tr>
+  <tr><td><code>Option&lt;OrderStatus&gt;</code>, <code>None</code></td><td><code>?OrderStatus</code>, <code>null</code> (<code>tryFrom</code> returns <code>null</code> on a miss)</td></tr>
+  <tr><td>iterate via a crate like <code>strum</code></td><td><code>OrderStatus::cases()</code> is built in</td></tr>
+</table>
+<p>Cases are singleton objects, so <code>===</code> compares them exactly like
+Rust's <code>PartialEq</code> on unit variants, and <code>match ($status)</code>
+dispatches on them cleanly. One discipline shift: PHP's <code>match</code> does
+not do exhaustiveness checking at compile time. It throws
+<code>\\UnhandledMatchError</code> at runtime if a case slips through — the
+compiler guarantee you rely on in Rust becomes a test-suite guarantee here.</p>`,
+
+  rust: `#[derive(Clone, Copy, PartialEq, Debug)]
+enum OrderStatus {
+    Pending,
+    Shipped,
+    Delivered,
+}
+
+fn status_label(status: OrderStatus) -> &'static str {
+    match status {
+        OrderStatus::Pending => "Order received",
+        OrderStatus::Shipped => "On the way",
+        OrderStatus::Delivered => "Delivered",
+    }
+}
+
+fn parse_status(value: &str) -> Option<OrderStatus> {
+    match value {
+        "pending" => Some(OrderStatus::Pending),
+        "shipped" => Some(OrderStatus::Shipped),
+        "delivered" => Some(OrderStatus::Delivered),
+        _ => None,
+    }
+}`,
+
+  task: `
+<p>Port the Rust enum to a PHP 8.1 backed enum:</p>
+<ol>
+  <li>Define <code>enum OrderStatus: string</code> with three cases:
+      <code>Pending = 'pending'</code>, <code>Shipped = 'shipped'</code>,
+      <code>Delivered = 'delivered'</code>. (The starter already has it —
+      leave it in place; the tests construct cases directly.)</li>
+  <li>Write <code>status_label(OrderStatus $status): string</code> using
+      <code>match ($status)</code> on the enum cases. Return
+      <code>'Order received'</code>, <code>'On the way'</code>, and
+      <code>'Delivered'</code> respectively.</li>
+  <li>Write <code>parse_status(string $value): ?OrderStatus</code> that turns a
+      backing string back into a case with <code>OrderStatus::tryFrom()</code>
+      — returning <code>null</code> for unknown strings, your
+      <code>Option::None</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// The backed enum: each case pairs with a backing string.
+// (Rust: a unit-variant enum plus a hand-rolled as_str/FromStr.)
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+// 1. match ($status) on the cases — like Rust's match, minus the
+//    compile-time exhaustiveness check.
+function status_label(OrderStatus $status): string {
+    throw new Exception("TODO: implement status_label");
+}
+
+// 2. ?OrderStatus is Option<OrderStatus>; tryFrom returns null on a miss.
+function parse_status(string $value): ?OrderStatus {
+    throw new Exception("TODO: implement parse_status");
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus\s*:\s*string/, message: "Define enum OrderStatus: string (a string-backed enum)" },
+    { pattern: /case\s+\w+\s*=/, message: "Give each case a backing value with case Name = '...'" },
+    { pattern: /::tryFrom|::from/, message: "Parse the string with OrderStatus::tryFrom() (or ::from())" },
+    { pattern: /match\s*\(/, message: "Dispatch on the enum with a match (...) expression" },
+  ],
+
+  tests: [
+    { name: "status_label(OrderStatus::Pending) returns 'Order received'",
+      code: "expect_eq(status_label(OrderStatus::Pending), 'Order received');" },
+    { name: "status_label covers Shipped and Delivered",
+      code: "expect_eq(status_label(OrderStatus::Shipped), 'On the way');\nexpect_eq(status_label(OrderStatus::Delivered), 'Delivered');" },
+    { name: "parse_status('shipped') returns the OrderStatus::Shipped case",
+      code: "expect_eq(parse_status('shipped'), OrderStatus::Shipped);" },
+    { name: "parse_status('bogus') returns null (Option::None)",
+      code: "expect_true(parse_status('bogus') === null);" },
+    { name: "the enum is string-backed: OrderStatus::Delivered->value is 'delivered'",
+      code: "expect_eq(OrderStatus::Delivered->value, 'delivered');" },
+  ],
+
+  solution: `<?php
+
+enum OrderStatus: string {
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+}
+
+function status_label(OrderStatus $status): string {
+    return match ($status) {
+        OrderStatus::Pending => 'Order received',
+        OrderStatus::Shipped => 'On the way',
+        OrderStatus::Delivered => 'Delivered',
+    };
+}
+
+function parse_status(string $value): ?OrderStatus {
+    return OrderStatus::tryFrom($value);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>C-like enum</td><td><code>enum Status { Pending }</code></td><td><code>enum Status { case Pending; }</code> (a "pure" enum)</td></tr>
+  <tr><td>Enum with wire value</td><td>derive/hand-write <code>as_str()</code></td><td><code>enum Status: string { case Pending = 'pending'; }</code>, read <code>-&gt;value</code></td></tr>
+  <tr><td>Parse, may fail</td><td><code>FromStr</code> returning <code>Option</code>/<code>Result</code></td><td><code>Status::tryFrom($s)</code> returns <code>?Status</code> (null on miss)</td></tr>
+  <tr><td>Parse, must succeed</td><td><code>.unwrap()</code></td><td><code>Status::from($s)</code> throws <code>ValueError</code></td></tr>
+  <tr><td>All variants</td><td><code>strum::IntoEnumIterator</code></td><td><code>Status::cases()</code> (built in)</td></tr>
+  <tr><td>Methods</td><td><code>impl Status { .. }</code></td><td>method declarations inside the enum body</td></tr>
+  <tr><td>Data-carrying variants</td><td><code>Shipped { tracking: String }</code></td><td>not supported — compose with classes/interfaces</td></tr>
+</table>
+<p>The big absence is payloads: there is no PHP spelling of
+<code>Ok(T) | Err(E)</code>. When a Rust design leans on data-carrying
+variants, the PHP translation is usually an interface with one small class
+per variant — lesson 10's toolkit. And remember that <code>match</code>
+exhaustiveness is enforced at runtime, not compile time: adding a fourth case
+to the enum won't flag every match that misses it, so keep a test touching
+each case.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

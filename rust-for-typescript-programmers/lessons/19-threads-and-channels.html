@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Threads &amp; Channels</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Threads & Channels",
+
+  intro: `
+<p>TypeScript's concurrency story is one thread plus an event loop:
+<code>async</code>/<code>await</code> interleaves work, but only one piece of
+JS runs at a time, and real parallelism means spinning up a
+<code>Worker</code> and talking to it with <code>postMessage</code>. Rust
+gives you <em>real OS threads</em> that genuinely run at once — and the
+reason that isn't terrifying is the system you've spent this course learning.
+Ownership rules are exactly what make threads safe: a data race requires two
+threads mutating the same data, and the borrow checker already forbids two
+mutable owners.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>one thread + event loop; <code>new Worker(...)</code> for parallelism</td><td><code>thread::spawn(move || ...)</code> — a real OS thread</td></tr>
+  <tr><td><code>await promise</code> for the result</td><td><code>handle.join().unwrap()</code> — block until the thread finishes, get its return value</td></tr>
+  <tr><td><code>worker.postMessage(v)</code> / <code>onmessage</code></td><td><code>mpsc::channel()</code> → <code>tx.send(v)</code> / <code>rx.recv()</code></td></tr>
+  <tr><td>runtime prevents shared memory (mostly)</td><td>compiler proves the sharing is safe (<code>move</code> transfers ownership in)</td></tr>
+</table>
+<p>Two tools cover most jobs. <code>thread::spawn(move || ...)</code> starts a
+thread; the <code>move</code> keyword hands the closure <em>ownership</em> of
+whatever it uses, so the compiler knows the main thread can't touch that data
+anymore — no race possible. The returned handle's <code>.join()</code> waits
+for the thread and yields its return value, like <code>await</code> for
+threads. And <code>mpsc::channel()</code> (multi-producer, single-consumer)
+is the <code>postMessage</code> of Rust: <code>tx.send(value)</code> on one
+thread, <code>rx.recv()</code> on another, with values arriving in send
+order.</p>`,
+
+  typescript: `// TS: one thread; real parallelism means a Worker and
+// message passing.
+const worker = new Worker("./double.js");
+// double.js: onmessage = (e) => postMessage(e.data * 2);
+
+function channelDouble(vals: number[]): Promise<number[]> {
+  return new Promise((resolve) => {
+    const out: number[] = [];
+    worker.onmessage = (e) => {
+      out.push(e.data as number);
+      if (out.length === vals.length) resolve(out);
+    };
+    for (const v of vals) worker.postMessage(v);
+  });
+}
+
+channelDouble([1, 2, 3]).then(console.log); // [2, 4, 6]`,
+
+  task: `
+<p>Write two functions (the starter already imports
+<code>std::thread</code> and <code>std::sync::mpsc</code>):</p>
+<ol>
+  <li><code>parallel_sum(a: Vec&lt;i32&gt;, b: Vec&lt;i32&gt;) -&gt; i32</code> —
+      spawn a thread with <code>thread::spawn(move || ...)</code> that sums
+      <code>b</code> (the closure returns the sum), sum <code>a</code> on the
+      main thread meanwhile, then <code>.join()</code> the handle
+      (<code>.unwrap()</code> the result) and return the two sums added
+      together.</li>
+  <li><code>channel_double(vals: Vec&lt;i32&gt;) -&gt; Vec&lt;i32&gt;</code> —
+      make a channel with <code>mpsc::channel()</code>, remember
+      <code>vals.len()</code>, then spawn a thread that <code>move</code>s
+      <code>vals</code> and the sender in and sends <code>v * 2</code> for
+      each value. On the main thread, <code>rx.recv().unwrap()</code> exactly
+      that many times, collecting into a <code>Vec</code> (channels preserve
+      send order). Join the handle before returning so nothing is left
+      running.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::thread;
+use std::sync::mpsc;
+
+// 1. Spawn a thread to sum b (move!), sum a here, join, add.
+//    let handle = thread::spawn(move || ...);
+//    handle.join().unwrap() gives the closure's return value.
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    todo!()
+}
+
+// 2. let (tx, rx) = mpsc::channel();
+//    Spawn a thread that sends v * 2 for each v in vals,
+//    then rx.recv().unwrap() exactly vals.len() times here.
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /thread::spawn/, message: "Spawn a real thread with thread::spawn" },
+    { pattern: /\.join\(\)/, message: "Wait for the spawned thread with .join()" },
+    { pattern: /mpsc/, message: "Use an mpsc channel to pass messages between threads" },
+  ],
+
+  tests: [
+    { name: "parallel_sum(vec![1, 2, 3], vec![4, 5, 6]) returns 21",
+      code: "assert_eq!(parallel_sum(vec![1, 2, 3], vec![4, 5, 6]), 21);" },
+    { name: "parallel_sum(vec![], vec![10]) returns 10",
+      code: "assert_eq!(parallel_sum(vec![], vec![10]), 10);" },
+    { name: "parallel_sum(vec![-5, 5], vec![]) returns 0",
+      code: "assert_eq!(parallel_sum(vec![-5, 5], vec![]), 0);" },
+    { name: "channel_double(vec![1, 2, 3]) returns vec![2, 4, 6] in order",
+      code: "assert_eq!(channel_double(vec![1, 2, 3]), vec![2, 4, 6]);" },
+    { name: "channel_double(vec![7]) returns vec![14]",
+      code: "assert_eq!(channel_double(vec![7]), vec![14]);" },
+    { name: "channel_double(vec![]) returns an empty Vec",
+      code: "assert_eq!(channel_double(vec![]), Vec::<i32>::new());" },
+  ],
+
+  solution: `use std::thread;
+use std::sync::mpsc;
+
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    // move gives the closure ownership of b — the compiler now
+    // knows this thread is the only one touching it.
+    let handle = thread::spawn(move || b.iter().sum::<i32>());
+
+    // Meanwhile, on the main thread:
+    let sum_a: i32 = a.iter().sum();
+
+    // .join() blocks until the thread finishes (like await),
+    // and hands back the closure's return value.
+    let sum_b = handle.join().unwrap();
+    sum_a + sum_b
+}
+
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    let (tx, rx) = mpsc::channel();
+    let n = vals.len();
+
+    let handle = thread::spawn(move || {
+        for v in vals {
+            tx.send(v * 2).unwrap(); // the postMessage of Rust
+        }
+    });
+
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        out.push(rx.recv().unwrap()); // arrives in send order
+    }
+
+    handle.join().unwrap(); // all threads done before we return
+    out
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Start parallel work</td><td><code>new Worker("./w.js")</code></td><td><code>let h = thread::spawn(move || ...)</code></td></tr>
+  <tr><td>Wait for the result</td><td><code>await promise</code></td><td><code>h.join().unwrap()</code></td></tr>
+  <tr><td>Send a message</td><td><code>worker.postMessage(v)</code></td><td><code>tx.send(v).unwrap()</code></td></tr>
+  <tr><td>Receive a message</td><td><code>onmessage = (e) => ...</code></td><td><code>rx.recv().unwrap()</code> (blocks until one arrives)</td></tr>
+  <tr><td>Sharing data safely</td><td>structured clone at the boundary</td><td><code>move</code> transfers ownership; the borrow checker verifies it</td></tr>
+</table>
+<p>The insight: JavaScript made concurrency safe by having only one thread;
+Rust makes it safe by having a type system that can see across threads. The
+<code>move</code> on the closure isn't ceremony — it's the ownership transfer
+that <em>proves</em> the spawned thread has exclusive access to that data,
+which is why Rust's slogan is "fearless concurrency." When you need results
+back, prefer what you did here: return a value through <code>.join()</code>
+or send messages through a channel, rather than sharing mutable state.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

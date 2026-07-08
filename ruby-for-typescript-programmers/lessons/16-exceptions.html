@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>Ruby's exception handling maps almost one-to-one onto TypeScript's:
+<code>try/catch/finally</code> becomes <code>begin/rescue/ensure</code>, and
+<code>throw</code> becomes <code>raise</code>. But Ruby's version fixes the two
+things that make <code>catch (e)</code> painful in TS. First, rescues are
+<em>typed</em>: <code>rescue ArgumentError =&gt; e</code> only catches that class
+(and its subclasses) — no <code>if (e instanceof ArgumentError)</code> dance
+inside a catch-all. Second, a bare <code>rescue</code> does <strong>not</strong>
+catch everything: it catches <code>StandardError</code> and below, so
+truly-fatal things like <code>SystemExit</code> or <code>NoMemoryError</code>
+sail past it. Unlike <code>catch (e)</code>, a careless rescue can't swallow
+a Ctrl-C.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>try { ... }</code></td><td><code>begin ... </code></td></tr>
+  <tr><td><code>catch (e) { ... }</code></td><td><code>rescue =&gt; e ...</code> (StandardError only)</td></tr>
+  <tr><td><code>catch</code> + <code>instanceof</code> check</td><td><code>rescue ArgumentError =&gt; e ...</code></td></tr>
+  <tr><td><code>finally { ... }</code></td><td><code>ensure ... end</code></td></tr>
+  <tr><td><code>throw new Error("boom")</code></td><td><code>raise "boom"</code> or <code>raise ArgumentError, "boom"</code></td></tr>
+  <tr><td><code>class ParseError extends Error {}</code></td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+</table>
+<p>And one lovely shortcut TS has no equivalent for: a method body is already
+an implicit <code>begin</code> block, so you can hang <code>rescue</code>
+straight off a <code>def</code> — <code>def parse(s) ... rescue ArgumentError
+... end</code> — with no extra nesting. Raising a custom error is one line:
+subclass <code>StandardError</code> and you're done.</p>`,
+
+  typescript: `class EmptyCartError extends Error {}
+
+function parseAge(s: string): number {
+  if (!/^\\d+$/.test(s.trim())) {
+    throw new Error(\`not a number: \${s}\`);
+  }
+  return parseInt(s, 10);
+}
+
+function safeParseAge(s: string, fallback: number): number {
+  try {
+    return parseAge(s);
+  } catch (e) {
+    // catches EVERYTHING — even a typo'd variable name
+    return fallback;
+  } finally {
+    // cleanup runs either way
+  }
+}
+
+function checkout(items: string[]): number {
+  if (items.length === 0) throw new EmptyCartError("cart is empty");
+  return items.length;
+}`,
+
+  task: `
+<p>Port the error handling to Ruby:</p>
+<ol>
+  <li>Write <code>parse_age(s)</code> that raises
+      <code>ArgumentError</code> with a message — <code>raise ArgumentError,
+      "not a number"</code> — <em>unless</em>
+      <code>s.strip.match?(/\\A\\d+\\z/)</code>, and otherwise returns
+      <code>s.to_i</code>.</li>
+  <li>Write <code>safe_parse_age(s, default)</code> that calls
+      <code>parse_age(s)</code> and uses a <strong>def-level rescue</strong>
+      (no <code>begin</code> keyword anywhere) — <code>rescue
+      ArgumentError</code> — to return <code>default</code> when parsing
+      fails.</li>
+  <li><code>EmptyCartError &lt; StandardError</code> is already defined in the
+      starter (one line is genuinely all it takes). Write
+      <code>checkout(items)</code> that raises <code>EmptyCartError</code>
+      when <code>items.empty?</code>, and otherwise returns
+      <code>items.length</code>.</li>
+</ol>`,
+
+  starter: `# 1. parse_age: raise ArgumentError unless the trimmed string is all digits.
+#    A raise with a class and message: raise ArgumentError, "why it failed"
+def parse_age(s)
+  raise NotImplementedError, "TODO: implement parse_age"
+end
+
+# 2. safe_parse_age: the method body IS the begin block — hang the
+#    rescue directly off the def, no begin/end needed.
+def safe_parse_age(s, default)
+  raise NotImplementedError, "TODO: implement safe_parse_age"
+end
+
+# 3. A custom exception is a one-line subclass of StandardError.
+#    (Already done — your job is to raise it from checkout.)
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise NotImplementedError, "TODO: implement checkout"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+ArgumentError|rescue\s+\w*Error/, message: "Use a typed rescue (rescue ArgumentError)" },
+    { pattern: /raise\s+/, message: "Raise an exception with raise" },
+    { pattern: /<\s*StandardError/, message: "Keep the custom error a subclass of StandardError" },
+    { pattern: /\bensure\b|rescue/, message: "Handle the failure with rescue (or ensure)" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42 (and copes with whitespace)',
+      code: '  expect_eq(parse_age("42"), 42)\n  expect_eq(parse_age("  7  "), 7)' },
+    { name: 'parse_age("abc") raises ArgumentError',
+      code: '  begin\n    parse_age("abc")\n    raise "did not raise"\n  rescue ArgumentError\n  end' },
+    { name: 'safe_parse_age("abc", 18) returns the default 18',
+      code: '  expect_eq(safe_parse_age("abc", 18), 18)' },
+    { name: 'safe_parse_age("30", 99) parses successfully to 30',
+      code: '  expect_eq(safe_parse_age("30", 99), 30)' },
+    { name: 'checkout(["book", "pen"]) returns 2',
+      code: '  expect_eq(checkout(["book", "pen"]), 2)' },
+    { name: "checkout([]) raises EmptyCartError",
+      code: '  begin\n    checkout([])\n    raise "did not raise"\n  rescue EmptyCartError\n  end' },
+  ],
+
+  solution: `def parse_age(s)
+  raise ArgumentError, "not a number: #{s.inspect}" unless s.strip.match?(/\\A\\d+\\z/)
+  s.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise EmptyCartError, "cart is empty" if items.empty?
+  items.length
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Try / catch / finally</td><td><code>try { } catch (e) { } finally { }</code></td><td><code>begin ... rescue =&gt; e ... ensure ... end</code></td></tr>
+  <tr><td>Catch one type</td><td><code>if (e instanceof RangeError)</code> inside catch</td><td><code>rescue RangeError =&gt; e</code> (stack several rescues)</td></tr>
+  <tr><td>Throw</td><td><code>throw new Error("msg")</code></td><td><code>raise "msg"</code> (a RuntimeError) or <code>raise SomeError, "msg"</code></td></tr>
+  <tr><td>Re-throw</td><td><code>throw e</code></td><td>bare <code>raise</code> inside a rescue</td></tr>
+  <tr><td>Custom error</td><td><code>class E extends Error {}</code></td><td><code>class E &lt; StandardError; end</code></td></tr>
+  <tr><td>Method-wide handler</td><td>wrap the whole body in try</td><td><code>def m ... rescue ... end</code> — no begin needed</td></tr>
+</table>
+<p>The safety detail worth remembering: a bare <code>rescue</code> (or
+<code>rescue =&gt; e</code>) catches <code>StandardError</code>, <em>not</em>
+<code>Exception</code>. Interpreter-level events — <code>SystemExit</code>,
+<code>SignalException</code>, <code>NoMemoryError</code> — live outside the
+<code>StandardError</code> tree, so they escape your handlers by default.
+Writing <code>rescue Exception</code> is the Ruby equivalent of TS's
+catch-everything <code>catch (e)</code>, and it's considered a bug in almost
+all code.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>
