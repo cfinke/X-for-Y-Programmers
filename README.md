@@ -3,7 +3,11 @@
 Interactive tutorial courses that teach one language to programmers who
 already know another. Each lesson shows a familiar idiom from the language you
 know beside a small problem to solve in the language you're learning, then
-compiles and tests your answer.
+compiles and tests your answer. This repository is almost entirely AI-generated,
+but I've found it useful in updating my knowledge after programming in PHP for
+the last 20 years.
+
+![A screenshot of a "TypeScript for PHP Programers" tutorial](shared/screenshots/typescript-for-php-programmers.png)
 
 TypeScript courses run entirely in the browser (vendored compiler, fully
 offline). Rust courses compile and run your code via the
