@@ -80,7 +80,8 @@ capstone), framed for each source language:
 - **[ruby-for-rust-programmers](ruby-for-rust-programmers/index.html)** — Ruby for Rust Programmers
 - **[ruby-for-php-programmers](ruby-for-php-programmers/index.html)** — Ruby for PHP Programmers
 
-Open a course's `index.html` in a browser, or serve the whole directory:
+Open the top-level `index.html` for a linked list of every course, open a
+course's own `index.html` directly, or serve the whole directory:
 
 ```sh
 python3 -m http.server 8000
@@ -90,6 +91,7 @@ python3 -m http.server 8000
 
 ```
 X-for-Y-Programmers/
+├── index.html               links to every course, with progress
 ├── shared/                  libraries shared by every course
 │   ├── css/style.css        theme (light/dark), generic .source-panel accent
 │   ├── js/harness.js        renders lessons, compiles + tests learner code

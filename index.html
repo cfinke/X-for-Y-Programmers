@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X for Y Programmers — Interactive Courses</title>
+<link rel="stylesheet" href="shared/css/style.css">
+<style>
+  .course-section { margin-bottom: 2rem; }
+  .course-section > p { color: var(--muted); font-size: 0.9rem; margin: 0 0 0.9rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <h1>X for Y Programmers</h1>
+    <p>
+      Interactive courses that teach one language to programmers who already know
+      another. Each lesson shows a familiar idiom from the language you know beside
+      a small problem to solve in the language you're learning, then compiles and
+      tests your answer. Pick the course that matches what you know.
+    </p>
+  </header>
+  <div id="courses"></div>
+</div>
+<script>
+  const SOURCES = [
+    ["typescript", "TypeScript", "#2f74c0"],
+    ["javascript", "JavaScript", "#b08f00"],
+    ["python", "Python", "#a07d1c"],
+    ["java", "Java", "#b35900"],
+    ["csharp", "C#", "#68217a"],
+    ["cpp", "C++", "#00599c"],
+    ["go", "Go", "#007d9c"],
+    ["rust", "Rust", "#b7410e"],
+    ["ruby", "Ruby", "#a12c26"],
+    ["php", "PHP", "#7a6fb0"],
+  ];
+
+  // Target language → { key: storageKey prefix per source, note }.
+  // Keys mirror COURSE.storageKey in each course's js/course.js.
+  const TARGETS = [
+    {
+      slug: "typescript",
+      name: "TypeScript",
+      note: "Runs entirely in your browser with a vendored compiler — no internet connection needed.",
+      keys: { javascript: "tsjs", python: "tspy", java: "tsjava", csharp: "tscs",
+              cpp: "tscpp", go: "tsgo", rust: "tsrs", ruby: "tsrb", php: "tsphp" },
+    },
+    {
+      slug: "rust",
+      name: "Rust",
+      note: "Compiles and runs your code via the Rust Playground API (internet connection required).",
+      keys: { typescript: "rsts", javascript: "rsjs", python: "rspy", java: "rsjava",
+              csharp: "rscs", cpp: "rscpp", go: "rsgo", ruby: "rsrb", php: "rsphp" },
+    },
+    {
+      slug: "php",
+      name: "PHP",
+      note: "Runs your code via Wandbox (internet connection required).",
+      keys: { typescript: "phpts", javascript: "phpjs", python: "phppy", java: "phpjava",
+              csharp: "phpcs", cpp: "phpcpp", go: "phpgo", rust: "phprs", ruby: "phprb" },
+    },
+    {
+      slug: "ruby",
+      name: "Ruby",
+      note: "Runs your code via Wandbox (internet connection required).",
+      keys: { typescript: "rbts", javascript: "rbjs", python: "rbpy", java: "rbjava",
+              csharp: "rbcs", cpp: "rbcpp", go: "rbgo", rust: "rbrs", php: "rbphp" },
+    },
+  ];
+
+  const LESSON_COUNT = 20;
+
+  function completed(storageKey) {
+    try { return (JSON.parse(localStorage.getItem(storageKey + "-completed")) || []).length; }
+    catch (e) { return 0; }
+  }
+
+  const container = document.getElementById("courses");
+  TARGETS.forEach(function (target) {
+    const section = document.createElement("section");
+    section.className = "course-section";
+    section.innerHTML = "<h2>" + target.name + " courses</h2><p>" + target.note + "</p>";
+
+    const list = document.createElement("ol");
+    list.className = "lesson-grid";
+    SOURCES.forEach(function (source) {
+      const slug = source[0], name = source[1], accent = source[2];
+      const storageKey = target.keys[slug];
+      if (!storageKey) return; // no course teaches a language to itself
+
+      const done = completed(storageKey);
+      const li = document.createElement("li");
+      li.className = "lesson-card" + (done === LESSON_COUNT ? " done" : "");
+      li.style.borderLeft = "3px solid " + accent;
+      li.innerHTML =
+        (done === LESSON_COUNT ? '<span class="check">✓</span>' : "") +
+        '<a href="' + target.slug + "-for-" + slug + '-programmers/index.html">' +
+        target.name + " for " + name + " Programmers</a>" +
+        '<p class="blurb">' + LESSON_COUNT + " lessons" +
+        (done > 0 ? " · " + done + " complete" : "") + "</p>";
+      list.appendChild(li);
+    });
+
+    section.appendChild(list);
+    container.appendChild(section);
+  });
+</script>
+</body>
+</html>
