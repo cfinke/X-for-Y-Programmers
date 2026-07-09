@@ -112,6 +112,11 @@ h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
 .source-panel[open] > summary { margin-bottom: 0.6rem; }
 .task-panel { border-top: 3px solid var(--ts); }
 .task-standalone { margin-bottom: 1.25rem; }
+.task-ref {
+  margin: 0.9rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
 
 /* Source code and the editor stack full width, one above the other. */
 .editor-panel {

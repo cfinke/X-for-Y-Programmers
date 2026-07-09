@@ -311,6 +311,9 @@ function renderLesson() {
   const taskPanel = el("section", "panel task-panel task-standalone");
   taskPanel.appendChild(el("h2", null, "Your task"));
   taskPanel.appendChild(el("div", "task-body", LESSON.task));
+  taskPanel.appendChild(el("p", "task-ref",
+    "Need a reference? Open <strong>" + escapeHtml(COURSE.sourceHeading) +
+    "</strong> beneath the editor to see the original."));
   app.appendChild(taskPanel);
 
   const compare = el("section", "compare");
