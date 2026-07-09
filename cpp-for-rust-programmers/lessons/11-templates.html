@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Templates</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Templates",
+
+  intro: `
+<p>Rust generics and C++ templates actually share the same underlying trick:
+<strong>monomorphization</strong>. Just as
+<code>fn max_of&lt;T: PartialOrd&gt;(a: T, b: T) -&gt; T</code> gets a separate
+compiled copy of itself for every concrete <code>T</code> you call it with, a
+C++ <code>template&lt;class T&gt; T max_of(T a, T b)</code> does the same —
+<code>max_of&lt;int&gt;</code> and <code>max_of&lt;double&gt;</code> are
+genuinely different functions in the binary, not one generic function with
+type information erased at runtime. So the real difference between Rust and
+C++ generics is not "erased vs. instantiated" (both instantiate) — it's
+<em>how early the compiler checks what a type must support</em>.</p>
+<table>
+  <tr><th>Rust</th><th>C++</th></tr>
+  <tr><td><code>fn id&lt;T&gt;(x: T) -&gt; T</code></td><td><code>template&lt;class T&gt; T id(T x)</code></td></tr>
+  <tr><td><code>id(5)</code> (T inferred)</td><td><code>id(5)</code> (T deduced)</td></tr>
+  <tr><td><code>id::&lt;String&gt;("hi".to_string())</code></td><td><code>id&lt;std::string&gt;("hi")</code></td></tr>
+  <tr><td><code>struct Box&lt;T&gt; { value: T }</code></td><td><code>template&lt;class T&gt; class Box { … }</code></td></tr>
+  <tr><td>trait bounds checked at definition</td><td>duck-typed; checked only at instantiation</td></tr>
+</table>
+<p>Two practical notes. <code>class</code> and <code>typename</code> are
+interchangeable in a template parameter list — <code>template&lt;class T&gt;</code>
+and <code>template&lt;typename T&gt;</code> mean the same thing (neither has
+anything to do with OOP <code>class</code>es). And for function templates you
+usually let the compiler <em>deduce</em> <code>T</code> from the arguments,
+exactly like Rust infers <code>T</code> at the call site; you only spell it
+out in angle brackets — the C++ counterpart of Rust's turbofish,
+<code>id&lt;std::string&gt;(...)</code> instead of
+<code>id::&lt;String&gt;(...)</code> — when there is nothing to deduce from.</p>`,
+
+  rust: `fn max_of<T: PartialOrd>(a: T, b: T) -> T {
+    if a > b { a } else { b }
+}
+
+// A minimal generic container (named Container to avoid
+// shadowing std::boxed::Box in this example)
+struct Container<T> {
+    value: T,
+}
+
+impl<T> Container<T> {
+    fn new(value: T) -> Self {
+        Container { value }
+    }
+    fn get(&self) -> &T {
+        &self.value
+    }
+    fn set(&mut self, v: T) {
+        self.value = v;
+    }
+}
+
+let mut c = Container::new(41);
+c.set(*c.get() + 1);   // 42`,
+
+  task: `
+<p>Build a generic function and a small generic container — the same shapes
+you'd reach for with <code>&lt;T&gt;</code> and a trait bound in Rust.</p>
+<ol>
+  <li><code>template&lt;class T&gt; T max_of(T a, T b)</code> — return the larger of
+      <code>a</code> and <code>b</code> using <code>&gt;</code>. It should work for
+      <code>int</code>, <code>double</code>, and <code>std::string</code> with no
+      changes, the same way a Rust <code>fn max_of&lt;T: PartialOrd&gt;(a: T, b: T) -&gt; T</code>
+      would work for any type implementing <code>PartialOrd</code>.</li>
+  <li><code>template&lt;class T&gt; class Box</code> — a one-slot container:
+    <ul>
+      <li>a constructor <code>Box(T value)</code> that stores the value,</li>
+      <li><code>T get() const</code> returning the stored value,</li>
+      <li><code>void set(T value)</code> replacing it.</li>
+    </ul>
+  </li>
+</ol>
+<p>Unlike a Rust crate, where the compiler can find a generic function's body
+anywhere else in the crate, a C++ template's definition must be visible at
+every call site — in practice this means writing it in a header (or, as here,
+inline in the same file you're calling it from) rather than splitting
+declaration and implementation across files the way an ordinary function can.</p>`,
+
+  starter: `template<class T>
+T max_of(T a, T b) {
+  return a; // TODO: return the larger of a and b
+}
+
+template<class T>
+class Box {
+public:
+  Box(T value) {
+    // TODO: store value
+  }
+  T get() const {
+    return T{}; // TODO: return the stored value
+  }
+  void set(T value) {
+    // TODO: replace the stored value
+  }
+private:
+  T value_{};
+};
+`,
+
+  requirements: [
+    { pattern: /template\s*<\s*(class|typename)\s+\w+\s*>/, message: "Declare at least one template with template<class T>" },
+    { pattern: /a\s*>\s*b/, message: "max_of should compare with a > b" },
+  ],
+
+  tests: [
+    { name: "max_of(3, 7) is 7", code: "    expect_eq(max_of(3, 7), 7);" },
+    { name: "max_of(2.5, 1.5) is 2.5", code: "    expect_eq(max_of(2.5, 1.5), 2.5);" },
+    { name: "max_of on strings picks the larger", code: "    expect_eq(max_of(std::string(\"apple\"), std::string(\"banana\")), std::string(\"banana\"));" },
+    { name: "explicit type argument works", code: "    expect_eq(max_of<int>(4, 9), 9);" },
+    { name: "Box<int> get returns the stored value", code: "    Box<int> b(41); expect_eq(b.get(), 41);" },
+    { name: "Box<int> set replaces the value", code: "    Box<int> b(41); b.set(b.get() + 1); expect_eq(b.get(), 42);" },
+    { name: "Box<std::string> holds a string", code: "    Box<std::string> s(std::string(\"hi\")); expect_eq(s.get(), std::string(\"hi\"));" },
+  ],
+
+  solution: `template<class T>
+T max_of(T a, T b) {
+  return a > b ? a : b;
+}
+
+template<class T>
+class Box {
+public:
+  Box(T value) : value_(value) {}
+  T get() const {
+    return value_;
+  }
+  void set(T value) {
+    value_ = value;
+  }
+private:
+  T value_{};
+};
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>C++</th></tr>
+  <tr><td>Function generic</td><td><code>fn f&lt;T&gt;(x: T)</code></td><td><code>template&lt;class T&gt; auto f(T x)</code></td></tr>
+  <tr><td>Struct generic</td><td><code>struct Box&lt;T&gt; { .. }</code></td><td><code>template&lt;class T&gt; class Box</code></td></tr>
+  <tr><td>Inference / deduction</td><td><code>f(5)</code></td><td><code>f(5)</code></td></tr>
+  <tr><td>Explicit type arg</td><td><code>f::&lt;String&gt;(x)</code></td><td><code>f&lt;std::string&gt;(x)</code></td></tr>
+  <tr><td>Constraining T</td><td><code>T: PartialOrd</code> bound, required</td><td>none by default (duck-typed)</td></tr>
+</table>
+<p>The biggest surprise coming from Rust is that plain C++ templates are
+duck-typed by the compiler: there is no mandatory equivalent of a
+<code>T: PartialOrd</code> bound, so <code>max_of</code> compiles for
+<em>any</em> <code>T</code> that happens to support <code>&gt;</code> — and
+only fails, often in a wall of cryptic errors pointing deep inside the
+template body, if you feed it a type that does not. Rust's trait bounds catch
+that mismatch right at the generic function's own definition, with a clear
+"the trait bound is not satisfied" message. C++20 adds <em>concepts</em>
+(e.g. <code>template&lt;std::totally_ordered T&gt;</code>) to state such
+requirements up front, much closer to Rust's trait bounds and
+<code>where</code> clauses, with correspondingly clearer errors. Also note
+the member initializer list <code>Box(T value) : value_(value) {}</code> —
+the idiomatic way to initialize members, closer in spirit to Rust's
+<code>Container { value }</code> struct-literal initialization than to
+assigning inside the constructor body.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

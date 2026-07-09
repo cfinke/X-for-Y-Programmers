@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Kotlin will feel like a big step up from PHP: static typing with inference,
+first-class functions, and a serious approach to null safety that goes well
+beyond PHP's optional type declarations. The headline difference is
+<code>val</code> vs <code>var</code>: <code>val</code> is a read-only binding —
+something plain PHP variables don't have, since every <code>$x = ...</code> can
+always be reassigned — and is the default you should reach for; <code>var</code>
+is for the rare genuine reassignment.</p>
+<table>
+  <tr><th>PHP</th><th>Kotlin</th></tr>
+  <tr><td><code>$name = "Ada";</code></td><td><code>val name = "Ada"</code></td></tr>
+  <tr><td><code>$age = 36;</code></td><td><code>var age = 36</code></td></tr>
+  <tr><td><code>"$name is $age"</code></td><td><code>"$name is $age"</code></td></tr>
+  <tr><td><code>int $x</code> / <code>float $x</code></td><td><code>x: Int</code> / <code>x: Double</code></td></tr>
+</table>
+<p>Unlike PHP's typed parameters (<code>int $x</code>), where the type comes
+before the variable, Kotlin's type goes after the name with a colon — and you
+rarely even write it, since Kotlin infers it from the initializer. String
+templates use a bare <code>$name</code> (or <code>\${expr}</code> for a full
+expression) inside double-quoted strings, exactly like PHP's own variable
+interpolation. And every value has a real type at runtime, reachable via
+<code>value::class.simpleName</code> (PHP's rough equivalent is
+<code>gettype($value)</code> or <code>get_class($value)</code>).</p>`,
+
+  php: `$age = 36;
+$userName = "Ada";
+
+function describe(string $name, int $age): string {
+    return "$name is $age";
+}`,
+
+  task: `
+<p>Write the Kotlin version. Kotlin allows top-level declarations — no class or
+<code>main</code> needed (those are added for you):</p>
+<ol>
+  <li>Declare <code>userName</code> with <code>val</code> = <code>"Ada"</code>
+      and <code>userAge</code> with <code>var</code> = <code>36</code>.</li>
+  <li>Write <code>describe(name: String, age: Int): String</code> that returns a
+      string like <code>"Ada is 36"</code> using a string template.</li>
+  <li>Write <code>typeName(value: Any): String</code> that returns the value's
+      runtime type name — use <code>value::class.simpleName ?: "?"</code>.</li>
+</ol>`,
+
+  starter: `// 1. userName (val) and userAge (var) — replace the placeholder values
+val userName = "" // TODO
+var userAge = 0    // TODO
+
+
+// 2. describe(name, age) -> "<name> is <age>"
+fun describe(name: String, age: Int): String {
+    return "" // TODO
+}
+
+// 3. typeName(value) -> the runtime type name, e.g. "Int"
+fun typeName(value: Any): String {
+    return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\bval\s+userName/, message: "Declare userName with val" },
+    { pattern: /\bvar\s+userAge/, message: "Declare userAge with var" },
+    { pattern: /"\$name is \$age"/, message: "Build the string with a template: \"$name is $age\"" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', code: "        expect_eq(userName, \"Ada\")" },
+    { name: "userAge is 36", code: "        expect_eq(userAge, 36)" },
+    { name: 'describe("Ada", 36) is "Ada is 36"', code: "        expect_eq(describe(\"Ada\", 36), \"Ada is 36\")" },
+    { name: 'describe("Rob", 68) is "Rob is 68"', code: "        expect_eq(describe(\"Rob\", 68), \"Rob is 68\")" },
+    { name: 'typeName(1) is "Int"', code: "        expect_eq(typeName(1), \"Int\")" },
+    { name: 'typeName("a") is "String"', code: "        expect_eq(typeName(\"a\"), \"String\")" },
+    { name: 'typeName(true) is "Boolean"', code: "        expect_eq(typeName(true), \"Boolean\")" },
+  ],
+
+  solution: `val userName = "Ada"
+var userAge = 36
+
+fun describe(name: String, age: Int): String {
+    return "$name is $age"
+}
+
+fun typeName(value: Any): String {
+    return value::class.simpleName ?: "?"
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+  <tr><td>Read-only binding</td><td><code>define('X', 1);</code> (global only)</td><td><code>val x = 1</code></td></tr>
+  <tr><td>Reassignable</td><td><code>$x = 1;</code></td><td><code>var x = 1</code></td></tr>
+  <tr><td>Explicit type</td><td><code>function f(int $x) {}</code></td><td><code>val x: Int = 1</code></td></tr>
+  <tr><td>Template</td><td><code>"$x"</code> / <code>"{$obj->foo}"</code></td><td><code>"$x"</code> / <code>"\${x.foo}"</code></td></tr>
+  <tr><td>Runtime type</td><td><code>gettype($x)</code></td><td><code>x::class.simpleName</code></td></tr>
+</table>
+<p>Kotlin splits what PHP treats as just <code>int</code> and <code>float</code>
+into <code>Int</code>, <code>Long</code>, <code>Double</code>, and friends, and —
+unlike PHP's loose, coercive type juggling — it will not silently mix them:
+<code>1 / 2</code> is <code>0</code> (integer division), while
+<code>1.0 / 2</code> is <code>0.5</code>. Prefer <code>val</code> everywhere you
+can; the compiler will tell you the moment you actually need <code>var</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

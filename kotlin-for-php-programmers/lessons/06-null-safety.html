@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null Safety</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null Safety",
+
+  intro: `
+<p>Kotlin bakes nullability into the type system at compile time, which is a
+step beyond PHP's nullable type declarations. A plain <code>String</code> can
+<em>never</em> hold <code>null</code>; if a value might be absent you must say
+so with a trailing <code>?</code> — <code>String?</code> is Kotlin's answer to
+PHP's <code>?string</code>. The compiler then forces you to deal with the null
+before you can call anything on it, whereas PHP only complains at runtime, the
+moment a <code>null</code> actually reaches a non-nullable typed parameter.</p>
+<table>
+  <tr><th>PHP</th><th>Kotlin</th></tr>
+  <tr><td><code>?string</code></td><td><code>String?</code></td></tr>
+  <tr><td><code>$user?->name</code></td><td><code>user?.name</code></td></tr>
+  <tr><td><code>$name ?? "guest"</code></td><td><code>name ?: "guest"</code></td></tr>
+  <tr><td><em>(no equivalent)</em></td><td><code>name!!</code></td></tr>
+  <tr><td><code>if ($x !== null) { $x->f(); }</code></td><td><code>x?.let { it.f() }</code></td></tr>
+</table>
+<p>The tools are similar in spirit. Kotlin's safe call <code>?.</code> returns
+<code>null</code> instead of throwing when the receiver is null — much like
+PHP's nullsafe operator <code>?-></code> (PHP 8.0+), except PHP's version only
+works for property and method access, not arbitrary expressions or array
+indexing. The Elvis operator <code>?:</code> supplies a fallback, just like
+PHP's own null coalescing operator <code>??</code>. Kotlin's non-null
+assertion <code>!!</code> has no real PHP counterpart — PHP has no operator
+that says "trust me, this isn't null"; the closest you can do is write your
+own <code>if ($x === null) { throw ... }</code> check. And
+<code>value?.let { ... }</code> runs a block only when the value is non-null,
+binding it to <code>it</code> — in PHP you'd reach for a plain
+<code>if ($value !== null) { ... }</code> instead.</p>`,
+
+  php: `function lookupName(int $id): ?string {
+    if ($id === 1) return "Ada";
+    if ($id === 2) return "Rob";
+    return null;
+}
+
+$greeting = "Hello, " . (lookupName($id) ?? "stranger");
+$name = lookupName($id);
+$firstChar = $name !== null ? $name[0] : null;`,
+
+  task: `
+<p>Build a tiny name directory and handle the missing cases idiomatically. All
+declarations are top-level (no class or <code>main</code> needed):</p>
+<ol>
+  <li>Write <code>lookupName(id: Int): String?</code> that returns
+      <code>"Ada"</code> for <code>1</code>, <code>"Rob"</code> for <code>2</code>,
+      and <code>null</code> otherwise.</li>
+  <li>Write <code>greet(id: Int): String</code> that returns
+      <code>"Hello, &lt;name&gt;"</code>, falling back to <code>"stranger"</code>
+      with the Elvis operator <code>?:</code> when the name is null.</li>
+  <li>Write <code>initial(id: Int): Char?</code> that returns the first character
+      of the name using a safe call <code>?.</code> (so a missing name yields
+      <code>null</code>).</li>
+  <li>Write <code>shout(name: String?): String</code> that returns the uppercased
+      name plus <code>"!"</code> using <code>name?.let { ... }</code>, or
+      <code>"(silence)"</code> when <code>name</code> is null.</li>
+</ol>`,
+
+  starter: `// 1. lookupName(id) -> a name, or null if unknown
+fun lookupName(id: Int): String? {
+    return null // TODO
+}
+
+// 2. greet(id) -> "Hello, <name>", or "Hello, stranger" (use ?:)
+fun greet(id: Int): String {
+    return "" // TODO
+}
+
+// 3. initial(id) -> first char of the name, or null (use ?.)
+fun initial(id: Int): Char? {
+    return null // TODO
+}
+
+// 4. shout(name) -> "<NAME>!", or "(silence)" if null (use ?.let)
+fun shout(name: String?): String {
+    return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\?:/, message: "Use the Elvis operator ?: to supply a fallback" },
+    { pattern: /\?\./, message: "Use a safe call ?. on a nullable value" },
+    { pattern: /\.let\s*\{/, message: "Use ?.let { ... } to handle the nullable name" },
+  ],
+
+  tests: [
+    { name: 'lookupName(1) is "Ada"', code: "        expect_eq(lookupName(1), \"Ada\")" },
+    { name: 'lookupName(2) is "Rob"', code: "        expect_eq(lookupName(2), \"Rob\")" },
+    { name: "lookupName(9) is null", code: "        expect_eq(lookupName(9), null)" },
+    { name: 'greet(1) is "Hello, Ada"', code: "        expect_eq(greet(1), \"Hello, Ada\")" },
+    { name: 'greet(9) falls back to "stranger"', code: "        expect_eq(greet(9), \"Hello, stranger\")" },
+    { name: "initial(2) is 'R'", code: "        expect_eq(initial(2), 'R')" },
+    { name: "initial(9) is null", code: "        expect_eq(initial(9), null)" },
+    { name: 'shout("hi") is "HI!"', code: "        expect_eq(shout(\"hi\"), \"HI!\")" },
+    { name: 'shout(null) is "(silence)"', code: "        expect_eq(shout(null), \"(silence)\")" },
+  ],
+
+  solution: `fun lookupName(id: Int): String? {
+    return when (id) {
+        1 -> "Ada"
+        2 -> "Rob"
+        else -> null
+    }
+}
+
+fun greet(id: Int): String {
+    return "Hello, " + (lookupName(id) ?: "stranger")
+}
+
+fun initial(id: Int): Char? {
+    return lookupName(id)?.first()
+}
+
+fun shout(name: String?): String {
+    return name?.let { "\${it.uppercase()}!" } ?: "(silence)"
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+  <tr><td>Nullable type</td><td><code>?string</code></td><td><code>String?</code></td></tr>
+  <tr><td>Safe call</td><td><code>$x?->f()</code></td><td><code>x?.f()</code></td></tr>
+  <tr><td>Fallback</td><td><code>$x ?? $y</code></td><td><code>x ?: y</code></td></tr>
+  <tr><td>Assert non-null</td><td><em>(no equivalent — PHP throws a <code>TypeError</code> for you if you're wrong)</em></td><td><code>x!!</code> (throws at runtime)</td></tr>
+  <tr><td>Run if non-null</td><td><code>if ($x !== null) { f($x); }</code></td><td><code>x?.let { f(it) }</code></td></tr>
+</table>
+<p>The key mental shift from PHP: Kotlin's <code>!!</code> is a real, deliberate
+runtime check built into the language, not something you have to hand-roll.
+PHP has no explicit null-assertion syntax — if a <code>null</code> reaches a
+non-nullable typed parameter or return value, PHP throws a
+<code>TypeError</code> automatically, but there's no <code>x!</code>-style
+operator to mark "I promise this isn't null" at the call site the way
+Kotlin's <code>!!</code> does. Prefer <code>?.</code>, <code>?:</code>, and
+<code>?.let { }</code> for everyday handling and save <code>!!</code> for the
+rare spot where you can prove non-null. Chaining <code>?.</code>
+short-circuits the whole chain to <code>null</code> the moment any link is
+null — the same idea as PHP's <code>?-></code> nullsafe operator, except
+Kotlin's safe call works on any expression, not just property and method
+access.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

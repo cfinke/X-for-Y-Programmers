@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>You already write free functions in JavaScript, and C++ free functions look
+similar. But C++ adds two things JavaScript does not have. First, real
+<em>overloading</em>: several functions can share a name as long as their
+parameter lists differ, and the compiler picks one at compile time from the
+argument types. JavaScript has no overloading at all — a single function has to
+branch on <code>arguments.length</code> or check parameter values itself.
+Second, the calling convention is part of the parameter type. How you declare a
+parameter decides whether the argument is copied, shared read-only, or made
+writable by the callee.</p>
+<table>
+  <tr><th>JavaScript</th><th>C++</th></tr>
+  <tr><td><code>function f(x)</code></td><td><code>void f(int x)</code> (by value — a copy)</td></tr>
+  <tr><td>pass an object (shared ref)</td><td><code>void f(const std::string&amp; s)</code> (read-only, no copy)</td></tr>
+  <tr><td>return a new value to "mutate"</td><td><code>void f(std::string&amp; s)</code> (callee mutates caller's object)</td></tr>
+  <tr><td>one function, checks <code>arguments</code></td><td>truly separate functions per signature</td></tr>
+  <tr><td><code>function g(x = 10)</code></td><td><code>int g(int x = 10)</code></td></tr>
+</table>
+<p>The rule of thumb: pass small values (<code>int</code>, <code>double</code>,
+<code>bool</code>) <em>by value</em>; pass objects you only read
+(<code>std::string</code>, <code>std::vector</code>) by <code>const</code>
+<em>reference</em> to skip the copy; pass by plain reference
+(<code>T&amp;</code>) only when you intend to modify the caller's object.</p>`,
+
+  javascript: `// JavaScript has no overloading; one function must handle both shapes:
+function area(w, h) {
+  return h === undefined ? w * w : w * h;
+}
+
+function greet(name, greeting = "Hello") {
+  return \`\${greeting}, \${name}!\`;
+}
+
+// No true by-value/by-ref choice; objects are shared refs:
+function doubleAll(xs) {
+  for (let i = 0; i < xs.length; i++) xs[i] *= 2;
+}`,
+
+  task: `
+<p>Write these free functions:</p>
+<ol>
+  <li>Two <strong>overloads</strong> of <code>area</code>:
+    <ul>
+      <li><code>area(int side)</code> returns <code>side * side</code> (a square).</li>
+      <li><code>area(int width, int height)</code> returns <code>width * height</code>.</li>
+    </ul>
+  </li>
+  <li><code>greet(const std::string&amp; name, const std::string&amp; greeting = "Hello")</code>
+      takes its <code>name</code> by <strong>const reference</strong> and has a
+      <strong>default argument</strong>. Return
+      <code>greeting + ", " + name + "!"</code>.</li>
+  <li><code>doubleAll(std::vector&lt;int&gt;&amp; xs)</code> takes the vector by
+      plain <strong>reference</strong> and multiplies each element by 2 in place
+      (returns <code>void</code>).</li>
+  <li><code>sumOf(const std::vector&lt;int&gt;&amp; xs)</code> takes the vector by
+      <strong>const reference</strong> and returns the sum of its elements.</li>
+</ol>`,
+
+  starter: `int area(int side) {
+  return 0; // TODO: a square
+}
+
+int area(int width, int height) {
+  return 0; // TODO: a rectangle
+}
+
+std::string greet(const std::string& name, const std::string& greeting = "Hello") {
+  return ""; // TODO
+}
+
+void doubleAll(std::vector<int>& xs) {
+  // TODO: mutate xs in place
+}
+
+int sumOf(const std::vector<int>& xs) {
+  return 0; // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /int\s+area\s*\(\s*int\s+\w+\s*\)[\s\S]*int\s+area\s*\(\s*int\s+\w+\s*,\s*int\s+\w+\s*\)/, message: "Provide two overloads of area (one and two int parameters)" },
+    { pattern: /const\s+std::string&\s+\w+\s*,\s*const\s+std::string&\s+\w+\s*=\s*"Hello"/, message: "greet must take name by const reference and give greeting a default of \"Hello\"" },
+    { pattern: /void\s+doubleAll\s*\(\s*std::vector<int>&\s+\w+\s*\)/, message: "doubleAll must take the vector by plain reference so it can mutate it" },
+  ],
+
+  tests: [
+    { name: "area(4) is 16 (square overload)", code: "    expect_eq(area(4), 16);" },
+    { name: "area(3, 5) is 15 (rectangle overload)", code: "    expect_eq(area(3, 5), 15);" },
+    { name: "greet uses default greeting", code: "    expect_eq(greet(\"Ada\"), std::string(\"Hello, Ada!\"));" },
+    { name: "greet with explicit greeting", code: "    expect_eq(greet(\"Rob\", \"Hi\"), std::string(\"Hi, Rob!\"));" },
+    { name: "doubleAll mutates the caller's vector", code: "    std::vector<int> v{1, 2, 3};\n    doubleAll(v);\n    expect_eq(v, (std::vector<int>{2, 4, 6}));" },
+    { name: "sumOf reads without mutating", code: "    std::vector<int> nums{4, 5, 6};\n    expect_eq(sumOf(nums), 15);\n    expect_eq(nums, (std::vector<int>{4, 5, 6}));" },
+  ],
+
+  solution: `int area(int side) {
+  return side * side;
+}
+
+int area(int width, int height) {
+  return width * height;
+}
+
+std::string greet(const std::string& name, const std::string& greeting = "Hello") {
+  return greeting + ", " + name + "!";
+}
+
+void doubleAll(std::vector<int>& xs) {
+  for (int& x : xs) {
+    x *= 2;
+  }
+}
+
+int sumOf(const std::vector<int>& xs) {
+  int total = 0;
+  for (int x : xs) {
+    total += x;
+  }
+  return total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>C++</th></tr>
+  <tr><td>By value (copy)</td><td>primitives are copied</td><td><code>void f(int x)</code></td></tr>
+  <tr><td>Read-only object</td><td>object passed as shared ref</td><td><code>void f(const std::string&amp; s)</code></td></tr>
+  <tr><td>Mutate caller's object</td><td>mutate the shared object</td><td><code>void f(std::string&amp; s)</code></td></tr>
+  <tr><td>Overloading</td><td>not supported; branch in one body</td><td>separate functions per signature</td></tr>
+  <tr><td>Default argument</td><td><code>function g(x = 10)</code></td><td><code>int g(int x = 10)</code></td></tr>
+</table>
+<p>A subtle point that trips up JavaScript programmers: in JS every object is a
+shared reference, so a function that takes an array can always mutate it. In C++
+you <em>choose</em>. <code>const std::vector&lt;int&gt;&amp;</code> says "I will
+read this and not copy it"; drop the <code>const</code> and you are asking for a
+handle you can write through, which changes the caller's own vector. Pass an
+object by value (<code>std::vector&lt;int&gt; xs</code>) and the callee gets its
+own copy — mutations stay local, but you paid for the copy.</p>
+<p>Default arguments live in the declaration, not the call, and follow the same
+"trailing only" rule as JavaScript default parameters: once a parameter has a
+default, everything after it should too (JS technically allows a default before a
+later required parameter, but it is confusing and rarely used). Overload
+resolution happens entirely at compile time — <code>area(4)</code> and
+<code>area(3, 5)</code> resolve to two genuinely different functions, unlike
+JavaScript's single function that must inspect its arguments at runtime.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

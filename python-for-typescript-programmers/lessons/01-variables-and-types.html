@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>TypeScript checks types before the code runs, then erases them. Python keeps
+the types on the <em>values</em> and checks them as it runs — a variable is just
+a name bound to an object, and it can be rebound to an object of any type. No
+<code>let</code>, no annotations required, and blocks are marked by indentation
+rather than braces.</p>
+<table>
+  <tr><th>TypeScript</th><th>Python</th></tr>
+  <tr><td><code>let age: number = 36;</code></td><td><code>age = 36</code></td></tr>
+  <tr><td><code>const name = "Ada";</code></td><td><code>name = "Ada"</code></td></tr>
+  <tr><td><code>typeof x</code></td><td><code>type(x).__name__</code></td></tr>
+  <tr><td><code>\`\${name} is \${age}\`</code></td><td><code>f"{name} is {age}"</code></td></tr>
+</table>
+<p>Two habits to build. First, there is no declaration keyword — assigning a
+name creates it, and reassigning to a different type is legal at runtime.
+Second, string interpolation is the <em>f-string</em>: prefix the literal with
+<code>f</code> and drop expressions inside <code>{ }</code>. Python's numbers
+also split into <code>int</code> and <code>float</code>, but <code>/</code>
+always gives a <code>float</code> (<code>7 / 2 == 3.5</code>); use <code>//</code>
+for integer division.</p>`,
+
+  typescript: `let age: number = 36;
+const userName: string = "Ada";
+
+function describe(name: string, age: number): string {
+  return \`\${name} is \${age}\`;
+}`,
+
+  task: `
+<p>Write the Python version:</p>
+<ol>
+  <li>Bind <code>userName</code> to <code>"Ada"</code> and <code>userAge</code>
+      to <code>36</code> — no keywords, no annotations.</li>
+  <li>Write <code>describe(name, age)</code> that returns a string like
+      <code>"Ada is 36"</code> using an f-string.</li>
+  <li>Write <code>type_of(value)</code> that returns the name of the value's
+      type as a string, e.g. <code>"int"</code> — use
+      <code>type(value).__name__</code>.</li>
+</ol>`,
+
+  starter: `# 1. userName and userAge (no declaration keywords)
+
+
+# 2. describe(name, age) -> "<name> is <age>"
+def describe(name, age):
+    return ""  # TODO
+
+
+# 3. type_of(value) -> the type name, e.g. "int"
+def type_of(value):
+    return ""  # TODO
+`,
+
+  requirements: [
+    { pattern: /def\s+describe/, message: "Define a function describe" },
+    { pattern: /f["']/, message: "Build the string with an f-string" },
+    { pattern: /type\s*\(/, message: "Use type() inside type_of" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', code: "    expect_eq(userName, \"Ada\")" },
+    { name: "userAge is 36", code: "    expect_eq(userAge, 36)" },
+    { name: 'describe("Ada", 36) is "Ada is 36"', code: "    expect_eq(describe(\"Ada\", 36), \"Ada is 36\")" },
+    { name: 'describe("Rob", 68) is "Rob is 68"', code: "    expect_eq(describe(\"Rob\", 68), \"Rob is 68\")" },
+    { name: 'type_of(1) is "int"', code: "    expect_eq(type_of(1), \"int\")" },
+    { name: 'type_of("a") is "str"', code: "    expect_eq(type_of(\"a\"), \"str\")" },
+    { name: 'type_of(True) is "bool"', code: "    expect_eq(type_of(True), \"bool\")" },
+  ],
+
+  solution: `userName = "Ada"
+userAge = 36
+
+
+def describe(name, age):
+    return f"{name} is {age}"
+
+
+def type_of(value):
+    return type(value).__name__
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Python</th></tr>
+  <tr><td>Variable</td><td><code>let x = 1;</code></td><td><code>x = 1</code></td></tr>
+  <tr><td>Runtime type</td><td><code>typeof x</code></td><td><code>type(x).__name__</code></td></tr>
+  <tr><td>Interpolation</td><td><code>\`\${x}\`</code></td><td><code>f"{x}"</code></td></tr>
+  <tr><td>Division</td><td><code>7 / 2 === 3.5</code></td><td><code>7 / 2 == 3.5</code>, <code>7 // 2 == 3</code></td></tr>
+  <tr><td>Block</td><td><code>{ … }</code></td><td>indentation (a colon then an indented body)</td></tr>
+</table>
+<p>The <code>type(x).__name__</code> trick returns the class name as a plain
+string — <code>"int"</code>, <code>"str"</code>, <code>"bool"</code>,
+<code>"list"</code>, and so on. Note that <code>bool</code> is a subclass of
+<code>int</code> in Python, so <code>True == 1</code> — a wrinkle worth
+remembering the first time an equality check surprises you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

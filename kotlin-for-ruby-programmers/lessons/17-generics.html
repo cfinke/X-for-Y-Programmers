@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Generics",
+
+  intro: `
+<p>Ruby has no generics at all — you never declare a type parameter, because
+methods and classes work with whatever object you hand them, courtesy of duck
+typing. Kotlin generics are how the language gets similar flexibility while
+still checking everything at compile time: you put a type parameter in angle
+brackets on a function or a class, and the compiler threads the concrete type
+through for you.</p>
+<table>
+  <tr><th>Ruby</th><th>Kotlin</th></tr>
+  <tr><td><code>def first(xs); xs.first; end</code></td><td><code>fun &lt;T&gt; first(xs: List&lt;T&gt;): T</code></td></tr>
+  <tr><td><code>class Box; def initialize(value); @value = value; end; end</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td><code>x.respond_to?(:&lt;=&gt;)</code></td><td><code>&lt;T : Comparable&lt;T&gt;&gt;</code></td></tr>
+  <tr><td>no equivalent (duck typing)</td><td><code>out</code> / <code>in</code> (declared)</td></tr>
+</table>
+<p>Two things to get used to. First, the type parameter on a <em>function</em>
+goes before the function name — <code>fun &lt;T&gt; first(...)</code>, not
+<code>fun first&lt;T&gt;(...)</code> — while on a class it stays after the
+name. Second, where Ruby just calls <code>&gt;</code> on whatever you pass it
+and raises <code>NoMethodError</code> at runtime if that fails, Kotlin has no
+bare <code>&gt;</code> operator on arbitrary types. A constraint like
+<code>Comparable&lt;T&gt;</code> is what lets you write <code>a &gt; b</code>
+inside a generic function at all — the compiler checks up front what Ruby
+would only discover when the code actually runs.</p>`,
+
+  ruby: `class Box
+  attr_reader :value
+
+  def initialize(value)
+    @value = value
+  end
+
+  def map
+    Box.new(yield(value))
+  end
+end
+
+# No type constraint needed -- just relies on <=> (or >) existing
+def largest(items)
+  items.reduce { |a, b| b > a ? b : a }
+end`,
+
+  task: `
+<p>Build a small generic toolkit. Everything is top-level — no
+<code>main</code> needed.</p>
+<ol>
+  <li>Define a generic container <code>class Box&lt;T&gt;(val value: T)</code>.
+      Give it <code>fun &lt;R&gt; map(transform: (T) -&gt; R): Box&lt;R&gt;</code>
+      that returns a new box holding the transformed value, and a
+      <code>toString()</code> that returns <code>"Box(&lt;value&gt;)"</code>.</li>
+  <li>Write <code>describe(box: Box&lt;out Any?&gt;): String</code> that returns
+      <code>box.toString()</code>. The <code>out</code> projection is use-site
+      variance — it lets a <code>Box&lt;Int&gt;</code> be passed where any
+      <code>Box</code> is accepted.</li>
+  <li>Write <code>largest</code> as a constrained generic
+      <code>fun &lt;T : Comparable&lt;T&gt;&gt; largest(items: List&lt;T&gt;): T</code>
+      that returns the biggest element of a non-empty list using
+      <code>&gt;</code>.</li>
+</ol>`,
+
+  starter: `// 1. Box<T> — a generic container holding one value of type T
+class Box<T>(val value: T) {
+    // map: turn a Box<T> into a Box<R> by transforming the value
+    fun <R> map(transform: (T) -> R): Box<R> = TODO()
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+// 2. describe — accept a Box of anything using use-site variance (out)
+fun describe(box: Box<out Any?>): String = TODO()
+
+// 3. largest — the largest element of a non-empty list, via a Comparable constraint
+fun <T : Comparable<T>> largest(items: List<T>): T = TODO()
+`,
+
+  requirements: [
+    { pattern: /class\s+Box\s*<\s*T\s*>/, message: "Define a generic container: class Box<T>" },
+    { pattern: /fun\s*<\s*T\s*:\s*Comparable\s*<\s*T\s*>\s*>/, message: "Write largest with a constraint: fun <T : Comparable<T>>" },
+    { pattern: /Box\s*<\s*out\b/, message: "Accept any Box with use-site variance: Box<out Any?>" },
+  ],
+
+  tests: [
+    { name: "Box holds its value", code: "        expect_eq(Box(42).value, 42)" },
+    { name: "map transforms Int -> Int", code: "        expect_eq(Box(3).map { it * 2 }.value, 6)" },
+    { name: "map can change the type (String -> Int)", code: "        expect_eq(Box(\"hi\").map { it.length }.value, 2)" },
+    { name: "describe accepts a Box<Int> via out", code: "        expect_eq(describe(Box(5)), \"Box(5)\")" },
+    { name: "largest of Ints", code: "        expect_eq(largest(listOf(3, 9, 2)), 9)" },
+    { name: "largest of Strings", code: "        expect_eq(largest(listOf(\"apple\", \"pear\", \"kiwi\")), \"pear\")" },
+  ],
+
+  solution: `class Box<T>(val value: T) {
+    fun <R> map(transform: (T) -> R): Box<R> = Box(transform(value))
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+fun describe(box: Box<out Any?>): String = box.toString()
+
+fun <T : Comparable<T>> largest(items: List<T>): T {
+    var result = items[0]
+    for (item in items) {
+        if (item > result) result = item
+    }
+    return result
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Kotlin</th></tr>
+  <tr><td>Generic function</td><td><code>def f(x)</code> (duck-typed)</td><td><code>fun &lt;T&gt; f(x: T)</code></td></tr>
+  <tr><td>Generic class</td><td><code>class Box</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td>Upper bound</td><td><code>x.respond_to?(:&lt;=&gt;)</code> (checked at runtime, if at all)</td><td><code>&lt;T : X&gt;</code></td></tr>
+  <tr><td>Producer (covariant)</td><td>n/a — no static types</td><td><code>class Src&lt;out T&gt;</code> / <code>Box&lt;out T&gt;</code></td></tr>
+  <tr><td>Consumer (contravariant)</td><td>n/a — no static types</td><td><code>class Sink&lt;in T&gt;</code></td></tr>
+</table>
+<p>Kotlin makes variance <em>explicit</em>. An <code>out T</code> means the type
+only ever <em>produces</em> a <code>T</code> (like a read-only source), so
+<code>Box&lt;Int&gt;</code> can safely stand in for <code>Box&lt;Any?&gt;</code>.
+An <code>in T</code> means the type only <em>consumes</em> a <code>T</code>.
+You can declare it on the class (declaration-site) or, as in
+<code>Box&lt;out Any?&gt;</code> above, at the point of use (use-site
+projection) — a concept Ruby simply never needs, since it never checks whether
+a <code>Box</code> holding an <code>Integer</code> can stand in for a
+<code>Box</code> holding "any object" in the first place.</p>
+<p>The multiple upper bounds you'd otherwise check by hand with something like
+<code>raise unless x.respond_to?(:foo) &amp;&amp; x.respond_to?(:bar)</code> in
+Ruby become a <code>where</code> clause in Kotlin:
+<code>fun &lt;T&gt; f(x: T) where T : A, T : B</code>. And where Ruby's
+<code>x.is_a?(T)</code> always works because every object carries its class at
+runtime, Kotlin's generics are normally erased at compile time — unless a
+function is marked <code>inline</code> with a <code>reified</code> parameter,
+which is what makes an <code>x is T</code> check possible at all.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

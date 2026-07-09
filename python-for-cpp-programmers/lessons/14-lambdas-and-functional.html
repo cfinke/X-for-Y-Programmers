@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Lambdas & Functional Tools</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Lambdas & Functional Tools",
+
+  intro: `
+<p>In C++ you reach for lambda expressions constantly — <code>std::transform</code> with
+<code>[](int x){ return x * 2; }</code>, <code>std::copy_if</code> with a predicate,
+<code>std::sort</code> with a comparator. Python has the same building blocks, but they
+live as <em>standalone</em> functions (<code>map</code>, <code>filter</code>,
+<code>sorted</code>) that take a callable as an argument, not as algorithms you pass
+iterators and a lambda into.</p>
+<p>Python's lambda expression is the <code>lambda</code> keyword: a single expression, no
+braces, no capture list, no <code>return</code>. <code>lambda x: x * 2</code> is exactly
+<code>[](int x){ return x * 2; }</code> without the capture clause or type annotations.
+A lambda's body must be one expression whose value is returned automatically.</p>
+<table>
+  <tr><th>C++</th><th>Python</th></tr>
+  <tr><td><code>[](int x){ return x * 2; }</code></td><td><code>lambda x: x * 2</code></td></tr>
+  <tr><td><code>std::transform(...)</code></td><td><code>map(f, xs)</code> &rarr; wrap in <code>list(...)</code></td></tr>
+  <tr><td><code>std::copy_if(...)</code></td><td><code>filter(f, xs)</code> &rarr; wrap in <code>list(...)</code></td></tr>
+  <tr><td><code>std::sort(v.begin(), v.end(), cmp)</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+  <tr><td><code>std::accumulate(begin, end, init, f)</code></td><td><code>reduce(f, xs, init)</code></td></tr>
+</table>
+<p>Two key differences. First, <code>map</code> and <code>filter</code> return lazy
+iterators, not lists — you usually wrap them in <code>list(...)</code> to see the
+results, similar to how a C++ range-based algorithm needs an output iterator or
+container to materialize into. Second, <code>sorted</code> does not take a comparator; it
+takes a <code>key=</code> function that maps each element to the value you want to sort
+<em>by</em>, rather than a function that compares two elements directly. Often a
+comprehension reads better than <code>map</code>/<code>filter</code> — prefer
+<code>[x * 2 for x in xs]</code> over <code>list(map(lambda x: x * 2, xs))</code>.
+Reserve the functional tools for when you already have a named function to pass, or for
+<code>sorted(key=...)</code> and <code>reduce</code>, where they shine.</p>`,
+
+  cpp: `#include <vector>
+#include <algorithm>
+#include <numeric>
+#include <string>
+#include <functional>
+
+std::vector<int> nums = {1, 2, 3, 4, 5};
+
+std::vector<int> doubled;
+std::transform(nums.begin(), nums.end(), std::back_inserter(doubled),
+               [](int x) { return x * 2; });
+
+std::vector<int> evens;
+std::copy_if(nums.begin(), nums.end(), std::back_inserter(evens),
+             [](int x) { return x % 2 == 0; });
+
+std::vector<std::string> byLen = {"bb", "a", "ccc"};
+std::sort(byLen.begin(), byLen.end(),
+          [](const std::string& a, const std::string& b) { return a.size() < b.size(); });
+
+int total = std::accumulate(nums.begin(), nums.end(), 0,
+                             [](int acc, int x) { return acc + x; });
+
+int applyTwice(std::function<int(int)> f, int x) {
+  return f(f(x));
+}`,
+
+  task: `
+<p>Rewrite the C++ above using Python's functional tools:</p>
+<ol>
+  <li><code>double_all(nums)</code> — return a <em>list</em> of each number doubled,
+      using <code>map</code> with a <code>lambda</code>.</li>
+  <li><code>keep_evens(nums)</code> — return a <em>list</em> of the even numbers,
+      using <code>filter</code> with a <code>lambda</code>.</li>
+  <li><code>by_length(words)</code> — return the words sorted shortest-first, using
+      <code>sorted</code> with <code>key=len</code> (do not mutate the input).</li>
+  <li><code>total(nums)</code> — sum the numbers using
+      <code>functools.reduce</code> (import it) with a starting value of
+      <code>0</code>.</li>
+  <li><code>apply_twice(f, x)</code> — take a callable <code>f</code> and return
+      <code>f(f(x))</code>.</li>
+</ol>`,
+
+  starter: `from functools import reduce
+
+
+# 1. map + lambda -> list of doubled numbers
+def double_all(nums):
+    return []  # TODO
+
+
+# 2. filter + lambda -> list of even numbers
+def keep_evens(nums):
+    return []  # TODO
+
+
+# 3. sorted(key=...) -> words shortest-first
+def by_length(words):
+    return []  # TODO
+
+
+# 4. functools.reduce -> sum with start 0
+def total(nums):
+    return 0  # TODO
+
+
+# 5. apply a callable twice: f(f(x))
+def apply_twice(f, x):
+    return None  # TODO
+`,
+
+  requirements: [
+    { pattern: /lambda/, message: "Use a lambda in at least one function" },
+    { pattern: /reduce\s*\(/, message: "Use functools.reduce in total" },
+    { pattern: /key\s*=/, message: "Sort with sorted(..., key=...)" },
+  ],
+
+  tests: [
+    { name: "double_all doubles each number", code: "    expect_eq(double_all([1, 2, 3, 4, 5]), [2, 4, 6, 8, 10])" },
+    { name: "double_all returns a list (not an iterator)", code: "    expect_eq(type(double_all([1])).__name__, \"list\")" },
+    { name: "keep_evens keeps only evens", code: "    expect_eq(keep_evens([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "by_length sorts shortest first", code: "    expect_eq(by_length([\"bb\", \"a\", \"ccc\"]), [\"a\", \"bb\", \"ccc\"])" },
+    { name: "by_length does not mutate its input", code: "    words = [\"bb\", \"a\", \"ccc\"]\n    by_length(words)\n    expect_eq(words, [\"bb\", \"a\", \"ccc\"])" },
+    { name: "total sums via reduce", code: "    expect_eq(total([1, 2, 3, 4, 5]), 15)" },
+    { name: "total of empty list is 0", code: "    expect_eq(total([]), 0)" },
+    { name: "apply_twice applies f twice", code: "    expect_eq(apply_twice(lambda n: n + 3, 10), 16)" },
+  ],
+
+  solution: `from functools import reduce
+
+
+def double_all(nums):
+    return list(map(lambda x: x * 2, nums))
+
+
+def keep_evens(nums):
+    return list(filter(lambda x: x % 2 == 0, nums))
+
+
+def by_length(words):
+    return sorted(words, key=len)
+
+
+def total(nums):
+    return reduce(lambda acc, x: acc + x, nums, 0)
+
+
+def apply_twice(f, x):
+    return f(f(x))
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+  <tr><td>Lambda</td><td><code>[](int x){ return x + 1; }</code></td><td><code>lambda x: x + 1</code></td></tr>
+  <tr><td>Map</td><td><code>std::transform(...)</code></td><td><code>list(map(f, xs))</code></td></tr>
+  <tr><td>Filter</td><td><code>std::copy_if(...)</code></td><td><code>list(filter(f, xs))</code></td></tr>
+  <tr><td>Sort by key</td><td><code>std::sort(v.begin(), v.end(), cmp)</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+  <tr><td>Reduce</td><td><code>std::accumulate(begin, end, 0, f)</code></td><td><code>reduce(f, xs, 0)</code></td></tr>
+  <tr><td>Reverse sort</td><td><code>std::sort(..., std::greater&lt;&gt;())</code></td><td><code>sorted(xs, key=..., reverse=True)</code></td></tr>
+</table>
+<p>A <code>lambda</code> is limited to a single expression — no statements, no
+multi-line bodies. If you need branches or locals, use <code>def</code> and pass
+the function by name; Python functions are first-class objects, much like a C++
+lambda or a <code>std::function</code> wrapping a free function. For summing
+specifically, prefer the built-in <code>sum(nums)</code> over <code>reduce</code> —
+<code>reduce</code> earns its keep for folds that aren't already built in (running
+products, flattening, custom accumulation), the same niche <code>std::accumulate</code>
+fills once you supply a non-default binary operation.</p>
+<p>When choosing between <code>map</code>/<code>filter</code> and a comprehension,
+lean Pythonic: <code>[x * 2 for x in xs if x &gt; 0]</code> replaces a nested
+<code>map</code>+<code>filter</code> and reads top-to-bottom. Reach for
+<code>map</code>/<code>filter</code> when you already have a named callable to pass
+(e.g. <code>map(str, xs)</code>), and remember that both return lazy iterators —
+they compute nothing until you iterate or wrap them in <code>list(...)</code>, unlike
+<code>std::transform</code>, which eagerly writes into its output range.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

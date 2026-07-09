@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Lambdas & Higher-Order Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Lambdas & Higher-Order Functions",
+
+  intro: `
+<p>Blocks, procs, and lambdas are how Ruby passes callable code around, and
+Kotlin's lambdas fill the same role. You can store them in variables, pass
+them as arguments, and return them from other functions. The main things to
+re-learn are the <em>syntax</em> and one very Kotlin-specific convenience: the
+implicit <code>it</code> parameter and trailing-lambda calls — which will
+feel familiar, since Ruby's own block syntax already puts the callable
+outside the parentheses.</p>
+<table>
+  <tr><th>Ruby</th><th>Kotlin</th></tr>
+  <tr><td><code>->(n) { n * 2 }</code></td><td><code>{ n: Int -> n * 2 }</code></td></tr>
+  <tr><td><code>arr.map { _1 * 2 }</code> <em>(numbered param)</em></td><td><code>{ it * 2 }</code></td></tr>
+  <tr><td><code>f = ->(n) { ... }</code> <em>(no static type)</em></td><td><code>f: (Int) -> Int</code></td></tr>
+  <tr><td><code>arr.map { |n| n * 2 }</code></td><td><code>list.map { it * 2 }</code></td></tr>
+</table>
+<p>A lambda is written with braces: <code>{ param -> body }</code>. When it takes a
+single argument you can drop the parameter list entirely and refer to it as
+<code>it</code> — much like Ruby's numbered block parameter <code>_1</code>.
+The last expression in the block is its return value — there is no
+<code>return</code> keyword inside a lambda, just like a Ruby block's value is
+whatever its last expression evaluates to. A function <em>type</em> puts the
+parameters in parentheses and the result after an arrow: <code>(Int) -> Int</code>
+— something Ruby has no equivalent for, since procs and lambdas are just
+called with <code>.call</code> regardless of their signature.</p>
+<p>The headline sugar: if a lambda is the <strong>last</strong> argument to a
+function, it moves outside the parentheses — <code>list.map { it * 2 }</code>
+instead of <code>list.map({ it * 2 })</code>. This will feel instantly
+familiar: Ruby's own block syntax already works this way, since
+<code>arr.map { |n| n * 2 }</code> passes the block outside of any
+parentheses. Kotlin's "trailing lambda" is why so much idiomatic Kotlin reads
+like it has built-in control structures, the same way Ruby's blocks make
+<code>each</code> and <code>map</code> read like language keywords.</p>`,
+
+  ruby: `def apply_twice(x, f)
+  f.call(f.call(x))
+end
+
+make_multiplier = ->(factor) { ->(n) { n * factor } }
+
+doubled = [1, 2, 3].map { |n| n * 2 } # [2, 4, 6]`,
+
+  task: `
+<p>Kotlin allows top-level declarations — no class or <code>main</code> needed.
+Write four things:</p>
+<ol>
+  <li><code>applyTwice(x: Int, f: (Int) -> Int): Int</code> — a higher-order
+      function that applies <code>f</code> to <code>x</code> twice, i.e.
+      <code>f(f(x))</code>.</li>
+  <li><code>makeMultiplier(factor: Int): (Int) -> Int</code> — returns a lambda
+      that multiplies its argument by <code>factor</code>.</li>
+  <li><code>transform(nums: List&lt;Int&gt;, f: (Int) -> Int): List&lt;Int&gt;</code>
+      — applies <code>f</code> to every element (use <code>nums.map(f)</code>).</li>
+  <li><code>doubled(nums: List&lt;Int&gt;): List&lt;Int&gt;</code> — returns each
+      element times two, written with a <strong>trailing lambda</strong> and the
+      implicit <code>it</code>: <code>nums.map { it * 2 }</code>.</li>
+</ol>`,
+
+  starter: `// 1. applyTwice: call f on x, then on the result
+fun applyTwice(x: Int, f: (Int) -> Int): Int {
+    return 0 // TODO
+}
+
+// 2. makeMultiplier: return a function (Int) -> Int
+fun makeMultiplier(factor: Int): (Int) -> Int {
+    return { n -> n } // TODO
+}
+
+// 3. transform: map f over every element
+fun transform(nums: List<Int>, f: (Int) -> Int): List<Int> {
+    return nums // TODO
+}
+
+// 4. doubled: use a trailing lambda with implicit it
+fun doubled(nums: List<Int>): List<Int> {
+    return nums // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\(Int\)\s*->\s*Int/, message: "Use a function type: (Int) -> Int" },
+    { pattern: /\.map\s*\{/, message: "Call .map with a trailing lambda: .map { ... }" },
+    { pattern: /\bit\b/, message: "Use the implicit single-parameter name it" },
+  ],
+
+  tests: [
+    { name: "applyTwice(3) { it + 1 } is 5", code: "        expect_eq(applyTwice(3) { it + 1 }, 5)" },
+    { name: "applyTwice(2) { it * it } is 16", code: "        expect_eq(applyTwice(2) { it * it }, 16)" },
+    { name: "makeMultiplier(3)(5) is 15", code: "        val triple = makeMultiplier(3)\n        expect_eq(triple(5), 15)" },
+    { name: "makeMultiplier(0)(9) is 0", code: "        expect_eq(makeMultiplier(0)(9), 0)" },
+    { name: "transform squares each element", code: "        expect_eq(transform(listOf(1, 2, 3)) { it * it }, listOf(1, 4, 9))" },
+    { name: "doubled doubles each element", code: "        expect_eq(doubled(listOf(1, 2, 3)), listOf(2, 4, 6))" },
+    { name: "doubled of empty list is empty", code: "        expect_eq(doubled(listOf()), listOf<Int>())" },
+  ],
+
+  solution: `fun applyTwice(x: Int, f: (Int) -> Int): Int {
+    return f(f(x))
+}
+
+fun makeMultiplier(factor: Int): (Int) -> Int {
+    return { n -> n * factor }
+}
+
+fun transform(nums: List<Int>, f: (Int) -> Int): List<Int> {
+    return nums.map(f)
+}
+
+fun doubled(nums: List<Int>): List<Int> {
+    return nums.map { it * 2 }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Kotlin</th></tr>
+  <tr><td>Lambda</td><td><code>->(x) { x + 1 }</code></td><td><code>{ x -> x + 1 }</code></td></tr>
+  <tr><td>Implicit single param</td><td><code>arr.map { _1 + 1 }</code></td><td><code>{ it + 1 }</code></td></tr>
+  <tr><td>Function type</td><td><em>(none — duck typed)</em></td><td><code>(Int) -> Int</code></td></tr>
+  <tr><td>Trailing lambda</td><td><code>arr.map { |x| … }</code></td><td><code>list.map { … }</code></td></tr>
+  <tr><td>Returning a function</td><td><code>->(f) { ->(n) { … } }</code></td><td><code>fun m(): (Int) -> Int = { … }</code></td></tr>
+</table>
+<p>Two footnotes worth remembering. First, a lambda has no <code>return</code> — its
+value is the last expression; a bare <code>return</code> would try to leave the
+enclosing function. This is stricter than a Ruby lambda, where a bare
+<code>return</code> is allowed and only exits the lambda itself (a Ruby
+<em>proc</em>, by contrast, would try to return from the enclosing method —
+Kotlin sidesteps that whole distinction by simply not having a
+<code>return</code> keyword inside lambdas at all). Second, when a lambda is
+the only argument you drop the parentheses completely
+(<code>list.map { it * 2 }</code>), and when it is the last of several you
+keep the others inside and move only the lambda out
+(<code>list.fold(0) { acc, n -> acc + n }</code>). This is the same
+first-class functions you know from Ruby's blocks, procs, and lambdas, just
+wearing Kotlin's punctuation and static types.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

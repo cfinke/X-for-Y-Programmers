@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Data Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Data Classes",
+
+  intro: `
+<p>In Go, a plain <code>struct</code> already gives you value semantics for
+free: comparing two structs with <code>==</code> does a field-by-field
+comparison automatically, as long as every field is itself comparable. What
+Go's structs don't give you for free is an easy immutable "copy with a few
+fields changed", or any form of destructuring into separate variables — you
+write both of those by hand. Kotlin's answer to all of it is the
+<strong>data class</strong>: prefix a class with <code>data</code> and the
+compiler generates <code>equals()</code>, <code>hashCode()</code>,
+<code>toString()</code>, a <code>copy()</code>, and <code>componentN()</code>
+destructuring functions from the primary-constructor properties.</p>
+<table>
+  <tr><th>Go</th><th>Kotlin</th></tr>
+  <tr><td><code>type Point struct { X, Y int }</code></td><td><code>data class Point(val x: Int, val y: Int)</code></td></tr>
+  <tr><td><code>a == b</code> (automatic for comparable structs)</td><td><code>a == b</code></td></tr>
+  <tr><td><code>b := a; b.Y = 9</code> (manual copy)</td><td><code>p.copy(y = 9)</code></td></tr>
+  <tr><td><code>x, y := p.X, p.Y</code> (manual field access)</td><td><code>val (x, y) = p</code></td></tr>
+</table>
+<p>Because <code>==</code> on a data class calls the generated structural
+<code>equals()</code> (Kotlin's <code>==</code> is never reference identity —
+that's <code>===</code>), two independently-built <code>Point(1, 2)</code>
+values are equal, the same as two Go <code>Point{X: 1, Y: 2}</code> structs
+compared with <code>==</code>. <code>copy()</code> is the immutable-update
+workhorse: it clones the value, overriding only the named arguments you pass
+— Go has nothing built in for this, so you'd write <code>b := a; b.Y = 9</code>
+or a small helper method by hand.</p>`,
+
+  go: `type Point struct {
+	X, Y int
+}
+
+func shift(p Point, dx, dy int) Point {
+	return Point{X: p.X + dx, Y: p.Y + dy}
+}
+
+a := Point{X: 1, Y: 2}
+b := a
+b.Y = 2
+fmt.Println(a.X == b.X && a.Y == b.Y) // true
+x, y := a.X, a.Y`,
+
+  task: `
+<p>Model a 2D point and a user as data classes. Everything is top-level — no
+class wrapper or <code>main</code> needed (those are added for you):</p>
+<ol>
+  <li>Make <code>Point</code> a <strong>data class</strong> with
+      <code>val x: Int</code> and <code>val y: Int</code>.</li>
+  <li>Make <code>User</code> a <strong>data class</strong> with
+      <code>val name: String</code>, <code>val age: Int</code>, and
+      <code>val active: Boolean = true</code> (a default so it can be built with
+      named arguments).</li>
+  <li>Write <code>shift(p: Point, dx: Int, dy: Int): Point</code> that returns a
+      new point moved by <code>dx</code>/<code>dy</code> — use
+      <code>p.copy(...)</code>.</li>
+  <li>Write <code>sumCoords(p: Point): Int</code> that destructures the point
+      with <code>val (x, y) = p</code> and returns <code>x + y</code>.</li>
+</ol>`,
+
+  starter: `// 1. Make Point a data class (it is a plain class right now)
+class Point(val x: Int, val y: Int) // TODO: add the data keyword
+
+// 2. Make User a data class; active defaults to true
+class User(val name: String, val age: Int, val active: Boolean = true) // TODO: data
+
+// 3. shift returns a copy of p moved by (dx, dy) — use p.copy(...)
+fun shift(p: Point, dx: Int, dy: Int): Point {
+    return p // TODO
+}
+
+// 4. sumCoords destructures p into (x, y) and returns x + y
+fun sumCoords(p: Point): Int {
+    return 0 // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\bdata\s+class\s+Point\b/, message: "Define Point as a data class" },
+    { pattern: /\bdata\s+class\s+User\b/, message: "Define User as a data class" },
+    { pattern: /\.copy\s*\(/, message: "Use copy() to build the shifted point" },
+    { pattern: /\bval\s*\(\s*\w+\s*,\s*\w+\s*\)/, message: "Destructure the point with val (x, y)" },
+  ],
+
+  tests: [
+    { name: "structural equality: Point(1, 2) == Point(1, 2)", code: "        expect_true(Point(1, 2) == Point(1, 2))" },
+    { name: "distinct points are not equal", code: "        expect_true(Point(1, 2) != Point(3, 4))" },
+    { name: "generated toString", code: "        expect_eq(Point(1, 2).toString(), \"Point(x=1, y=2)\")" },
+    { name: "shift returns a copy moved by (dx, dy)", code: "        expect_eq(shift(Point(1, 2), 3, 4), Point(4, 6))" },
+    { name: "shift leaves the original untouched", code: "        val p = Point(1, 2)\n        shift(p, 5, 5)\n        expect_eq(p, Point(1, 2))" },
+    { name: "sumCoords destructures the point", code: "        expect_eq(sumCoords(Point(3, 4)), 7)" },
+    { name: "sumCoords on another point", code: "        expect_eq(sumCoords(Point(5, 6)), 11)" },
+    { name: "named-argument construction with default", code: "        expect_eq(User(name = \"Ada\", age = 36), User(\"Ada\", 36, true))" },
+    { name: "active defaults to true", code: "        expect_true(User(\"Ada\", 36).active)" },
+  ],
+
+  solution: `data class Point(val x: Int, val y: Int)
+
+data class User(val name: String, val age: Int, val active: Boolean = true)
+
+fun shift(p: Point, dx: Int, dy: Int): Point {
+    return p.copy(x = p.x + dx, y = p.y + dy)
+}
+
+fun sumCoords(p: Point): Int {
+    val (x, y) = p
+    return x + y
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Kotlin</th></tr>
+  <tr><td>Value bundle</td><td><code>type P struct { X int }</code></td><td><code>data class P(val x: Int)</code></td></tr>
+  <tr><td>Value equality</td><td><code>a == b</code> (automatic for comparable structs)</td><td><code>a == b</code> (generated)</td></tr>
+  <tr><td>Reference identity</td><td><code>pa == pb</code> (compare pointers)</td><td><code>a === b</code></td></tr>
+  <tr><td>Immutable update</td><td><code>b := a; b.Y = 9</code></td><td><code>p.copy(y = 9)</code></td></tr>
+  <tr><td>Destructure</td><td>(none — <code>p.X, p.Y</code>)</td><td><code>val (x, y) = p</code></td></tr>
+  <tr><td>Debug string</td><td><code>fmt.Sprintf("%+v", p)</code></td><td><code>p.toString()</code></td></tr>
+</table>
+<p>Two things to keep in mind. First, destructuring is
+<strong>positional</strong>, not by name: <code>val (x, y) = p</code> calls
+<code>p.component1()</code> and <code>p.component2()</code>, so the order of the
+constructor properties is what matters. This has no real analogue in Go, where
+you'd just read the fields directly as <code>p.X</code> and <code>p.Y</code>
+(or, for multiple return values from a function, name each result yourself).
+Second, only properties declared in the <em>primary constructor</em> feed the
+generated <code>equals</code>, <code>hashCode</code>, <code>toString</code>,
+and <code>copy</code>; anything you add in the class body is ignored by them.
+Reach for a data class whenever you would have reached for a Go struct, and
+reach for named arguments plus defaults instead of the "options struct"
+pattern you'd otherwise write in Go for optional fields.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

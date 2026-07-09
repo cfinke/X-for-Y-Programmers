@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Result &amp; the ? Operator</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Result & the ? Operator",
+
+  intro: `
+<p>Kotlin dropped checked exceptions on purpose — the <code>try/catch</code>
+pyramids and wrapper exceptions weren't worth it. But that also dropped the
+one good instinct behind them: the failure mode belongs in the signature,
+where callers can't miss it. A Kotlin <code>fun parseAge(s: String): Int</code>
+can throw <code>NumberFormatException</code> with nothing in its type to warn
+you. Kotlin patches this case by case — nullable returns like
+<code>toIntOrNull()</code>, <code>kotlin.Result</code>, sealed class
+hierarchies — but nothing forces you to. Rust keeps the instinct and fixes
+the ergonomics: <code>Result&lt;T, E&gt;</code> makes failure part of the
+return type, and the compiler makes you deal with it. A function returns
+<code>Ok(value)</code> or <code>Err(error)</code>, both ordinary values you
+can match on, map over, and pass around — errors compose like data because
+they <em>are</em> data.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>fun f(s: String): Int</code> (may throw)</td><td><code>fn f(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code></td></tr>
+  <tr><td><code>return value</code></td><td><code>Ok(value)</code></td></tr>
+  <tr><td><code>throw NumberFormatException(...)</code></td><td><code>Err("bad input".to_string())</code></td></tr>
+  <tr><td><code>s.toIntOrNull()</code> (returns <code>Int?</code>)</td><td><code>s.parse::&lt;u32&gt;()</code> (returns <code>Result</code>)</td></tr>
+  <tr><td><code>try { … } catch (e: E) { throw e }</code></td><td><code>expr?</code></td></tr>
+</table>
+<p>The killer feature is <code>?</code>. Appended to a <code>Result</code>,
+it means "unwrap the <code>Ok</code>, or return the <code>Err</code> to my
+caller right now" — the catch-and-rethrow you'd write by hand, in one
+character. So <code>parse_age(s)? + 1</code> reads like the happy path but
+propagates failure automatically, like an exception bubbling up in Kotlin —
+except the compiler verified your function's return type can carry it, so it
+can't slip past a caller silently. <code>s.toInt()</code>'s
+<code>NumberFormatException</code> becomes <code>s.parse()</code> handing
+back a <code>Result</code>, and <code>map_err</code> lets you swap the
+error for your own message — the equivalent of wrapping a low-level
+exception in a domain one.</p>`,
+
+  kotlin: `// The failure isn't in the signature at all — Kotlin has no checked exceptions.
+fun parseAge(s: String): Int = s.trim().toInt()  // throws NumberFormatException
+
+fun ageNextYear(s: String): Int {
+    return try {
+        parseAge(s) + 1
+    } catch (e: NumberFormatException) {
+        // wrap-and-rethrow: the boilerplate every codebase grows
+        throw IllegalArgumentException("invalid age: $s", e)
+    }
+}
+
+// And nothing warns a caller either function can throw:
+// val ages = listOf("29", "oops").map(::parseAge)  // blows up at runtime`,
+
+  task: `
+<p>Rewrite the Kotlin as Rust:</p>
+<ol>
+  <li>Write <code>parse_age(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code>:
+      call <code>s.trim().parse::&lt;u32&gt;()</code>, and use
+      <code>.map_err(|_| ...)</code> to replace the library's parse error
+      with your own <code>String</code> — make it
+      <code>format!("invalid age: {}", s)</code>.</li>
+  <li>Write <code>age_next_year(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code>
+      that returns the parsed age plus one, using
+      <code>parse_age(s)?</code> — the <code>?</code> replaces the whole
+      <code>try/catch</code>-rethrow block. Wrap the sum in
+      <code>Ok(...)</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. parse_age: s.trim().parse::<u32>() returns a Result already —
+//    map_err swaps its error for your String: format!("invalid age: {}", s).
+fn parse_age(s: &str) -> Result<u32, String> {
+    todo!()
+}
+
+// 2. age_next_year: parse_age(s)? unwraps the Ok or returns the Err
+//    to the caller — the one-character rethrow. Then Ok(age + 1).
+fn age_next_year(s: &str) -> Result<u32, String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Result</, message: "Put the failure in the return type: Result<u32, String>" },
+    { pattern: /map_err|Err\(/, message: "Produce your own error with map_err (or Err)" },
+    { pattern: /\)\?/, message: "Propagate with the ? operator in age_next_year" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") is Ok(42)',
+      code: 'assert_eq!(parse_age("42"), Ok(42));' },
+    { name: 'parse_age("  7  ") trims whitespace first',
+      code: 'assert_eq!(parse_age("  7  "), Ok(7));' },
+    { name: 'parse_age("abc") is an Err (no exception thrown)',
+      code: 'assert!(parse_age("abc").is_err());' },
+    { name: 'age_next_year("29") is Ok(30)',
+      code: 'assert_eq!(age_next_year("29"), Ok(30));' },
+    { name: '? propagates: age_next_year("old") is an Err',
+      code: 'assert!(age_next_year("old").is_err());' },
+  ],
+
+  solution: `fn parse_age(s: &str) -> Result<u32, String> {
+    s.trim()
+        .parse::<u32>()
+        .map_err(|_| format!("invalid age: {}", s))
+}
+
+fn age_next_year(s: &str) -> Result<u32, String> {
+    Ok(parse_age(s)? + 1)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Declare failure</td><td><code>fun f(): Int?</code> / <code>Result&lt;Int&gt;</code></td><td><code>-&gt; Result&lt;u32, String&gt;</code></td></tr>
+  <tr><td>Succeed</td><td><code>return v</code></td><td><code>Ok(v)</code></td></tr>
+  <tr><td>Fail</td><td><code>throw ...</code> / <code>return null</code></td><td><code>Err(e)</code></td></tr>
+  <tr><td>Parse</td><td><code>s.toInt()</code> / <code>s.toIntOrNull()</code></td><td><code>s.parse::&lt;u32&gt;()</code></td></tr>
+  <tr><td>Rethrow</td><td><code>try { … } catch (e: E) { throw … }</code></td><td><code>expr?</code></td></tr>
+  <tr><td>Wrap the error</td><td><code>IllegalArgumentException(msg, e)</code></td><td><code>.map_err(|e| msg)</code></td></tr>
+  <tr><td>Just crash</td><td><code>s.toInt()</code> (let it throw)</td><td><code>.unwrap()</code> / <code>.expect("msg")</code></td></tr>
+</table>
+<p>Because <code>Result</code> is an ordinary value, it shows up in your
+types where an exception never would: you can put Results in a
+<code>Vec</code>, <code>map</code> a fallible function over an iterator, or
+store one in a field. And <code>?</code> only works inside functions whose
+return type can absorb the error — the compiler enforces a "handle it or
+declare it" rule that Kotlin gave up when it dropped checked exceptions.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

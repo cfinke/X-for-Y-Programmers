@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Iterators &amp; yield</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Iterators & yield",
+
+  intro: `
+<p>Go's <code>range-over-func</code> iterators (added in Go 1.23) produce values
+lazily, one at a time, by repeatedly calling a <code>yield</code> callback — and
+any function of the right shape can drive a <code>for … range</code> loop. C# has
+the exact same idea under different names: a method whose return type is
+<code>IEnumerable&lt;T&gt;</code> becomes an <em>iterator</em> the moment it
+contains a <code>yield return</code>, and <code>foreach</code> is C#'s
+<code>range</code>.</p>
+<table>
+  <tr><th>Go</th><th>C#</th></tr>
+  <tr><td><code>func G() iter.Seq[int]</code></td><td><code>IEnumerable&lt;int&gt; G()</code></td></tr>
+  <tr><td><code>if !yield(x) { return }</code></td><td><code>yield return x;</code></td></tr>
+  <tr><td><code>return</code> (stop early)</td><td><code>yield break;</code></td></tr>
+  <tr><td><code>for x := range seq</code></td><td><code>foreach (var x in seq)</code></td></tr>
+  <tr><td>method returning <code>iter.Seq[T]</code></td><td><code>GetEnumerator()</code></td></tr>
+</table>
+<p>Two things to internalize. First, iterators are <em>lazy</em>: the closure does
+not run until something ranges over it, and it runs only as far as the consumer
+asks — so an infinite <code>Fibonacci()</code> is fine as long as a caller wraps it
+in <code>Take(…)</code> to stop pulling. Second, there is no compiler magic: C#
+rewrites any method containing <code>yield</code> into a state machine for you, but
+a Go iterator is just an ordinary closure you write by hand, explicitly checking the
+boolean that <code>yield</code> returns and returning early when it is
+<code>false</code>. To make a whole <em>type</em> iterable, give it a method that
+returns an <code>iter.Seq[T]</code> — which can itself be built from that same
+<code>yield</code>-calling closure pattern.</p>`,
+
+  go: `func Range(start, count int) iter.Seq[int] {
+	return func(yield func(int) bool) {
+		for i := 0; i < count; i++ {
+			if !yield(start + i) {
+				return
+			}
+		}
+	}
+}
+
+func Take[T any](source iter.Seq[T], n int) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		i := 0
+		for x := range source {
+			if i >= n {
+				return // stop early
+			}
+			if !yield(x) {
+				return
+			}
+			i++
+		}
+	}
+}
+
+func Fibonacci() iter.Seq[int] {
+	return func(yield func(int) bool) {
+		a, b := 0, 1
+		for {
+			if !yield(a) {
+				return
+			}
+			a, b = b, a+b
+		}
+	}
+}
+
+type Countdown struct {
+	Start int
+}
+
+func (c Countdown) All() iter.Seq[int] {
+	return func(yield func(int) bool) {
+		for i := c.Start; i >= 1; i-- {
+			if !yield(i) {
+				return
+			}
+		}
+	}
+}`,
+
+  task: `
+<p>Build a few lazy sequences with <code>yield</code>, then make a class iterable.</p>
+<ol>
+  <li>Write <code>static class Sequences</code> holding three iterator methods.</li>
+  <li><code>IEnumerable&lt;int&gt; Range(int start, int count)</code> yields
+      <code>start</code>, <code>start+1</code>, … for <code>count</code> values
+      (so <code>Range(1, 3)</code> yields <code>1, 2, 3</code>). Use
+      <code>yield return</code>.</li>
+  <li><code>IEnumerable&lt;T&gt; Take&lt;T&gt;(IEnumerable&lt;T&gt; source, int n)</code>
+      yields the first <code>n</code> items of <code>source</code>, then stops with
+      <code>yield break</code>. If <code>source</code> is shorter than <code>n</code>,
+      yield whatever it has.</li>
+  <li><code>IEnumerable&lt;long&gt; Fibonacci()</code> yields the infinite Fibonacci
+      sequence <code>0, 1, 1, 2, 3, 5, 8, …</code>. An endless loop is fine — callers
+      wrap it in <code>Take</code>.</li>
+  <li>Write <code>class Countdown : IEnumerable&lt;int&gt;</code> with a constructor
+      <code>Countdown(int start)</code>. Enumerating it counts down
+      <code>start, start-1, …, 1</code>. Implement the generic
+      <code>IEnumerator&lt;int&gt; GetEnumerator()</code> as an iterator, and add the
+      required non-generic <code>IEnumerator IEnumerable.GetEnumerator()</code> that
+      delegates to it.</li>
+</ol>`,
+
+  starter: `static class Sequences {
+  public static IEnumerable<int> Range(int start, int count) {
+    return null; // TODO: use yield return
+  }
+
+  public static IEnumerable<T> Take<T>(IEnumerable<T> source, int n) {
+    return null; // TODO: yield return items, then yield break
+  }
+
+  public static IEnumerable<long> Fibonacci() {
+    return null; // TODO: yield return an endless sequence
+  }
+}
+
+class Countdown : IEnumerable<int> {
+  private int start;
+
+  public Countdown(int start) {
+    this.start = start;
+  }
+
+  public IEnumerator<int> GetEnumerator() {
+    return null; // TODO: yield return start down to 1
+  }
+
+  IEnumerator IEnumerable.GetEnumerator() {
+    return GetEnumerator();
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /yield\s+return/, message: "Produce values with yield return" },
+    { pattern: /yield\s+break/, message: "Stop Take early with yield break" },
+    { pattern: /class\s+Countdown\s*:\s*IEnumerable<int>/, message: "Countdown must implement IEnumerable<int>" },
+  ],
+
+  tests: [
+    { name: "Range(1, 3) yields 1,2,3", code: "      expect_true(Sequences.Range(1, 3).SequenceEqual(new[] { 1, 2, 3 }));" },
+    { name: "Range(0, 4) sums to 6", code: "      expect_eq(Sequences.Range(0, 4).Sum(), 6);" },
+    { name: "Take stops at n", code: "      expect_true(Sequences.Take(new[] { 10, 20, 30, 40 }, 2).SequenceEqual(new[] { 10, 20 }));" },
+    { name: "Take past the end yields all", code: "      expect_eq(Sequences.Take(new[] { 5, 6 }, 9).Count(), 2);" },
+    { name: "Fibonacci is lazy and infinite", code: "      expect_true(Sequences.Take(Sequences.Fibonacci(), 7).SequenceEqual(new long[] { 0, 1, 1, 2, 3, 5, 8 }));" },
+    { name: "Countdown(3) enumerates 3,2,1", code: "      expect_true(new Countdown(3).SequenceEqual(new[] { 3, 2, 1 }));" },
+    { name: "Countdown works with LINQ", code: "      expect_eq(new Countdown(5).Sum(), 15);" },
+  ],
+
+  solution: `static class Sequences {
+  public static IEnumerable<int> Range(int start, int count) {
+    for (int i = 0; i < count; i++) {
+      yield return start + i;
+    }
+  }
+
+  public static IEnumerable<T> Take<T>(IEnumerable<T> source, int n) {
+    int i = 0;
+    foreach (T item in source) {
+      if (i >= n) {
+        yield break;
+      }
+      yield return item;
+      i++;
+    }
+  }
+
+  public static IEnumerable<long> Fibonacci() {
+    long a = 0, b = 1;
+    while (true) {
+      yield return a;
+      long next = a + b;
+      a = b;
+      b = next;
+    }
+  }
+}
+
+class Countdown : IEnumerable<int> {
+  private int start;
+
+  public Countdown(int start) {
+    this.start = start;
+  }
+
+  public IEnumerator<int> GetEnumerator() {
+    for (int i = start; i >= 1; i--) {
+      yield return i;
+    }
+  }
+
+  IEnumerator IEnumerable.GetEnumerator() {
+    return GetEnumerator();
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+  <tr><td>Generator function</td><td>closure <code>func(yield func(V) bool)</code></td><td>method returning <code>IEnumerable&lt;T&gt;</code> with <code>yield</code></td></tr>
+  <tr><td>Emit a value</td><td><code>if !yield(x) { return }</code></td><td><code>yield return x;</code></td></tr>
+  <tr><td>Stop early</td><td><code>return</code></td><td><code>yield break;</code></td></tr>
+  <tr><td>Consume</td><td><code>for x := range seq</code></td><td><code>foreach</code> / LINQ</td></tr>
+  <tr><td>Iterable type</td><td>method returning <code>iter.Seq[T]</code></td><td><code>GetEnumerator()</code></td></tr>
+</table>
+<p>A Go iterator's closure does not execute when you call the outer function — it
+runs only once something ranges over the returned <code>iter.Seq[T]</code>, and it
+runs on demand as the consumer pulls values. That laziness is why an infinite
+<code>Fibonacci()</code> never hangs: <code>Take(Fibonacci(), 7)</code> pulls
+exactly seven values and then stops asking. It is also why any panic or expensive
+setup inside the closure is deferred until the first iteration.</p>
+<p>Range-over-func iterators only reached the Go standard library in version 1.23
+(2024) — before that, the idiomatic way to build a lazy sequence was a goroutine
+writing to a channel. Because C#'s iterator methods return
+<code>IEnumerable&lt;T&gt;</code>, the entire LINQ surface (<code>Where</code>,
+<code>Select</code>, <code>Sum</code>, <code>First</code>, <code>SequenceEqual</code>,
+…) composes over them for free; Go has no equivalent composition layer in the
+standard library, so <code>Take</code> above — and any <code>Where</code> or
+<code>Select</code> you might want — has to be hand-written as its own
+<code>iter.Seq[T]</code>-returning function, the way it is done here. Implementing
+<code>IEnumerable&lt;T&gt;</code> on a class also requires two
+<code>GetEnumerator</code> methods in C#: the generic one you actually write, plus
+a non-generic <code>IEnumerator IEnumerable.GetEnumerator()</code> (explicit
+interface implementation) that just delegates to it — a legacy requirement from
+the pre-generics <code>System.Collections</code> interface, with nothing
+equivalent required in Go.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

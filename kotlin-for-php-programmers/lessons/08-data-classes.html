@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Data Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Data Classes",
+
+  intro: `
+<p>In PHP a plain class already gets you real structural equality for free —
+PHP's <code>==</code> on two objects of the same class compares every property
+recursively — but there's no built-in way to clone-with-overrides, no generated
+<code>hashCode()</code>-style hash, and no clean one-line debug string
+(<code>print_r</code> and <code>var_export</code> are the closest you get).
+Kotlin's answer is the <strong>data class</strong>: prefix a class with
+<code>data</code> and the compiler generates <code>equals()</code>,
+<code>hashCode()</code>, <code>toString()</code>, a <code>copy()</code>, and
+<code>componentN()</code> destructuring functions from the primary-constructor
+properties.</p>
+<table>
+  <tr><th>PHP</th><th>Kotlin</th></tr>
+  <tr><td><code>class Point { public function __construct(public readonly int $x, public readonly int $y) {} }</code></td><td><code>data class Point(val x: Int, val y: Int)</code></td></tr>
+  <tr><td><code>$a == $b</code></td><td><code>a == b</code></td></tr>
+  <tr><td><code>new Point($p->x, 9)</code></td><td><code>p.copy(y = 9)</code></td></tr>
+  <tr><td><code>['x' => $x, 'y' => $y] = get_object_vars($p);</code></td><td><code>val (x, y) = p</code></td></tr>
+</table>
+<p>Because <code>==</code> on a data class calls the generated structural
+<code>equals()</code> (Kotlin's <code>==</code> is never reference identity —
+that's <code>===</code>), two independently-built <code>Point(1, 2)</code> values
+are equal — much like PHP's own <code>==</code> on plain objects.
+<code>copy()</code> is the immutable-update workhorse: it clones the value,
+overriding only the named arguments you pass — PHP has no built-in equivalent,
+so you'd otherwise rebuild the object by hand, field by field.</p>`,
+
+  php: `class Point {
+    public function __construct(
+        public readonly int $x,
+        public readonly int $y,
+    ) {}
+}
+
+function shift(Point $p, int $dx, int $dy): Point {
+    return new Point($p->x + $dx, $p->y + $dy);
+}
+
+$a = new Point(1, 2);
+$b = new Point($a->x, 2);
+var_dump($a->x === $b->x && $a->y === $b->y); // true
+['x' => $x, 'y' => $y] = ['x' => $a->x, 'y' => $a->y];`,
+
+  task: `
+<p>Model a 2D point and a user as data classes. Everything is top-level — no
+class wrapper or <code>main</code> needed (those are added for you):</p>
+<ol>
+  <li>Make <code>Point</code> a <strong>data class</strong> with
+      <code>val x: Int</code> and <code>val y: Int</code>.</li>
+  <li>Make <code>User</code> a <strong>data class</strong> with
+      <code>val name: String</code>, <code>val age: Int</code>, and
+      <code>val active: Boolean = true</code> (a default so it can be built with
+      named arguments).</li>
+  <li>Write <code>shift(p: Point, dx: Int, dy: Int): Point</code> that returns a
+      new point moved by <code>dx</code>/<code>dy</code> — use
+      <code>p.copy(...)</code>.</li>
+  <li>Write <code>sumCoords(p: Point): Int</code> that destructures the point
+      with <code>val (x, y) = p</code> and returns <code>x + y</code>.</li>
+</ol>`,
+
+  starter: `// 1. Make Point a data class (it is a plain class right now)
+class Point(val x: Int, val y: Int) // TODO: add the data keyword
+
+// 2. Make User a data class; active defaults to true
+class User(val name: String, val age: Int, val active: Boolean = true) // TODO: data
+
+// 3. shift returns a copy of p moved by (dx, dy) — use p.copy(...)
+fun shift(p: Point, dx: Int, dy: Int): Point {
+    return p // TODO
+}
+
+// 4. sumCoords destructures p into (x, y) and returns x + y
+fun sumCoords(p: Point): Int {
+    return 0 // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\bdata\s+class\s+Point\b/, message: "Define Point as a data class" },
+    { pattern: /\bdata\s+class\s+User\b/, message: "Define User as a data class" },
+    { pattern: /\.copy\s*\(/, message: "Use copy() to build the shifted point" },
+    { pattern: /\bval\s*\(\s*\w+\s*,\s*\w+\s*\)/, message: "Destructure the point with val (x, y)" },
+  ],
+
+  tests: [
+    { name: "structural equality: Point(1, 2) == Point(1, 2)", code: "        expect_true(Point(1, 2) == Point(1, 2))" },
+    { name: "distinct points are not equal", code: "        expect_true(Point(1, 2) != Point(3, 4))" },
+    { name: "generated toString", code: "        expect_eq(Point(1, 2).toString(), \"Point(x=1, y=2)\")" },
+    { name: "shift returns a copy moved by (dx, dy)", code: "        expect_eq(shift(Point(1, 2), 3, 4), Point(4, 6))" },
+    { name: "shift leaves the original untouched", code: "        val p = Point(1, 2)\n        shift(p, 5, 5)\n        expect_eq(p, Point(1, 2))" },
+    { name: "sumCoords destructures the point", code: "        expect_eq(sumCoords(Point(3, 4)), 7)" },
+    { name: "sumCoords on another point", code: "        expect_eq(sumCoords(Point(5, 6)), 11)" },
+    { name: "named-argument construction with default", code: "        expect_eq(User(name = \"Ada\", age = 36), User(\"Ada\", 36, true))" },
+    { name: "active defaults to true", code: "        expect_true(User(\"Ada\", 36).active)" },
+  ],
+
+  solution: `data class Point(val x: Int, val y: Int)
+
+data class User(val name: String, val age: Int, val active: Boolean = true)
+
+fun shift(p: Point, dx: Int, dy: Int): Point {
+    return p.copy(x = p.x + dx, y = p.y + dy)
+}
+
+fun sumCoords(p: Point): Int {
+    val (x, y) = p
+    return x + y
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+  <tr><td>Value bundle</td><td><code>class P { public function __construct(public readonly int $x) {} } </code></td><td><code>data class P(val x: Int)</code></td></tr>
+  <tr><td>Value equality</td><td><code>$a == $b</code> (recursive, built in)</td><td><code>a == b</code> (generated)</td></tr>
+  <tr><td>Reference identity</td><td><code>$a === $b</code></td><td><code>a === b</code></td></tr>
+  <tr><td>Immutable update</td><td><code>new P($a->x, 9)</code> (rebuild by hand)</td><td><code>p.copy(y = 9)</code></td></tr>
+  <tr><td>Destructure</td><td><code>$x = $p->x; $y = $p->y;</code></td><td><code>val (x, y) = p</code></td></tr>
+  <tr><td>Debug string</td><td><code>print_r($p, true)</code></td><td><code>p.toString()</code></td></tr>
+</table>
+<p>Two things to keep in mind. First, destructuring is
+<strong>positional</strong>, not by name: <code>val (x, y) = p</code> calls
+<code>p.component1()</code> and <code>p.component2()</code>, so the order of the
+constructor properties is what matters. PHP has array destructuring
+(<code>[$x, $y] = $arr</code>) but no built-in way to destructure an
+<em>object's</em> properties at all, so this is a genuinely new capability, not
+just a change in syntax. Second, only properties declared in the <em>primary
+constructor</em> feed the generated <code>equals</code>, <code>hashCode</code>,
+<code>toString</code>, and <code>copy</code>; anything you add in the class body
+is ignored by them. Reach for a data class whenever you would have used a
+bag-of-fields object, and pair Kotlin's <code>copy()</code> with named
+arguments and defaults the way you'd already use PHP's own named arguments and
+default parameter values — now with structural equality and cheap immutable
+updates thrown in for free.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Iterators &amp; Generators</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Iterators & Generators",
+
+  intro: `
+<p>In Java a for-each loop drives the <em>Iterable/Iterator</em> contract: it
+calls <code>.iterator()</code> to get an <code>Iterator&lt;T&gt;</code>, then
+alternates <code>hasNext()</code> and <code>next()</code> until
+<code>hasNext()</code> returns <code>false</code>. Python has the exact same
+idea with plainer names — <code>for</code> calls <code>iter(obj)</code> to get
+an iterator, then calls <code>next(it)</code> until it raises
+<code>StopIteration</code>.</p>
+<table>
+  <tr><th>Java</th><th>Python</th></tr>
+  <tr><td><code>obj.iterator()</code></td><td><code>iter(obj)</code></td></tr>
+  <tr><td><code>it.next()</code></td><td><code>next(it)</code></td></tr>
+  <tr><td><code>!it.hasNext()</code></td><td>raises <code>StopIteration</code></td></tr>
+  <tr><td>no generator syntax — hand-write an <code>Iterator&lt;T&gt;</code></td><td><code>def gen():\\n    yield x</code></td></tr>
+  <tr><td>loop <code>while (it.hasNext())</code> into a <code>List</code></td><td><code>list(gen())</code></td></tr>
+  <tr><td><code>for (T x : xs) { … }</code> (eager)</td><td><code>(f(x) for x in xs)</code> (lazy)</td></tr>
+</table>
+<p>Java has no built-in generator syntax — the closest idiom is hand-writing a
+class that implements <code>Iterator&lt;T&gt;</code> with its own
+<code>hasNext()</code> and <code>next()</code>. Python skips all that
+ceremony: a function that contains <code>yield</code> becomes a <em>generator
+function</em>: calling it doesn't run the body, it returns a lazy generator
+object. Each <code>next()</code> runs the body up to the next
+<code>yield</code> and pauses there. Python also has <em>generator
+expressions</em> — <code>(expr for x in xs)</code>, the lazy cousin of a list
+comprehension — which produce values on demand instead of building a whole
+list up front. And any class becomes iterable by defining
+<code>__iter__</code>, the equivalent of implementing Java's
+<code>Iterable&lt;T&gt;</code> interface (specifically its
+<code>iterator()</code> method).</p>`,
+
+  java: `<T> Iterator<T> take(Iterator<T> it, int n) {
+    return new Iterator<T>() {
+        int i = 0;
+        public boolean hasNext() { return i < n && it.hasNext(); }
+        public T next() { i++; return it.next(); }
+    };
+}
+
+Iterator<Integer> fib() {
+    return new Iterator<Integer>() {
+        int a = 0, b = 1;
+        public boolean hasNext() { return true; }
+        public Integer next() {
+            int r = a;
+            int next = a + b;
+            a = b;
+            b = next;
+            return r;
+        }
+    };
+}
+
+List<Integer> first5 = new ArrayList<>();
+Iterator<Integer> it = take(fib(), 5);
+while (it.hasNext()) first5.add(it.next());
+// [0, 1, 1, 2, 3]`,
+
+  task: `
+<p>Build a set of lazy tools plus one custom iterable:</p>
+<ol>
+  <li>Write a generator <code>count_up(start, stop)</code> that
+      <code>yield</code>s the integers from <code>start</code> up to but not
+      including <code>stop</code> (like <code>range</code>).</li>
+  <li>Write a generator <code>take(iterable, n)</code> that yields the first
+      <code>n</code> items of any iterable, then stops.</li>
+  <li>Write a generator <code>fib()</code> that yields the Fibonacci sequence
+      <code>0, 1, 1, 2, 3, 5, …</code> forever.</li>
+  <li>Write <code>squares(iterable)</code> that returns a <em>generator
+      expression</em> giving the square of each item (use <code>(… for …)</code>,
+      not a list).</li>
+  <li>Write a class <code>CountDown(n)</code> whose <code>__iter__</code> makes it
+      iterable, yielding <code>n, n-1, …, 1</code>.</li>
+</ol>`,
+
+  starter: `# 1. count_up(start, stop) -> yields start .. stop-1
+def count_up(start, stop):
+    return None  # TODO
+
+
+# 2. take(iterable, n) -> yields first n items
+def take(iterable, n):
+    return None  # TODO
+
+
+# 3. fib() -> yields 0, 1, 1, 2, 3, 5, ... forever
+def fib():
+    return None  # TODO
+
+
+# 4. squares(iterable) -> generator expression of squares
+def squares(iterable):
+    return None  # TODO
+
+
+# 5. CountDown(n): iterable yielding n, n-1, ..., 1
+class CountDown:
+    def __init__(self, n):
+        self.n = n
+`,
+
+  requirements: [
+    { pattern: /\byield\b/, message: "Use yield to write a generator function" },
+    { pattern: /\(.*for\s+\w+\s+in.*\)/, message: "Build squares with a generator expression (… for … in …)" },
+    { pattern: /def\s+__iter__/, message: "Make CountDown iterable with __iter__" },
+  ],
+
+  tests: [
+    { name: "count_up(1, 5) -> [1, 2, 3, 4]", code: "    expect_eq(list(count_up(1, 5)), [1, 2, 3, 4])" },
+    { name: "count_up is lazy (a generator)", code: "    it = count_up(0, 3)\n    expect_eq(next(it), 0)\n    expect_eq(next(it), 1)" },
+    { name: "take(count_up(0, 100), 3) -> [0, 1, 2]", code: "    expect_eq(list(take(count_up(0, 100), 3)), [0, 1, 2])" },
+    { name: "take works on an infinite generator", code: "    expect_eq(list(take(fib(), 6)), [0, 1, 1, 2, 3, 5])" },
+    { name: "fib() first eight", code: "    expect_eq(list(take(fib(), 8)), [0, 1, 1, 2, 3, 5, 8, 13])" },
+    { name: "squares yields lazily", code: "    g = squares([1, 2, 3, 4])\n    expect_eq(next(g), 1)\n    expect_eq(list(g), [4, 9, 16])" },
+    { name: "CountDown(4) is iterable", code: "    expect_eq(list(CountDown(4)), [4, 3, 2, 1])\n    expect_eq([x * 2 for x in CountDown(3)], [6, 4, 2])" },
+  ],
+
+  solution: `def count_up(start, stop):
+    n = start
+    while n < stop:
+        yield n
+        n += 1
+
+
+def take(iterable, n):
+    it = iter(iterable)
+    for _ in range(n):
+        try:
+            yield next(it)
+        except StopIteration:
+            return
+
+
+def fib():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+
+def squares(iterable):
+    return (x * x for x in iterable)
+
+
+class CountDown:
+    def __init__(self, n):
+        self.n = n
+
+    def __iter__(self):
+        n = self.n
+        while n > 0:
+            yield n
+            n -= 1
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Python</th></tr>
+  <tr><td>Get an iterator</td><td><code>obj.iterator()</code></td><td><code>iter(obj)</code></td></tr>
+  <tr><td>Pull next value</td><td><code>it.next()</code></td><td><code>next(it)</code></td></tr>
+  <tr><td>Signal "done"</td><td><code>!it.hasNext()</code></td><td>raise <code>StopIteration</code> (or just <code>return</code> in a generator)</td></tr>
+  <tr><td>Generator function</td><td>no built-in syntax — hand-write an <code>Iterator&lt;T&gt;</code></td><td><code>def g():</code> with <code>yield</code></td></tr>
+  <tr><td>Materialize</td><td>loop <code>while (it.hasNext())</code> into a <code>List</code></td><td><code>list(g())</code></td></tr>
+  <tr><td>Lazy comprehension</td><td>—</td><td><code>(f(x) for x in xs)</code></td></tr>
+  <tr><td>Make a class iterable</td><td>implement <code>Iterable&lt;T&gt;</code>'s <code>iterator()</code></td><td><code>def __iter__(self):</code></td></tr>
+</table>
+<p>A generator function can <code>return</code> early to stop the sequence — that
+becomes the <code>StopIteration</code> the <code>for</code> loop watches for, so
+you rarely raise it by hand. The big win, compared to hand-writing a Java
+<code>Iterator&lt;T&gt;</code> with its own <code>hasNext()</code>/<code>next()</code>
+state machine, is laziness with far less ceremony: <code>fib()</code> describes
+an infinite sequence, and <code>take(fib(), 6)</code> only ever computes six
+values. A <em>generator expression</em> <code>(x*x for x in xs)</code> looks
+like a list comprehension with parentheses, but it yields one value at a time
+instead of building the whole list — ideal for piping into <code>sum()</code>,
+<code>any()</code>, or <code>take()</code>. Note that a generator is single-use:
+once exhausted, iterating it again yields nothing, much like a Java
+<code>Iterator</code> that has already been exhausted. That is why
+<code>__iter__</code> here is itself a generator — each call to
+<code>iter(CountDown(4))</code> starts a fresh countdown, so the object can be
+looped over more than once, closer to how a Java <code>Iterable</code> hands
+out a brand-new <code>Iterator</code> every time <code>iterator()</code> is
+called.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

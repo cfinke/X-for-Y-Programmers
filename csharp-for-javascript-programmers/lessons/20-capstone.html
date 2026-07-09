@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put the whole course together. You'll build a small
+<strong>typed in-memory repository</strong> — the same shape you'd reach for in
+JavaScript with a <code>Map</code> behind a class, but assembled
+from the C# tools you've collected: a generic class with a constraint, an
+interface, LINQ, and real exceptions instead of returning <code>undefined</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>C#</th></tr>
+  <tr><td><code>class Repo</code> (no compile-time shape check)</td><td><code>class Repository&lt;T&gt; where T : IEntity</code></td></tr>
+  <tr><td><code>#items = new Map()</code></td><td><code>Dictionary&lt;int, T&gt;</code></td></tr>
+  <tr><td><code>items.values()</code> then <code>.filter(...)</code></td><td><code>items.Values.Where(...)</code> (LINQ)</td></tr>
+  <tr><td><code>throw new NotFoundError(...)</code></td><td><code>throw new NotFoundException(...)</code></td></tr>
+  <tr><td>return the item, or <code>undefined</code></td><td>return <code>T</code>, or <em>throw</em></td></tr>
+</table>
+<p>Two design habits carry over cleanly, though C# makes them explicit where
+JavaScript leaves them to convention. The generic <em>constraint</em>
+(<code>where T : IEntity</code>) is C#'s answer to a comment saying "every item
+must have an <code>id</code>": it lets the repository read <code>item.Id</code>
+because the compiler guarantees every <code>T</code> has it. And where
+JavaScript code often just returns <code>undefined</code> for a miss, idiomatic
+C# throws a custom exception derived from <code>Exception</code> — the caller
+either gets a valid <code>T</code> or a failure it can <code>catch</code> by
+type.</p>`,
+
+  javascript: `class NotFoundError extends Error {}
+
+class Repository {
+  #items = new Map();
+
+  add(item) {
+    if (this.#items.has(item.id))
+      throw new Error(\`id \${item.id} already exists\`);
+    this.#items.set(item.id, item);
+  }
+
+  get(id) {
+    const item = this.#items.get(id);
+    if (item === undefined)
+      throw new NotFoundError(\`id \${id} not found\`);
+    return item;
+  }
+
+  where(predicate) {
+    return [...this.#items.values()]
+      .filter(predicate)
+      .sort((a, b) => a.id - b.id);
+  }
+
+  get count() {
+    return this.#items.size;
+  }
+}`,
+
+  task: `
+<p>Build the typed repository in C#. Everything lives in top-level types — the
+harness supplies <code>Main</code>.</p>
+<ol>
+  <li>Declare <code>interface IEntity</code> with a read-only
+      <code>int Id { get; }</code>.</li>
+  <li>Declare <code>class NotFoundException : Exception</code> with a constructor
+      that takes a <code>string message</code> and forwards it with
+      <code>: base(message)</code>.</li>
+  <li>Declare a generic <code>class Repository&lt;T&gt; where T : IEntity</code>
+      backed by a <code>Dictionary&lt;int, T&gt;</code>:
+    <ul>
+      <li><code>void Add(T item)</code> — store it by <code>item.Id</code>, but
+          <code>throw new InvalidOperationException</code> if that id is already
+          present.</li>
+      <li><code>T Get(int id)</code> — return the stored item, or
+          <code>throw new NotFoundException</code> if the id is missing.</li>
+      <li><code>bool Remove(int id)</code> — remove it, returning whether anything
+          was removed.</li>
+      <li><code>List&lt;T&gt; Where(Func&lt;T, bool&gt; predicate)</code> — use
+          <strong>LINQ</strong> to filter the values, ordered by <code>Id</code>
+          ascending: <code>items.Values.Where(predicate).OrderBy(x =&gt; x.Id).ToList()</code>.</li>
+      <li><code>int Count { get; }</code> — how many items are stored.</li>
+    </ul>
+  </li>
+  <li>Declare a concrete <code>class User : IEntity</code> with a constructor
+      <code>User(int id, string name, int age)</code> exposing
+      <code>Id</code>, <code>Name</code>, and <code>Age</code>.</li>
+</ol>`,
+
+  starter: `interface IEntity {
+  int Id { get; }
+}
+
+class NotFoundException : Exception {
+  public NotFoundException(string message) : base(message) {
+  }
+}
+
+class Repository<T> where T : IEntity {
+  private Dictionary<int, T> items = new Dictionary<int, T>();
+
+  public void Add(T item) {
+    // TODO: throw InvalidOperationException on a duplicate id, else store it
+  }
+
+  public T Get(int id) {
+    return default(T); // TODO: throw NotFoundException if missing
+  }
+
+  public bool Remove(int id) {
+    return false; // TODO
+  }
+
+  public List<T> Where(Func<T, bool> predicate) {
+    return null; // TODO: LINQ filter, ordered by Id
+  }
+
+  public int Count {
+    get { return 0; } // TODO
+  }
+}
+
+class User : IEntity {
+  public int Id { get; private set; }
+  public string Name { get; private set; }
+  public int Age { get; private set; }
+
+  public User(int id, string name, int age) {
+    // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Repository\s*<\s*T\s*>\s+where\s+T\s*:\s*IEntity/, message: "Repository must be generic with a constraint: class Repository<T> where T : IEntity" },
+    { pattern: /throw\s+new\s+NotFoundException/, message: "Get must throw a NotFoundException when the id is missing" },
+    { pattern: /\.Where\s*\(/, message: "Use LINQ's .Where(...) to filter the stored values" },
+  ],
+
+  tests: [
+    { name: "Add then Get returns the stored item", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      expect_eq(repo.Get(1).Name, \"Ada\");" },
+    { name: "Count reflects how many items are stored", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      repo.Add(new User(2, \"Rob\", 68));\n      expect_eq(repo.Count, 2);" },
+    { name: "Get on a missing id throws NotFoundException", code: "      var repo = new Repository<User>();\n      bool threw = false;\n      try { repo.Get(99); } catch (NotFoundException) { threw = true; }\n      expect_true(threw);" },
+    { name: "Add with a duplicate id throws InvalidOperationException", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      bool threw = false;\n      try { repo.Add(new User(1, \"Grace\", 40)); } catch (InvalidOperationException) { threw = true; }\n      expect_true(threw);" },
+    { name: "Where filters with LINQ, ordered by Id", code: "      var repo = new Repository<User>();\n      repo.Add(new User(3, \"Carol\", 40));\n      repo.Add(new User(1, \"Ada\", 36));\n      repo.Add(new User(2, \"Rob\", 68));\n      var adults = repo.Where(u => u.Age >= 40);\n      expect_eq(adults.Count, 2);\n      expect_eq(adults[0].Id, 2);\n      expect_eq(adults[1].Id, 3);" },
+    { name: "Remove deletes an item and reports success", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      expect_true(repo.Remove(1));\n      expect_eq(repo.Count, 0);\n      expect_true(!repo.Remove(1));" },
+  ],
+
+  solution: `interface IEntity {
+  int Id { get; }
+}
+
+class NotFoundException : Exception {
+  public NotFoundException(string message) : base(message) {
+  }
+}
+
+class Repository<T> where T : IEntity {
+  private Dictionary<int, T> items = new Dictionary<int, T>();
+
+  public void Add(T item) {
+    if (items.ContainsKey(item.Id)) {
+      throw new InvalidOperationException($"id {item.Id} already exists");
+    }
+    items[item.Id] = item;
+  }
+
+  public T Get(int id) {
+    T value;
+    if (!items.TryGetValue(id, out value)) {
+      throw new NotFoundException($"id {id} not found");
+    }
+    return value;
+  }
+
+  public bool Remove(int id) {
+    return items.Remove(id);
+  }
+
+  public List<T> Where(Func<T, bool> predicate) {
+    return items.Values.Where(predicate).OrderBy(x => x.Id).ToList();
+  }
+
+  public int Count {
+    get { return items.Count; }
+  }
+}
+
+class User : IEntity {
+  public int Id { get; private set; }
+  public string Name { get; private set; }
+  public int Age { get; private set; }
+
+  public User(int id, string name, int age) {
+    Id = id;
+    Name = name;
+    Age = age;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>C#</th></tr>
+  <tr><td>Constrained generic</td><td>duck typing — no compile-time check</td><td><code>class Repository&lt;T&gt; where T : IEntity</code></td></tr>
+  <tr><td>Keyed store</td><td><code>Map</code></td><td><code>Dictionary&lt;int, T&gt;</code></td></tr>
+  <tr><td>Safe lookup</td><td><code>map.get(id)</code> → value or <code>undefined</code></td><td><code>TryGetValue(id, out value)</code></td></tr>
+  <tr><td>Filter</td><td><code>arr.filter(p)</code></td><td><code>seq.Where(p)</code> (LINQ)</td></tr>
+  <tr><td>Custom error</td><td><code>class E extends Error</code></td><td><code>class E : Exception</code></td></tr>
+  <tr><td>Catch by type</td><td><code>catch (e) { if (e instanceof E) }</code></td><td><code>catch (E ex) { }</code></td></tr>
+</table>
+<p>A few things came together here. <code>where T : IEntity</code> is what unlocks
+<code>item.Id</code> inside the generic — without the constraint the compiler only
+knows <code>T</code> is <em>some</em> type and would reject the member access,
+something JavaScript never checks at all since <code>item.id</code> just resolves
+(or evaluates to <code>undefined</code>) at runtime. The LINQ chain
+<code>Where(...).OrderBy(...).ToList()</code> is lazy until <code>ToList()</code>
+forces it, mirroring how you'd <code>filter</code> then <code>sort</code> an array.</p>
+<p>The big idiomatic shift from JavaScript is error handling: rather than returning
+<code>undefined</code> and making every caller check for it, C# code throws a
+typed exception on the exceptional path. Callers <code>catch</code> by exception
+type — <code>catch (NotFoundException ex)</code> — which is both more precise and
+more discoverable than an <code>instanceof</code> ladder. That's the whole course
+in one small object: types that are real at runtime, generics with constraints,
+interfaces as contracts, LINQ for querying, and exceptions for failure.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

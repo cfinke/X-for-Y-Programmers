@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Nil & Safe Navigation</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Nil & Safe Navigation",
+
+  intro: `
+<p>Kotlin fixed the "billion-dollar mistake" at the type level:
+<code>String</code> can never be <code>null</code>, only <code>String?</code>
+can, and the compiler makes you deal with it — <code>?.</code> to reach through
+safely, <code>?:</code> (Elvis) for the fallback, <code>!!</code> when you
+insist. Ruby keeps the operators but drops the types. Its <code>nil</code> is a
+real object, an instance of <code>NilClass</code>, and <em>any</em> value can be
+<code>nil</code> — there's no <code>String</code> vs <code>String?</code>
+distinction. The good news: Ruby's <code>&amp;.</code> is your <code>?.</code>,
+and <code>||</code> plays the role of <code>?:</code>, so the chains you already
+write in Kotlin translate almost character for character.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>null</code></td><td><code>nil</code> (an object: <code>nil.class</code> is <code>NilClass</code>)</td></tr>
+  <tr><td><code>user?.address?.city ?: "Unknown"</code></td><td><code>u&amp;.address&amp;.city || "Unknown"</code></td></tr>
+  <tr><td><code>x == null</code></td><td><code>x.nil?</code></td></tr>
+  <tr><td><code>map.getOrDefault(k, d)</code></td><td><code>hash[k] || d</code></td></tr>
+  <tr><td><code>cache = cache ?: load()</code></td><td><code>cache ||= load</code></td></tr>
+</table>
+<p>The rule that makes <code>||</code> safe to lean on: <strong>only
+<code>nil</code> and <code>false</code> are falsy</strong>. Ruby has no static
+nullable types, but it does have truthiness — where Kotlin forces a
+<code>Boolean</code> in every <code>if</code>, Ruby lets any value stand in.
+<code>0</code> and <code>""</code> are truthy, so <code>hash[:count] || 5</code>
+only falls back when the key is genuinely absent — a stored <code>0</code>
+survives, and conditions like <code>if user</code> read naturally. The related
+idiom <code>x ||= default</code> assigns only when <code>x</code> is
+<code>nil</code>/<code>false</code> — a lazy default in three characters, the
+same job as <code>cache = cache ?: load()</code>.</p>`,
+
+  kotlin: `data class Address(val city: String)
+data class User(val address: Address?)
+
+fun getCity(user: User?): String =
+    // The safe-call chain: ?. short-circuits, ?: supplies the fallback.
+    user?.address?.city ?: "Unknown"
+
+fun pick(map: Map<String, Int>, key: String, fallback: Int): Int =
+    map.getOrDefault(key, fallback)
+
+fun firstOrDefault(items: List<String>, fallback: String): String =
+    items.firstOrNull() ?: fallback`,
+
+  task: `
+<p>The starter defines <code>Address</code> and <code>User</code> for you
+(a <code>User</code>'s address defaults to <code>nil</code>). Implement:</p>
+<ol>
+  <li><code>get_city(user)</code> — return the user's address's city, or
+      <code>"Unknown"</code> if the user is <code>nil</code> or has no address.
+      One line: chain <code>&amp;.</code> and finish with <code>||</code>.</li>
+  <li><code>pick(hash, key, default)</code> — return <code>hash[key]</code>,
+      falling back to <code>default</code> when the key is missing. Because
+      <code>0</code> is truthy in Ruby, plain
+      <code>hash[key] || default</code> is enough — a stored <code>0</code>
+      must survive.</li>
+  <li><code>first_or_default(arr, default)</code> — the first element of the
+      array, or <code>default</code> when it's empty. (<code>arr.first</code>
+      returns <code>nil</code> on an empty array — let <code>||</code> catch
+      it.)</li>
+</ol>`,
+
+  starter: `class Address
+  attr_reader :city
+
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+# 1. Chain &. so a nil user or nil address short-circuits to nil,
+#    then let || supply the fallback.
+def get_city(user)
+  raise NotImplementedError, "TODO: implement get_city"
+end
+
+# 2. hash[key] returns nil for a missing key; || turns that into default.
+#    Remember: 0 is truthy, so a stored 0 passes straight through.
+def pick(hash, key, default)
+  raise NotImplementedError, "TODO: implement pick"
+end
+
+# 3. arr.first is nil for an empty array.
+def first_or_default(arr, default)
+  raise NotImplementedError, "TODO: implement first_or_default"
+end
+`,
+
+  requirements: [
+    { pattern: /&\./, message: "Use the &. safe-navigation operator in get_city" },
+    { pattern: /\|\|/, message: "Use || to supply a fallback value" },
+    { pattern: /nil/, message: "nil should appear somewhere (the default address, or a .nil? check)" },
+  ],
+
+  tests: [
+    { name: 'get_city(User.new(Address.new("Portland"))) returns "Portland"',
+      code: '  expect_eq(get_city(User.new(Address.new("Portland"))), "Portland")' },
+    { name: 'get_city(User.new) returns "Unknown" (address is nil)',
+      code: '  expect_eq(get_city(User.new), "Unknown")' },
+    { name: 'get_city(nil) returns "Unknown" (no NPE-style crash)',
+      code: '  expect_eq(get_city(nil), "Unknown")' },
+    { name: "pick({count: 0}, :count, 5) returns 0 — the stored 0 survives",
+      code: "  expect_eq(pick({count: 0}, :count, 5), 0)" },
+    { name: "pick({}, :count, 5) returns 5 for a missing key",
+      code: "  expect_eq(pick({}, :count, 5), 5)" },
+    { name: 'first_or_default works for both empty and non-empty arrays',
+      code: '  expect_eq(first_or_default([], "none"), "none")\n  expect_eq(first_or_default([7, 8], 0), 7)' },
+  ],
+
+  solution: `class Address
+  attr_reader :city
+
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+def get_city(user)
+  user&.address&.city || "Unknown"
+end
+
+def pick(hash, key, default)
+  hash[key] || default
+end
+
+def first_or_default(arr, default)
+  arr.first || default
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>The absent value</td><td><code>null</code> (not an object)</td><td><code>nil</code> (an object; has methods like <code>nil.to_s</code>)</td></tr>
+  <tr><td>Null check</td><td><code>x == null</code></td><td><code>x.nil?</code> — or just <code>if x</code></td></tr>
+  <tr><td>Safe chain</td><td><code>x?.foo?.bar</code></td><td><code>x&amp;.foo&amp;.bar</code></td></tr>
+  <tr><td>Fallback</td><td><code>x ?: d</code> / <code>getOrDefault</code></td><td><code>value || d</code></td></tr>
+  <tr><td>Lazy init</td><td><code>x = x ?: ...</code> / <code>by lazy</code></td><td><code>x ||= ...</code></td></tr>
+  <tr><td>Falsy values</td><td>conditions must be <code>Boolean</code> — no truthiness</td><td>only <code>nil</code> and <code>false</code> — <code>0</code> and <code>""</code> are truthy</td></tr>
+</table>
+<p>The NPE doesn't vanish — calling a method on <code>nil</code> raises
+<code>NoMethodError: undefined method for nil</code>, Ruby's equivalent — but
+<code>&amp;.</code> makes the "stop and return nil instead" choice a single
+character at each step, right where you'd reach for a <code>?.</code> chain in
+Kotlin. One caution: unlike Kotlin's <code>?:</code>, which fires only on
+<code>null</code>, Ruby's <code>||</code> also replaces a stored
+<code>false</code>, so for hashes that legitimately store booleans, prefer
+<code>hash.fetch(key, default)</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: List Assignment &amp; Spread</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "List Assignment & Spread",
+
+  intro: `
+<p>Kotlin can take things apart, but only positionally and only where a
+<em>new</em> variable is being declared: <code>val (a, b) = pair</code> unpacks
+via <code>component1()</code>/<code>component2()</code>, and the same works in
+<code>for</code>-loops and lambda parameters. There is no unpack-by-key form,
+and you cannot destructure into variables that already exist — so no
+<code>(a, b) = (b, a)</code> swap. PHP destructures <em>anywhere</em> an
+assignment can appear: <code>[$a, $b] = $pair;</code> unpacks a list,
+<code>['name' =&gt; $n] = $user;</code> unpacks by key, and
+<code>[$a, $b] = [$b, $a];</code> swaps two variables with no temp variable in
+sight.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>val (a, b) = pair</code> (declarations only)</td><td><code>[$a, $b] = $pair;</code> (any assignment)</td></tr>
+  <tr><td>— (no keyed form)</td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+  <tr><td><code>a = b.also { b = a }</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td><code>fun sum(vararg nums: Int)</code></td><td><code>function sum(int ...$nums)</code></td></tr>
+  <tr><td><code>f(*args)</code> spreads an array into varargs</td><td><code>f(...$args)</code> spreads any array into a call</td></tr>
+  <tr><td><code>defaults + overrides</code> (Map merge)</td><td><code>[...$defaults, ...$overrides]</code> — merge as a literal</td></tr>
+</table>
+<p>PHP's single <code>...</code> token covers three jobs that Kotlin splits
+across different syntax. In a signature, <code>int ...$nums</code> is Kotlin's
+<code>vararg nums: Int</code> — the varargs collector (<code>$nums</code>
+arrives as an array). At a call site, <code>f(...$args)</code> spreads an array
+across the parameters — Kotlin's spread operator <code>f(*args)</code>, which
+Kotlin requires only for arrays passed into a <code>vararg</code>. And inside an
+array literal, <code>[...$a, ...$b]</code> concatenates lists or merges
+string-keyed maps with later entries winning — the equivalent of Kotlin's
+<code>a + b</code> on <code>List</code> or <code>Map</code>, in one
+expression.</p>`,
+
+  kotlin: `data class Pair(val a: Int, val b: Int)
+
+// Destructuring only creates new vals; it can't reassign existing variables:
+fun swap(p: Pair): IntArray {
+    val (a, b) = p                 // positional, via component1()/component2()
+    return intArrayOf(b, a)
+}
+
+fun sum(vararg nums: Int): Int {   // varargs collector
+    var total = 0
+    for (n in nums) total += n
+    return total
+}
+
+fun mergeSettings(
+    defaults: Map<String, String>,
+    overrides: Map<String, String>,
+): Map<String, String> =
+    defaults + overrides           // later entries win`,
+
+  task: `
+<p>Rebuild all three with PHP's destructuring and spread:</p>
+<ol>
+  <li><code>swap(array $pair): array</code> — destructure the two-element
+      input with <code>[$a, $b] = $pair;</code> and return them reversed (or
+      swap in place with <code>[$a, $b] = [$b, $a];</code>). No temp
+      variable, and no fresh <code>val</code> the way Kotlin destructuring
+      forces.</li>
+  <li><code>sum(int ...$nums): int</code> — a variadic exactly like Kotlin's
+      <code>vararg nums: Int</code>; <code>$nums</code> is already an array
+      inside, so total it up and return the sum (0 for no arguments).</li>
+  <li><code>merge_settings(array $defaults, array $overrides): array</code> —
+      merge the two string-keyed maps with a spread literal,
+      <code>[...$defaults, ...$overrides]</code>, so overrides win on
+      duplicate keys (Kotlin's <code>defaults + overrides</code>).</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Destructure with [$a, $b] = $pair; then return [$b, $a] —
+//    or do it in one move: [$a, $b] = [$b, $a];
+function swap(array $pair): array {
+    throw new Exception("TODO: implement swap");
+}
+
+// 2. Kotlin's vararg nums: Int is PHP's int ...$nums — $nums is an array here.
+function sum(int ...$nums): int {
+    throw new Exception("TODO: implement sum");
+}
+
+// 3. Kotlin's defaults + overrides (Map merge), as one literal:
+//    [...$defaults, ...$overrides] — later spreads win on duplicate keys.
+function merge_settings(array $defaults, array $overrides): array {
+    throw new Exception("TODO: implement merge_settings");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\s*\$\w+\s*,\s*\$\w+\s*\]\s*=/, message: "Destructure with list assignment: [$a, $b] = ..." },
+    { pattern: /\.\.\.\$/, message: "Declare sum as a variadic with int ...$nums" },
+    { pattern: /\[\s*\.\.\./, message: "Merge with a spread literal: [...$defaults, ...$overrides]" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "expect_eq(swap([1, 2]), [2, 1]);" },
+    { name: "swap(['left', 'right']) returns ['right', 'left']",
+      code: "expect_eq(swap(['left', 'right']), ['right', 'left']);" },
+    { name: "sum(1, 2, 3, 4) returns 10",
+      code: "expect_eq(sum(1, 2, 3, 4), 10);" },
+    { name: "sum() with no arguments returns 0, and a spread call works: sum(...[5, 6])",
+      code: "expect_eq(sum(), 0);\nexpect_eq(sum(...[5, 6]), 11);" },
+    { name: "merge_settings lets overrides win on duplicate keys",
+      code: "expect_eq(\n  merge_settings(['theme' => 'light', 'lang' => 'en'], ['theme' => 'dark']),\n  ['theme' => 'dark', 'lang' => 'en']\n);" },
+    { name: "merge_settings keeps defaults nobody overrode",
+      code: "expect_eq(\n  merge_settings(['debug' => 'off'], []),\n  ['debug' => 'off']\n);" },
+  ],
+
+  solution: `<?php
+
+function swap(array $pair): array {
+    [$a, $b] = $pair;
+    return [$b, $a];
+}
+
+function sum(int ...$nums): int {
+    $total = 0;
+    foreach ($nums as $n) {
+        $total += $n;
+    }
+    return $total;
+}
+
+function merge_settings(array $defaults, array $overrides): array {
+    return [...$defaults, ...$overrides];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Positional unpack</td><td><code>val (a, b) = pair</code> (declarations only)</td><td><code>[$a, $b] = $pair;</code> anywhere</td></tr>
+  <tr><td>Keyed unpack</td><td>—</td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+  <tr><td>Swap two variables</td><td><code>a = b.also { b = a }</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td>Varargs</td><td><code>vararg nums: Int</code></td><td><code>int ...$nums</code></td></tr>
+  <tr><td>Spread into a call</td><td><code>f(*args)</code>, arrays into varargs</td><td><code>f(...$args)</code>, any array</td></tr>
+  <tr><td>Merge as a literal</td><td><code>a + b</code> (later keys win)</td><td><code>[...$a, ...$b]</code> (later keys win)</td></tr>
+  <tr><td>Unpack in a loop</td><td><code>for ((x, y) in pairs)</code></td><td><code>foreach ($pairs as [$x, $y])</code></td></tr>
+</table>
+<p>List assignment even reaches into <code>foreach</code> —
+<code>foreach ($points as [$x, $y])</code> destructures every element as it
+iterates, just like Kotlin's <code>for ((x, y) in points)</code>. One boundary
+to remember: spreading arrays with string keys into a <em>literal</em> works
+(PHP 8.1+) and behaves like <code>array_merge</code>, but skipped positions in a
+positional destructure need commas (<code>[, $second] = $pair;</code>), and
+unpacking a missing key quietly yields <code>null</code> plus a warning rather
+than the compile-time check Kotlin gives you — a destructuring declaration only
+binds as many components as the type actually exposes.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

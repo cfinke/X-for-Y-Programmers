@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Lambdas & Functional Interfaces</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Lambdas & Functional Interfaces",
+
+  intro: `
+<p>In Ruby a block, a <code>Proc</code>, and a <code>lambda</code> are how you pass
+around behavior: you write <code>->(x) { x * 2 }</code> or
+<code>lambda { |x| x * 2 }</code>, or just hand a method a block with
+<code>{ |x| ... }</code> / <code>do |x| ... end</code>. None of these are typed —
+Ruby checks arity at call time (loosely, for procs) and calls them with
+<code>.call(x)</code>, <code>.(x)</code>, or <code>x[x]</code>. Java has lambdas
+too, and the arrow syntax will look familiar — but Java has no duck-typed callable.
+Every lambda must be an instance of a <strong>functional interface</strong>: an
+interface with exactly one abstract method. The compiler infers which interface
+from the target type.</p>
+<table>
+  <tr><th>Ruby</th><th>Java</th></tr>
+  <tr><td><code>->(x) { x * 2 }</code></td><td><code>x -&gt; x * 2</code></td></tr>
+  <tr><td><code>->(a, b) { a + b }</code></td><td><code>(a, b) -&gt; a + b</code></td></tr>
+  <tr><td><code>-> { "hi" }</code></td><td><code>() -&gt; "hi"</code></td></tr>
+  <tr><td><code>->(x) { x * 2 }</code> (no static type)</td><td><code>Function&lt;Integer,Integer&gt;</code></td></tr>
+  <tr><td><code>->(x) { x.even? }</code></td><td><code>Predicate&lt;Integer&gt;</code></td></tr>
+  <tr><td><code>arr.map(&amp;f)</code></td><td>pass a <code>Function</code> to a method</td></tr>
+</table>
+<p>The <code>java.util.function</code> package ships the everyday shapes:
+<code>Function&lt;T,R&gt;</code> (one arg, call <code>.apply</code>),
+<code>BiFunction&lt;A,B,R&gt;</code> (two args, <code>.apply</code>),
+<code>Predicate&lt;T&gt;</code> (returns <code>boolean</code>, call
+<code>.test</code>), and <code>Supplier&lt;T&gt;</code> (no args, call
+<code>.get</code>). Because generics can't hold primitives, use the boxed types
+(<code>Integer</code>, not <code>int</code>). And where Ruby lets you write
+<code>arr.map(&amp;:square)</code> using symbol-to-proc, Java offers
+<strong>method references</strong>: <code>Functional::square</code> (a static
+method), <code>String::toUpperCase</code> (an instance method invoked on the
+argument, much like <code>&amp;:upcase</code>), or <code>prefix::concat</code>
+(an instance method bound to a specific object, like Ruby's
+<code>prefix.method(:concat)</code>).</p>`,
+
+  ruby: `double = ->(n) { n * 2 }
+is_even = ->(n) { n.even? }
+
+def map_all(nums, f)
+  nums.map(&f)
+end
+
+map_all([1, 2, 3], double)          # [2, 4, 6]
+map_all([1, 2, 3], ->(n) { n * n }) # [1, 4, 9]
+[1, 2, 3, 4].select(&is_even)       # [2, 4]`,
+
+  task: `
+<p>Build a small <code>Functional</code> class that both <em>produces</em> and
+<em>consumes</em> the standard functional interfaces. Import them with
+<code>import java.util.function.*;</code>.</p>
+<ol>
+  <li><code>doubler()</code> returns a <code>Function&lt;Integer,Integer&gt;</code>
+      that multiplies its input by 2. Write it as a lambda.</li>
+  <li><code>isEven()</code> returns a <code>Predicate&lt;Integer&gt;</code> that is
+      true for even numbers.</li>
+  <li><code>adder()</code> returns a <code>BiFunction&lt;Integer,Integer,Integer&gt;</code>
+      that sums its two args.</li>
+  <li><code>greeter()</code> returns a <code>Supplier&lt;String&gt;</code> that
+      supplies <code>"hello"</code>.</li>
+  <li><code>mapAll(List&lt;Integer&gt; nums, Function&lt;Integer,Integer&gt; f)</code>
+      applies <code>f</code> to every element and returns a new list.</li>
+  <li><code>keep(List&lt;Integer&gt; nums, Predicate&lt;Integer&gt; p)</code> returns
+      only the elements for which <code>p</code> is true.</li>
+  <li><code>square(int n)</code> returns <code>n * n</code>, and
+      <code>squareAll(List&lt;Integer&gt; nums)</code> calls <code>mapAll</code>
+      passing the <strong>method reference</strong> <code>Functional::square</code>.</li>
+  <li><code>shout(List&lt;String&gt; words, String prefix)</code> uppercases each
+      word and prepends <code>prefix</code>, using the method references
+      <code>String::toUpperCase</code> and <code>prefix::concat</code>.</li>
+</ol>`,
+
+  starter: `import java.util.function.*;
+
+class Functional {
+  static Function<Integer, Integer> doubler() {
+    return null; // TODO: return a lambda n -> n * 2
+  }
+
+  static Predicate<Integer> isEven() {
+    return null; // TODO
+  }
+
+  static BiFunction<Integer, Integer, Integer> adder() {
+    return null; // TODO
+  }
+
+  static Supplier<String> greeter() {
+    return null; // TODO
+  }
+
+  static List<Integer> mapAll(List<Integer> nums, Function<Integer, Integer> f) {
+    return null; // TODO: apply f to each element
+  }
+
+  static List<Integer> keep(List<Integer> nums, Predicate<Integer> p) {
+    return null; // TODO: keep elements where p.test(n) is true
+  }
+
+  static int square(int n) {
+    return 0; // TODO
+  }
+
+  static List<Integer> squareAll(List<Integer> nums) {
+    return null; // TODO: mapAll(nums, Functional::square)
+  }
+
+  static List<String> shout(List<String> words, String prefix) {
+    return null; // TODO: use String::toUpperCase and prefix::concat
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /->/, message: "Write at least one lambda using the arrow (->)" },
+    { pattern: /::/, message: "Use a method reference (::), e.g. Functional::square" },
+    { pattern: /Function|Predicate|Supplier|BiFunction/, message: "Use the standard functional interfaces (Function, Predicate, Supplier, BiFunction)" },
+  ],
+
+  tests: [
+    { name: "doubler() applied to 5 is 10", code: "      expect_eq(Functional.doubler().apply(5), 10);" },
+    { name: "isEven() is true for 4, false for 3", code: "      expect_true(Functional.isEven().test(4));\n      expect_true(!Functional.isEven().test(3));" },
+    { name: "adder() applied to 3 and 4 is 7", code: "      expect_eq(Functional.adder().apply(3, 4), 7);" },
+    { name: "greeter() supplies \"hello\"", code: "      expect_eq(Functional.greeter().get(), \"hello\");" },
+    { name: "mapAll with an inline lambda", code: "      expect_eq(Functional.mapAll(List.of(1, 2, 3), n -> n + 10), List.of(11, 12, 13));" },
+    { name: "keep with a Predicate", code: "      expect_eq(Functional.keep(List.of(1, 2, 3, 4, 5), n -> n > 2), List.of(3, 4, 5));" },
+    { name: "squareAll uses Functional::square", code: "      expect_eq(Functional.squareAll(List.of(2, 3, 4)), List.of(4, 9, 16));" },
+    { name: "shout uppercases and prefixes", code: "      expect_eq(Functional.shout(List.of(\"hi\", \"bye\"), \">> \"), List.of(\">> HI\", \">> BYE\"));" },
+  ],
+
+  solution: `import java.util.function.*;
+
+class Functional {
+  static Function<Integer, Integer> doubler() {
+    return n -> n * 2;
+  }
+
+  static Predicate<Integer> isEven() {
+    return n -> n % 2 == 0;
+  }
+
+  static BiFunction<Integer, Integer, Integer> adder() {
+    return (a, b) -> a + b;
+  }
+
+  static Supplier<String> greeter() {
+    return () -> "hello";
+  }
+
+  static List<Integer> mapAll(List<Integer> nums, Function<Integer, Integer> f) {
+    List<Integer> out = new ArrayList<>();
+    for (Integer n : nums) {
+      out.add(f.apply(n));
+    }
+    return out;
+  }
+
+  static List<Integer> keep(List<Integer> nums, Predicate<Integer> p) {
+    List<Integer> out = new ArrayList<>();
+    for (Integer n : nums) {
+      if (p.test(n)) {
+        out.add(n);
+      }
+    }
+    return out;
+  }
+
+  static int square(int n) {
+    return n * n;
+  }
+
+  static List<Integer> squareAll(List<Integer> nums) {
+    return mapAll(nums, Functional::square);
+  }
+
+  static List<String> shout(List<String> words, String prefix) {
+    Function<String, String> up = String::toUpperCase;   // Class::instanceMethod
+    Function<String, String> withPrefix = prefix::concat; // instance::method
+    List<String> out = new ArrayList<>();
+    for (String w : words) {
+      out.add(withPrefix.apply(up.apply(w)));
+    }
+    return out;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+  <tr><td>One-arg lambda</td><td><code>->(x) { x * 2 }</code></td><td><code>x -&gt; x * 2</code></td></tr>
+  <tr><td>Function type</td><td>none — duck typed, any object with <code>.call</code></td><td><code>Function&lt;Integer,Integer&gt;</code></td></tr>
+  <tr><td>Calling it</td><td><code>f.call(x)</code></td><td><code>f.apply(x)</code></td></tr>
+  <tr><td>Predicate</td><td><code>->(x) { x.even? }</code></td><td><code>Predicate&lt;T&gt;</code>, <code>p.test(x)</code></td></tr>
+  <tr><td>Supplier</td><td><code>-> { value }</code></td><td><code>Supplier&lt;T&gt;</code>, <code>s.get()</code></td></tr>
+  <tr><td>Static method ref</td><td><code>arr.map(&amp;method(:square))</code></td><td><code>Functional::square</code></td></tr>
+  <tr><td>Instance method ref</td><td><code>arr.map(&amp;:upcase)</code></td><td><code>String::toUpperCase</code></td></tr>
+</table>
+<p>The big mental shift: in Ruby a proc or lambda is just an object you call with
+<code>.call</code> — nothing about its shape is checked until you invoke it; in
+Java a lambda is always an <em>instance of an interface</em> with a single
+abstract method (a "functional interface"). You rarely name it — the compiler
+infers it from the parameter or return type — but that's why <code>.apply</code>,
+<code>.test</code>, and <code>.get</code> differ: each interface names its one
+method differently.</p>
+<p>Method references are pure sugar for a lambda that just forwards its arguments,
+the same way Ruby's <code>&amp;:upcase</code> or <code>&amp;method(:square)</code>
+are shorthand for a block that forwards its argument.
+<code>Functional::square</code> means <code>n -&gt; Functional.square(n)</code>;
+<code>String::toUpperCase</code> means <code>s -&gt; s.toUpperCase()</code> (the
+argument becomes the receiver, like <code>&amp;:upcase</code>); and
+<code>prefix::concat</code> means <code>s -&gt; prefix.concat(s)</code> (bound to
+a captured object, like Ruby's <code>prefix.method(:concat)</code>). Reach for
+them when the lambda would only relay its inputs to an existing method.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

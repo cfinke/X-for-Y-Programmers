@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Error Handling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Error Handling",
+
+  intro: `
+<p>PHP lets you declare exactly which exception type a <code>catch</code> block
+accepts, and you can stack several <code>catch</code> clauses to handle
+different exception classes differently. JavaScript's <code>try</code> /
+<code>catch</code> / <code>finally</code> mechanics are the same shape, but
+there is one runtime fact PHP's typed catches hide from you: <strong>a single
+JavaScript <code>catch</code> block receives <em>anything</em> that was
+thrown</strong>, with no type filtering at the language level. There is no
+guarantee it is even an <code>Error</code>.</p>
+<table>
+  <tr><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td><code>catch (ValidationException $e) { }</code></td><td><code>catch (e) { /* e is whatever was thrown */ }</code></td></tr>
+  <tr><td><code>throw new Exception("x");</code></td><td><code>throw new Error("x");</code> (same idea)</td></tr>
+  <tr><td>engine matches the exception's class</td><td><code>instanceof</code> is a real runtime check</td></tr>
+  <tr><td>custom exception extends <code>\\Exception</code></td><td>subclass <code>Error</code>, set <code>this.name</code></td></tr>
+</table>
+<p>Because the caught value is untyped, idiomatic JavaScript checks it before
+trusting it: <code>if (e instanceof ValidationError)</code>. An
+<code>Error</code> object carries a <code>name</code> and a <code>message</code>;
+a custom subclass sets its own <code>name</code> so callers can tell your errors
+apart from someone else's — the rough equivalent of PHP letting you write a
+second <code>catch</code> block for a different exception class.</p>`,
+
+  php: `<?php
+class ValidationException extends \\Exception {
+  public function __construct(string $message) {
+    parent::__construct($message);
+  }
+}
+
+function checkAge(mixed $age): int {
+  if (!is_int($age) && !is_float($age)) {
+    throw new ValidationException("age must be a number");
+  }
+  if ($age < 0) {
+    throw new ValidationException("age must not be negative");
+  }
+  return (int) $age;
+}
+
+function safeCheckAge(mixed $age, int $fallback): int {
+  try {
+    return checkAge($age);
+  } catch (ValidationException $e) {
+    return $fallback;
+  }
+}`,
+
+  task: `
+<p>Build a tiny validation layer that throws, catches, and reports.</p>
+<ol>
+  <li>Define <code>ValidationError</code>, a subclass of <code>Error</code>.
+      Its constructor takes a message, calls <code>super(message)</code>, and
+      sets <code>this.name = "ValidationError"</code>.</li>
+  <li>Write <code>checkAge(age)</code>: if <code>age</code> is not a number (use
+      <code>typeof</code>) or is <code>NaN</code>, throw a
+      <code>ValidationError("age must be a number")</code>. If it is negative,
+      throw a <code>ValidationError("age must not be negative")</code>.
+      Otherwise return <code>age</code>.</li>
+  <li>Write <code>safeCheckAge(age, fallback)</code>: run <code>checkAge</code>
+      inside a <code>try</code>; if it throws, return <code>fallback</code>.</li>
+  <li>Write <code>describeError(fn)</code>: call <code>fn()</code> inside a
+      <code>try</code>. If it throws, return the error's
+      <code>name + ": " + message</code>. Use a <code>finally</code> block that
+      is harmless here (e.g. a no-op) but must run either way. If nothing throws,
+      return <code>"ok"</code>.</li>
+</ol>`,
+
+  starter: `// 1. Custom error subclass
+class ValidationError extends Error {
+  constructor(message) {
+    // TODO: call super and set this.name
+  }
+}
+
+// 2. Validator that throws
+function checkAge(age) {
+  // TODO
+  return age;
+}
+
+// 3. Safe wrapper that catches and returns a fallback
+function safeCheckAge(age, fallback) {
+  // TODO
+  return fallback;
+}
+
+// 4. Report an error as "name: message", or "ok"
+function describeError(fn) {
+  // TODO
+  return "ok";
+}
+`,
+
+  exportNames: ["ValidationError", "checkAge", "safeCheckAge", "describeError"],
+
+  requirements: [
+    { pattern: /class\s+ValidationError\s+extends\s+Error/, message: "ValidationError must extend Error" },
+    { pattern: /throw\s+new\s+ValidationError/, message: "checkAge must throw a ValidationError" },
+    { pattern: /catch\s*\(/, message: "Use a try/catch block" },
+    { pattern: /finally/, message: "describeError must use a finally block" },
+  ],
+
+  tests: [
+    { name: "checkAge(36) returns 36", run: (x) => expectEqual(x.checkAge(36), 36) },
+    { name: "checkAge(-1) throws", run: (x) => expectThrows(() => x.checkAge(-1)) },
+    { name: 'checkAge("x") throws', run: (x) => expectThrows(() => x.checkAge("x")) },
+    { name: "checkAge(NaN) throws", run: (x) => expectThrows(() => x.checkAge(NaN)) },
+    { name: "thrown value is a ValidationError instance", run: (x) => {
+        try { x.checkAge(-5); } catch (e) { expectTruthy(e instanceof x.ValidationError); return; }
+        throw new Error("expected checkAge(-5) to throw");
+      } },
+    { name: "ValidationError carries name and message", run: (x) => {
+        const err = new x.ValidationError("nope");
+        expectEqual(err.name, "ValidationError");
+        expectEqual(err.message, "nope");
+      } },
+    { name: "safeCheckAge returns value when valid", run: (x) => expectEqual(x.safeCheckAge(20, 0), 20) },
+    { name: "safeCheckAge returns fallback when invalid", run: (x) => expectEqual(x.safeCheckAge(-3, 0), 0) },
+    { name: "describeError reports name: message", run: (x) => expectEqual(x.describeError(() => x.checkAge(-1)), "ValidationError: age must not be negative") },
+    { name: "describeError returns ok when no throw", run: (x) => expectEqual(x.describeError(() => 42), "ok") },
+  ],
+
+  solution: `class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+function checkAge(age) {
+  if (typeof age !== "number" || Number.isNaN(age)) {
+    throw new ValidationError("age must be a number");
+  }
+  if (age < 0) {
+    throw new ValidationError("age must not be negative");
+  }
+  return age;
+}
+
+function safeCheckAge(age, fallback) {
+  try {
+    return checkAge(age);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function describeError(fn) {
+  try {
+    fn();
+    return "ok";
+  } catch (e) {
+    return e.name + ": " + e.message;
+  } finally {
+    // always runs; harmless here
+    void 0;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td>Caught value</td><td>catch clause filters by exception class</td><td>could be anything thrown</td></tr>
+  <tr><td>Narrowing</td><td><code>catch (ValidationException $e)</code></td><td><code>instanceof</code> at runtime</td></tr>
+  <tr><td>Custom error</td><td>class extends <code>\\Exception</code></td><td>class extends <code>Error</code>, plus set <code>this.name</code></td></tr>
+  <tr><td>Cleanup</td><td><code>finally</code></td><td><code>finally</code> (same)</td></tr>
+</table>
+<p>Three runtime facts worth internalizing. First, <code>finally</code> runs
+whether the <code>try</code> returns, throws, or falls through — it is where you
+release resources, just like PHP's <code>finally</code> block. Second, you can
+<code>throw</code> a string or a number in JavaScript, but idiomatic code always
+throws an <code>Error</code> (or a subclass) so callers get a <code>name</code>,
+a <code>message</code>, and a stack — PHP is stricter here and only lets you
+<code>throw</code> objects that implement <code>Throwable</code>. Third, because
+the caught value in JavaScript carries no type information the way PHP's
+<code>catch (ValidationException $e)</code> clause does, guard with
+<code>instanceof</code> before reading properties: <code>if (e instanceof
+ValidationError)</code> is the JavaScript stand-in for PHP's ability to declare
+the exception type right on the <code>catch</code> block.</p>
+<p>One subtlety: setting <code>this.name</code> in the subclass constructor is
+what makes <code>err.name</code> read <code>"ValidationError"</code> instead of
+the inherited <code>"Error"</code>. PHP gives you this for free — <code>$e::class</code>
+or <code>get_class($e)</code> already tells you the concrete exception type
+without any extra bookkeeping. Without setting <code>this.name</code>, your
+custom JavaScript error is indistinguishable by name from a plain one.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

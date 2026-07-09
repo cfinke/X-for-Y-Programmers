@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null & Optional</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null & Optional",
+
+  intro: `
+<p>This is the one lesson where you arrive already fluent. Kotlin fixed the
+billion-dollar mistake at the type level: <code>String</code> is never null,
+<code>String?</code> might be, and the compiler refuses to let you dereference
+a nullable value until you have checked. TypeScript reaches for the exact same
+idea from the other direction. Instead of a <code>?</code> suffix it writes the
+absence as a union — <code>string | null</code> — and then, with
+<code>strictNullChecks</code> on, <strong>refuses to let you touch it</strong>
+until you have narrowed it. Same discipline, same safety, slightly different
+punctuation.</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td><code>val u: User? = findUser(id)</code></td><td><code>const u: User | null = findUser(id);</code> (nullability is in the type)</td></tr>
+  <tr><td><code>x?.y ?: def</code></td><td><code>x?.y ?? def</code></td></tr>
+  <tr><td><code>if (x != null)</code> — smart cast to non-null</td><td><code>if (x !== null)</code> — the compiler narrows <code>x</code> for you</td></tr>
+  <tr><td>One kind of absence: <code>null</code></td><td>Two: <code>null</code> (deliberate) and <code>undefined</code> (never set)</td></tr>
+</table>
+<p>The two operators you already reach for map almost one-to-one. Optional
+chaining <code>a?.b</code> is Kotlin's safe call <code>a?.b</code>: it
+short-circuits to <code>undefined</code> instead of throwing when <code>a</code>
+is null or undefined, and it chains. Nullish coalescing <code>a ?? def</code>
+is the Elvis operator <code>a ?: def</code>: it supplies a default only when the
+left side is null or undefined (unlike <code>||</code>, it leaves
+<code>0</code> and <code>""</code> alone — closer to Elvis than you might
+expect). One wrinkle Kotlin does not have: TypeScript's single "nothing"
+splits in two. <code>undefined</code> is what you get from a missing property
+or an unassigned variable; <code>null</code> is an explicit "nothing". Both
+<code>?.</code> and <code>??</code> treat them identically, which is almost
+always what you want. (And yes, TypeScript has a <code>!</code> non-null
+assertion — the direct analogue of Kotlin's <code>!!</code>, and just as
+worth avoiding.)</p>`,
+
+  kotlin: `// Kotlin already forces you to acknowledge nullability. A safe call
+// chain short-circuits to null instead of throwing:
+val city: String = findUser(id)?.address?.city ?: "Unknown"
+
+// The compiler will not let you skip the checks — this would not compile
+// if findUser returns User?:
+//     val bad = findUser(id).address.city   // error: receiver may be null
+
+// A manual check smart-casts the value to non-null inside the branch:
+val user = findUser(id)
+if (user?.address != null) {
+    println(user.address.city)
+}`,
+
+  task: `
+<p>Model users whose address may be missing — with the absence written into
+the types, exactly as you would with <code>?</code> in Kotlin:</p>
+<ol>
+  <li>Define <code>interface Address</code> with <code>city: string</code>,
+      and <code>interface User</code> with <code>name: string</code> and
+      <code>address: Address | null</code>. Just like Kotlin, a plain
+      <code>Address</code> here can <em>never</em> be null — you opt in with
+      <code>| null</code>, the way you would write <code>Address?</code>.</li>
+  <li>Write <code>findUser(id: number): User | null</code>:
+      id <code>1</code> returns <code>{ name: "Ada", address: { city: "London" } }</code>,
+      id <code>2</code> returns <code>{ name: "Linus", address: null }</code>,
+      and any other id returns <code>null</code>.</li>
+  <li>Write <code>getCity(user: User | null): string</code> returning the
+      user's city, or <code>"Unknown"</code> if the user or the address is
+      absent. The entire chain is one expression, and it should feel like home:
+      <code>user?.address?.city ?? "Unknown"</code>.</li>
+</ol>
+<p>Try removing the <code>?.</code> and hovering the error: the compiler
+tells you <code>user</code> is possibly null — the same complaint Kotlin
+would make about calling a member on a nullable receiver.</p>`,
+
+  starter: `interface Address {
+  city: string;
+}
+
+interface User {
+  name: string;
+  // TODO 1: the address may be missing — say so in the type: Address | null
+  address: Address;
+}
+
+// TODO 2: the return type must admit the user may not exist: User | null
+function findUser(id: number): User {
+  // TODO: id 1 -> { name: "Ada", address: { city: "London" } }
+  //       id 2 -> { name: "Linus", address: null }
+  //       anything else -> null
+  return { name: "Ada", address: { city: "London" } };
+}
+
+// TODO 3: accept User | null; return the city or "Unknown".
+// Java:       Optional.ofNullable(user).map(User::getAddress)
+//                     .map(Address::getCity).orElse("Unknown")
+// TypeScript: one expression with ?. and ??
+function getCity(user: User): string {
+  return "Unknown";
+}
+`,
+
+  exportNames: ["findUser", "getCity"],
+
+  requirements: [
+    { pattern: /\|\s*null/, message: "Write nullability into the types with | null (e.g. User | null) — the compiler then forces the check Optional only encourages" },
+    { pattern: /\?\./, message: "Use optional chaining (?.) — the whole Optional.map(...) pipeline in one operator" },
+    { pattern: /\?\?/, message: "Use nullish coalescing (??) — the orElse(...) at the end of the chain" },
+  ],
+
+  tests: [
+    { name: 'findUser(1) returns Ada', run: (x) => expectEqual(x.findUser(1).name, "Ada") },
+    { name: 'findUser(99) returns null', run: (x) => expectEqual(x.findUser(99), null) },
+    { name: 'getCity(findUser(1)) returns "London"', run: (x) => expectEqual(x.getCity(x.findUser(1)), "London") },
+    { name: 'getCity(findUser(2)) returns "Unknown" — address is null', run: (x) => expectEqual(x.getCity(x.findUser(2)), "Unknown") },
+    { name: 'getCity(null) returns "Unknown" — no NPE, no Optional', run: (x) => expectEqual(x.getCity(null), "Unknown") },
+  ],
+
+  solution: `interface Address {
+  city: string;
+}
+
+interface User {
+  name: string;
+  address: Address | null;
+}
+
+function findUser(id: number): User | null {
+  if (id === 1) return { name: "Ada", address: { city: "London" } };
+  if (id === 2) return { name: "Linus", address: null };
+  return null;
+}
+
+function getCity(user: User | null): string {
+  return user?.address?.city ?? "Unknown";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Maybe-absent value</td><td><code>User?</code></td><td><code>User | null</code></td></tr>
+  <tr><td>Safe navigation</td><td><code>user?.address</code></td><td><code>user?.address</code></td></tr>
+  <tr><td>Default value</td><td><code>value ?: "Unknown"</code> (Elvis)</td><td><code>value ?? "Unknown"</code></td></tr>
+  <tr><td>Presence check</td><td><code>if (x != null)</code> — smart cast</td><td><code>if (x !== null)</code> — the type narrows</td></tr>
+  <tr><td>Force non-null</td><td><code>x!!</code></td><td><code>x!</code> (non-null assertion)</td></tr>
+  <tr><td>Kinds of absence</td><td><code>null</code></td><td><code>null</code> and <code>undefined</code> (<code>?.</code>/<code>??</code> handle both)</td></tr>
+  <tr><td>Forgot the check?</td><td>Compile error</td><td>Compile error before you ship</td></tr>
+</table>
+<p>The deep point is one you already believe: nullability belongs in the type,
+not in a runtime convention. Kotlin bakes it into the language with the
+<code>?</code> suffix; TypeScript (with <code>strictNullChecks</code>, the norm
+in modern codebases) does the same with a union type. Either way,
+<code>user.address.city</code> on a possibly-null value is rejected before it
+runs. You stop writing defensive null checks everywhere and write exactly one
+check, exactly where the type says it is needed. The only genuinely new thing
+here is <code>undefined</code> — a second flavor of "nothing" that Kotlin
+collapses into a single <code>null</code>, but that <code>?.</code> and
+<code>??</code> quietly handle for you.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

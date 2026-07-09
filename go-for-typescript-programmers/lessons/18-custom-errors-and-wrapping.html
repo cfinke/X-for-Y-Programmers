@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Custom Errors &amp; Wrapping</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Custom Errors & Wrapping",
+
+  intro: `
+<p>In lesson 9 an error was just a value carrying a message. Real programs need to
+<em>distinguish</em> failures: was this "not found" or "permission denied"? In
+TypeScript you subclass <code>Error</code> and check with <code>instanceof</code>,
+or attach a <code>cause</code> to keep the original around. Go gives you three
+matching tools.</p>
+<table>
+  <tr><th>TypeScript</th><th>Go</th></tr>
+  <tr><td><code>class NotFound extends Error {}</code></td><td>a struct with an <code>Error() string</code> method</td></tr>
+  <tr><td><code>const ErrNotFound = new Error("not found")</code></td><td><code>var ErrNotFound = errors.New("not found")</code> (a <em>sentinel</em>)</td></tr>
+  <tr><td><code>new Error("saving", { cause: err })</code></td><td><code>fmt.Errorf("saving: %w", err)</code> (wrap)</td></tr>
+  <tr><td><code>err === ErrNotFound</code> / <code>e instanceof T</code></td><td><code>errors.Is(err, ErrNotFound)</code> / <code>errors.As(err, &amp;t)</code></td></tr>
+</table>
+<p>A <strong>sentinel</strong> is a package-level <code>error</code> variable you
+compare against by identity. A <strong>custom error type</strong> is any struct
+that implements <code>error</code> — useful when the failure carries data (a field
+name, a status code). Wrapping with the <code>%w</code> verb nests one error inside
+another so the cause survives. Then <code>errors.Is</code> walks that chain looking
+for a sentinel, and <code>errors.As</code> walks it looking for a type, filling in a
+pointer you hand it — the Go equivalent of an <code>instanceof</code> narrowing.</p>`,
+
+  typescript: `class ValidationError extends Error {
+  constructor(public field: string, msg: string) {
+    super(\`\${field}: \${msg}\`);
+  }
+}
+
+function fieldOf(err: unknown): string {
+  if (err instanceof ValidationError) return err.field;
+  return "";
+}
+
+try {
+  throw new ValidationError("age", "required");
+} catch (e) {
+  console.log(fieldOf(e)); // "age"
+}`,
+
+  task: `
+<p>Write these as package-level declarations (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li>A sentinel <code>var ErrNotFound = errors.New("not found")</code>.</li>
+  <li>A custom error type <code>ValidationError</code> — a struct with
+      <code>Field</code> and <code>Msg</code> string fields — and a method
+      <code>(e *ValidationError) Error() string</code> that returns
+      <code>fmt.Sprintf("%s: %s", e.Field, e.Msg)</code> (e.g. <code>"age: required"</code>).</li>
+  <li><code>Validate(field, value string) error</code> — if <code>value</code> is
+      <code>""</code>, return <code>&amp;ValidationError{Field: field, Msg: "required"}</code>;
+      otherwise return <code>nil</code>.</li>
+  <li><code>Lookup(db map[string]string, key string) (string, error)</code> — if the
+      key is present, return its value and <code>nil</code>. Otherwise return
+      <code>""</code> and an error that <em>wraps</em> the sentinel:
+      <code>fmt.Errorf("lookup %q: %w", key, ErrNotFound)</code>.</li>
+  <li><code>IsMissing(err error) bool</code> — report whether <code>err</code> (or
+      anything it wraps) is <code>ErrNotFound</code>, using
+      <code>errors.Is</code>.</li>
+  <li><code>FieldOf(err error) string</code> — if <code>err</code> (or anything it
+      wraps) is a <code>*ValidationError</code>, return its <code>Field</code>;
+      otherwise return <code>""</code>. Use <code>errors.As</code>.</li>
+</ol>`,
+
+  starter: `var ErrNotFound = errors.New("not found")
+
+type ValidationError struct {
+	Field string
+	Msg   string
+}
+
+func (e *ValidationError) Error() string {
+	return "" // TODO
+}
+
+func Validate(field, value string) error {
+	return nil // TODO
+}
+
+func Lookup(db map[string]string, key string) (string, error) {
+	return "", nil // TODO
+}
+
+func IsMissing(err error) bool {
+	return false // TODO: use errors.Is
+}
+
+func FieldOf(err error) string {
+	return "" // TODO: use errors.As
+}
+`,
+
+  requirements: [
+    { pattern: /fmt\.Errorf\([^)]*%w/, message: "Wrap the sentinel with the %w verb in fmt.Errorf" },
+    { pattern: /errors\.Is\(/, message: "Match the sentinel with errors.Is in IsMissing" },
+    { pattern: /errors\.As\(/, message: "Extract the custom error with errors.As in FieldOf" },
+  ],
+
+  tests: [
+    { name: "ValidationError.Error() formats field and message", code: "\t\tve := &ValidationError{Field: \"name\", Msg: \"required\"}\n\t\texpect_eq(ve.Error(), \"name: required\")" },
+    { name: "Validate(\"email\", \"\") returns a ValidationError", code: "\t\terr := Validate(\"email\", \"\")\n\t\texpect_true(err != nil)\n\t\texpect_eq(err.Error(), \"email: required\")" },
+    { name: "Validate with a value returns nil", code: "\t\texpect_true(Validate(\"email\", \"a@b.com\") == nil)" },
+    { name: "Lookup finds a present key", code: "\t\tv, err := Lookup(map[string]string{\"a\": \"1\"}, \"a\")\n\t\texpect_eq(v, \"1\")\n\t\texpect_true(err == nil)" },
+    { name: "Lookup wraps ErrNotFound for a missing key", code: "\t\t_, err := Lookup(map[string]string{}, \"z\")\n\t\texpect_true(err != nil)\n\t\texpect_true(errors.Is(err, ErrNotFound))" },
+    { name: "Lookup error message includes the key", code: "\t\t_, err := Lookup(map[string]string{}, \"z\")\n\t\texpect_eq(err.Error(), \"lookup \\\"z\\\": not found\")" },
+    { name: "IsMissing is true for a wrapped ErrNotFound", code: "\t\t_, err := Lookup(map[string]string{}, \"z\")\n\t\texpect_true(IsMissing(err))" },
+    { name: "IsMissing is false for other errors and nil", code: "\t\texpect_true(!IsMissing(errors.New(\"boom\")))\n\t\texpect_true(!IsMissing(nil))" },
+    { name: "FieldOf pulls Field out of a ValidationError", code: "\t\texpect_eq(FieldOf(Validate(\"age\", \"\")), \"age\")" },
+    { name: "FieldOf unwraps through fmt.Errorf(%w)", code: "\t\twerr := fmt.Errorf(\"saving: %w\", Validate(\"age\", \"\"))\n\t\texpect_eq(FieldOf(werr), \"age\")" },
+    { name: "FieldOf returns \"\" for a non-validation error", code: "\t\texpect_eq(FieldOf(errors.New(\"boom\")), \"\")" },
+  ],
+
+  solution: `var ErrNotFound = errors.New("not found")
+
+type ValidationError struct {
+	Field string
+	Msg   string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Field, e.Msg)
+}
+
+func Validate(field, value string) error {
+	if value == "" {
+		return &ValidationError{Field: field, Msg: "required"}
+	}
+	return nil
+}
+
+func Lookup(db map[string]string, key string) (string, error) {
+	v, ok := db[key]
+	if !ok {
+		return "", fmt.Errorf("lookup %q: %w", key, ErrNotFound)
+	}
+	return v, nil
+}
+
+func IsMissing(err error) bool {
+	return errors.Is(err, ErrNotFound)
+}
+
+func FieldOf(err error) string {
+	var ve *ValidationError
+	if errors.As(err, &ve) {
+		return ve.Field
+	}
+	return ""
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Go</th></tr>
+  <tr><td>Custom error</td><td><code>class E extends Error</code></td><td><code>type E struct{}</code> + <code>Error() string</code></td></tr>
+  <tr><td>Sentinel value</td><td><code>const ErrX = new Error(...)</code></td><td><code>var ErrX = errors.New(...)</code></td></tr>
+  <tr><td>Wrap a cause</td><td><code>new Error(m, { cause })</code></td><td><code>fmt.Errorf("m: %w", cause)</code></td></tr>
+  <tr><td>Match a value</td><td><code>err === ErrX</code></td><td><code>errors.Is(err, ErrX)</code></td></tr>
+  <tr><td>Match a type</td><td><code>e instanceof E</code></td><td><code>errors.As(err, &amp;e)</code></td></tr>
+</table>
+<p>Why not just <code>err == ErrNotFound</code>? Because once you wrap, the value you
+hold is the <em>outer</em> error, not the sentinel — a plain <code>==</code> would
+miss it. <code>errors.Is</code> and <code>errors.As</code> walk the whole
+<code>%w</code> chain for you, so callers can wrap freely to add context without
+breaking anyone matching underneath.</p>
+<p>Two Go details to remember. Use <code>%w</code> (not <code>%v</code>) exactly when
+you want the wrapped error to stay <em>matchable</em>; <code>%v</code> just stringifies
+it and drops the link. And <code>errors.As</code> takes a pointer to the target
+variable — here <code>&amp;ve</code> where <code>ve</code> is already a
+<code>*ValidationError</code>, so you pass a <code>**ValidationError</code>. Point the
+<code>Error()</code> method at a pointer receiver (as we did) and construct with
+<code>&amp;ValidationError{...}</code> so the types line up.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

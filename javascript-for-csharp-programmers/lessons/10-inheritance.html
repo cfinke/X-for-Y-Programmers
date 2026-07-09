@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance",
+
+  intro: `
+<p>The <code>class</code>/<code>: BaseClass</code>/<code>base</code> pattern
+you know from C# has a real counterpart in JavaScript — <code>extends</code>,
+<code>super</code>, method overriding, and <code>instanceof</code> all exist at
+runtime much as C#'s equivalents do. What disappears is everything <em>around</em>
+the runtime machinery: access modifiers (<code>public</code>/<code>private</code>/<code>protected</code>),
+<code>abstract</code> classes and methods, the <code>virtual</code>/<code>override</code>
+keywords the compiler checks, and the guarantee that some base constructor ran
+before your derived constructor body starts.</p>
+<table>
+  <tr><th>C#</th><th>JavaScript</th></tr>
+  <tr><td><code>class Dog : Animal { }</code></td><td><code>class Dog extends Animal {}</code> (same idea)</td></tr>
+  <tr><td><code>public Dog(string breed) : base(name)</code></td><td>you call <code>super(name)</code> yourself, then assign <code>this.breed</code></td></tr>
+  <tr><td><code>protected string name;</code></td><td>just a normal public property</td></tr>
+  <tr><td><code>abstract class</code> / <code>abstract Method()</code></td><td>no such thing — plain class</td></tr>
+  <tr><td>compiler inserts/enforces a base constructor call</td><td>runtime throws if you touch <code>this</code> before calling <code>super()</code></td></tr>
+</table>
+<p>Two runtime rules matter. First, in a subclass constructor you must call
+<code>super(...)</code> before you read or write <code>this</code> — unlike C#,
+where the compiler silently inserts a call to the base's parameterless
+constructor if you omit <code>: base(...)</code>, JavaScript engines throw a
+<code>ReferenceError</code> the moment you touch <code>this</code> first, with
+no fallback. Second, <code>instanceof</code> walks the prototype chain the same
+way C#'s <code>is</code> operator walks the CLR's runtime type hierarchy, so a
+<code>Dog</code> is genuinely an <code>Animal</code> at run time in both
+languages.</p>`,
+
+  csharp: `class Animal {
+    public string Name;
+    public Animal(string name) {
+        Name = name;
+    }
+    public virtual string Speak() {
+        return $"{Name} makes a sound";
+    }
+    public virtual string Describe() {
+        return $"{Name} is an animal";
+    }
+}
+
+class Dog : Animal {
+    public string Breed;
+    public Dog(string name, string breed) : base(name) {
+        Breed = breed;
+    }
+    public override string Speak() {
+        return $"{Name} barks";
+    }
+    public override string Describe() {
+        return $"{base.Describe()}, specifically a {Breed}";
+    }
+}`,
+
+  task: `
+<p>Build the same class hierarchy in plain JavaScript — the same shape you'd
+write in C#, but with everything the compiler handles for you there written by
+hand here: no access modifiers, no <code>virtual</code>/<code>override</code>
+keywords, no <code>abstract</code>:</p>
+<ol>
+  <li>A base class <code>Animal</code> whose constructor takes <code>name</code>
+      and stores it on <code>this.name</code>. Give it <code>speak()</code>
+      returning <code>"&lt;name&gt; makes a sound"</code> and
+      <code>describe()</code> returning <code>"&lt;name&gt; is an animal"</code>.</li>
+  <li>A subclass <code>Dog</code> that <code>extends Animal</code>. Its
+      constructor takes <code>name</code> and <code>breed</code>, calls
+      <code>super(name)</code>, then stores <code>this.breed</code>. Override
+      <code>speak()</code> to return <code>"&lt;name&gt; barks"</code>, and
+      override <code>describe()</code> to call <code>super.describe()</code> and
+      append <code>", specifically a &lt;breed&gt;"</code>.</li>
+  <li>A function <code>identify(x)</code> that returns <code>"dog"</code> if
+      <code>x</code> is a <code>Dog</code>, <code>"animal"</code> if it is any
+      other <code>Animal</code>, and <code>"unknown"</code> otherwise — using
+      <code>instanceof</code>.</li>
+</ol>`,
+
+  starter: `// 1. Base class
+class Animal {
+  constructor(name) {
+    // TODO: store name
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO
+    return "";
+  }
+}
+
+// 2. Subclass that overrides and calls super
+class Dog extends Animal {
+  constructor(name, breed) {
+    // TODO: call super, then store breed
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO: reuse super.describe()
+    return "";
+  }
+}
+
+// 3. identify(x) using instanceof
+function identify(x) {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["Animal", "Dog", "identify"],
+
+  requirements: [
+    { pattern: /class\s+Dog\s+extends\s+Animal/, message: "Dog must extend Animal" },
+    { pattern: /super\s*\(/, message: "Call super(...) in the Dog constructor" },
+    { pattern: /super\.describe\s*\(/, message: "Dog.describe() must call super.describe()" },
+    { pattern: /instanceof/, message: "Use instanceof inside identify" },
+  ],
+
+  tests: [
+    { name: 'Animal.speak() uses the base behavior', run: (x) => expectEqual(new x.Animal("Rex").speak(), "Rex makes a sound") },
+    { name: 'Dog overrides speak()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").speak(), "Rex barks") },
+    { name: 'super(name) sets the inherited field', run: (x) => expectEqual(new x.Dog("Rex", "Lab").name, "Rex") },
+    { name: 'Dog.describe() calls super.describe()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").describe(), "Rex is an animal, specifically a Lab") },
+    { name: 'a Dog is an Animal (prototype chain)', run: (x) => expectTruthy(new x.Dog("Rex", "Lab") instanceof x.Animal) },
+    { name: 'identify distinguishes Dog, Animal, and other', run: (x) => {
+        expectEqual(x.identify(new x.Dog("Rex", "Lab")), "dog");
+        expectEqual(x.identify(new x.Animal("Generic")), "animal");
+        expectEqual(x.identify(42), "unknown");
+    } },
+  ],
+
+  solution: `class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return \`\${this.name} makes a sound\`;
+  }
+  describe() {
+    return \`\${this.name} is an animal\`;
+  }
+}
+
+class Dog extends Animal {
+  constructor(name, breed) {
+    super(name);
+    this.breed = breed;
+  }
+  speak() {
+    return \`\${this.name} barks\`;
+  }
+  describe() {
+    return \`\${super.describe()}, specifically a \${this.breed}\`;
+  }
+}
+
+function identify(x) {
+  if (x instanceof Dog) return "dog";
+  if (x instanceof Animal) return "animal";
+  return "unknown";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>JavaScript</th></tr>
+  <tr><td>Subclass</td><td><code>class Dog : Animal</code></td><td><code>class Dog extends Animal</code></td></tr>
+  <tr><td>Base constructor</td><td><code>: base(name)</code> in the constructor signature</td><td><code>super(name)</code> as the first line in the constructor body — required before <code>this</code></td></tr>
+  <tr><td>Field from a param</td><td><code>Breed = breed;</code> in the constructor body</td><td><code>this.breed = breed;</code> (same idea)</td></tr>
+  <tr><td>Call base method</td><td><code>base.Describe()</code></td><td><code>super.describe()</code> (same idea)</td></tr>
+  <tr><td>Runtime type test</td><td><code>x is Animal</code></td><td><code>x instanceof Animal</code></td></tr>
+</table>
+<p>Order matters in <code>identify</code>: check <code>instanceof Dog</code> before
+<code>instanceof Animal</code>, because a <code>Dog</code> passes both — that is
+what inheritance means at runtime, in JavaScript just as in C#.
+<code>instanceof</code> is checking whether <code>Animal.prototype</code>
+appears anywhere on <code>x</code>'s prototype chain, playing the same role
+C#'s <code>is</code> operator plays against the CLR's runtime type hierarchy.</p>
+<p>One gotcha C# doesn't have: forget <code>super(name)</code> and the program
+does not get the safety net C# gives you, where the compiler either inserts a
+call to the base's parameterless constructor for you or refuses to compile if
+there isn't one — the JavaScript engine throws
+<code>ReferenceError: must call super constructor</code> the moment you touch
+<code>this</code>. And because there are no <code>private</code>/<code>protected</code>
+keywords at runtime, every field you set is publicly reachable, unlike C#'s
+compiler-enforced access modifiers; naming conventions or <code>#private</code>
+fields are your only real fences.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

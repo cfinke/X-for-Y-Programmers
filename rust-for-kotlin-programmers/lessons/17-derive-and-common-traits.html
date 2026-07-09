@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits &amp; Derive</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>Every Kotlin developer knows the shortcut: mark a class <code>data class</code>
+and the compiler generates <code>equals</code>, <code>hashCode</code>,
+<code>toString</code>, and <code>copy</code> for you, field by field. Rust bakes
+the same idea into the language, just spelled differently: put
+<code>#[derive(...)]</code> above a struct and the compiler writes those
+implementations for you, correctly, field by field — you pick exactly which
+ones you want.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>generated <code>toString()</code> on a <code>data class</code></td><td><code>#[derive(Debug)]</code> → print with <code>{:?}</code></td></tr>
+  <tr><td>generated <code>equals()</code> / <code>hashCode()</code></td><td><code>#[derive(PartialEq)]</code> (and <code>Eq</code>, <code>Hash</code>)</td></tr>
+  <tr><td>generated <code>copy()</code></td><td><code>#[derive(Clone)]</code> → <code>.clone()</code></td></tr>
+  <tr><td>constructor with default parameter values</td><td><code>#[derive(Default)]</code> → <code>Point::default()</code></td></tr>
+  <tr><td><code>data class Point(val x: Int, val y: Int)</code></td><td><code>#[derive(Debug, PartialEq, Clone)] struct Point { ... }</code></td></tr>
+</table>
+<p>One habit to adjust: in Kotlin you already reach for <code>==</code> to
+compare <em>values</em> (it calls <code>equals</code>) and <code>===</code> for
+referential identity. Rust keeps only the value comparison: <code>==</code>
+simply calls the <code>PartialEq</code> implementation — so once you derive it,
+<code>==</code> is the field-by-field comparison you expect. The difference from
+Kotlin is that nothing is generated unless you ask: a struct with no derives
+can't be compared, printed, or cloned at all. You opt in to each capability, and
+the compiler tells you the moment you forgot one.</p>`,
+
+  kotlin: `data class Point(val x: Int, val y: Int)
+
+// The data class gives you, for free:
+//   equals / hashCode  ->  a == b
+//   toString           ->  "Point(x=3, y=4)"
+//   copy               ->  p.copy()
+val a = Point(1, 2)
+val b = Point(1, 2)
+println(a == b)          // true (value equality)
+println(a)               // Point(x=1, y=2)
+val c = a.copy()         // independent copy
+
+// Writing it all by hand (a plain class) would mean:
+class ManualPoint(val x: Int, val y: Int) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ManualPoint) return false
+        return x == other.x && y == other.y
+    }
+    override fun hashCode(): Int = 31 * x + y
+    override fun toString(): String = "ManualPoint(x=\$x, y=\$y)"
+}`,
+
+  task: `
+<p>The starter defines <code>struct Point</code> with <em>no</em> derives.
+Give it capabilities, then use them:</p>
+<ol>
+  <li>Add a derive attribute to <code>Point</code> that includes at least
+      <code>Debug</code>, <code>PartialEq</code>, and <code>Clone</code>.</li>
+  <li>Implement <code>points_equal(a: &amp;Point, b: &amp;Point) -&gt; bool</code>
+      using <code>==</code> — it works once <code>PartialEq</code> is derived
+      (compare <code>a</code> and <code>b</code> as values: <code>a == b</code>).</li>
+  <li>Implement <code>debug_string(p: &amp;Point) -&gt; String</code> with
+      <code>format!("{:?}", p)</code> — that's what <code>Debug</code>
+      unlocks. For <code>Point { x: 3, y: 4 }</code> it produces exactly
+      <code>"Point { x: 3, y: 4 }"</code>.</li>
+  <li>Implement <code>duplicate(p: &amp;Point) -&gt; Point</code> using
+      <code>.clone()</code> — an independent copy, courtesy of
+      <code>Clone</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// TODO: add the derive attribute this lesson is about, right here,
+// on the line above the struct. Without it, Points can't be compared,
+// printed, or cloned — try running the tests and read the errors.
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// 1. Are the two points equal by value? (Java: a.equals(b) — Rust: ==)
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// 2. The toString() equivalent: format! with the {:?} placeholder.
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// 3. An independent copy of the point.
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Add a #[derive(...)] attribute to Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == works on Points" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} works on Points" },
+    { pattern: /Clone/, message: "Derive Clone so .clone() works on Points" },
+  ],
+
+  tests: [
+    { name: "points_equal: equal values compare equal",
+      code: `let a = Point { x: 1, y: 2 };
+let b = Point { x: 1, y: 2 };
+assert!(points_equal(&a, &b));` },
+    { name: "points_equal: different values compare unequal",
+      code: `let a = Point { x: 1, y: 2 };
+let b = Point { x: 1, y: 3 };
+assert!(!points_equal(&a, &b));` },
+    { name: 'debug_string(Point { x: 3, y: 4 }) returns "Point { x: 3, y: 4 }"',
+      code: `let p = Point { x: 3, y: 4 };
+assert_eq!(debug_string(&p), "Point { x: 3, y: 4 }");` },
+    { name: "duplicate returns a copy with the same fields",
+      code: `let p = Point { x: -7, y: 9 };
+let copy = duplicate(&p);
+assert_eq!(copy.x, -7);
+assert_eq!(copy.y, 9);` },
+    { name: "duplicate leaves the original usable (a real copy, not a move)",
+      code: `let p = Point { x: 5, y: 6 };
+let copy = duplicate(&p);
+assert_eq!(p.x + copy.x, 10);` },
+  ],
+
+  solution: `#[derive(Debug, PartialEq, Clone)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Capability</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Readable printout</td><td>generated <code>toString()</code></td><td><code>#[derive(Debug)]</code> + <code>{:?}</code></td></tr>
+  <tr><td>Value equality</td><td><code>==</code> (calls <code>equals</code>)</td><td><code>#[derive(PartialEq)]</code> + <code>==</code></td></tr>
+  <tr><td>Hashing</td><td>generated <code>hashCode()</code></td><td><code>#[derive(Hash)]</code> (with <code>Eq</code>)</td></tr>
+  <tr><td>Copying</td><td><code>copy()</code></td><td><code>#[derive(Clone)]</code> + <code>.clone()</code></td></tr>
+  <tr><td>"Empty" instance</td><td>default parameter values</td><td><code>#[derive(Default)]</code> + <code>Point::default()</code></td></tr>
+  <tr><td>Generate it all</td><td><code>data class</code></td><td><code>#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]</code></td></tr>
+</table>
+<p>The deepest difference is the default. A Kotlin <code>data class</code> hands
+you value equality, hashing, and a readable <code>toString</code> the moment you
+add the <code>data</code> keyword — and a plain <code>class</code> silently falls
+back to identity-based <code>equals</code>/<code>hashCode</code> inherited from
+<code>Any</code>, which works just well enough to hide bugs. A Rust struct starts
+with <em>none</em> of these; forget a derive and you get a compile error at the
+call site, not a HashMap that quietly misplaces your keys.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

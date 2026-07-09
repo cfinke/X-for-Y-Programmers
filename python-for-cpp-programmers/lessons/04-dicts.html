@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Dictionaries</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Dictionaries",
+
+  intro: `
+<p>Python's <code>dict</code> is the everyday key/value map — the same role
+<code>std::unordered_map</code> (or <code>std::map</code>, if you want the
+keys sorted) plays in C++, but it is a single builtin type: no template
+parameters to fill in, no choice between ordered and unordered, and no
+allocator to think about. Keys can be any hashable value (strings, numbers,
+tuples), and since Python 3.7 a dict preserves insertion order — a guarantee
+<code>unordered_map</code> never makes, and one <code>map</code> only gives
+you by sorting the keys, not by remembering when you inserted them.</p>
+<table>
+  <tr><th>C++</th><th>Python</th></tr>
+  <tr><td><code>std::unordered_map&lt;std::string, int&gt; m = {{"a", 1}, {"b", 2}};</code></td><td><code>m = {"a": 1, "b": 2}</code></td></tr>
+  <tr><td><code>m.at("a")</code></td><td><code>m["a"]</code></td></tr>
+  <tr><td><code>m.count("x") ? m.at("x") : 0</code></td><td><code>m.get("x", 0)</code></td></tr>
+  <tr><td><code>m.count("a")</code> / <code>m.contains("a")</code></td><td><code>"a" in m</code></td></tr>
+  <tr><td>collect keys by hand</td><td><code>m.keys()</code></td></tr>
+  <tr><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>m.items()</code></td></tr>
+  <tr><td><code>m.insert(n.begin(), n.end());</code></td><td><code>{**m, **n}</code> or <code>m.update(n)</code></td></tr>
+</table>
+<p>Two things trip up C++ programmers. First, <code>m["x"]</code> on a
+missing key <em>raises</em> <code>KeyError</code> — it does not silently
+default-construct and insert a zero the way <code>operator[]</code> does on a
+non-const <code>unordered_map</code>. Reach for <code>m.get("x", default)</code>
+when a key may be absent; it collapses the <code>.count()</code>-then-<code>.at()</code>
+dance into one call. Second, iterating a dict yields its <em>keys</em>, so to
+walk pairs — what a structured-binding range-for gives you for free on a map —
+you iterate <code>m.items()</code> and unpack each pair:
+<code>for k, v in m.items():</code>.</p>`,
+
+  cpp: `#include <string>
+#include <unordered_map>
+
+std::unordered_map<std::string, int> scores = {{"ada", 90}, {"rob", 72}};
+
+int ada = scores.at("ada");                              // 90
+int cid = scores.count("cid") ? scores.at("cid") : 0;     // 0 (missing)
+bool hasRob = scores.count("rob") > 0;                    // true
+
+int total = 0;
+for (const auto& [name, score] : scores) {
+    total += score;
+}`,
+
+  task: `
+<p>Write the Python versions:</p>
+<ol>
+  <li><code>build_scores()</code> returns the dict
+      <code>{"ada": 90, "rob": 72}</code> as a literal.</li>
+  <li><code>score_for(scores, name)</code> returns the score for
+      <code>name</code>, or <code>0</code> if the name is not present — use
+      <code>.get()</code> with a default.</li>
+  <li><code>total(scores)</code> sums every value by iterating
+      <code>.items()</code> with tuple unpacking.</li>
+  <li><code>with_bonus(scores, points)</code> returns a <em>new</em> dict built
+      with a dict comprehension, adding <code>points</code> to each score (leave
+      the original untouched).</li>
+</ol>`,
+
+  starter: `# 1. build_scores() -> {"ada": 90, "rob": 72}
+def build_scores():
+    return None  # TODO
+
+
+# 2. score_for(scores, name) -> score, or 0 if missing
+def score_for(scores, name):
+    return None  # TODO
+
+
+# 3. total(scores) -> sum of all values
+def total(scores):
+    return None  # TODO
+
+
+# 4. with_bonus(scores, points) -> new dict with points added to each value
+def with_bonus(scores, points):
+    return None  # TODO
+`,
+
+  requirements: [
+    { pattern: /\.get\s*\(/, message: "Use .get() with a default in score_for" },
+    { pattern: /\.items\s*\(\)/, message: "Iterate .items() in total" },
+    { pattern: /for\s+\w+\s*,\s*\w+\s+in/, message: "Unpack each pair with `for k, v in ...`" },
+    { pattern: /\{[^}]*for[^}]*\}/, message: "Build with_bonus using a dict comprehension" },
+  ],
+
+  tests: [
+    { name: "build_scores() returns the literal", code: "    expect_eq(build_scores(), {\"ada\": 90, \"rob\": 72})" },
+    { name: "score_for finds a present key", code: "    expect_eq(score_for({\"ada\": 90}, \"ada\"), 90)" },
+    { name: "score_for defaults to 0 when missing", code: "    expect_eq(score_for({\"ada\": 90}, \"cid\"), 0)" },
+    { name: "total sums the values", code: "    expect_eq(total({\"ada\": 90, \"rob\": 72}), 162)" },
+    { name: "total of empty dict is 0", code: "    expect_eq(total({}), 0)" },
+    { name: "with_bonus adds points to each value", code: "    expect_eq(with_bonus({\"ada\": 90, \"rob\": 72}, 5), {\"ada\": 95, \"rob\": 77})" },
+    { name: "with_bonus leaves the original dict unchanged", code: "    original = {\"ada\": 90}\n    with_bonus(original, 5)\n    expect_eq(original, {\"ada\": 90})" },
+  ],
+
+  solution: `def build_scores():
+    return {"ada": 90, "rob": 72}
+
+
+def score_for(scores, name):
+    return scores.get(name, 0)
+
+
+def total(scores):
+    running = 0
+    for name, score in scores.items():
+        running += score
+    return running
+
+
+def with_bonus(scores, points):
+    return {name: score + points for name, score in scores.items()}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+  <tr><td>Read (may be missing)</td><td><code>m.count("x") ? m.at("x") : d</code></td><td><code>m.get("x", d)</code></td></tr>
+  <tr><td>Read (must exist)</td><td><code>m.at("x")</code> → throws <code>std::out_of_range</code></td><td><code>m["x"]</code> → <code>KeyError</code></td></tr>
+  <tr><td>Membership</td><td><code>m.count("x")</code> / <code>m.contains("x")</code></td><td><code>"x" in m</code></td></tr>
+  <tr><td>Keys / values / pairs</td><td>manual loop over <code>m</code>; pairs via structured bindings</td><td><code>m.keys()</code> / <code>m.values()</code> / <code>m.items()</code></td></tr>
+  <tr><td>Merge</td><td><code>m.insert(n.begin(), n.end());</code></td><td><code>{**m, **n}</code></td></tr>
+  <tr><td>Comprehension</td><td>build a new map with a loop</td><td><code>{k: v for k, v in ...}</code></td></tr>
+</table>
+<p>Because plain <code>m["x"]</code> raises on a missing key, <code>.get()</code>
+is the Python habit whenever absence is possible — and <code>m.get("x")</code>
+with no default returns <code>None</code> rather than raising. When you actually
+want a running default (say, counting), reach for
+<code>collections.defaultdict</code> or <code>dict.setdefault</code>. Note that
+<code>in</code> tests <em>keys</em>, never values: <code>"ada" in scores</code>
+asks whether that key exists, mirroring how <code>count()</code>/<code>contains()</code>
+only ever tests keys on a C++ map, never values.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

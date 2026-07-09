@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>Java's <code>String</code> will feel familiar — it is immutable, just like a
+Rust <code>&str</code> or <code>String</code> — but there is one big difference:
+Java has a single <code>String</code> type instead of the owned/borrowed split, and
+no ownership or lifetimes to track. There is also no template-literal or
+<code>format!</code> macro syntax at the language level. You either concatenate
+with <code>+</code> or reach for <code>String.format</code> (Java's
+<code>printf</code>-style formatter, the closest thing to <code>format!</code>).
+And when you build a string in a loop, <code>+=</code> allocates a fresh object
+every time, so Java gives you <code>StringBuilder</code> the way Rust gives you
+<code>push_str</code> on a <code>String</code>.</p>
+<table>
+  <tr><th>Rust</th><th>Java</th></tr>
+  <tr><td><code>s.to_uppercase()</code></td><td><code>s.toUpperCase()</code></td></tr>
+  <tr><td><code>s.contains("x")</code></td><td><code>s.contains("x")</code></td></tr>
+  <tr><td><code>&s[1..4]</code></td><td><code>s.substring(1, 4)</code></td></tr>
+  <tr><td><code>s.trim()</code></td><td><code>s.strip()</code> (Unicode-aware)</td></tr>
+  <tr><td><code>"ab".repeat(3)</code></td><td><code>"ab".repeat(3)</code></td></tr>
+  <tr><td><code>format!("{a} and {b}")</code></td><td><code>String.format("%s and %s", a, b)</code></td></tr>
+</table>
+<p>Two things to keep in mind. First, <code>substring</code> takes a start and an
+<em>end</em> index (like Rust's <code>&s[start..end]</code> range), not a start and
+a length. Second, because <code>String</code> is immutable, every method that
+"changes" a string actually returns a new one — <code>s.replace(...)</code> does
+nothing unless you capture the result, unlike a Rust <code>String</code> you can
+mutate in place.</p>`,
+
+  rust: `let s = "  Hello, World  ";
+
+fn shout(s: &str) -> String {
+    s.trim().to_uppercase()
+}
+
+fn greeting(name: &str, count: i32) -> String {
+    format!("{name} x{count}")
+}
+
+fn join_words(words: &[&str]) -> String {
+    let mut out = String::new();
+    for w in words {
+        out.push_str(w);
+        out.push('-');
+    }
+    out
+}`,
+
+  task: `
+<p>Java has no free functions, so gather these <code>static</code> methods in a
+class named <code>Strings</code>:</p>
+<ol>
+  <li><code>shout(String s)</code> — strip surrounding whitespace and upper-case
+      it, so <code>"  hi  "</code> becomes <code>"HI"</code>. Chain
+      <code>strip()</code> and <code>toUpperCase()</code>.</li>
+  <li><code>greeting(String name, int count)</code> — use
+      <code>String.format</code> to produce <code>"Ada x3"</code> (the format
+      string <code>"%s x%d"</code>).</li>
+  <li><code>initials(String full)</code> — <code>split</code> on a space and
+      return the first letter of each word joined, so <code>"Ada Lovelace"</code>
+      becomes <code>"AL"</code>. Use <code>substring(0, 1)</code> and a
+      <code>StringBuilder</code>.</li>
+  <li><code>censor(String s, String word)</code> — return <code>s</code> with
+      every occurrence of <code>word</code> replaced by <code>"***"</code> via
+      <code>replace</code>.</li>
+</ol>`,
+
+  starter: `class Strings {
+  static String shout(String s) {
+    return ""; // TODO: strip() then toUpperCase()
+  }
+
+  static String greeting(String name, int count) {
+    return ""; // TODO: String.format("%s x%d", ...)
+  }
+
+  static String initials(String full) {
+    return ""; // TODO: split(" "), StringBuilder, substring(0, 1)
+  }
+
+  static String censor(String s, String word) {
+    return ""; // TODO: replace(word, "***")
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Strings/, message: "Declare a class named Strings" },
+    { pattern: /String\.format/, message: "Use String.format for greeting" },
+    { pattern: /new\s+StringBuilder/, message: "Build initials with a StringBuilder" },
+    { pattern: /\.strip\s*\(/, message: "Use strip() to trim whitespace in shout" },
+  ],
+
+  tests: [
+    { name: 'shout("  hi  ") is "HI"', code: "      expect_eq(Strings.shout(\"  hi  \"), \"HI\");" },
+    { name: 'shout("Hello") is "HELLO"', code: "      expect_eq(Strings.shout(\"Hello\"), \"HELLO\");" },
+    { name: 'greeting("Ada", 3) is "Ada x3"', code: "      expect_eq(Strings.greeting(\"Ada\", 3), \"Ada x3\");" },
+    { name: 'initials("Ada Lovelace") is "AL"', code: "      expect_eq(Strings.initials(\"Ada Lovelace\"), \"AL\");" },
+    { name: 'initials("Grace Brewster Hopper") is "GBH"', code: "      expect_eq(Strings.initials(\"Grace Brewster Hopper\"), \"GBH\");" },
+    { name: 'censor("no cats here, cats!", "cats") replaces both', code: "      expect_eq(Strings.censor(\"no cats here, cats!\", \"cats\"), \"no *** here, ***!\");" },
+  ],
+
+  solution: `class Strings {
+  static String shout(String s) {
+    return s.strip().toUpperCase();
+  }
+
+  static String greeting(String name, int count) {
+    return String.format("%s x%d", name, count);
+  }
+
+  static String initials(String full) {
+    StringBuilder sb = new StringBuilder();
+    for (String word : full.split(" ")) {
+      if (!word.isBlank()) {
+        sb.append(word.substring(0, 1).toUpperCase());
+      }
+    }
+    return sb.toString();
+  }
+
+  static String censor(String s, String word) {
+    return s.replace(word, "***");
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Java</th></tr>
+  <tr><td>Substring</td><td><code>&s[1..4]</code></td><td><code>s.substring(1, 4)</code></td></tr>
+  <tr><td>Contains</td><td><code>s.contains("x")</code></td><td><code>s.contains("x")</code></td></tr>
+  <tr><td>Index of</td><td><code>s.find("x")</code></td><td><code>s.indexOf("x")</code></td></tr>
+  <tr><td>Split</td><td><code>s.split(",")</code></td><td><code>s.split(",")</code> (regex!)</td></tr>
+  <tr><td>Trim</td><td><code>s.trim()</code></td><td><code>s.strip()</code></td></tr>
+  <tr><td>Blank check</td><td><code>s.trim().is_empty()</code></td><td><code>s.isBlank()</code></td></tr>
+  <tr><td>Interpolate</td><td><code>format!("{a}")</code></td><td><code>String.format("%s", a)</code></td></tr>
+  <tr><td>Build in loop</td><td><code>out.push_str(x)</code></td><td><code>StringBuilder.append</code></td></tr>
+</table>
+<p>Watch out: Java's <code>String.split</code> takes a <em>regular expression</em>,
+not a literal string like Rust's <code>str::split</code>, so <code>split(".")</code>
+splits on every character. Escape it (<code>split("\\\\.")</code>) or use
+<code>Pattern.quote</code> when you mean a literal dot. Also note
+<code>strip()</code> (Java 11+) is the Unicode-aware replacement for the older
+<code>trim()</code>, which only removes ASCII control characters — Rust's
+<code>trim()</code> is already Unicode-aware. And since Java strings are always
+immutable, <code>StringBuilder</code> is not an optimization detail but the
+idiomatic way to assemble text piece by piece, much like building up a Rust
+<code>String</code> — call <code>toString()</code> when you are done.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

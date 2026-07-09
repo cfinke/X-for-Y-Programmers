@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>A <code>std::string</code> is much closer to a Go
+<code>[]byte</code> than to a Go <code>string</code>. It is a
+mutable, owning container of bytes: you can append to it, index into it, and it
+frees its own memory. Most operations you reach for in Go exist, but
+they are member functions with C++ names — <code>.size()</code> not
+<code>len(s)</code>, <code>.substr()</code> not slicing with <code>s[1:4]</code>, and
+<code>.find()</code> returns a numeric index (or a sentinel) rather than
+<code>-1</code> the way <code>strings.Index</code> does.</p>
+<table>
+  <tr><th>Go</th><th>C++</th></tr>
+  <tr><td><code>len(s)</code></td><td><code>s.size()</code></td></tr>
+  <tr><td><code>s[1:4]</code></td><td><code>s.substr(1, 3)</code> (start, <em>count</em>)</td></tr>
+  <tr><td><code>strings.Index(s, "x")</code></td><td><code>s.find("x")</code> (returns <code>npos</code> if absent)</td></tr>
+  <tr><td><code>a + b</code></td><td><code>a + b</code> or <code>a.append(b)</code></td></tr>
+  <tr><td><code>strconv.Itoa(n)</code></td><td><code>std::to_string(n)</code></td></tr>
+  <tr><td><code>strconv.Atoi(s)</code></td><td><code>std::stoi(s)</code></td></tr>
+</table>
+<p>Two gotchas. First, <code>substr</code> takes a <em>start</em> and a
+<em>length</em>, not a start and an end. Second, <code>find</code> returns
+<code>std::string::npos</code> (a huge unsigned value) when there is no match,
+so you compare against that instead of <code>-1</code>. Indexing with
+<code>s[i]</code> yields a <code>char</code>, an 8-bit integer — similar to
+indexing a Go string yielding a <code>byte</code> — which is why
+<code>&lt;cctype&gt;</code> functions like <code>std::toupper</code> take and
+return <code>int</code>.</p>`,
+
+  go: `func shout(s string) string {
+	return strings.ToUpper(s) + "!"
+}
+
+func label(name string, count int) string {
+	return name + " x" + strconv.Itoa(count)
+}`,
+
+  task: `
+<p>Write these free functions (no class needed):</p>
+<ol>
+  <li><code>shout(const std::string&amp; s)</code> returns an upper-cased copy
+      with a <code>"!"</code> appended. Loop over each character and use
+      <code>std::toupper</code>, remembering to cast back to
+      <code>char</code>.</li>
+  <li><code>label(const std::string&amp; name, int count)</code> returns
+      <code>name + " x" + std::to_string(count)</code>, e.g.
+      <code>label("apple", 3)</code> is <code>"apple x3"</code>.</li>
+  <li><code>replaceFirst(std::string text, const std::string&amp; from,
+      const std::string&amp; to)</code> replaces the first occurrence of
+      <code>from</code> with <code>to</code> and returns the result. Use
+      <code>text.find(from)</code>; if it is <code>std::string::npos</code>,
+      return <code>text</code> unchanged, otherwise call
+      <code>text.replace(pos, from.size(), to)</code>.</li>
+  <li><code>parseSum(const std::string&amp; a, const std::string&amp; b)</code>
+      converts both strings to integers with <code>std::stoi</code> and returns
+      the sum.</li>
+</ol>`,
+
+  starter: `std::string shout(const std::string& s) {
+  return ""; // TODO: upper-case every char, then append "!"
+}
+
+std::string label(const std::string& name, int count) {
+  return ""; // TODO: build with + and std::to_string
+}
+
+std::string replaceFirst(std::string text, const std::string& from, const std::string& to) {
+  return text; // TODO: find + replace the first match
+}
+
+int parseSum(const std::string& a, const std::string& b) {
+  return 0; // TODO: std::stoi both, then add
+}
+`,
+
+  requirements: [
+    { pattern: /std::toupper/, message: "Use std::toupper to upper-case each character in shout" },
+    { pattern: /std::to_string/, message: "Use std::to_string to turn the count into text in label" },
+    { pattern: /std::stoi/, message: "Use std::stoi to convert the strings to integers in parseSum" },
+  ],
+
+  tests: [
+    { name: "shout(\"hi\") is \"HI!\"", code: "    expect_eq(shout(\"hi\"), std::string(\"HI!\"));" },
+    { name: "shout(\"C++ rocks\") is \"C++ ROCKS!\"", code: "    expect_eq(shout(\"C++ rocks\"), std::string(\"C++ ROCKS!\"));" },
+    { name: "label(\"apple\", 3) is \"apple x3\"", code: "    expect_eq(label(\"apple\", 3), std::string(\"apple x3\"));" },
+    { name: "replaceFirst replaces the first match", code: "    expect_eq(replaceFirst(\"a-b-c\", \"-\", \"+\"), std::string(\"a+b-c\"));" },
+    { name: "replaceFirst leaves text alone when absent", code: "    expect_eq(replaceFirst(\"abc\", \"z\", \"!\"), std::string(\"abc\"));" },
+    { name: "replaceFirst can grow the string", code: "    expect_eq(replaceFirst(\"hello world\", \"world\", \"there\"), std::string(\"hello there\"));" },
+    { name: "parseSum(\"20\", \"22\") is 42", code: "    expect_eq(parseSum(\"20\", \"22\"), 42);" },
+  ],
+
+  solution: `std::string shout(const std::string& s) {
+  std::string out;
+  for (char c : s) {
+    out += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+  }
+  out += "!";
+  return out;
+}
+
+std::string label(const std::string& name, int count) {
+  return name + " x" + std::to_string(count);
+}
+
+std::string replaceFirst(std::string text, const std::string& from, const std::string& to) {
+  std::string::size_type pos = text.find(from);
+  if (pos == std::string::npos) {
+    return text;
+  }
+  return text.replace(pos, from.size(), to);
+}
+
+int parseSum(const std::string& a, const std::string& b) {
+  return std::stoi(a) + std::stoi(b);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>C++</th></tr>
+  <tr><td>Length</td><td><code>len(s)</code></td><td><code>s.size()</code></td></tr>
+  <tr><td>Substring</td><td><code>s[i:j]</code></td><td><code>s.substr(i, count)</code></td></tr>
+  <tr><td>Find</td><td><code>strings.Index(s, x)</code> → <code>-1</code></td><td><code>s.find(x)</code> → <code>std::string::npos</code></td></tr>
+  <tr><td>Append in place</td><td><code>s += x</code></td><td><code>s += x</code> or <code>s.append(x)</code></td></tr>
+  <tr><td>Number → string</td><td><code>strconv.Itoa(n)</code></td><td><code>std::to_string(n)</code></td></tr>
+  <tr><td>String → number</td><td><code>strconv.Atoi(s)</code></td><td><code>std::stoi(s)</code></td></tr>
+  <tr><td>Build piecewise</td><td><code>strings.Builder</code></td><td><code>std::ostringstream</code></td></tr>
+</table>
+<p>Because there is no string interpolation, longer strings are often built with
+an <code>std::ostringstream</code>: <code>oss &lt;&lt; name &lt;&lt; " x"
+&lt;&lt; count;</code> then <code>oss.str()</code> hands you the finished
+<code>std::string</code> — much like appending to a Go <code>strings.Builder</code>
+and calling <code>.String()</code>. For a couple of pieces, plain <code>+</code>
+reads better, as in <code>label</code>.</p>
+<p>When you upper-case a single <code>char</code>, notice the two casts around
+<code>std::toupper</code>. It comes from C and traffics in <code>int</code>, and
+it has undefined behavior on negative values, so the idiom is to widen through
+<code>unsigned char</code> on the way in and narrow back to <code>char</code> on
+the way out. Also note <code>std::stoi</code> <em>throws</em>
+<code>std::invalid_argument</code> on non-numeric input rather than returning
+an error value the way <code>strconv.Atoi</code> would.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

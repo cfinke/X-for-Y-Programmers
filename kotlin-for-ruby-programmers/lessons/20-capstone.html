@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put it all together. This capstone builds a tiny arithmetic
+<strong>evaluator</strong> — the same shape you would write in Ruby with a
+class hierarchy and a recursive <code>case</code>, but leaning on the
+Kotlin features from the whole course at once:</p>
+<table>
+  <tr><th>Feature (Ruby)</th><th>Feature (Kotlin)</th></tr>
+  <tr><td>class hierarchy of node types</td><td><code>sealed interface Expr</code></td></tr>
+  <tr><td><code>Struct</code>/class per variant</td><td><code>data class Num(...) : Expr</code></td></tr>
+  <tr><td><code>case node when Num then ... end</code></td><td>exhaustive <code>when (node)</code> with smart casts</td></tr>
+  <tr><td><code>Hash</code> lookup, maybe <code>nil</code></td><td><code>Map&lt;String, Double&gt;</code> lookup returning <code>Double?</code></td></tr>
+  <tr><td><code>arr.map { ... }.compact</code></td><td><code>list.mapNotNull { ... }</code></td></tr>
+</table>
+<p>An expression is a tree: a literal number, a variable reference, or a binary
+operation whose operands are themselves expressions. Evaluation is recursive and
+can <em>fail</em> — a variable might be unbound, or you might divide by zero — so
+the result type is a nullable <code>Double?</code>, and <code>null</code> is your
+"could not evaluate" signal. This is the payoff of the course: closed type
+hierarchies, structural data, collection pipelines, and null safety working
+together on one small program.</p>`,
+
+  ruby: `Num = Struct.new(:value)
+Var = Struct.new(:name)
+BinOp = Struct.new(:op, :left, :right)
+
+def evaluate(e, env)
+  case e
+  when Num
+    e.value
+  when Var
+    env[e.name]
+  when BinOp
+    l = evaluate(e.left, env)
+    r = evaluate(e.right, env)
+    return nil if l.nil? || r.nil?
+    case e.op
+    when "+" then l + r
+    when "-" then l - r
+    when "*" then l * r
+    when "/" then r == 0 ? nil : l / r
+    else nil
+    end
+  end
+end`,
+
+  task: `
+<p>The <code>Expr</code> hierarchy is already declared for you: a
+<code>sealed interface</code> with three <code>data class</code> variants. Fill
+in the three functions. Everything is top-level — no class or <code>main</code>
+needed.</p>
+<ol>
+  <li>Complete <code>eval(expr: Expr, env: Map&lt;String, Double&gt;): Double?</code>
+      with an exhaustive <code>when (expr)</code> (no <code>else</code>). A
+      <code>Num</code> returns its value; a <code>Var</code> looks its name up in
+      <code>env</code> (<code>env[expr.name]</code> is already <code>Double?</code>
+      and yields <code>null</code> when missing); a <code>BinOp</code> evaluates
+      both sides, returns <code>null</code> if either is <code>null</code>, and
+      otherwise applies <code>"+"</code>, <code>"-"</code>, <code>"*"</code>, or
+      <code>"/"</code> — with division by <code>0.0</code> returning
+      <code>null</code>.</li>
+  <li>Complete <code>variables(expr: Expr): Set&lt;String&gt;</code>, the set of
+      every variable name that appears anywhere in the tree (union the two sides
+      of a <code>BinOp</code> with <code>+</code>).</li>
+  <li>Complete <code>evalAll(exprs: List&lt;Expr&gt;, env: Map&lt;String, Double&gt;): List&lt;Double&gt;</code>,
+      the results of the expressions that evaluate successfully — use
+      <code>mapNotNull</code> to evaluate each and drop the <code>null</code>s.</li>
+</ol>`,
+
+  starter: `sealed interface Expr
+data class Num(val value: Double) : Expr
+data class Var(val name: String) : Expr
+data class BinOp(val op: String, val left: Expr, val right: Expr) : Expr
+
+// 1. Recursively evaluate; null means "could not evaluate".
+fun eval(expr: Expr, env: Map<String, Double>): Double? {
+    return null // TODO
+}
+
+// 2. Every variable name used anywhere in the tree.
+fun variables(expr: Expr): Set<String> {
+    return emptySet() // TODO
+}
+
+// 3. Results of the expressions that evaluate successfully.
+fun evalAll(exprs: List<Expr>, env: Map<String, Double>): List<Double> {
+    return emptyList() // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /sealed\s+(interface|class)\s+Expr/, message: "Keep the sealed Expr hierarchy" },
+    { pattern: /when\s*\(\s*expr\s*\)/, message: "Evaluate with an exhaustive when (expr)" },
+    { pattern: /mapNotNull/, message: "Use mapNotNull in evalAll to evaluate and drop the nulls" },
+  ],
+
+  tests: [
+    { name: "eval a literal number", code: "        expect_eq(eval(Num(3.0), emptyMap()), 3.0)" },
+    { name: "eval a nested arithmetic tree", code: "        val env = mapOf(\"x\" to 2.0)\n        val tree = BinOp(\"*\", BinOp(\"+\", Var(\"x\"), Num(1.0)), Num(2.0))\n        expect_eq(eval(tree, env), 6.0)" },
+    { name: "unbound variable evaluates to null", code: "        expect_eq(eval(Var(\"z\"), emptyMap()), null)" },
+    { name: "division by zero evaluates to null", code: "        expect_eq(eval(BinOp(\"/\", Num(1.0), Num(0.0)), emptyMap()), null)" },
+    { name: "variables collects every name in the tree", code: "        val tree = BinOp(\"*\", Var(\"a\"), BinOp(\"+\", Var(\"b\"), Num(1.0)))\n        expect_eq(variables(tree), setOf(\"a\", \"b\"))" },
+    { name: "evalAll keeps successes and drops failures", code: "        val exprs = listOf(Num(1.0), Var(\"missing\"), BinOp(\"+\", Num(2.0), Num(3.0)))\n        expect_eq(evalAll(exprs, emptyMap()), listOf(1.0, 5.0))" },
+  ],
+
+  solution: `sealed interface Expr
+data class Num(val value: Double) : Expr
+data class Var(val name: String) : Expr
+data class BinOp(val op: String, val left: Expr, val right: Expr) : Expr
+
+fun eval(expr: Expr, env: Map<String, Double>): Double? = when (expr) {
+    is Num -> expr.value
+    is Var -> env[expr.name]
+    is BinOp -> {
+        val l = eval(expr.left, env)
+        val r = eval(expr.right, env)
+        if (l == null || r == null) null
+        else when (expr.op) {
+            "+" -> l + r
+            "-" -> l - r
+            "*" -> l * r
+            "/" -> if (r == 0.0) null else l / r
+            else -> null
+        }
+    }
+}
+
+fun variables(expr: Expr): Set<String> = when (expr) {
+    is Num -> emptySet()
+    is Var -> setOf(expr.name)
+    is BinOp -> variables(expr.left) + variables(expr.right)
+}
+
+fun evalAll(exprs: List<Expr>, env: Map<String, Double>): List<Double> =
+    exprs.mapNotNull { eval(it, env) }
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Kotlin</th></tr>
+  <tr><td>Node hierarchy</td><td>class hierarchy / <code>Struct</code>s</td><td><code>sealed interface</code> + <code>data class</code></td></tr>
+  <tr><td>Recursive dispatch</td><td><code>case e when Num ... end</code></td><td>exhaustive <code>when (e)</code></td></tr>
+  <tr><td>Narrowing a variant</td><td><code>when</code> clause matches by class</td><td>smart cast after <code>is</code></td></tr>
+  <tr><td>Missing value</td><td><code>nil</code></td><td><code>Double?</code></td></tr>
+  <tr><td>Map/filter out nulls</td><td><code>.map { }.compact</code></td><td><code>.mapNotNull { }</code></td></tr>
+</table>
+<p>Notice how little glue this took: no <code>else</code> branch on the outer
+<code>when</code> (the compiler knows the three variants are exhaustive, and will
+force you to update it if you add a <code>Neg</code> node), no manual equality for
+the <code>data class</code> nodes, and <code>mapNotNull</code> folding the
+map-then-filter into one pass while carrying the nullability through the types.
+From here you could grow this into a real interpreter — add a
+<code>data class Let(val name: String, ...)</code> variant, or return a
+<code>sealed</code> <code>Result</code> instead of <code>null</code> to carry an
+error message — and the compiler will walk you through every <code>when</code>
+that needs the new case.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

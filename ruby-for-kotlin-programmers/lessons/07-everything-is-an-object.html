@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Everything Is an Object</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Everything Is an Object",
+
+  intro: `
+<p>Kotlin already hides the old primitive/boxed split at the source level: you
+write <code>Int</code>, not <code>int</code> versus <code>Integer</code>, and
+the compiler decides when to box. But Kotlin still leans on top-level utility
+functions like <code>kotlin.math.abs</code>, on operators for arithmetic, and on
+<code>Math</code> helpers for the methods a value can't answer itself. Ruby goes
+one step further. <strong>Everything is an object, always</strong> —
+<code>5</code>, <code>3.14</code>, <code>true</code>, even <code>nil</code> — so
+methods live on the values themselves. There is no <code>abs(x)</code>; there is
+<code>x.abs</code>.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>abs(x)</code> / <code>x.absoluteValue</code></td><td><code>x.abs</code></td></tr>
+  <tr><td><code>x % 2 == 0</code></td><td><code>x.even?</code></td></tr>
+  <tr><td><code>for (i in 0 until 5)</code> / <code>repeat(5) { i -> ... }</code></td><td><code>5.times { |i| ... }</code></td></tr>
+  <tr><td><code>(f * 100).roundToInt() / 100.0</code></td><td><code>f.round(2)</code></td></tr>
+  <tr><td><code>s.map { it.toString() }</code> / <code>s.toList()</code> (of <code>Char</code>)</td><td><code>s.chars</code> — an array of one-character strings</td></tr>
+</table>
+<p>Once methods live on values, <em>chaining</em> becomes the core style:
+<code>-7.abs.even?</code> reads left to right, each call sending a message to
+the previous result. Even control flow joins in — <code>5.times</code> is not
+syntax like <code>repeat(5)</code>, it's an ordinary method on
+<code>Integer</code> that takes a block. Ask any value what it can do:
+<code>5.methods.size</code> is well over a hundred.</p>`,
+
+  kotlin: `fun absolute(n: Int): Int {
+    return abs(n)                      // top-level function from kotlin.math
+}
+
+fun evenNumbers(nums: List<Int>): List<Int> {
+    return nums.filter { it % 2 == 0 } // operator arithmetic, not a method
+}
+
+fun rounded(f: Double, digits: Int): Double {
+    val factor = Math.pow(10.0, digits.toDouble())
+    return Math.round(f * factor) / factor
+}
+
+fun charList(s: String): List<String> {
+    return s.map { it.toString() }     // Char -> String, one per character
+}`,
+
+  task: `
+<p>Rewrite each Kotlin helper as a Ruby method that just asks the value:</p>
+<ol>
+  <li><code>absolute(n)</code> — return the absolute value using
+      <code>n.abs</code>. No <code>kotlin.math</code> import in sight.</li>
+  <li><code>even_numbers(nums)</code> — return only the even numbers using
+      <code>.select</code> with a block that asks each number
+      <code>n.even?</code>.</li>
+  <li><code>rounded(f, digits)</code> — round a float to <code>digits</code>
+      decimal places with <code>f.round(digits)</code> — the float rounds
+      itself.</li>
+  <li><code>char_list(s)</code> — return the string's characters as an array
+      of one-character strings via <code>s.chars</code>. No mapping over
+      <code>Char</code>s, no <code>toString</code>.</li>
+</ol>`,
+
+  starter: `# 1. The integer knows its own absolute value.
+def absolute(n)
+  raise NotImplementedError, "TODO: implement absolute"
+end
+
+# 2. select keeps elements whose block returns true; ask each n if it is even.
+def even_numbers(nums)
+  raise NotImplementedError, "TODO: implement even_numbers"
+end
+
+# 3. Floats round themselves, to any number of digits.
+def rounded(f, digits)
+  raise NotImplementedError, "TODO: implement rounded"
+end
+
+# 4. Strings hand you their characters directly.
+def char_list(s)
+  raise NotImplementedError, "TODO: implement char_list"
+end
+`,
+
+  requirements: [
+    { pattern: /\.abs/, message: "Use n.abs — the method lives on the number" },
+    { pattern: /\.even\?/, message: "Ask each number n.even? instead of computing n % 2 == 0" },
+    { pattern: /\.round\(/, message: "Use f.round(digits)" },
+    { pattern: /\.chars/, message: "Use s.chars to get the character array" },
+  ],
+
+  tests: [
+    { name: "absolute(-7) returns 7 and absolute(3) returns 3",
+      code: "  expect_eq(absolute(-7), 7)\n  expect_eq(absolute(3), 3)" },
+    { name: "even_numbers([1, 2, 3, 4, 5, 6]) returns [2, 4, 6]",
+      code: "  expect_eq(even_numbers([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "even_numbers([1, 3, 5]) returns []",
+      code: "  expect_eq(even_numbers([1, 3, 5]), [])" },
+    { name: "rounded(3.14159, 2) returns 3.14",
+      code: "  expect_eq(rounded(3.14159, 2), 3.14)" },
+    { name: "rounded(2.71828, 3) returns 2.718",
+      code: "  expect_eq(rounded(2.71828, 3), 2.718)" },
+    { name: 'char_list("ruby") returns ["r", "u", "b", "y"]',
+      code: '  expect_eq(char_list("ruby"), ["r", "u", "b", "y"])' },
+  ],
+
+  solution: `def absolute(n)
+  n.abs
+end
+
+def even_numbers(nums)
+  nums.select { |n| n.even? }
+end
+
+def rounded(f, digits)
+  f.round(digits)
+end
+
+def char_list(s)
+  s.chars
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Absolute value</td><td><code>abs(x)</code> / <code>x.absoluteValue</code></td><td><code>x.abs</code></td></tr>
+  <tr><td>Even / odd</td><td><code>x % 2 == 0</code></td><td><code>x.even?</code> / <code>x.odd?</code></td></tr>
+  <tr><td>Repeat n times</td><td><code>repeat(n) { i -> ... }</code></td><td><code>n.times { |i| ... }</code></td></tr>
+  <tr><td>Round</td><td><code>(f * 100).roundToInt() / 100.0</code></td><td><code>f.round(2)</code>, <code>f.ceil</code>, <code>f.floor</code></td></tr>
+  <tr><td>Characters</td><td><code>s.map { it.toString() }</code> → <code>List&lt;String&gt;</code></td><td><code>s.chars</code> → <code>["a", "b"]</code></td></tr>
+  <tr><td>Primitive vs boxed</td><td><code>Int</code> (boxing hidden by the compiler)</td><td>just <code>Integer</code> — no split, ever</td></tr>
+</table>
+<p>The shorthand you'll meet everywhere: <code>nums.select { |n| n.even? }</code>
+can be written <code>nums.select(&amp;:even?)</code> — "call this method on each
+element." And because everything is an object, there are no top-level utility
+grab-bags to reach for: when you wonder how to do something to a value, ask the
+value. <code>5.methods.sort</code> lists every message an integer answers.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

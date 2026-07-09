@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>A Go <code>string</code> is an immutable, read-only slice of bytes — usually
+UTF-8 text. Like C++'s <code>std::string</code> you concatenate with
+<code>+</code>, but Go's string type has no member functions at all: there is
+no <code>s.length()</code> or <code>s.substr()</code> built into the value
+itself, only free functions. Formatting lives in <code>fmt</code>, everyday
+text manipulation in <code>strings</code>, and number/string conversion in
+<code>strconv</code>.</p>
+<table>
+  <tr><th>C++</th><th>Go</th></tr>
+  <tr><td><code>std::format("{} {}", a, b)</code></td><td><code>fmt.Sprintf("%s %d", a, b)</code></td></tr>
+  <tr><td><code>std::transform(s.begin(), s.end(), s.begin(), ::toupper)</code></td><td><code>strings.ToUpper(s)</code></td></tr>
+  <tr><td><code>s.find(x) != std::string::npos</code></td><td><code>strings.Contains(s, x)</code></td></tr>
+  <tr><td>manual trim via <code>find_first_not_of</code>/<code>find_last_not_of</code></td><td><code>strings.TrimSpace(s)</code></td></tr>
+  <tr><td><code>std::to_string(n)</code></td><td><code>strconv.Itoa(n)</code></td></tr>
+  <tr><td><code>s.length()</code> (bytes!)</td><td><code>len(s)</code> (bytes!) / rune count via <code>range</code></td></tr>
+</table>
+<p>The verbs you will reach for constantly: <code>%s</code> (string),
+<code>%d</code> (integer), <code>%q</code> (double-quoted string), and
+<code>%v</code> (any value in its default form). The <code>strings</code>
+package also gives you <code>Split</code>, <code>Join</code>, <code>Replace</code>,
+<code>HasPrefix</code>, and friends — all as functions that take the string as
+their first argument.</p>
+<p>A C++ programmer feels right at home with the one real gotcha here: like
+<code>std::string</code>, Go's <code>len(s)</code> counts <em>bytes</em>, not
+characters. Because Go stores UTF-8 (much like a UTF-8-encoded
+<code>std::string</code>), a multi-byte character like <code>"é"</code> or an
+emoji makes <code>len</code> larger than the number of visible characters. To
+count actual characters (runes), iterate with <code>for range</code>, which
+decodes one rune per step — built into the language, where C++ would make you
+reach for <code>codecvt</code> or a library like ICU/utfcpp to do the same
+walk.</p>`,
+
+  cpp: `std::string name = "Ada";
+int count = 3;
+std::string msg = std::format("{} has {} messages", name, count);
+
+std::string s = "  go  ";
+s.erase(0, s.find_first_not_of(' '));
+s.erase(s.find_last_not_of(' ') + 1);
+std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+std::string loud = s;                          // "GO"
+std::string label = std::to_string(5) + " items"; // "5 items"
+// s.length() would give the byte count, not the character count`,
+
+  task: `
+<p>Write these as package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>Announce(name string, count int) string</code> returns a line like
+      <code>"Ada has 3 messages"</code> — build it with
+      <code>fmt.Sprintf("%s has %d messages", name, count)</code>.</li>
+  <li><code>Normalize(s string) string</code> trims surrounding whitespace and
+      uppercases the result, so <code>Normalize("  go  ")</code> is
+      <code>"GO"</code>. Compose <code>strings.TrimSpace</code> and
+      <code>strings.ToUpper</code>.</li>
+  <li><code>CountLabel(n int) string</code> returns <code>n</code> followed by
+      <code>" items"</code>, e.g. <code>CountLabel(5)</code> is
+      <code>"5 items"</code> — convert with <code>strconv.Itoa(n)</code>.</li>
+  <li><code>RuneLength(s string) int</code> returns the number of runes
+      (characters) in <code>s</code>. Loop with <code>for range s</code> and
+      count the iterations — do <em>not</em> return <code>len(s)</code>, which is
+      bytes.</li>
+</ol>`,
+
+  starter: `func Announce(name string, count int) string {
+	return "" // TODO
+}
+
+func Normalize(s string) string {
+	return "" // TODO
+}
+
+func CountLabel(n int) string {
+	return "" // TODO
+}
+
+func RuneLength(s string) int {
+	return 0 // TODO: count runes, not bytes
+}
+`,
+
+  requirements: [
+    { pattern: /fmt\.Sprintf/, message: "Use fmt.Sprintf to build the string in Announce" },
+    { pattern: /strings\.ToUpper/, message: "Use strings.ToUpper in Normalize" },
+    { pattern: /strconv\.Itoa/, message: "Use strconv.Itoa to convert the number in CountLabel" },
+  ],
+
+  tests: [
+    { name: "Announce(\"Ada\", 3) is \"Ada has 3 messages\"", code: "\t\texpect_eq(Announce(\"Ada\", 3), \"Ada has 3 messages\")" },
+    { name: "Announce(\"Rob\", 0) is \"Rob has 0 messages\"", code: "\t\texpect_eq(Announce(\"Rob\", 0), \"Rob has 0 messages\")" },
+    { name: "Normalize(\"  go  \") is \"GO\"", code: "\t\texpect_eq(Normalize(\"  go  \"), \"GO\")" },
+    { name: "Normalize(\"Hello\\t\") is \"HELLO\"", code: "\t\texpect_eq(Normalize(\"Hello\\t\"), \"HELLO\")" },
+    { name: "CountLabel(5) is \"5 items\"", code: "\t\texpect_eq(CountLabel(5), \"5 items\")" },
+    { name: "CountLabel(42) is \"42 items\"", code: "\t\texpect_eq(CountLabel(42), \"42 items\")" },
+    { name: "RuneLength(\"héllo\") is 5 (len would be 6)", code: "\t\texpect_eq(RuneLength(\"héllo\"), 5)" },
+    { name: "RuneLength(\"🎉\") is 1 (len would be 4)", code: "\t\texpect_eq(RuneLength(\"🎉\"), 1)" },
+    { name: "RuneLength(\"\") is 0", code: "\t\texpect_eq(RuneLength(\"\"), 0)" },
+  ],
+
+  solution: `func Announce(name string, count int) string {
+	return fmt.Sprintf("%s has %d messages", name, count)
+}
+
+func Normalize(s string) string {
+	return strings.ToUpper(strings.TrimSpace(s))
+}
+
+func CountLabel(n int) string {
+	return strconv.Itoa(n) + " items"
+}
+
+func RuneLength(s string) int {
+	count := 0
+	for range s {
+		count++
+	}
+	return count
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Go</th></tr>
+  <tr><td>Interpolate</td><td><code>std::format("{}", x)</code></td><td><code>fmt.Sprintf("%v", x)</code></td></tr>
+  <tr><td>Quote a value</td><td><code>std::quoted(s)</code> (via <code>&lt;iomanip&gt;</code>)</td><td><code>fmt.Sprintf("%q", s)</code></td></tr>
+  <tr><td>Contains</td><td><code>s.find(x) != std::string::npos</code></td><td><code>strings.Contains(s, x)</code></td></tr>
+  <tr><td>Split / Join</td><td><code>std::getline(iss, tok, ',')</code> loop / manual <code>+=</code> loop</td><td><code>strings.Split(s, ",")</code> / <code>strings.Join(a, ",")</code></td></tr>
+  <tr><td>Replace all</td><td>loop with <code>s.find</code> / <code>s.replace</code></td><td><code>strings.ReplaceAll(s, a, b)</code></td></tr>
+  <tr><td>Prefix test</td><td><code>s.starts_with(p)</code> (C++20)</td><td><code>strings.HasPrefix(s, p)</code></td></tr>
+  <tr><td>String → int</td><td><code>std::stoi(s)</code> (throws) or <code>std::from_chars</code></td><td><code>strconv.Atoi(s)</code> (returns value + error)</td></tr>
+  <tr><td>Char count</td><td>manual UTF-8 decode loop (or a library like utfcpp)</td><td><code>for range s</code> (or <code>utf8.RuneCountInString</code>)</td></tr>
+</table>
+<p>Two habits carry over from this lesson. First, text operations are functions,
+not methods — you will import <code>strings</code> and <code>strconv</code>
+constantly, and their functions all take the data as the first argument, much
+like reaching for a free function or algorithm header in C++ instead of a
+member call. Second, respect the byte/rune distinction: <code>len(s)</code> is
+bytes and indexing <code>s[i]</code> gives you a single <code>byte</code>
+(exactly like indexing a UTF-8 <code>std::string</code> gives you a raw byte),
+while <code>for i, r := range s</code> hands you the byte offset <code>i</code>
+and the decoded rune <code>r</code>. When you truly need characters, range or
+the <code>unicode/utf8</code> helpers are the correct tools — no separate
+Unicode library required.</p>
+<p>Note that <code>strconv.Atoi</code> returns <em>two</em> values — the number
+and an <code>error</code> — because parsing can fail. That two-value error return
+is Go's central idiom, and it is the subject of a later lesson. It stands in
+for what C++ handles with an exception (<code>std::stoi</code>) or an
+error-code out-parameter (<code>std::from_chars</code>).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

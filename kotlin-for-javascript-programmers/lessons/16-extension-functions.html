@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Extension Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Extension Functions",
+
+  intro: `
+<p>In JavaScript, when you want a helper for a type you don't own — say a
+<code>shout()</code> for strings — you write a free function
+(<code>shout(s)</code>) and call it "backwards" from the value. The alternative,
+patching <code>String.prototype</code> directly, is a footgun everyone warns you
+off. Kotlin gives you the readable half without the danger: <strong>extension
+functions</strong>.</p>
+<p>An extension function is declared with a <em>receiver type</em> before the
+name — <code>fun String.shout()</code> — and inside it, <code>this</code> is the
+value it was called on. At the call site it reads exactly like a real method:
+<code>"hello".shout()</code>. Nothing is actually added to the
+<code>String</code> class; the compiler resolves the call statically to a plain
+function, so there is no monkey-patching and no runtime risk.</p>
+<table>
+  <tr><th>JavaScript</th><th>Kotlin</th></tr>
+  <tr><td><code>function shout(s) {...}</code></td><td><code>fun String.shout(): String {...}</code></td></tr>
+  <tr><td><code>shout("hi")</code></td><td><code>"hi".shout()</code></td></tr>
+  <tr><td><code>// String.prototype.shout = ...</code></td><td><code>val String.wordCount: Int get() = ...</code></td></tr>
+</table>
+<p>You can also define <strong>extension properties</strong> —
+<code>val String.wordCount: Int</code> — which read like a field
+(<code>"a b".wordCount</code>) but must be computed via a getter, since there is
+nowhere to store a backing field on a type you don't own.</p>`,
+
+  javascript: `// JavaScript has no real extension methods —
+// you write free functions and call them "backwards":
+function shout(s) {
+  return s.toUpperCase() + "!";
+}
+function wordCount(s) {
+  return s.trim() === "" ? 0 : s.trim().split(" ").length;
+}
+
+shout("hello");        // "HELLO!"
+wordCount("a b c");    // 3`,
+
+  task: `
+<p>Add some methods to types you don't own. All of these are top-level
+declarations — no class needed:</p>
+<ol>
+  <li>Extension function <code>String.shout(): String</code> — returns the string
+      uppercased with a <code>"!"</code> appended, e.g. <code>"hello".shout()</code>
+      is <code>"HELLO!"</code>.</li>
+  <li>Extension property <code>String.wordCount: Int</code> — the number of
+      space-separated words; a blank string is <code>0</code>. (Use a getter.)</li>
+  <li>Extension function <code>Int.double(): Int</code> — returns the receiver
+      times two, e.g. <code>5.double()</code> is <code>10</code>.</li>
+</ol>
+<p>Inside each, refer to the value as <code>this</code> (often optional).</p>`,
+
+  starter: `// 1. String.shout() -> uppercased + "!"
+fun String.shout(): String = TODO()
+
+// 2. String.wordCount -> number of space-separated words (blank -> 0)
+val String.wordCount: Int
+    get() = TODO()
+
+// 3. Int.double() -> this * 2
+fun Int.double(): Int = TODO()
+`,
+
+  requirements: [
+    { pattern: /fun\s+String\s*\.\s*shout\s*\(/, message: "Define shout as an extension function on String: fun String.shout()" },
+    { pattern: /val\s+String\s*\.\s*wordCount/, message: "Define wordCount as an extension property on String: val String.wordCount" },
+    { pattern: /fun\s+Int\s*\.\s*double\s*\(/, message: "Define double as an extension function on Int: fun Int.double()" },
+  ],
+
+  tests: [
+    { name: '"hello".shout() is "HELLO!"', code: '        expect_eq("hello".shout(), "HELLO!")' },
+    { name: '"hi there".shout() is "HI THERE!"', code: '        expect_eq("hi there".shout(), "HI THERE!")' },
+    { name: '"hello world".wordCount is 2', code: '        expect_eq("hello world".wordCount, 2)' },
+    { name: '"one two three four".wordCount is 4', code: '        expect_eq("one two three four".wordCount, 4)' },
+    { name: 'blank string wordCount is 0', code: '        expect_eq("".wordCount, 0)' },
+    { name: '5.double() is 10', code: '        expect_eq(5.double(), 10)' },
+    { name: '0.double() is 0', code: '        expect_true(0.double() == 0)' },
+  ],
+
+  solution: `fun String.shout(): String = this.uppercase() + "!"
+
+val String.wordCount: Int
+    get() = if (this.isBlank()) 0 else this.trim().split(" ").size
+
+fun Int.double(): Int = this * 2
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Kotlin</th></tr>
+  <tr><td>Add a "method"</td><td><code>function f(x) {...}</code> then <code>f(x)</code></td><td><code>fun T.f() {...}</code> then <code>x.f()</code></td></tr>
+  <tr><td>The receiver</td><td>first parameter</td><td><code>this</code> (implicit)</td></tr>
+  <tr><td>Add a "property"</td><td>getter on prototype (<code>Object.defineProperty</code>)</td><td><code>val T.p: R get() = ...</code></td></tr>
+  <tr><td>Dispatch</td><td>n/a</td><td>static (resolved by declared type)</td></tr>
+</table>
+<p>Because extensions are resolved <em>statically</em> by the compile-time type
+of the receiver, they are not virtual: an extension on <code>Base</code> is not
+overridden by one on <code>Derived</code> when the static type is
+<code>Base</code>. They also can't access <code>private</code> members of the
+receiver — they're just ordinary functions with nicer call syntax. That
+restraint is the point: the standard library is built almost entirely from
+extensions (<code>map</code>, <code>filter</code>, <code>first</code>…), letting
+you grow types you don't own without ever touching them — no reaching for
+<code>String.prototype</code> the way you might in JavaScript.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

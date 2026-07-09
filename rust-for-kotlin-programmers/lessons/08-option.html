@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Option: The End of Null</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Option: The End of Null",
+
+  intro: `
+<p>Kotlin already tamed the billion-dollar mistake: a plain <code>String</code>
+can never hold null, and if a value can be absent you spell it
+<code>String?</code>, after which the compiler forces a null check before you
+can touch it. Rust's <code>Option&lt;T&gt;</code> is the very same idea, just
+carried by an ordinary generic enum instead of a special <code>?</code> on the
+type. Where Kotlin bakes nullability into the type system with dedicated
+syntax — <code>?.</code>, <code>?:</code>, <code>!!</code> — Rust expresses
+"maybe absent" as the everyday value <code>Some(x)</code> or <code>None</code>,
+and reaches for <code>match</code> to unpack it. Both are unskippable: absence
+lives in the type, and the compiler won't let you ignore it.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>"Ada"</code> (a non-null <code>String</code>)</td><td><code>Some("Ada".to_string())</code></td></tr>
+  <tr><td><code>null</code></td><td><code>None</code></td></tr>
+  <tr><td><code>opt ?: "anonymous"</code></td><td><code>opt.unwrap_or("anonymous".to_string())</code></td></tr>
+  <tr><td><code>opt?.length</code></td><td><code>opt.map(|s| s.len())</code></td></tr>
+  <tr><td><code>if (opt != null) opt else …</code></td><td><code>match opt { Some(v) =&gt; …, None =&gt; … }</code></td></tr>
+</table>
+<p>The operations map one-to-one — <code>unwrap_or</code> is the elvis
+operator <code>?:</code>, <code>.map</code> is the safe-call <code>?.</code>
+chain — and where Kotlin smart-casts inside an <code>if (opt != null)</code>,
+Rust uses <code>match</code>, which hands you the inner value only inside the
+<code>Some</code> arm. There's no way to read the value on the <code>None</code>
+branch. (There is <code>.unwrap()</code>, which panics on <code>None</code> —
+the moral equivalent of the <code>!!</code> operator — but just like
+<code>!!</code>, you can grep for every place you gambled.)</p>`,
+
+  kotlin: `// A plain String can never be null — the type system guarantees it.
+val name: String = findUser(id)   // won't compile if findUser can return null
+val len = name.length             // always safe
+
+// When a value can be absent, you say so with String?:
+val maybe: String? = findUserOrNull(id)
+val display = maybe ?: "anonymous"
+val length = maybe?.length ?: 0
+
+fun findUserOrNull(id: Int): String? = when (id) {
+    1 -> "Ada"
+    2 -> "Grace"
+    else -> null
+}
+
+// The compiler forces a null check before you touch a String?:
+// maybe.length            // error: only safe (?.) or non-null (!!) calls allowed
+val forced = maybe!!.length // opt-in gamble — throws if maybe is null`,
+
+  task: `
+<p>Rewrite the Kotlin as Rust:</p>
+<ol>
+  <li>Write <code>find_user(id: u32) -&gt; Option&lt;String&gt;</code>:
+      <code>Some("Ada".to_string())</code> for id 1,
+      <code>Some("Grace".to_string())</code> for id 2, and
+      <code>None</code> for anything else — the Rust spelling of returning
+      <code>null</code> from a <code>String?</code> function.</li>
+  <li>Write <code>display_name(name: Option&lt;String&gt;) -&gt; String</code>
+      that returns the name if present, or <code>"anonymous"</code> if not —
+      Kotlin's <code>?:</code>, spelled <code>unwrap_or</code>.</li>
+  <li>Write <code>first_char(s: &amp;str) -&gt; Option&lt;char&gt;</code>
+      using <code>s.chars().next()</code> — the standard library already
+      speaks Option, so an empty string is <code>None</code> for free.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. find_user: Some("Ada") for 1, Some("Grace") for 2, None otherwise.
+//    A match on id (with a _ catch-all arm) reads well here.
+fn find_user(id: u32) -> Option<String> {
+    todo!()
+}
+
+// 2. display_name: Kotlin's elvis maybe ?: "anonymous" is
+//    name.unwrap_or("anonymous".to_string()).
+fn display_name(name: Option<String>) -> String {
+    todo!()
+}
+
+// 3. first_char: .chars().next() already returns Option<char>.
+fn first_char(s: &str) -> Option<char> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option</, message: "Return Option<T> — absence lives in the type" },
+    { pattern: /Some\(/, message: "Wrap present values in Some(...)" },
+    { pattern: /None/, message: "Use None where Kotlin would return null" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or (Kotlin's elvis ?:) in display_name" },
+  ],
+
+  tests: [
+    { name: 'find_user(1) is Some("Ada")',
+      code: 'assert_eq!(find_user(1), Some("Ada".to_string()));' },
+    { name: 'find_user(2) is Some("Grace")',
+      code: 'assert_eq!(find_user(2), Some("Grace".to_string()));' },
+    { name: "find_user(99) is None — not null, not a crash",
+      code: 'assert_eq!(find_user(99), None);' },
+    { name: "display_name unwraps a present name",
+      code: 'assert_eq!(display_name(Some("Linus".to_string())), "Linus");' },
+    { name: 'display_name(None) falls back to "anonymous"',
+      code: 'assert_eq!(display_name(None), "anonymous");' },
+    { name: "first_char: Some('r') for \"rust\", None for \"\"",
+      code: "assert_eq!(first_char(\"rust\"), Some('r'));\nassert_eq!(first_char(\"\"), None);" },
+  ],
+
+  solution: `fn find_user(id: u32) -> Option<String> {
+    match id {
+        1 => Some("Ada".to_string()),
+        2 => Some("Grace".to_string()),
+        _ => None,
+    }
+}
+
+fn display_name(name: Option<String>) -> String {
+    name.unwrap_or("anonymous".to_string())
+}
+
+fn first_char(s: &str) -> Option<char> {
+    s.chars().next()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Present value</td><td><code>"Ada"</code> (non-null)</td><td><code>Some(v)</code></td></tr>
+  <tr><td>Absent value</td><td><code>null</code> (in a <code>T?</code>)</td><td><code>None</code></td></tr>
+  <tr><td>Default</td><td><code>opt ?: fallback</code></td><td><code>opt.unwrap_or(fallback)</code></td></tr>
+  <tr><td>Transform</td><td><code>opt?.let(f)</code></td><td><code>opt.map(f)</code></td></tr>
+  <tr><td>Check &amp; extract</td><td><code>if (opt != null)</code> (smart cast)</td><td><code>match</code> / <code>if let Some(v)</code></td></tr>
+  <tr><td>Gamble</td><td><code>opt!!</code></td><td><code>opt.unwrap()</code> (greppable, panics loudly)</td></tr>
+</table>
+<p>Coming from Kotlin, this is familiar territory: you already live in a world
+where "could this be missing?" is answered by the type, not by reading a doc
+comment or crashing at 3 a.m. The one shift is mechanical — Kotlin folds
+nullability into the type with a trailing <code>?</code> and gives you
+operators (<code>?.</code>, <code>?:</code>, <code>!!</code>) to work with it,
+while Rust makes <code>Option&lt;T&gt;</code> an ordinary enum you unpack with
+<code>match</code>, <code>if let</code>, and combinator methods. Same promise,
+different spelling.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

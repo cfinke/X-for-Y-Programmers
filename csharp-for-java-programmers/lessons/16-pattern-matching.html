@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Pattern Matching</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Pattern Matching",
+
+  intro: `
+<p>In Java you narrow an <code>Object</code> by hand:
+<code>instanceof</code> followed by a cast, or since Java 16 the
+<em>pattern-matching instanceof</em> that does both together.
+C# 7 folds the test and the cast into one step with the <em>is-type pattern</em>,
+which works the same way as Java's newer form. Writing <code>if (o is int n)</code>
+checks the runtime type <em>and</em>, when it matches, binds a typed variable
+<code>n</code> you can use for the rest of the block — no separate cast, no
+<code>instanceof</code> plus a manual unboxing.</p>
+<table>
+  <tr><th>Java</th><th>C# 7.3</th></tr>
+  <tr><td><code>if (o instanceof Integer n) { … }</code></td><td><code>if (o is int n) { … }</code></td></tr>
+  <tr><td><code>if (o instanceof Cat c) { … }</code></td><td><code>if (o is Cat c) { … }</code></td></tr>
+  <tr><td><code>if (o instanceof Integer n &amp;&amp; n &lt; 0)</code></td><td><code>if (o is int n &amp;&amp; n &lt; 0)</code></td></tr>
+  <tr><td>unused binding</td><td>discard <code>o is bool _</code></td></tr>
+</table>
+<p>Two things to note. C#'s <code>is</code> checks the <em>real</em> runtime type —
+everything boxes to <code>object</code>, so a boxed <code>int</code> still matches
+<code>o is int n</code>, and a <code>null</code> matches no type pattern at all
+(handle it with an explicit <code>== null</code>), exactly as <code>instanceof</code>
+in Java is false for <code>null</code>. You can bolt a condition straight onto the
+match with <code>&amp;&amp;</code> — <code>o is int n &amp;&amp; n &lt; 0</code>
+is C#'s answer to a guarded case, just like <code>o instanceof Integer n &amp;&amp; n &lt; 0</code>
+in modern Java. And when you only care <em>that</em> something matched, not its
+value, use the discard <code>_</code> instead of naming a variable you never read.</p>
+<p>C# can also use these same patterns as <code>case</code> labels in a
+<code>switch</code> statement (with <code>when</code> guards) — you will see that
+form in other people's code — but the <code>is</code>-type pattern is the portable
+C# 7.3 workhorse, so this lesson builds a classifier out of it.</p>`,
+
+  java: `static String classify(Object value) {
+  if (value == null) return "null";
+  if (value instanceof Integer n) {
+    return n < 0 ? "negative integer" : "integer " + n;
+  }
+  if (value instanceof String s) {
+    return s.length() == 0 ? "empty string" : "string of length " + s.length();
+  }
+  if (value instanceof Boolean b) return "a boolean";
+  return "unknown";
+}`,
+
+  task: `
+<p>Build a <code>static class Classifier</code> that inspects boxed
+<code>object</code> values using the <code>is</code>-type pattern:</p>
+<ol>
+  <li><code>Describe(object value)</code> returns a string. Use a chain of
+      <code>is</code> patterns:
+    <ul>
+      <li><code>value == null</code> &rarr; <code>"null"</code> (a null matches no
+          type pattern, so test it first)</li>
+      <li><code>value is int n &amp;&amp; n &lt; 0</code> &rarr; <code>"negative integer"</code>
+          (a guard via <code>&amp;&amp;</code>)</li>
+      <li><code>value is int n</code> &rarr; <code>$"integer {n}"</code></li>
+      <li><code>value is string s &amp;&amp; s.Length == 0</code> &rarr; <code>"empty string"</code></li>
+      <li><code>value is string s</code> &rarr; <code>$"string of length {s.Length}"</code></li>
+      <li><code>value is bool _</code> &rarr; <code>"a boolean"</code> (a discard —
+          you match the type but never need the value)</li>
+      <li>anything else &rarr; <code>"unknown"</code></li>
+    </ul>
+  </li>
+  <li><code>SumIntegers(object[] values)</code> returns an <code>int</code>: loop
+      over the array and use <code>if (item is int n)</code> to add only the
+      values that are really <code>int</code>s, skipping everything else.</li>
+</ol>`,
+
+  starter: `static class Classifier {
+  public static string Describe(object value) {
+    return ""; // TODO: chain is-type patterns with guards and a discard
+  }
+
+  public static int SumIntegers(object[] values) {
+    return 0; // TODO: use the is-type pattern (item is int n)
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /is\s+int\s+\w+/, message: "Use the is-type pattern (value is int n) to test and bind an int" },
+    { pattern: /is\s+string\s+\w+/, message: "Use an is-type pattern for the string case too" },
+    { pattern: /is\s+\w+\s+_/, message: "Use a discard (is bool _) when you match a type but never read the value" },
+  ],
+
+  tests: [
+    { name: "Describe(42) is \"integer 42\"", code: "      expect_eq(Classifier.Describe(42), \"integer 42\");" },
+    { name: "Describe(-5) is \"negative integer\"", code: "      expect_eq(Classifier.Describe(-5), \"negative integer\");" },
+    { name: "Describe(\"\") is \"empty string\"", code: "      expect_eq(Classifier.Describe(\"\"), \"empty string\");" },
+    { name: "Describe(\"hello\") is \"string of length 5\"", code: "      expect_eq(Classifier.Describe(\"hello\"), \"string of length 5\");" },
+    { name: "Describe(true) is \"a boolean\"", code: "      expect_eq(Classifier.Describe(true), \"a boolean\");" },
+    { name: "Describe(null) is \"null\"", code: "      expect_eq(Classifier.Describe(null), \"null\");" },
+    { name: "Describe(3.14) is \"unknown\"", code: "      expect_eq(Classifier.Describe(3.14), \"unknown\");" },
+    { name: "SumIntegers skips non-ints", code: "      expect_eq(Classifier.SumIntegers(new object[] { 1, \"a\", 2, true, 3 }), 6);" },
+    { name: "SumIntegers of empty is 0", code: "      expect_eq(Classifier.SumIntegers(new object[] { }), 0);" },
+  ],
+
+  solution: `static class Classifier {
+  public static string Describe(object value) {
+    if (value == null) {
+      return "null";
+    }
+    if (value is int n && n < 0) {
+      return "negative integer";
+    }
+    if (value is int i) {
+      return $"integer {i}";
+    }
+    if (value is string s && s.Length == 0) {
+      return "empty string";
+    }
+    if (value is string str) {
+      return $"string of length {str.Length}";
+    }
+    if (value is bool _) {
+      return "a boolean";
+    }
+    return "unknown";
+  }
+
+  public static int SumIntegers(object[] values) {
+    int sum = 0;
+    foreach (var item in values) {
+      if (item is int n) {
+        sum += n;
+      }
+    }
+    return sum;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>C# 7.3</th></tr>
+  <tr><td>Type test + bind</td><td><code>o instanceof Integer n</code></td><td><code>o is int n</code></td></tr>
+  <tr><td>Class test + bind</td><td><code>o instanceof Cat c</code></td><td><code>o is Cat c</code></td></tr>
+  <tr><td>Guard on a match</td><td><code>o instanceof Integer n &amp;&amp; n &lt; 0</code></td><td><code>o is int n &amp;&amp; n &lt; 0</code></td></tr>
+  <tr><td>Ignore the value</td><td>unused binding</td><td>discard <code>o is bool _</code></td></tr>
+  <tr><td>Null</td><td><code>o == null</code> (instanceof is false for null)</td><td><code>o == null</code> (matches no type pattern)</td></tr>
+</table>
+<p>Order matters: the guarded <code>value is int n &amp;&amp; n &lt; 0</code> must come
+<em>before</em> the plain <code>value is int</code>, or the negative case can never
+win. Watch the scoping rule too — a variable bound by <code>is</code> leaks into
+the enclosing block, which is why each arm here uses a distinct name
+(<code>n</code>, <code>i</code>, <code>s</code>, <code>str</code>) rather than
+reusing one, similar to how a pattern variable from Java's
+<code>instanceof</code> is in scope for the rest of the enclosing block. Remember
+that <code>null</code> matches no type pattern, so a <code>null</code> object falls
+through every <code>is</code> and you must test it explicitly. The same patterns can
+appear as <code>case</code> labels in a <code>switch</code> statement with
+<code>when</code> guards — pedagogically the prettier form, and reminiscent of
+Java's own pattern-matching <code>switch</code> — but the <code>is</code>-type
+pattern shown here is the piece you can rely on everywhere in C# 7.3, and C# 8 later
+layers switch <em>expressions</em> and property patterns on top of it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

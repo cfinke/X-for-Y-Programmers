@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules",
+
+  intro: `
+<p>Ruby has no equivalent of JavaScript's static <code>export</code>/<code>import</code>
+syntax at all. A Ruby <code>require</code> or <code>require_relative</code>
+just executes a file top to bottom and lets whatever it defines — classes,
+modules, constants, methods — land wherever those definitions happen to live,
+usually inside a namespacing <code>module</code>. There is no list of
+"exports" to declare, and nothing gets stripped out by a compiler: every
+constant and method a Ruby file defines is a real, live value the instant the
+file runs. A JavaScript module sits in between Ruby's "everything is implicitly
+visible" and a stricter language's "declare exactly what leaves this file" —
+you must write <code>export</code> on precisely the bindings you want a caller
+to see, and once the file has run, a module is nothing more than an object of
+those live bindings.</p>
+<table>
+  <tr><th>Ruby</th><th>JavaScript (runtime)</th></tr>
+  <tr><td><code>TAX_RATE = 0.1</code> (inside a module)</td><td><code>export const TAX_RATE = 0.1;</code></td></tr>
+  <tr><td><code>class Cart; end</code> — a real runtime class</td><td><code>export class Cart {}</code> — also a real runtime value</td></tr>
+  <tr><td><code>require_relative "cart"</code> — pulls in everything the file defines</td><td><code>import { Cart } from "./cart.js";</code> — pulls in only what you name</td></tr>
+  <tr><td>no equivalent — every method is just a named method</td><td><code>export default function total() {}</code></td></tr>
+</table>
+<p>The mental shift: a named export is a <em>value</em> you name, and the
+default export is just the one binding the module hands back when you import it
+without braces — something Ruby has no direct analog for, since
+<code>require</code> never hands you back "the module's value," only
+<code>true</code> or <code>false</code> depending on whether it loaded the
+file. There is nothing at runtime that distinguishes a "default" export from
+any other export except the name it happens to be stored under.</p>`,
+
+  ruby: `module Pricing
+  TAX_RATE = 0.1
+
+  module_function
+
+  def add_tax(cents)
+    (cents * (1 + TAX_RATE)).round
+  end
+
+  def format_usd(cents)
+    format("$%.2f", cents / 100.0)
+  end
+
+  # the module's "main" method — the one callers reach for first
+  def total(items)
+    items.reduce(0) { |sum, cents| sum + cents }
+  end
+end`,
+
+  task: `
+<p>Build a tiny pricing module using plain-JavaScript exports — the JS
+counterpart to a Ruby file that defines a <code>Pricing</code> module with a
+constant and a few <code>module_function</code> methods. Export every symbol
+directly, and give the module one default export (a concept Ruby's
+<code>require</code> has no equivalent for):</p>
+<ol>
+  <li><strong>Named const export</strong>: <code>TAX_RATE</code> = <code>0.1</code>.</li>
+  <li><strong>Named function export</strong>: <code>addTax(cents)</code> returns
+      the price with tax added, rounded to a whole number of cents
+      (<code>Math.round(cents * (1 + TAX_RATE))</code>).</li>
+  <li><strong>Named function export</strong>: <code>formatUSD(cents)</code>
+      returns a string like <code>"$12.34"</code> (dollars with two decimals).</li>
+  <li><strong>Default export</strong>: <code>total(items)</code>, a function that
+      sums an array of cent amounts and returns the total (<code>0</code> for an
+      empty array). Export it with <code>export default</code>.</li>
+</ol>`,
+
+  starter: `// 1. named const export
+export const TAX_RATE = 0.1;
+
+// 2. named function export: price with tax, rounded to whole cents
+export function addTax(cents) {
+  // TODO
+  return 0;
+}
+
+// 3. named function export: cents -> "$12.34"
+export function formatUSD(cents) {
+  // TODO
+  return "";
+}
+
+// 4. default export: sum an array of cent amounts
+export default function total(items) {
+  // TODO
+  return 0;
+}
+`,
+
+  exportNames: ["TAX_RATE", "addTax", "formatUSD", "total"],
+
+  requirements: [
+    { pattern: /export\s+const\s+TAX_RATE/, message: "Use a named const export for TAX_RATE" },
+    { pattern: /export\s+function\s+addTax/, message: "Use a named function export for addTax" },
+    { pattern: /export\s+default/, message: "Use export default for total" },
+  ],
+
+  tests: [
+    { name: "TAX_RATE is 0.1", run: (x) => expectEqual(x.TAX_RATE, 0.1) },
+    { name: "addTax(100) is 110", run: (x) => expectEqual(x.addTax(100), 110) },
+    { name: "addTax(199) rounds to 219", run: (x) => expectEqual(x.addTax(199), 219) },
+    { name: 'formatUSD(1234) is "$12.34"', run: (x) => expectEqual(x.formatUSD(1234), "$12.34") },
+    { name: 'formatUSD(500) is "$5.00"', run: (x) => expectEqual(x.formatUSD(500), "$5.00") },
+    { name: "default export total sums the array", run: (x) => expectEqual(x.total([100, 200, 300]), 600) },
+    { name: "default export total([]) is 0", run: (x) => expectEqual(x.total([]), 0) },
+  ],
+
+  solution: `export const TAX_RATE = 0.1;
+
+export function addTax(cents) {
+  return Math.round(cents * (1 + TAX_RATE));
+}
+
+export function formatUSD(cents) {
+  return "$" + (cents / 100).toFixed(2);
+}
+
+export default function total(items) {
+  return items.reduce((sum, cents) => sum + cents, 0);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>JavaScript (runtime)</th></tr>
+  <tr><td>Named export</td><td><code>TAX_RATE = 0.1</code> inside <code>module Pricing</code></td><td><code>export const TAX_RATE = 0.1;</code></td></tr>
+  <tr><td>Default export</td><td>no equivalent — every method is just named</td><td>becomes the <code>default</code> binding</td></tr>
+  <tr><td>Loading a file</td><td><code>require_relative "money"</code> — pulls in everything, returns <code>true</code>/<code>false</code></td><td><code>import "./money.js";</code> — side-effect-only import</td></tr>
+  <tr><td>Namespacing</td><td>wrap definitions in <code>module Pricing ... end</code></td><td>the file itself is the namespace</td></tr>
+  <tr><td>Import a default</td><td>no equivalent</td><td><code>import fn from "./m";</code></td></tr>
+</table>
+<p>A default export is not a special kind of value — it is exposed under the name
+<code>default</code>, which is exactly why <code>import Something from "./m"</code>
+(no braces) grabs it and lets you rename it freely, while named imports must
+match the exported name inside braces. Ruby has nothing like this:
+<code>require_relative</code> never hands you a value at all, so there is no
+"binding you get without braces" — you reach every constant and method through
+the module you wrapped them in, or, if you didn't wrap them, they leak straight
+into the caller's namespace, which is why real Ruby libraries almost always
+nest everything inside a module. If you ever wonder why a JavaScript file
+bothers with a default export at all, it's because <code>import fn from "./m"</code>
+is shorter to write and rename than digging a specific method out of a
+namespace the way <code>Pricing.total</code> would be in Ruby. At runtime, a
+JS module is just an object of live value bindings — no more, no less.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

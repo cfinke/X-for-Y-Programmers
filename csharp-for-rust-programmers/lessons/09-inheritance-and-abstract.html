@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Rust has no classical inheritance at all — no <code>extends</code>, no base
+class, no constructor chaining. Shared behavior instead comes from
+<strong>traits</strong>: an interface-like contract that a type opts into with
+<code>impl Trait for Type</code>. A trait method with no body is required,
+much like an <code>abstract</code> member; a trait method that <em>does</em>
+have a body is a default implementation that a type can accept as-is or
+replace with its own. C#'s equivalent is more explicit and more restrictive:
+a base method is only overridable if it is marked <code>virtual</code> (or
+<code>abstract</code>), and the subclass must say <code>override</code>.
+There is no silent shadowing.</p>
+<table>
+  <tr><th>Rust</th><th>C#</th></tr>
+  <tr><td>(no inheritance) <code>trait</code> + <code>impl</code></td><td><code>class Dog : Animal {}</code></td></tr>
+  <tr><td>call inner constructor, e.g. <code>Animal::new(name)</code></td><td><code>: base(name)</code> (constructor)</td></tr>
+  <tr><td><code>trait Shape {}</code></td><td><code>abstract class Shape {}</code></td></tr>
+  <tr><td><code>fn area(&amp;self) -&gt; f64;</code></td><td><code>public abstract double Area();</code></td></tr>
+  <tr><td>redefine in <code>impl Trait for Type</code> (implicit)</td><td><code>public override double Area()</code></td></tr>
+  <tr><td>"sealed trait" pattern (private supertrait)</td><td><code>sealed class</code> / <code>sealed override</code></td></tr>
+</table>
+<p>Three things to internalize. First, there is no base-constructor call in
+Rust; a type that "extends" another typically stores it as a field and calls
+its <code>new(...)</code> associated function directly, rather than anything
+resembling a <code>super()</code> call. Second, to supply your own version of
+a default trait method you just define it in your <code>impl</code> block —
+there's no keyword for it, because Rust always prefers the type's own
+implementation over the trait's default. Third, Rust has no <code>sealed</code>
+keyword; crates approximate it with the "sealed trait" pattern, a private
+supertrait that stops outside code from implementing your trait — the
+opposite goal of a plain trait, which anyone can implement. Polymorphism
+still works the same way it does in C#: a <code>&amp;dyn Shape</code>
+reference to a <code>Circle</code> calls <code>Circle</code>'s
+implementation via dynamic dispatch.</p>`,
+
+  rust: `trait Shape {
+    fn name(&self) -> &str;
+    fn area(&self) -> f64;
+    fn describe(&self) -> String {
+        format!("{} has area {}", self.name(), self.area())
+    }
+}
+
+struct Rectangle {
+    name: String,
+    w: f64,
+    h: f64,
+}
+
+impl Rectangle {
+    fn new(w: f64, h: f64) -> Self {
+        Rectangle { name: "Rectangle".to_string(), w, h }
+    }
+}
+
+impl Shape for Rectangle {
+    fn name(&self) -> &str { &self.name }
+    fn area(&self) -> f64 { self.w * self.h }
+}`,
+
+  task: `
+<p>Build a small shape hierarchy that shows off inheritance, abstract members,
+constructor chaining, and polymorphism.</p>
+<ol>
+  <li>Declare an <code>abstract class Shape</code> with a read-only
+      <code>string Name</code> property set through a <code>protected</code>
+      constructor <code>Shape(string name)</code>.</li>
+  <li>Give <code>Shape</code> an <code>abstract double Area()</code> (no body) and a
+      <code>virtual string Describe()</code> that returns
+      <code>$"{Name} has area {Area()}"</code>.</li>
+  <li><code>Rectangle : Shape</code> — constructor
+      <code>Rectangle(double width, double height) : base("Rectangle")</code>,
+      overriding <code>Area()</code> to return <code>Width * Height</code>.</li>
+  <li><code>Square : Shape</code> — mark it <code>sealed</code>, chain
+      <code>: base("Square")</code>, <code>override Area()</code> to return
+      <code>Side * Side</code>, and <code>override Describe()</code> to return
+      <code>$"Square with side {Side}"</code>.</li>
+</ol>`,
+
+  starter: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return ""; // TODO: "{Name} has area {Area()}"
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+
+  public override string Describe() {
+    return ""; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+double\s+Area/, message: "Declare Area() as an abstract method on Shape" },
+    { pattern: /override\s+double\s+Area/, message: "Override Area() with the override keyword in each subclass" },
+    { pattern: /:\s*base\(/, message: "Chain to the base constructor with : base(...)" },
+  ],
+
+  tests: [
+    { name: "Rectangle(3, 4).Area() is 12", code: "      expect_eq(new Rectangle(3, 4).Area(), 12.0);" },
+    { name: "Square(5).Area() is 25", code: "      expect_eq(new Square(5).Area(), 25.0);" },
+    { name: "Name set via base(...)", code: "      expect_eq(new Rectangle(1, 1).Name, \"Rectangle\");" },
+    { name: "virtual Describe() runs on a base reference", code: "      Shape s = new Rectangle(3, 4);\n      expect_eq(s.Describe(), \"Rectangle has area 12\");" },
+    { name: "Square overrides Describe()", code: "      Shape sq = new Square(5);\n      expect_eq(sq.Describe(), \"Square with side 5\");" },
+    { name: "polymorphism through a base array", code: "      Shape[] shapes = { new Rectangle(2, 3), new Square(4) };\n      double total = 0;\n      foreach (var shape in shapes) total += shape.Area();\n      expect_eq(total, 22.0);" },
+  ],
+
+  solution: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return $"{Name} has area {Area()}";
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return Width * Height;
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return Side * Side;
+  }
+
+  public override string Describe() {
+    return $"Square with side {Side}";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+  <tr><td>Extend a class</td><td>(no inheritance) compose a field + <code>trait</code>/<code>impl</code></td><td><code>class D : B</code></td></tr>
+  <tr><td>Call base ctor</td><td>call the inner type's <code>new(...)</code> directly</td><td><code>: base(x)</code></td></tr>
+  <tr><td>Abstract method</td><td><code>fn f(&amp;self) -&gt; T;</code> (no body)</td><td><code>public abstract T F();</code></td></tr>
+  <tr><td>Overridable method</td><td>default trait method (<code>fn f(&amp;self) { … }</code>)</td><td>only <code>virtual</code>/<code>abstract</code></td></tr>
+  <tr><td>Override</td><td>redefine in <code>impl Trait for Type</code> (no keyword)</td><td><code>override</code> keyword required</td></tr>
+  <tr><td>Block subclassing</td><td>"sealed trait" pattern (private supertrait)</td><td><code>sealed class</code></td></tr>
+</table>
+<p>C# is stricter than Rust here, but for a different reason: Rust doesn't
+have "accidental overrides" to guard against in the first place, because
+there's no inheritance chain to shadow — every type's <code>impl</code> block
+is a self-contained, explicit list of the trait methods it provides. There's
+also no <code>base.Describe()</code> equivalent: once a type supplies its own
+implementation of a default trait method, the trait's original body isn't
+reachable from that <code>impl</code> the way <code>base.Describe()</code>
+reaches C#'s parent version. A bare <code>trait</code> can't be instantiated
+with <code>new</code> either — the closest Rust gets is a trait object like
+<code>Box&lt;dyn Shape&gt;</code>, which always wraps some concrete
+implementing type. And where C#'s <code>sealed</code> stops further
+subclassing, Rust developers reach for the "sealed trait" pattern — a
+<code>pub trait</code> that requires an unexported supertrait — to stop other
+crates from implementing a trait, while still letting anyone call its
+methods.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

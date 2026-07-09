@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Stringers & Formatting</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Stringers & Formatting",
+
+  intro: `
+<p>In Ruby you control how an object prints by defining a <code>to_s</code>
+method — string interpolation (<code>"#{x}"</code>) and <code>puts</code> both call it. Go has the exact
+same hook, spelled as an interface: any type with a <code>String() string</code> method
+satisfies <code>fmt.Stringer</code>, and the <code>fmt</code> package calls it whenever
+you print the value with <code>%v</code>, <code>%s</code>, or plain <code>Println</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>Go</th></tr>
+  <tr><td><code>def to_s; …; end</code></td><td><code>func (c C) String() string { … }</code></td></tr>
+  <tr><td><code>"#{x}"</code> calls <code>to_s</code></td><td><code>fmt.Sprintf("%v", x)</code> calls <code>String</code></td></tr>
+  <tr><td><code>x.to_s</code></td><td><code>x.String()</code> or <code>fmt.Sprint(x)</code></td></tr>
+  <tr><td><code>x.class</code> / <code>x.class.name</code></td><td><code>fmt.Sprintf("%T", x)</code></td></tr>
+  <tr><td><code>s.inspect</code> (quoting)</td><td><code>fmt.Sprintf("%q", s)</code></td></tr>
+</table>
+<p>The <code>fmt</code> verbs are worth memorizing: <code>%v</code> is the default value
+(honoring <code>String()</code>), <code>%+v</code> adds struct field names, <code>%T</code>
+prints the concrete type, <code>%q</code> prints a double-quoted, escaped string, and
+<code>%d</code> / <code>%s</code> / <code>%f</code> are the typed workhorses. Unlike
+<code>to_s</code>, you never <em>declare</em> that you implement <code>Stringer</code> —
+just define the method and Go wires it up structurally.</p>`,
+
+  ruby: `class RGB
+  attr_reader :r, :g, :b
+
+  def initialize(r, g, b)
+    @r, @g, @b = r, g, b
+  end
+
+  def to_s
+    format("#%02X%02X%02X", r, g, b)
+  end
+end
+
+red = RGB.new(255, 0, 0)
+red.to_s              # "#FF0000"
+"hi".inspect          # "\\"hi\\""`,
+
+  task: `
+<p>Write these as package-level declarations (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li>A struct <code>type RGB struct { R, G, B int }</code>.</li>
+  <li>A method <code>func (c RGB) String() string</code> that returns the hex color,
+      e.g. <code>"#FF0000"</code>. Use <code>fmt.Sprintf("#%02X%02X%02X", c.R, c.G, c.B)</code>
+      — <code>%02X</code> means uppercase hex, zero-padded to width 2. This makes
+      <code>RGB</code> satisfy <code>fmt.Stringer</code>, so <code>%v</code> calls it too.</li>
+  <li><code>Quote(s string) string</code> returns the string double-quoted and escaped
+      via <code>fmt.Sprintf("%q", s)</code>.</li>
+  <li><code>TypeName(v any) string</code> returns the concrete type name via
+      <code>fmt.Sprintf("%T", v)</code>.</li>
+</ol>`,
+
+  starter: `type RGB struct {
+	R, G, B int
+}
+
+func (c RGB) String() string {
+	return "" // TODO: format with %02X
+}
+
+func Quote(s string) string {
+	return "" // TODO: use %q
+}
+
+func TypeName(v any) string {
+	return "" // TODO: use %T
+}
+`,
+
+  requirements: [
+    { pattern: /func\s*\(\w+\s+RGB\)\s+String\s*\(\)\s+string/, message: "Implement String() string on RGB so it satisfies fmt.Stringer" },
+    { pattern: /%02X/, message: "Format each channel with the %02X verb" },
+    { pattern: /%q/, message: "Use the %q verb in Quote" },
+  ],
+
+  tests: [
+    { name: "String() renders red as #FF0000", code: "\t\texpect_eq(RGB{255, 0, 0}.String(), \"#FF0000\")" },
+    { name: "%v uses String() for a mixed color", code: "\t\texpect_eq(fmt.Sprintf(\"%v\", RGB{0, 128, 255}), \"#0080FF\")" },
+    { name: "%s also triggers Stringer", code: "\t\texpect_eq(fmt.Sprintf(\"%s\", RGB{16, 32, 48}), \"#102030\")" },
+    { name: "Quote wraps and escapes", code: "\t\texpect_eq(Quote(\"hi\"), \"\\\"hi\\\"\")" },
+    { name: "TypeName of an int", code: "\t\texpect_eq(TypeName(42), \"int\")" },
+    { name: "TypeName of the RGB struct", code: "\t\texpect_eq(TypeName(RGB{}), \"main.RGB\")" },
+  ],
+
+  solution: `type RGB struct {
+	R, G, B int
+}
+
+func (c RGB) String() string {
+	return fmt.Sprintf("#%02X%02X%02X", c.R, c.G, c.B)
+}
+
+func Quote(s string) string {
+	return fmt.Sprintf("%q", s)
+}
+
+func TypeName(v any) string {
+	return fmt.Sprintf("%T", v)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Go</th></tr>
+  <tr><td>Custom text</td><td><code>to_s</code></td><td><code>String() string</code></td></tr>
+  <tr><td>Default print</td><td><code>"#{x}"</code> / <code>puts x</code></td><td><code>%v</code></td></tr>
+  <tr><td>Struct with fields</td><td><code>x.inspect</code> / <code>p x</code></td><td><code>%+v</code> (names) / <code>%v</code></td></tr>
+  <tr><td>Type name</td><td><code>x.class</code></td><td><code>%T</code></td></tr>
+  <tr><td>Quoted string</td><td><code>s.inspect</code></td><td><code>%q</code></td></tr>
+  <tr><td>Integer / float</td><td><code>n.to_s</code></td><td><code>%d</code> / <code>%f</code></td></tr>
+</table>
+<p>A gotcha that bites everyone once: if <code>String()</code> itself calls
+<code>fmt.Sprintf("%v", c)</code> on its own receiver, you get infinite recursion,
+because <code>%v</code> calls <code>String()</code> again. Print the underlying fields
+(<code>c.R</code>, <code>c.G</code>, …) or convert to a plain type first — the same
+trap as a Ruby <code>to_s</code> that builds its result with <code>"#{self}"</code>
+instead of reading an instance variable directly.</p>
+<p>When you have no <code>String()</code> method, <code>%v</code> falls back to Go's
+built-in rendering: <code>{255 0 0}</code> for a struct, and <code>%+v</code> adds the
+field names — <code>{R:255 G:0 B:0}</code>. Those are the go-to verbs for quick
+debugging. Note <code>%T</code> prints the package-qualified name (<code>main.RGB</code>
+here) because every type carries its defining package — one step further than Ruby's
+<code>x.class</code>, which hands you the class itself (<code>RGB</code>) but no record
+of which file or module defined it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

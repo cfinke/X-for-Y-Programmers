@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods",
+
+  intro: `
+<p>You already write Java methods with real overloading — many methods
+sharing a name, distinguished by their parameter list. C# methods cover the
+same ground and add a few tools Java lacks. Every method lives inside a
+class in both languages, but C# also supports optional parameters, named
+arguments, and <code>out</code>/<code>ref</code> parameters for extra
+outputs.</p>
+<table>
+  <tr><th>Java</th><th>C#</th></tr>
+  <tr><td>overload to fake a default: <code>void f() { f(1); }</code></td><td><code>void F(int x = 1) {}</code> (optional param)</td></tr>
+  <tr><td><code>f(1)</code> (positional only)</td><td><code>F(x: 1)</code> (named argument)</td></tr>
+  <tr><td><code>void f(int... xs)</code> (varargs)</td><td><code>void F(params int[] xs)</code></td></tr>
+  <tr><td>overload <em>bodies</em>, one per signature</td><td>overload <em>bodies</em>, one per signature — same idea</td></tr>
+  <tr><td>return an array/object for extra outputs</td><td><code>out</code> / <code>ref</code> parameters</td></tr>
+</table>
+<p>Two ideas have no Java equivalent. An <code>out</code> parameter is an
+extra return channel: the method must assign it before returning, and the
+caller reads it back — the backbone of the <code>TryParse</code> pattern. A
+<code>ref</code> parameter passes a variable in and lets the method mutate
+the caller's own variable in place — something Java can't do for primitives,
+since arguments are always passed by value. Both are marked at the call site
+too, so the reader always sees which arguments a method writes to.</p>`,
+
+  java: `class Calc {
+  record DivideResult(boolean ok, int quotient) {}
+
+  static String greet(String name) {
+    return greet(name, "Hello");
+  }
+
+  static String greet(String name, String greeting) {
+    return greeting + ", " + name + "!";
+  }
+
+  static int sum(int... numbers) {
+    int total = 0;
+    for (int n : numbers) {
+      total += n;
+    }
+    return total;
+  }
+
+  // Java has no out/ref -- return a small record for the extra value
+  static DivideResult tryDivide(int a, int b) {
+    return b == 0 ? new DivideResult(false, 0) : new DivideResult(true, a / b);
+  }
+}`,
+
+  task: `
+<p>Build a <code>static class Calc</code> that shows off C#'s method features:</p>
+<ol>
+  <li><strong>Overloading:</strong> <code>Max(int a, int b)</code> returns the
+      larger, and <code>Max(int a, int b, int c)</code> returns the largest of
+      three (reuse the two-argument version).</li>
+  <li><strong>Optional parameter:</strong> <code>Greet(string name, string
+      greeting = "Hello")</code> returns <code>"Hello, Ada!"</code>, or uses the
+      supplied greeting.</li>
+  <li><strong>out parameter:</strong> <code>bool TryDivide(int a, int b, out int
+      quotient)</code> sets <code>quotient</code> to <code>a / b</code> and
+      returns <code>true</code>; when <code>b</code> is <code>0</code>, set
+      <code>quotient = 0</code> and return <code>false</code>.</li>
+  <li><strong>params array:</strong> <code>Sum(params int[] numbers)</code>
+      returns the total (and <code>Sum()</code> is <code>0</code>).</li>
+  <li><strong>ref parameter:</strong> <code>void Increment(ref int x)</code>
+      adds one to the caller's variable.</li>
+</ol>`,
+
+  starter: `static class Calc {
+  public static int Max(int a, int b) {
+    return 0; // TODO
+  }
+
+  public static int Max(int a, int b, int c) {
+    return 0; // TODO: reuse the two-argument Max
+  }
+
+  public static string Greet(string name, string greeting = "Hello") {
+    return ""; // TODO
+  }
+
+  public static bool TryDivide(int a, int b, out int quotient) {
+    quotient = 0; // out params must be assigned before returning
+    return false; // TODO
+  }
+
+  public static int Sum(params int[] numbers) {
+    return 0; // TODO
+  }
+
+  public static void Increment(ref int x) {
+    // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /\bout\s+int\s+quotient\b/, message: "TryDivide must use an out parameter (out int quotient)" },
+    { pattern: /\bparams\s+int\[\]/, message: "Sum must take a params int[] array" },
+    { pattern: /\bref\s+int\s+x\b/, message: "Increment must use a ref parameter (ref int x)" },
+  ],
+
+  tests: [
+    { name: "Max(3, 7) is 7", code: "      expect_eq(Calc.Max(3, 7), 7);" },
+    { name: "Max(3, 7, 5) is 7 (three-arg overload)", code: "      expect_eq(Calc.Max(3, 7, 5), 7);" },
+    { name: "Greet(\"Ada\") uses the default greeting", code: "      expect_eq(Calc.Greet(\"Ada\"), \"Hello, Ada!\");" },
+    { name: "Greet with a named argument", code: "      expect_eq(Calc.Greet(name: \"Rob\", greeting: \"Hi\"), \"Hi, Rob!\");" },
+    { name: "TryDivide(10, 2) succeeds with quotient 5", code: "      bool ok = Calc.TryDivide(10, 2, out int q);\n      expect_true(ok);\n      expect_eq(q, 5);" },
+    { name: "TryDivide by zero fails and yields 0", code: "      bool ok2 = Calc.TryDivide(10, 0, out int q2);\n      expect_true(!ok2);\n      expect_eq(q2, 0);" },
+    { name: "Sum(1, 2, 3, 4) is 10 and Sum() is 0", code: "      expect_eq(Calc.Sum(1, 2, 3, 4), 10);\n      expect_eq(Calc.Sum(), 0);" },
+    { name: "Increment mutates the caller's variable", code: "      int x = 5;\n      Calc.Increment(ref x);\n      expect_eq(x, 6);" },
+  ],
+
+  solution: `static class Calc {
+  public static int Max(int a, int b) {
+    return a > b ? a : b;
+  }
+
+  public static int Max(int a, int b, int c) {
+    return Max(Max(a, b), c);
+  }
+
+  public static string Greet(string name, string greeting = "Hello") {
+    return $"{greeting}, {name}!";
+  }
+
+  public static bool TryDivide(int a, int b, out int quotient) {
+    if (b == 0) {
+      quotient = 0;
+      return false;
+    }
+    quotient = a / b;
+    return true;
+  }
+
+  public static int Sum(params int[] numbers) {
+    int total = 0;
+    foreach (int n in numbers) {
+      total += n;
+    }
+    return total;
+  }
+
+  public static void Increment(ref int x) {
+    x++;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>C#</th></tr>
+  <tr><td>Optional parameter</td><td>overload: <code>f(int x)</code> + <code>f()</code></td><td><code>F(int x = 1)</code></td></tr>
+  <tr><td>Named argument</td><td>—</td><td><code>F(x: 1)</code></td></tr>
+  <tr><td>Rest / params</td><td><code>int... xs</code></td><td><code>params int[] xs</code></td></tr>
+  <tr><td>Overloading</td><td>a full body per signature</td><td>a full body per signature — same idea</td></tr>
+  <tr><td>Extra output</td><td>return an array/object</td><td><code>out</code> parameter</td></tr>
+  <tr><td>Mutate caller's variable</td><td>—</td><td><code>ref</code> parameter</td></tr>
+</table>
+<p>A few sharp edges. Optional parameters must come after all required ones, and
+their defaults must be compile-time constants — so <code>string greeting =
+"Hello"</code> is fine but <code>DateTime.Now</code> is not. Named arguments let
+you skip past optional parameters and document call sites, something Java's
+overload-per-signature approach can't offer. <code>out</code> variables can be
+declared right in the call — <code>TryDivide(10, 2, out int q)</code> — and the
+<code>Try…</code>-returns-<code>bool</code> shape is idiomatic all through the
+.NET library (<code>int.TryParse</code>, <code>Dictionary.TryGetValue</code>),
+much like Java's own <code>Optional</code>-returning methods signal "this might
+not produce a value." Finally, only one <code>params</code> array is allowed
+and it must be the last parameter — just like Java's varargs — and the caller
+may pass loose arguments or a real array.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Collections & LINQ</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Collections & LINQ",
+
+  intro: `
+<p>You already know Rust's iterator adapters — <code>filter</code>,
+<code>map</code>, <code>sort_by</code>, <code>fold</code>, <code>find</code>. C#
+has the exact same idea under the name <strong>LINQ</strong> (Language
+Integrated Query), a set of extension methods over <code>IEnumerable&lt;T&gt;</code>
+that live in the <code>System.Linq</code> namespace. The names differ, and the
+lambdas take C# expression syntax, but the chaining style is identical.</p>
+<table>
+  <tr><th>Rust (iterator)</th><th>C# (LINQ)</th></tr>
+  <tr><td><code>iter.filter(|x| *x &gt; 0)</code></td><td><code>arr.Where(x =&gt; x &gt; 0)</code></td></tr>
+  <tr><td><code>iter.map(|x| x.name.clone())</code></td><td><code>arr.Select(x =&gt; x.Name)</code></td></tr>
+  <tr><td><code>v.sort_by(|a,b| a.cmp(b))</code></td><td><code>arr.OrderBy(x =&gt; x)</code></td></tr>
+  <tr><td><code>iter.find(p).cloned()</code></td><td><code>arr.FirstOrDefault(p)</code></td></tr>
+  <tr><td><code>iter.any(p)</code> / <code>iter.all(p)</code></td><td><code>arr.Any(p)</code> / <code>arr.All(p)</code></td></tr>
+  <tr><td><code>iter.fold(seed, f)</code></td><td><code>arr.Aggregate(seed, f)</code></td></tr>
+</table>
+<p>Two differences worth internalizing. First, LINQ operators are
+<strong>lazy</strong> in exactly the way Rust's iterator adapters are —
+<code>Where</code> and <code>Select</code> return a
+deferred <code>IEnumerable&lt;T&gt;</code> that only runs when you enumerate it,
+so you finish a query with <code>ToList()</code> or <code>ToDictionary(...)</code>
+the same way you'd call <code>.collect()</code> to run a Rust iterator chain.
+Second, sorting is out-of-place and composable: <code>OrderBy</code> gives the
+primary key and <code>ThenBy</code> adds tie-breakers, all within the same lazy
+chain — unlike Rust, where <code>sort_by</code> / <code>sort_by_key</code>
+aren't iterator adapters at all; they mutate a <code>Vec</code> in place, so
+you <code>collect()</code> first and sort afterward.</p>`,
+
+  rust: `struct Product {
+    name: String,
+    category: String,
+    price: f64,
+    stock: i32,
+}
+
+fn names_under(products: &[Product], max: f64) -> Vec<String> {
+    let mut matches: Vec<&Product> = products.iter()
+        .filter(|p| p.price < max)
+        .collect();
+    matches.sort_by(|a, b| {
+        a.price.partial_cmp(&b.price).unwrap().then(a.name.cmp(&b.name))
+    });
+    matches.into_iter().map(|p| p.name.clone()).collect()
+}
+
+let total: f64 = products.iter().fold(0.0, |sum, p| sum + p.price * p.stock as f64);`,
+
+  task: `
+<p>A <code>Product</code> class and a <code>Catalog.Sample()</code> helper (a
+<code>List&lt;Product&gt;</code>) are provided. Fill in the LINQ queries on
+<code>static class Catalog</code>:</p>
+<ol>
+  <li><code>NamesUnder(products, maxPrice)</code> → <code>List&lt;string&gt;</code>:
+      keep products cheaper than <code>maxPrice</code>
+      (<code>Where</code>), order by price then name
+      (<code>OrderBy</code> / <code>ThenBy</code>), project to the name
+      (<code>Select</code>), and materialize with <code>ToList()</code>.</li>
+  <li><code>TotalValue(products)</code> → <code>double</code>: use
+      <code>Sum</code> of <code>price * stock</code>.</li>
+  <li><code>Cheapest(products)</code> → <code>string</code>: <code>OrderBy</code>
+      price then take <code>FirstOrDefault()</code>; return its
+      <code>Name</code> (or <code>""</code> if the list is empty).</li>
+  <li><code>AnyExpensive(products, threshold)</code> → <code>bool</code> with
+      <code>Any</code>; <code>AllInStock(products)</code> → <code>bool</code>
+      with <code>All</code> (<code>stock &gt; 0</code>).</li>
+  <li><code>CountIn(products, category)</code> → <code>int</code> with
+      <code>Count</code>.</li>
+  <li><code>CategoryCounts(products)</code> →
+      <code>Dictionary&lt;string,int&gt;</code>: <code>GroupBy</code> category,
+      then <code>ToDictionary(g =&gt; g.Key, g =&gt; g.Count())</code>.</li>
+  <li><code>Summary(products)</code> → <code>string</code>: fold the names into
+      <code>"Apple, Bread, ..."</code> with <code>Aggregate</code>.</li>
+</ol>`,
+
+  starter: `class Product {
+  public string Name { get; set; }
+  public string Category { get; set; }
+  public double Price { get; set; }
+  public int Stock { get; set; }
+  public Product(string name, string category, double price, int stock) {
+    Name = name;
+    Category = category;
+    Price = price;
+    Stock = stock;
+  }
+}
+
+static class Catalog {
+  // Provided sample data — leave this as-is.
+  public static List<Product> Sample() {
+    return new List<Product> {
+      new Product("Apple", "Food", 1.5, 10),
+      new Product("Bread", "Food", 2.5, 0),
+      new Product("Notebook", "Office", 3.0, 5),
+      new Product("Pen", "Office", 1.0, 20),
+      new Product("Desk", "Furniture", 100.0, 2),
+    };
+  }
+
+  public static List<string> NamesUnder(List<Product> products, double maxPrice) {
+    return null; // TODO: Where / OrderBy / ThenBy / Select / ToList
+  }
+
+  public static double TotalValue(List<Product> products) {
+    return 0; // TODO: Sum of price * stock
+  }
+
+  public static string Cheapest(List<Product> products) {
+    return ""; // TODO: OrderBy price, FirstOrDefault
+  }
+
+  public static bool AnyExpensive(List<Product> products, double threshold) {
+    return false; // TODO: Any
+  }
+
+  public static bool AllInStock(List<Product> products) {
+    return false; // TODO: All (stock > 0)
+  }
+
+  public static int CountIn(List<Product> products, string category) {
+    return 0; // TODO: Count
+  }
+
+  public static Dictionary<string, int> CategoryCounts(List<Product> products) {
+    return null; // TODO: GroupBy + ToDictionary
+  }
+
+  public static string Summary(List<Product> products) {
+    return ""; // TODO: Aggregate the names into "Apple, Bread, ..."
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /\.Where\(/, message: "Filter with .Where(...)" },
+    { pattern: /\.GroupBy\(/, message: "Group with .GroupBy(...) and finish with ToDictionary(...)" },
+    { pattern: /\.Aggregate\(/, message: "Fold the names with .Aggregate(...)" },
+  ],
+
+  tests: [
+    { name: "TotalValue sums price * stock to 250.0", code:
+"      var ps = Catalog.Sample();\n" +
+"      expect_eq(Catalog.TotalValue(ps), 250.0);" },
+    { name: "NamesUnder(3.0) filters and sorts by price then name", code:
+"      var ps = Catalog.Sample();\n" +
+"      expect_eq(string.Join(\",\", Catalog.NamesUnder(ps, 3.0)), \"Pen,Apple,Bread\");" },
+    { name: "Cheapest returns the lowest-priced name", code:
+"      expect_eq(Catalog.Cheapest(Catalog.Sample()), \"Pen\");" },
+    { name: "Any / All predicates", code:
+"      var ps = Catalog.Sample();\n" +
+"      expect_true(Catalog.AnyExpensive(ps, 50.0));\n" +
+"      expect_true(!Catalog.AllInStock(ps));" },
+    { name: "CountIn(\"Food\") is 2", code:
+"      expect_eq(Catalog.CountIn(Catalog.Sample(), \"Food\"), 2);" },
+    { name: "CategoryCounts groups by category", code:
+"      var counts = Catalog.CategoryCounts(Catalog.Sample());\n" +
+"      expect_eq(counts[\"Food\"], 2);\n" +
+"      expect_eq(counts[\"Office\"], 2);\n" +
+"      expect_eq(counts[\"Furniture\"], 1);" },
+    { name: "Summary folds names with Aggregate", code:
+"      expect_eq(Catalog.Summary(Catalog.Sample()), \"Apple, Bread, Notebook, Pen, Desk\");" },
+  ],
+
+  solution: `class Product {
+  public string Name { get; set; }
+  public string Category { get; set; }
+  public double Price { get; set; }
+  public int Stock { get; set; }
+  public Product(string name, string category, double price, int stock) {
+    Name = name;
+    Category = category;
+    Price = price;
+    Stock = stock;
+  }
+}
+
+static class Catalog {
+  public static List<Product> Sample() {
+    return new List<Product> {
+      new Product("Apple", "Food", 1.5, 10),
+      new Product("Bread", "Food", 2.5, 0),
+      new Product("Notebook", "Office", 3.0, 5),
+      new Product("Pen", "Office", 1.0, 20),
+      new Product("Desk", "Furniture", 100.0, 2),
+    };
+  }
+
+  public static List<string> NamesUnder(List<Product> products, double maxPrice) {
+    return products
+      .Where(p => p.Price < maxPrice)
+      .OrderBy(p => p.Price)
+      .ThenBy(p => p.Name)
+      .Select(p => p.Name)
+      .ToList();
+  }
+
+  public static double TotalValue(List<Product> products) {
+    return products.Sum(p => p.Price * p.Stock);
+  }
+
+  public static string Cheapest(List<Product> products) {
+    Product p = products.OrderBy(x => x.Price).FirstOrDefault();
+    return p == null ? "" : p.Name;
+  }
+
+  public static bool AnyExpensive(List<Product> products, double threshold) {
+    return products.Any(p => p.Price > threshold);
+  }
+
+  public static bool AllInStock(List<Product> products) {
+    return products.All(p => p.Stock > 0);
+  }
+
+  public static int CountIn(List<Product> products, string category) {
+    return products.Count(p => p.Category == category);
+  }
+
+  public static Dictionary<string, int> CategoryCounts(List<Product> products) {
+    return products
+      .GroupBy(p => p.Category)
+      .ToDictionary(g => g.Key, g => g.Count());
+  }
+
+  public static string Summary(List<Product> products) {
+    return products.Aggregate("", (acc, p) => acc == "" ? p.Name : acc + ", " + p.Name);
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Operation</th><th>Rust</th><th>C# / LINQ</th></tr>
+  <tr><td>Filter</td><td><code>filter(p)</code></td><td><code>Where(p)</code></td></tr>
+  <tr><td>Project</td><td><code>map(f)</code></td><td><code>Select(f)</code></td></tr>
+  <tr><td>Sort (primary + tie-break)</td><td><code>sort_by</code> with a combined comparator</td><td><code>OrderBy(...).ThenBy(...)</code></td></tr>
+  <tr><td>First match</td><td><code>find</code></td><td><code>First</code> / <code>FirstOrDefault</code></td></tr>
+  <tr><td>Exists / for-all</td><td><code>any</code> / <code>all</code></td><td><code>Any</code> / <code>All</code></td></tr>
+  <tr><td>Count</td><td><code>filter(p).count()</code></td><td><code>Count(p)</code></td></tr>
+  <tr><td>Sum</td><td><code>map(f).sum()</code></td><td><code>Sum(f)</code></td></tr>
+  <tr><td>Fold</td><td><code>fold(seed, f)</code></td><td><code>Aggregate(seed, f)</code></td></tr>
+  <tr><td>Group</td><td>manual <code>HashMap</code> loop</td><td><code>GroupBy(k)</code></td></tr>
+  <tr><td>Materialize</td><td><code>collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td><code>ToList()</code> / <code>ToDictionary(...)</code></td></tr>
+</table>
+<p><code>First</code> vs <code>FirstOrDefault</code> mirrors the difference between
+assuming a match and handling its absence: <code>First</code> throws on an empty
+sequence, while <code>FirstOrDefault</code> returns the type's default
+(<code>null</code> for a class, <code>0</code> for an <code>int</code>) — the
+closest analog to Rust's <code>find</code> returning <code>None</code> instead
+of panicking. The fold argument order will feel familiar either way: Rust's
+<code>fold(seed, |acc, x| ...)</code> puts the seed first, exactly like C#'s
+<code>Aggregate(seed, f)</code>.</p>
+<p>Because LINQ is lazy, a chain like <code>Where(...).Select(...)</code> does no
+work until something enumerates it — the same story as a Rust
+<code>filter(...).map(...)</code> chain doing nothing until you call
+<code>.collect()</code>, <code>.sum()</code>, or iterate it with a
+<code>for</code> loop. A stray <code>Count()</code> or a second
+<code>foreach</code> re-runs the whole pipeline, so call <code>ToList()</code>
+once when you need to iterate the result more than once — the same reason
+you'd collect a Rust iterator into a <code>Vec</code> before reusing it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

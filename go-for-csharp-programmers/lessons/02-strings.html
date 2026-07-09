@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>A Go <code>string</code> is an immutable, read-only slice of bytes — usually
+UTF-8 text. Like C# you concatenate with <code>+</code>, but there is no
+string-interpolation syntax and no rich method syntax on the string itself:
+you call <em>package-level functions</em> instead of <code>s.Method()</code>.
+Formatting lives in <code>fmt</code>, everyday text manipulation in
+<code>strings</code>, and number/string conversion in <code>strconv</code>.</p>
+<table>
+  <tr><th>C#</th><th>Go</th></tr>
+  <tr><td><code>$"{a} {b}"</code></td><td><code>fmt.Sprintf("%s %d", a, b)</code></td></tr>
+  <tr><td><code>s.ToUpper()</code></td><td><code>strings.ToUpper(s)</code></td></tr>
+  <tr><td><code>s.Contains(x)</code></td><td><code>strings.Contains(s, x)</code></td></tr>
+  <tr><td><code>s.Trim()</code></td><td><code>strings.TrimSpace(s)</code></td></tr>
+  <tr><td><code>n.ToString()</code></td><td><code>strconv.Itoa(n)</code></td></tr>
+  <tr><td><code>s.Length</code></td><td><code>len(s)</code> (bytes!) / rune count via <code>range</code></td></tr>
+</table>
+<p>The verbs you will reach for constantly: <code>%s</code> (string),
+<code>%d</code> (integer), <code>%q</code> (double-quoted string), and
+<code>%v</code> (any value in its default form). The <code>strings</code>
+package also gives you <code>Split</code>, <code>Join</code>, <code>Replace</code>,
+<code>HasPrefix</code>, and friends — all as functions that take the string as
+their first argument.</p>
+<p>The one real surprise for a C# programmer is length.
+<code>len(s)</code> counts <em>bytes</em>, not characters. Because Go stores
+UTF-8, a multi-byte character like <code>"é"</code> or an emoji makes
+<code>len</code> larger than the number of visible characters — unlike C#'s
+UTF-16 <code>string.Length</code>, which counts <code>char</code> units. To
+count actual characters (runes), iterate with <code>for range</code>, which
+decodes one rune per step.</p>`,
+
+  csharp: `string name = "Ada";
+int count = 3;
+string msg = $"{name} has {count} messages";
+
+string loud = "  go  ".Trim().ToUpper(); // "GO"
+string label = 5.ToString() + " items";   // "5 items"
+int chars = "héllo".Length;               // 5`,
+
+  task: `
+<p>Write these as package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>Announce(name string, count int) string</code> returns a line like
+      <code>"Ada has 3 messages"</code> — build it with
+      <code>fmt.Sprintf("%s has %d messages", name, count)</code>.</li>
+  <li><code>Normalize(s string) string</code> trims surrounding whitespace and
+      uppercases the result, so <code>Normalize("  go  ")</code> is
+      <code>"GO"</code>. Compose <code>strings.TrimSpace</code> and
+      <code>strings.ToUpper</code>.</li>
+  <li><code>CountLabel(n int) string</code> returns <code>n</code> followed by
+      <code>" items"</code>, e.g. <code>CountLabel(5)</code> is
+      <code>"5 items"</code> — convert with <code>strconv.Itoa(n)</code>.</li>
+  <li><code>RuneLength(s string) int</code> returns the number of runes
+      (characters) in <code>s</code>. Loop with <code>for range s</code> and
+      count the iterations — do <em>not</em> return <code>len(s)</code>, which is
+      bytes.</li>
+</ol>`,
+
+  starter: `func Announce(name string, count int) string {
+	return "" // TODO
+}
+
+func Normalize(s string) string {
+	return "" // TODO
+}
+
+func CountLabel(n int) string {
+	return "" // TODO
+}
+
+func RuneLength(s string) int {
+	return 0 // TODO: count runes, not bytes
+}
+`,
+
+  requirements: [
+    { pattern: /fmt\.Sprintf/, message: "Use fmt.Sprintf to build the string in Announce" },
+    { pattern: /strings\.ToUpper/, message: "Use strings.ToUpper in Normalize" },
+    { pattern: /strconv\.Itoa/, message: "Use strconv.Itoa to convert the number in CountLabel" },
+  ],
+
+  tests: [
+    { name: "Announce(\"Ada\", 3) is \"Ada has 3 messages\"", code: "\t\texpect_eq(Announce(\"Ada\", 3), \"Ada has 3 messages\")" },
+    { name: "Announce(\"Rob\", 0) is \"Rob has 0 messages\"", code: "\t\texpect_eq(Announce(\"Rob\", 0), \"Rob has 0 messages\")" },
+    { name: "Normalize(\"  go  \") is \"GO\"", code: "\t\texpect_eq(Normalize(\"  go  \"), \"GO\")" },
+    { name: "Normalize(\"Hello\\t\") is \"HELLO\"", code: "\t\texpect_eq(Normalize(\"Hello\\t\"), \"HELLO\")" },
+    { name: "CountLabel(5) is \"5 items\"", code: "\t\texpect_eq(CountLabel(5), \"5 items\")" },
+    { name: "CountLabel(42) is \"42 items\"", code: "\t\texpect_eq(CountLabel(42), \"42 items\")" },
+    { name: "RuneLength(\"héllo\") is 5 (len would be 6)", code: "\t\texpect_eq(RuneLength(\"héllo\"), 5)" },
+    { name: "RuneLength(\"🎉\") is 1 (len would be 4)", code: "\t\texpect_eq(RuneLength(\"🎉\"), 1)" },
+    { name: "RuneLength(\"\") is 0", code: "\t\texpect_eq(RuneLength(\"\"), 0)" },
+  ],
+
+  solution: `func Announce(name string, count int) string {
+	return fmt.Sprintf("%s has %d messages", name, count)
+}
+
+func Normalize(s string) string {
+	return strings.ToUpper(strings.TrimSpace(s))
+}
+
+func CountLabel(n int) string {
+	return strconv.Itoa(n) + " items"
+}
+
+func RuneLength(s string) int {
+	count := 0
+	for range s {
+		count++
+	}
+	return count
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+  <tr><td>Interpolate</td><td><code>$"{x}"</code></td><td><code>fmt.Sprintf("%v", x)</code></td></tr>
+  <tr><td>Quote a value</td><td><code>JsonSerializer.Serialize(s)</code></td><td><code>fmt.Sprintf("%q", s)</code></td></tr>
+  <tr><td>Contains</td><td><code>s.Contains(x)</code></td><td><code>strings.Contains(s, x)</code></td></tr>
+  <tr><td>Split / Join</td><td><code>s.Split(',')</code> / <code>string.Join(",", a)</code></td><td><code>strings.Split(s, ",")</code> / <code>strings.Join(a, ",")</code></td></tr>
+  <tr><td>Replace all</td><td><code>s.Replace(a, b)</code></td><td><code>strings.ReplaceAll(s, a, b)</code></td></tr>
+  <tr><td>Prefix test</td><td><code>s.StartsWith(p)</code></td><td><code>strings.HasPrefix(s, p)</code></td></tr>
+  <tr><td>String → int</td><td><code>int.Parse(s)</code> / <code>int.TryParse(s, out n)</code></td><td><code>strconv.Atoi(s)</code> (returns value + error)</td></tr>
+  <tr><td>Char count</td><td><code>s.Length</code> (UTF-16 units)</td><td><code>for range s</code> (or <code>utf8.RuneCountInString</code>)</td></tr>
+</table>
+<p>Two habits carry over from this lesson. First, text operations are functions,
+not methods — you will import <code>strings</code> and <code>strconv</code>
+constantly, and their functions all take the data as the first argument. Second,
+respect the byte/rune distinction: <code>len(s)</code> is bytes and indexing
+<code>s[i]</code> gives you a single <code>byte</code>, while <code>for i, r :=
+range s</code> hands you the byte offset <code>i</code> and the decoded rune
+<code>r</code>. This is a stricter split than C#'s <code>char</code> (a UTF-16
+code unit); when you truly need Unicode characters, range or the
+<code>unicode/utf8</code> helpers are the correct tools.</p>
+<p>Note that <code>strconv.Atoi</code> returns <em>two</em> values — the number
+and an <code>error</code> — because parsing can fail, much like
+<code>int.TryParse</code> returning a <code>bool</code> plus an <code>out</code>
+parameter instead of throwing. That two-value error return is Go's central
+idiom, and it is the subject of a later lesson.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring",
+
+  intro: `
+<p>Kotlin already has <em>destructuring declarations</em>, so the idea isn't
+new — but Kotlin's version is <strong>positional</strong>:
+<code>val (name, age) = user</code> calls <code>component1()</code>,
+<code>component2()</code> in order, so it only works on data classes (or types
+that define <code>componentN</code>) and you must get the order right.
+TypeScript destructures <strong>by name</strong> on any object, anywhere a
+variable is declared — <code>const { name, age } = user;</code> pulls the
+<code>name</code> and <code>age</code> properties regardless of position.</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td><code>val (name, _, age) = user</code> (positional — must skip email)</td><td><code>const { name, age } = user;</code></td></tr>
+  <tr><td><code>val (first, second) = pair</code></td><td><code>const [first, second] = pair;</code></td></tr>
+  <tr><td><code>val city = user.city ?: "Unknown"</code> (elvis after extract)</td><td><code>const { city = "Unknown" } = user;</code> (default)</td></tr>
+  <tr><td>— (positional, no rename)</td><td><code>const { name: userName } = user;</code> (rename)</td></tr>
+  <tr><td>lambda-only: <code>list.map { (first, last) -> ... }</code></td><td><code>function f({ first, last }: Person)</code> (parameter destructuring)</td></tr>
+</table>
+<p>Three refinements you get for free: <strong>defaults</strong>
+(<code>city = "Unknown"</code> applies when the property is missing or
+<code>undefined</code> — no separate elvis needed), <strong>renaming</strong>
+(<code>{ name: userName }</code> reads "extract <code>name</code>, call it
+<code>userName</code>" — note the colon does <em>not</em> mean a type here,
+unlike Kotlin), and <strong>parameter destructuring</strong>, where the
+unpacking happens right in the function signature. Kotlin only allows that in
+lambda parameters; TypeScript allows it on any function. That last one is the
+backbone of idiomatic TypeScript APIs: instead of a long parameter list or a
+builder, a function takes one options object and destructures it on arrival.</p>`,
+
+  kotlin: `data class User(val name: String, val email: String, val age: Int)
+
+val user = User("Ada", "ada@example.com", 36)
+
+// Destructuring declaration — positional (component1/2/3), so skip email with _.
+val (name, _, age) = user
+println("$name ($age)")
+
+val pair = listOf(1, 2)
+val (first, second) = pair
+
+// It's by position, not by property name, and there are no defaults or renames:
+val (n, e, a) = user
+println("$n <$e>")`,
+
+  task: `
+<p>Write three functions, each leaning on a different flavor of
+destructuring:</p>
+<ol>
+  <li><code>describeUser(user: { name: string; age: number; city?: string }): string</code>
+      — destructure <code>name</code>, <code>age</code>, and <code>city</code>
+      in one <code>const { ... } = user;</code> statement, giving
+      <code>city</code> the default <code>"Unknown"</code>. Return
+      <code>"Ada (36) from London"</code> — or
+      <code>"Ada (36) from Unknown"</code> when no city is present.</li>
+  <li><code>swap(pair: [number, number]): [number, number]</code> — use array
+      destructuring (<code>const [first, second] = pair;</code>) and return
+      the two elements in reversed order.</li>
+  <li><code>fullName(person: { first: string; last: string }): string</code>
+      — change the signature to destructure <em>in the parameter list</em>:
+      <code>fullName({ first, last }: { first: string; last: string })</code>.
+      Return <code>"first last"</code> joined with a space.</li>
+</ol>`,
+
+  starter: `// 1. Object destructuring with a default value.
+//    Java: String name = user.name(); int age = user.age(); ...
+function describeUser(user: { name: string; age: number; city?: string }): string {
+  // TODO: const { name, age, city = "Unknown" } = user;
+  //       then return "<name> (<age>) from <city>"
+  return "";
+}
+
+// 2. Array destructuring.
+function swap(pair: [number, number]): [number, number] {
+  // TODO: const [first, second] = pair; return them reversed
+  return pair;
+}
+
+// 3. Parameter destructuring — unpack right in the signature.
+//    TODO: change the parameter to { first, last }: { first: string; last: string }
+function fullName(person: { first: string; last: string }): string {
+  // TODO: return "<first> <last>"
+  return "";
+}
+`,
+
+  exportNames: ["describeUser", "swap", "fullName"],
+
+  requirements: [
+    { pattern: /const\s*\{/, message: "Use object destructuring: const { ... } = user;" },
+    { pattern: /const\s*\[/, message: "Use array destructuring: const [first, second] = pair;" },
+    { pattern: /city\s*=\s*"Unknown"/, message: 'Give city a destructuring default: { city = "Unknown" }' },
+    { pattern: /\(\s*\{\s*first\s*,\s*last\s*\}/, message: "Destructure { first, last } directly in fullName's parameter list" },
+  ],
+
+  tests: [
+    { name: 'describeUser with a city returns "Ada (36) from London"', run: (x) => expectEqual(x.describeUser({ name: "Ada", age: 36, city: "London" }), "Ada (36) from London") },
+    { name: 'describeUser without a city falls back to "Unknown"', run: (x) => expectEqual(x.describeUser({ name: "Linus", age: 55 }), "Linus (55) from Unknown") },
+    { name: "swap([1, 2]) returns [2, 1]", run: (x) => expectDeepEqual(x.swap([1, 2]), [2, 1]) },
+    { name: "swap([7, 7]) returns [7, 7]", run: (x) => expectDeepEqual(x.swap([7, 7]), [7, 7]) },
+    { name: 'fullName({ first: "Grace", last: "Hopper" }) returns "Grace Hopper"', run: (x) => expectEqual(x.fullName({ first: "Grace", last: "Hopper" }), "Grace Hopper") },
+  ],
+
+  solution: `function describeUser(user: { name: string; age: number; city?: string }): string {
+  const { name, age, city = "Unknown" } = user;
+  return name + " (" + age + ") from " + city;
+}
+
+function swap(pair: [number, number]): [number, number] {
+  const [first, second] = pair;
+  return [second, first];
+}
+
+function fullName({ first, last }: { first: string; last: string }): string {
+  return first + " " + last;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Extract fields</td><td><code>val (name, _, age) = user</code> — positional</td><td><code>const { name, age } = user;</code></td></tr>
+  <tr><td>Extract by position</td><td><code>val (first, second) = pair</code></td><td><code>const [first, second] = pair;</code></td></tr>
+  <tr><td>Default for missing value</td><td><code>user.city ?: "Unknown"</code></td><td><code>const { city = "Unknown" } = user;</code></td></tr>
+  <tr><td>Rename while extracting</td><td>— (positional, no rename)</td><td><code>const { name: userName } = user;</code></td></tr>
+  <tr><td>Unpack in a signature</td><td>lambda params only: <code>{ (first, last) -> ... }</code></td><td><code>function f({ first, last }: Person)</code></td></tr>
+  <tr><td>Skip / collect the rest</td><td><code>_</code> skips; no rest binding</td><td><code>const [head, ...tail] = xs;</code></td></tr>
+</table>
+<p>One reading trap for Kotlin eyes: TypeScript destructures <em>by property
+name</em>, not by position, so <code>const { age, name } = user</code> works
+fine regardless of order — the opposite of Kotlin's <code>componentN</code>.
+And in a destructuring pattern the colon means <em>rename</em>, not
+<em>type</em> — <code>const { name: n } = user</code> binds a variable
+<code>n</code>. The type annotation, if you want one, goes after the whole
+pattern: <code>const { name }: User = user;</code>. Once that clicks, parameter
+destructuring plus defaults becomes your one-stop replacement for options
+objects: one parameter, unpacked and defaulted in the signature itself.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

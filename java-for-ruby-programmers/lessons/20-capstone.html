@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put it together. Over this course you have met Java's records,
+interfaces, generics, streams, and exceptions one at a time. A real component
+uses all of them at once. In this capstone you will build a tiny <strong>typed
+in-memory repository</strong> — the kind of thing you would reach for the moment
+you needed a stand-in for a database in a Ruby service.</p>
+<table>
+  <tr><th>Ruby</th><th>Java</th></tr>
+  <tr><td>any object that responds to <code>id</code> (duck typing)</td><td><code>interface Entity { int id(); }</code></td></tr>
+  <tr><td><code>class Repo</code></td><td><code>class Repo&lt;T extends Entity&gt;</code></td></tr>
+  <tr><td><code>@store = {}</code> (a <code>Hash</code>)</td><td><code>Map&lt;Integer, T&gt;</code></td></tr>
+  <tr><td><code>arr.select(&amp;pred).sort_by(&amp;:id)</code></td><td><code>stream().filter(p).sorted(...)</code></td></tr>
+  <tr><td><code>raise "..."</code></td><td><code>throw new NotFoundException(id)</code></td></tr>
+</table>
+<p>The shape is one you know: a container keyed by id, a lookup that raises
+when the key is missing, and a query method that takes a predicate and
+returns filtered, sorted results. Each piece is small; the point is that in
+Java the type parameter <code>T extends Entity</code> threads through all of
+them so the same repository serves <code>User</code>, <code>Product</code>,
+or any future record without a single cast — a compile-time guarantee that
+Ruby's duck typing only gives you at runtime.</p>`,
+
+  ruby: `class Repo
+  def initialize
+    @store = {}
+  end
+
+  def add(entity)
+    @store[entity.id] = entity
+    entity
+  end
+
+  def get(id)
+    value = @store[id]
+    raise "no entity with id #{id}" if value.nil?
+    value
+  end
+
+  def where(&pred)
+    @store.values.select(&pred).sort_by(&:id)
+  end
+end`,
+
+  task: `
+<p>Build the repository and the two record types it will store. This exercise
+deliberately spans the whole course: a generic class, records behind an
+interface, a stream query, and a custom exception.</p>
+<ol>
+  <li>Declare <code>interface Entity</code> with a single method
+      <code>int id()</code>.</li>
+  <li>Make <code>User(int id, String name, int age)</code> and
+      <code>Product(int id, String title, double price)</code> records that
+      <code>implements Entity</code>. (A record's <code>id()</code> accessor
+      already satisfies the interface.)</li>
+  <li>Declare a <code>NotFoundException</code> that
+      <code>extends RuntimeException</code>; its constructor takes an
+      <code>int id</code> and calls <code>super("no entity with id " + id)</code>.</li>
+  <li>Write a generic <code>class Repo&lt;T extends Entity&gt;</code> backed by a
+      <code>Map&lt;Integer, T&gt;</code> with:
+      <ul>
+        <li><code>T add(T entity)</code> — stores it keyed by <code>entity.id()</code> and returns it.</li>
+        <li><code>T get(int id)</code> — returns the entity or throws
+            <code>NotFoundException</code> if absent.</li>
+        <li><code>Optional&lt;T&gt; find(int id)</code> — returns the entity wrapped, or empty.</li>
+        <li><code>int count()</code> — how many are stored.</li>
+        <li><code>List&lt;T&gt; where(Predicate&lt;T&gt; pred)</code> — a
+            <strong>stream</strong> that filters by the predicate and returns the
+            matches <strong>sorted by id ascending</strong>.</li>
+      </ul></li>
+</ol>
+<p><code>Predicate</code> lives in <code>java.util.function</code>, so keep the
+<code>import java.util.function.*;</code> line at the top.</p>`,
+
+  starter: `import java.util.function.*;
+
+interface Entity {
+  int id();
+}
+
+record User(int id, String name, int age) implements Entity {}
+
+record Product(int id, String title, double price) implements Entity {}
+
+class NotFoundException extends RuntimeException {
+  NotFoundException(int id) {
+    super("no entity with id " + id);
+  }
+}
+
+class Repo<T extends Entity> {
+  private final Map<Integer, T> store = new HashMap<>();
+
+  T add(T entity) {
+    return null; // TODO: store by id and return it
+  }
+
+  T get(int id) {
+    return null; // TODO: return the entity or throw NotFoundException
+  }
+
+  Optional<T> find(int id) {
+    return null; // TODO: wrap the lookup in an Optional
+  }
+
+  int count() {
+    return 0; // TODO
+  }
+
+  List<T> where(Predicate<T> pred) {
+    return null; // TODO: stream, filter, and sort by id
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Repo\s*<\s*T\s+extends\s+Entity\s*>/, message: "Declare a generic class Repo<T extends Entity>" },
+    { pattern: /record\s+\w+\s*\([^)]*\)\s+implements\s+Entity/, message: "Model the entities as records that implement Entity" },
+    { pattern: /class\s+NotFoundException\s+extends\s+RuntimeException/, message: "Declare NotFoundException extends RuntimeException" },
+    { pattern: /\.stream\(\)/, message: "Use a stream to implement where()" },
+  ],
+
+  tests: [
+    { name: "add then get returns the stored user", code: "      Repo<User> repo = new Repo<>();\n      repo.add(new User(1, \"Ada\", 36));\n      expect_eq(repo.get(1), new User(1, \"Ada\", 36));" },
+    { name: "get on a missing id throws NotFoundException", code: "      Repo<User> repo = new Repo<>();\n      boolean threw = false;\n      try { repo.get(99); } catch (NotFoundException e) { threw = true; }\n      expect_true(threw);" },
+    { name: "find on a missing id returns an empty Optional", code: "      Repo<User> repo = new Repo<>();\n      expect_true(repo.find(5).isEmpty());" },
+    { name: "count reflects how many were added", code: "      Repo<User> repo = new Repo<>();\n      repo.add(new User(1, \"Ada\", 36));\n      repo.add(new User(2, \"Bob\", 40));\n      expect_eq(repo.count(), 2);" },
+    { name: "where filters and sorts matches by id", code: "      Repo<User> repo = new Repo<>();\n      repo.add(new User(3, \"Cy\", 20));\n      repo.add(new User(1, \"Ada\", 36));\n      repo.add(new User(2, \"Bob\", 40));\n      List<User> adults = repo.where(u -> u.age() >= 30);\n      expect_eq(adults.size(), 2);\n      expect_eq(adults.get(0), new User(1, \"Ada\", 36));\n      expect_eq(adults.get(1), new User(2, \"Bob\", 40));" },
+    { name: "the same generic Repo serves a different record type", code: "      Repo<Product> shop = new Repo<>();\n      shop.add(new Product(10, \"Book\", 9.99));\n      expect_eq(shop.get(10).price(), 9.99);\n      expect_true(shop.find(11).isEmpty());" },
+  ],
+
+  solution: `import java.util.function.*;
+
+interface Entity {
+  int id();
+}
+
+record User(int id, String name, int age) implements Entity {}
+
+record Product(int id, String title, double price) implements Entity {}
+
+class NotFoundException extends RuntimeException {
+  NotFoundException(int id) {
+    super("no entity with id " + id);
+  }
+}
+
+class Repo<T extends Entity> {
+  private final Map<Integer, T> store = new HashMap<>();
+
+  T add(T entity) {
+    store.put(entity.id(), entity);
+    return entity;
+  }
+
+  T get(int id) {
+    T value = store.get(id);
+    if (value == null) {
+      throw new NotFoundException(id);
+    }
+    return value;
+  }
+
+  Optional<T> find(int id) {
+    return Optional.ofNullable(store.get(id));
+  }
+
+  int count() {
+    return store.size();
+  }
+
+  List<T> where(Predicate<T> pred) {
+    return store.values().stream()
+        .filter(pred)
+        .sorted(Comparator.comparingInt(Entity::id))
+        .toList();
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+  <tr><td>Bounded generic</td><td>none — just call <code>entity.id</code> and see what happens</td><td><code>&lt;T extends Entity&gt;</code></td></tr>
+  <tr><td>Absent-or-present</td><td><code>value</code> or <code>nil</code></td><td><code>Optional&lt;T&gt;</code></td></tr>
+  <tr><td>Filter + sort</td><td><code>arr.select(&amp;pred).sort_by(&amp;:id)</code></td><td><code>stream().filter(p).sorted(cmp).toList()</code></td></tr>
+  <tr><td>Sort key</td><td><code>sort_by(&amp;:id)</code></td><td><code>Comparator.comparingInt(Entity::id)</code></td></tr>
+  <tr><td>Signal "missing"</td><td><code>raise "..."</code> (untyped)</td><td>a typed <code>RuntimeException</code></td></tr>
+</table>
+<p>Two design choices echo the whole course. First, <code>get</code> and
+<code>find</code> split the same lookup into a throwing path and an
+<code>Optional</code> path — Java's answer to "should absence be an exception or
+a value?" is to offer both and let the caller choose, rather than leaning on
+<code>nil</code> as Ruby does. Second, the bound <code>T extends Entity</code>
+is what lets <code>where</code> sort by <code>Entity::id</code> and lets
+<code>add</code> call <code>entity.id()</code>: the compiler knows every
+<code>T</code> has an <code>id()</code>, so no cast is ever needed and the same
+class stores users and products alike — a guarantee Ruby's duck typing simply
+trusts you to get right, since any object with an <code>id</code> method will
+do, checked or not.</p>
+<p><code>NotFoundException</code> extends <code>RuntimeException</code>, so it is
+<em>unchecked</em> — callers are not forced to declare or catch it, which keeps
+the happy path clean while still giving failures a precise type to
+<code>catch</code>. That is the idiomatic modern-Java choice for a repository
+lookup, and it maps loosely onto a Ruby <code>raise "message"</code> — except
+that Java's <code>catch (NotFoundException e)</code> lets a caller distinguish
+this failure from any other <code>RuntimeException</code>, a precision a bare
+Ruby <code>rescue</code> does not give you for free.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

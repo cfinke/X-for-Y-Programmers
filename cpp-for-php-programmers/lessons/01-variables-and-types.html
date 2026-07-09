@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>PHP variables carry no declared type — a <code>$var</code> can hold an int
+today and a string tomorrow, and the engine just goes along with it. C++'s
+types are the program. The compiler needs a concrete type for every variable,
+and that type picks the machine representation — <code>int</code> and
+<code>double</code> are genuinely different, not two faces of one loosely
+typed variable.</p>
+<table>
+  <tr><th>PHP</th><th>C++</th></tr>
+  <tr><td><code>$age = 36;</code></td><td><code>int age = 36;</code></td></tr>
+  <tr><td><code>$name = "Ada";</code></td><td><code>const std::string name = "Ada";</code></td></tr>
+  <tr><td><code>$x = 1;</code> (dynamic)</td><td><code>auto x = 1;</code> (inferred)</td></tr>
+  <tr><td><code>$n</code> (any number)</td><td><code>int</code>, <code>long</code>, <code>double</code>, … (distinct)</td></tr>
+</table>
+<p>Two things to internalize. First, the numeric split is real: <code>7 / 2</code>
+is <code>3</code> (integer division), while <code>7 / 2.0</code> is
+<code>3.5</code> — PHP's <code>/</code> quietly returns a float whenever the
+division isn't exact, but C++ won't do that for you. Second, <code>auto</code>
+is the closest thing to PHP's untyped <code>$x = …</code> — it infers the type
+from the initializer — but the type, once fixed, never changes. Free functions
+are welcome here, just like PHP's top-level <code>function</code>s; C++ does
+not require a class.</p>`,
+
+  php: `$age = 36;
+$userName = "Ada";
+
+function describe(string $name, int $age): string {
+  return "$name is $age";
+}`,
+
+  task: `
+<p>Write the C++ version as free functions (no class needed):</p>
+<ol>
+  <li><code>add(int a, int b)</code> returns their sum.</li>
+  <li><code>describe(const std::string&amp; name, int age)</code> returns a string
+      like <code>"Ada is 36"</code>. Build it with
+      <code>name + " is " + std::to_string(age)</code>.</li>
+  <li><code>divide(int a, int b)</code> returns a <code>double</code>, so
+      <code>divide(7, 2)</code> is <code>3.5</code>. Promote one operand:
+      <code>static_cast&lt;double&gt;(a) / b</code>.</li>
+</ol>`,
+
+  starter: `int add(int a, int b) {
+  return 0; // TODO
+}
+
+std::string describe(const std::string& name, int age) {
+  return ""; // TODO
+}
+
+double divide(int a, int b) {
+  return 0; // TODO: watch out for integer division
+}
+`,
+
+  requirements: [
+    { pattern: /std::to_string/, message: "Use std::to_string to turn the age into text" },
+    { pattern: /static_cast<double>/, message: "Use static_cast<double> so divide returns a fractional result" },
+  ],
+
+  tests: [
+    { name: "add(2, 3) is 5", code: "    expect_eq(add(2, 3), 5);" },
+    { name: "describe(\"Ada\", 36) is \"Ada is 36\"", code: "    expect_eq(describe(\"Ada\", 36), std::string(\"Ada is 36\"));" },
+    { name: "describe(\"Rob\", 68) is \"Rob is 68\"", code: "    expect_eq(describe(\"Rob\", 68), std::string(\"Rob is 68\"));" },
+    { name: "divide(7, 2) is 3.5", code: "    expect_eq(divide(7, 2), 3.5);" },
+    { name: "divide(10, 4) is 2.5", code: "    expect_eq(divide(10, 4), 2.5);" },
+  ],
+
+  solution: `int add(int a, int b) {
+  return a + b;
+}
+
+std::string describe(const std::string& name, int age) {
+  return name + " is " + std::to_string(age);
+}
+
+double divide(int a, int b) {
+  return static_cast<double>(a) / b;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>C++</th></tr>
+  <tr><td>Typed variable</td><td><code>$x = 1;</code> (no declared type)</td><td><code>int x = 1;</code></td></tr>
+  <tr><td>Inferred variable</td><td><code>$x = 1;</code></td><td><code>auto x = 1;</code></td></tr>
+  <tr><td>Constant</td><td><code>define('X', 1);</code> / <code>const X = 1;</code></td><td><code>const int x = 1;</code></td></tr>
+  <tr><td>Number to string</td><td><code>strval($age)</code> / <code>"$age"</code></td><td><code>std::to_string(age)</code></td></tr>
+  <tr><td>Integer vs float</td><td>one dynamic <code>$n</code></td><td><code>7 / 2 == 3</code>, <code>7 / 2.0 == 3.5</code></td></tr>
+</table>
+<p>PHP builds strings with interpolation (<code>"$name is $age"</code>), but
+C++ has no string interpolation, so you build strings by concatenation and
+explicit conversion: <code>std::to_string</code> for numbers, and
+<code>+</code> to join <code>std::string</code>s. Note the parameter type
+<code>const std::string&amp;</code> — passing by <code>const</code> reference
+avoids copying the string, the everyday default for read-only object
+parameters.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

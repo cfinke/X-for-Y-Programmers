@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Final lesson — no new syntax, just everything at once. You'll build a small
+inventory system of the kind you've written in Kotlin a hundred times: a data
+class, a total, a lookup, an update, a filtered projection. Every piece maps
+onto something from this course: <code>struct</code> instead of a
+<code>data class</code>, <code>Option&lt;&amp;Item&gt;</code> instead of a
+nullable <code>Item?</code>, iterator chains instead of collection functions,
+and <code>&amp;mut</code> instead of "hope nobody else is mutating this list
+right now".</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>data class Item(val name: String, val priceCents: Int, val count: Int)</code></td><td><code>struct Item { name: String, price_cents: u32, count: u32 }</code></td></tr>
+  <tr><td><code>items.sumOf { it.priceCents * it.count }</code></td><td><code>items.iter().map(|i| ...).sum()</code></td></tr>
+  <tr><td><code>Item?</code> via <code>.firstOrNull { ... }</code></td><td><code>Option&lt;&amp;Item&gt;</code> via <code>.iter().find(...)</code></td></tr>
+  <tr><td>mutate freely, document "not thread-safe"</td><td><code>&amp;mut Vec&lt;Item&gt;</code> — exclusive access, compiler-checked</td></tr>
+  <tr><td><code>.filter { ... }.map { ... }</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+</table>
+<p>Two ownership details to watch. <code>find_item</code> returns a
+<em>borrowed</em> <code>Option&lt;&amp;Item&gt;</code> — no copy, just a
+reference into the slice, which is why its signature carries the
+<code>&lt;'a&gt;</code> from lesson 16 (the result borrows from
+<code>items</code>, not from <code>name</code> — two reference inputs, so
+elision alone can't tell which one). And <code>restock</code> takes
+<code>&amp;mut Vec&lt;Item&gt;</code>: mutation is visible in the signature,
+opted into by the caller — a guarantee no amount of KDoc provides.</p>`,
+
+  kotlin: `data class Item(val name: String, val priceCents: Int, val count: Int)
+
+fun totalValue(items: List<Item>): Int =
+    items.sumOf { it.priceCents * it.count }
+
+fun findItem(items: List<Item>, name: String): Item? =
+    items.firstOrNull { it.name == name }
+
+fun namesInStock(items: List<Item>): List<String> =
+    items.filter { it.count > 0 }
+         .map { it.name }
+// restock? A data class is immutable — you'd rebuild the list with
+// copy(count = ...), or switch to a mutable class and mutate in place.`,
+
+  task: `
+<p>The <code>Item</code> struct is complete in the starter. Implement the four
+functions:</p>
+<ol>
+  <li><code>total_value(items: &amp;[Item]) -&gt; u32</code> — the sum of
+      <code>price_cents * count</code> over all items
+      (<code>.iter().map(...).sum()</code>).</li>
+  <li><code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt; Option&lt;&amp;'a Item&gt;</code>
+      — a borrowed reference to the first item whose <code>name</code>
+      matches, or <code>None</code> (<code>.iter().find(...)</code>).</li>
+  <li><code>restock(items: &amp;mut Vec&lt;Item&gt;, name: &amp;str, amount: u32) -&gt; bool</code>
+      — add <code>amount</code> to the matching item's <code>count</code> and
+      return <code>true</code>; return <code>false</code> if no item matches
+      (<code>.iter_mut().find(...)</code> gives you an
+      <code>Option&lt;&amp;mut Item&gt;</code> to work with).</li>
+  <li><code>names_in_stock(items: &amp;[Item]) -&gt; Vec&lt;String&gt;</code> —
+      the names of items with <code>count &gt; 0</code>, in order
+      (<code>.filter(...).map(...).collect()</code>; clone the names).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The data type is complete — no changes needed.
+struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+// 1. Sum of price_cents * count across all items.
+fn total_value(items: &[Item]) -> u32 {
+    todo!()
+}
+
+// 2. Borrow the first item with a matching name, if any.
+//    <'a>: the returned reference borrows from \`items\`, not \`name\`.
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    todo!()
+}
+
+// 3. Add \`amount\` to the matching item's count; report success.
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    todo!()
+}
+
+// 4. Names of all items with count > 0, in order.
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option<&/, message: "find_item returns a borrowed Option<&Item>" },
+    { pattern: /\.iter\(\)/, message: "Use iterator chains (.iter()) rather than index loops" },
+    { pattern: /&mut\s+Vec<Item>/, message: "restock takes the inventory as &mut Vec<Item>" },
+  ],
+
+  tests: [
+    { name: "total_value: 3 apples at 50 + 2 cherries at 10 = 170",
+      code: `let items = vec![
+    Item { name: "apple".to_string(), price_cents: 50, count: 3 },
+    Item { name: "banana".to_string(), price_cents: 25, count: 0 },
+    Item { name: "cherry".to_string(), price_cents: 10, count: 2 },
+];
+assert_eq!(total_value(&items), 170);
+assert_eq!(total_value(&[]), 0);` },
+    { name: "find_item returns Some(&item) for an existing name",
+      code: `let items = vec![
+    Item { name: "apple".to_string(), price_cents: 50, count: 3 },
+    Item { name: "banana".to_string(), price_cents: 25, count: 7 },
+];
+let found = find_item(&items, "banana");
+assert!(found.is_some());
+assert_eq!(found.unwrap().price_cents, 25);` },
+    { name: "find_item returns None for a missing name",
+      code: `let items = vec![Item { name: "apple".to_string(), price_cents: 50, count: 3 }];
+assert!(find_item(&items, "kiwi").is_none());` },
+    { name: "restock adds to the count and returns true",
+      code: `let mut items = vec![Item { name: "apple".to_string(), price_cents: 50, count: 3 }];
+assert!(restock(&mut items, "apple", 5));
+assert_eq!(items[0].count, 8);` },
+    { name: "restock returns false (and changes nothing) for a missing name",
+      code: `let mut items = vec![Item { name: "apple".to_string(), price_cents: 50, count: 3 }];
+assert!(!restock(&mut items, "kiwi", 5));
+assert_eq!(items[0].count, 3);` },
+    { name: "names_in_stock lists only items with count > 0, in order",
+      code: `let items = vec![
+    Item { name: "apple".to_string(), price_cents: 50, count: 3 },
+    Item { name: "banana".to_string(), price_cents: 25, count: 0 },
+    Item { name: "cherry".to_string(), price_cents: 10, count: 7 },
+];
+assert_eq!(names_in_stock(&items), vec!["apple".to_string(), "cherry".to_string()]);
+assert_eq!(names_in_stock(&[]), Vec::<String>::new());` },
+  ],
+
+  solution: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+fn total_value(items: &[Item]) -> u32 {
+    items.iter().map(|i| i.price_cents * i.count).sum()
+}
+
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    items.iter().find(|i| i.name == name)
+}
+
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    match items.iter_mut().find(|i| i.name == name) {
+        Some(item) => {
+            item.count += amount;
+            true
+        }
+        None => false,
+    }
+}
+
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    items.iter()
+        .filter(|i| i.count > 0)
+        .map(|i| i.name.clone())
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Data type</td><td><code>data class Item(...)</code></td><td><code>struct Item { ... }</code></td></tr>
+  <tr><td>Aggregate</td><td><code>.sumOf { ... }</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+  <tr><td>Maybe-a-result</td><td><code>Item?</code> (a nullable reference)</td><td><code>Option&lt;&amp;Item&gt;</code> (a checked borrow, lifetime and all)</td></tr>
+  <tr><td>In-place update</td><td>mutate and hope callers expected it</td><td><code>&amp;mut Vec&lt;Item&gt;</code> — exclusivity in the signature</td></tr>
+  <tr><td>Filtered projection</td><td><code>.filter { ... }.map { ... }</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+  <tr><td>Find-and-mutate</td><td><code>indexOfFirst { ... }</code> or a second lookup</td><td><code>.iter_mut().find(...)</code> → <code>Option&lt;&amp;mut Item&gt;</code></td></tr>
+</table>
+<p>Step back and look at what the signatures alone tell a reader:
+<code>total_value</code> and <code>names_in_stock</code> only look
+(<code>&amp;[Item]</code>), <code>restock</code> mutates
+(<code>&amp;mut</code>), <code>find_item</code> lends you a view into data you
+don't own (<code>Option&lt;&amp;'a Item&gt;</code>), and nothing can be
+<code>null</code>. In Kotlin the exclusivity and borrow information lives in
+KDoc and convention; in Rust it's machine-checked on every call. That's the
+trade you've been learning for twenty lessons — more to say up front, far less
+to debug later.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Collection Operations</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Collection Operations",
+
+  intro: `
+<p>If you like chaining <code>.stream().map().filter().collect()</code> in Java,
+Kotlin's standard library will feel like a shortcut. Every <code>List</code>
+comes with dozens of extension functions that read the same way — a pipeline
+of small, named steps — but Kotlin skips the <code>stream()</code>/<code>collect()</code>
+ceremony entirely and ships specialized aggregators (<code>sumOf</code>,
+<code>groupBy</code>, <code>associateBy</code>) that in Java mean reaching for
+<code>Collectors.summingInt</code>, <code>Collectors.groupingBy</code>, or a
+hand-rolled reduction. The whole point of this lesson: transform and aggregate
+a list of objects <em>without writing a single manual loop or stream
+boilerplate</em>.</p>
+<table>
+  <tr><th>Java</th><th>Kotlin</th></tr>
+  <tr><td><code>xs.stream().map(x -&gt; x.name()).toList()</code></td><td><code>xs.map { it.name }</code></td></tr>
+  <tr><td><code>xs.stream().filter(x -&gt; x.n() &gt; 0).toList()</code></td><td><code>xs.filter { it.n &gt; 0 }</code></td></tr>
+  <tr><td><code>xs.stream().mapToInt(Sale::n).sum()</code></td><td><code>xs.sumOf { it.n }</code></td></tr>
+  <tr><td><code>xs.stream().filter(x -&gt; x.id() == 3).findFirst()</code></td><td><code>xs.find { it.id == 3 }</code></td></tr>
+  <tr><td><code>xs.stream().anyMatch(...)</code> / <code>xs.stream().allMatch(...)</code></td><td><code>xs.any { }</code> / <code>xs.all { }</code></td></tr>
+</table>
+<p>The lambda argument goes <em>outside</em> the parentheses (trailing-lambda
+syntax), and a single parameter is implicitly named <code>it</code> — so
+<code>{ it.name }</code> is the whole lambda, with no <code>.stream()</code>/
+<code>.toList()</code> bookends and no explicit method reference needed.
+Grouping and indexing get first-class helpers: <code>groupBy</code> returns a
+<code>Map&lt;K, List&lt;T&gt;&gt;</code> and <code>associateBy</code> returns a
+<code>Map&lt;K, T&gt;</code>, in place of Java's <code>Collectors.groupingBy</code>
+and <code>Collectors.toMap</code>.</p>`,
+
+  java: `record Sale(String product, String category, int amount) {}
+
+static int total(List<Sale> xs) {
+  return xs.stream().mapToInt(Sale::amount).sum();
+}
+
+static List<String> big(List<Sale> xs, int min) {
+  return xs.stream()
+      .filter(s -> s.amount() > min)
+      .map(Sale::product)
+      .toList();
+}
+
+static Map<String, Integer> byCategory(List<Sale> xs) {
+  return xs.stream()
+      .collect(Collectors.groupingBy(Sale::category,
+          Collectors.summingInt(Sale::amount)));
+}`,
+
+  task: `
+<p>A <code>Sale</code> data class is provided. Build a pipeline for each function
+using standard-library operations — <strong>no <code>for</code>/<code>while</code>
+loops</strong>:</p>
+<ol>
+  <li><code>totalRevenue</code>: sum every sale's <code>amount</code> with
+      <code>sumOf</code>.</li>
+  <li><code>namesOver(sales, min)</code>: <code>filter</code> to sales with
+      <code>amount &gt; min</code>, then <code>map</code> to their product names.</li>
+  <li><code>revenueByCategory</code>: <code>groupBy</code> category, then total
+      each group (<code>mapValues</code> + <code>sumOf</code>).</li>
+  <li><code>byProduct</code>: <code>associateBy</code> the product name, giving a
+      <code>Map&lt;String, Sale&gt;</code>.</li>
+  <li><code>productsByRevenue</code>: <code>sortedByDescending</code> amount,
+      then <code>map</code> to names.</li>
+  <li><code>countOver</code> / <code>anyOver</code> / <code>allOver</code>: use
+      <code>count</code>, <code>any</code>, <code>all</code>.</li>
+  <li><code>findProduct(sales, name)</code>: <code>find</code> the first matching
+      sale (returns <code>Sale?</code>).</li>
+  <li><code>productList</code>: <code>fold</code> into a
+      <code>"A, B, C"</code> string.</li>
+</ol>`,
+
+  starter: `data class Sale(val product: String, val category: String, val amount: Int)
+
+// 1. Sum of every amount
+fun totalRevenue(sales: List<Sale>): Int = 0
+
+// 2. Products whose amount is strictly greater than min
+fun namesOver(sales: List<Sale>, min: Int): List<String> = emptyList()
+
+// 3. category -> total amount in that category
+fun revenueByCategory(sales: List<Sale>): Map<String, Int> = emptyMap()
+
+// 4. product name -> the Sale
+fun byProduct(sales: List<Sale>): Map<String, Sale> = emptyMap()
+
+// 5. Product names, highest amount first
+fun productsByRevenue(sales: List<Sale>): List<String> = emptyList()
+
+// 6. Aggregate predicates
+fun countOver(sales: List<Sale>, min: Int): Int = 0
+fun anyOver(sales: List<Sale>, min: Int): Boolean = false
+fun allOver(sales: List<Sale>, min: Int): Boolean = false
+
+// 7. First sale with this product name, or null
+fun findProduct(sales: List<Sale>, name: String): Sale? = null
+
+// 8. "A, B, C" of product names, in order
+fun productList(sales: List<Sale>): String = ""
+`,
+
+  requirements: [
+    { pattern: /\.sumOf\b/, message: "Aggregate with .sumOf { ... }" },
+    { pattern: /\.groupBy\b/, message: "Use .groupBy for revenueByCategory" },
+    { pattern: /\.associateBy\b/, message: "Use .associateBy for byProduct" },
+  ],
+
+  tests: [
+    { name: "totalRevenue sums amounts", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(totalRevenue(s), 670)" },
+    { name: "namesOver filters then maps", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(namesOver(s, 100), listOf(\"Gadget\", \"Course\"))" },
+    { name: "revenueByCategory groups and totals", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(revenueByCategory(s), mapOf(\"Hardware\" to 350, \"Media\" to 320))" },
+    { name: "byProduct keys by product name", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(byProduct(s)[\"Gadget\"], Sale(\"Gadget\", \"Hardware\", 250))" },
+    { name: "productsByRevenue sorts descending", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(productsByRevenue(s), listOf(\"Course\", \"Gadget\", \"Widget\", \"eBook\"))" },
+    { name: "countOver / anyOver / allOver", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(countOver(s, 100), 2)\n        expect_true(anyOver(s, 250))\n        expect_true(!allOver(s, 50))" },
+    { name: "findProduct returns match or null", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(findProduct(s, \"eBook\"), Sale(\"eBook\", \"Media\", 20))\n        expect_eq(findProduct(s, \"Nope\"), null)" },
+    { name: "productList folds into a string", code: "        val s = listOf(Sale(\"Widget\", \"Hardware\", 100), Sale(\"Gadget\", \"Hardware\", 250), Sale(\"eBook\", \"Media\", 20), Sale(\"Course\", \"Media\", 300))\n        expect_eq(productList(s), \"Widget, Gadget, eBook, Course\")" },
+  ],
+
+  solution: `data class Sale(val product: String, val category: String, val amount: Int)
+
+fun totalRevenue(sales: List<Sale>): Int =
+    sales.sumOf { it.amount }
+
+fun namesOver(sales: List<Sale>, min: Int): List<String> =
+    sales.filter { it.amount > min }.map { it.product }
+
+fun revenueByCategory(sales: List<Sale>): Map<String, Int> =
+    sales.groupBy { it.category }
+         .mapValues { (_, group) -> group.sumOf { it.amount } }
+
+fun byProduct(sales: List<Sale>): Map<String, Sale> =
+    sales.associateBy { it.product }
+
+fun productsByRevenue(sales: List<Sale>): List<String> =
+    sales.sortedByDescending { it.amount }.map { it.product }
+
+fun countOver(sales: List<Sale>, min: Int): Int =
+    sales.count { it.amount > min }
+
+fun anyOver(sales: List<Sale>, min: Int): Boolean =
+    sales.any { it.amount > min }
+
+fun allOver(sales: List<Sale>, min: Int): Boolean =
+    sales.all { it.amount > min }
+
+fun findProduct(sales: List<Sale>, name: String): Sale? =
+    sales.find { it.product == name }
+
+fun productList(sales: List<Sale>): String =
+    sales.fold("") { acc, s -> if (acc.isEmpty()) s.product else "$acc, \${s.product}" }
+`,
+
+  notes: `
+<table>
+  <tr><th>Goal</th><th>Java</th><th>Kotlin</th></tr>
+  <tr><td>Transform</td><td><code>xs.stream().map(f).toList()</code></td><td><code>xs.map { }</code></td></tr>
+  <tr><td>Keep some</td><td><code>xs.stream().filter(p).toList()</code></td><td><code>xs.filter { }</code></td></tr>
+  <tr><td>Sum a field</td><td><code>xs.stream().mapToInt(x-&gt;x.n()).sum()</code></td><td><code>xs.sumOf { it.n }</code></td></tr>
+  <tr><td>Custom aggregate</td><td><code>xs.stream().reduce(...)</code></td><td><code>xs.fold(seed) { a, x -&gt; }</code></td></tr>
+  <tr><td>Group</td><td><code>Collectors.groupingBy(...)</code></td><td><code>xs.groupBy { }</code></td></tr>
+  <tr><td>Index by key</td><td><code>Collectors.toMap(...)</code></td><td><code>xs.associateBy { }</code></td></tr>
+  <tr><td>Sort by key</td><td><code>xs.sort(Comparator.comparing(...))</code></td><td><code>xs.sortedBy { }</code></td></tr>
+  <tr><td>Any / all / count</td><td><code>anyMatch</code>/<code>allMatch</code>/<code>stream().filter(p).count()</code></td><td><code>any</code>/<code>all</code>/<code>count</code></td></tr>
+  <tr><td>Find one</td><td><code>xs.stream().filter(p).findFirst()</code></td><td><code>xs.find { }</code></td></tr>
+</table>
+<p>Two habits worth forming: prefer <code>sumOf</code> and <code>count { }</code>
+over a <code>fold</code> when you're just totalling or tallying — they're
+clearer and allocate less than a hand-rolled <code>Collectors.reducing</code>.
+And remember Kotlin's operations return <em>new</em> read-only collections;
+<code>sortedBy</code> leaves the original list untouched (unlike Java's
+<code>List.sort</code> or <code>Collections.sort</code>, which mutate in
+place). Use the mutating variants without <code>-ed</code> (<code>sort</code>,
+<code>reverse</code>) only on a <code>MutableList</code> when you truly want
+in-place changes.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

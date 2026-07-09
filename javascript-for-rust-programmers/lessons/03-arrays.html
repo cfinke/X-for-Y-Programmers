@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays",
+
+  intro: `
+<p>In Rust a collection carries a static element type and a fixed identity —
+a stack array <code>[i32; 3]</code> has a length baked into its type, and a
+growable <code>Vec&lt;i32&gt;</code> owns its elements and is checked by the
+borrow checker on every access. At runtime none of that machinery exists in
+JavaScript. JavaScript has exactly one list type: a plain <code>Array</code>
+object whose elements can be anything, whose length grows and shrinks on
+demand, and which has no idea what it "should" contain.</p>
+<table>
+  <tr><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td><code>let xs: Vec&lt;i32&gt; = vec![1, 2, 3];</code></td><td><code>const xs = [1, 2, 3];</code></td></tr>
+  <tr><td><code>xs.push("no")</code> — compile error</td><td><code>xs.push("no")</code> — allowed, array now mixed</td></tr>
+  <tr><td><code>let t: (i32, i32) = (0, 0);</code></td><td><code>const t = [0, 0];</code> (just an array)</td></tr>
+  <tr><td>element type is checked; mutation needs <code>mut</code></td><td>every element is checked only by you</td></tr>
+</table>
+<p>The runtime skill that matters most is knowing which methods <em>mutate</em> the
+array in place and which return a fresh copy. <code>push</code>, <code>pop</code>,
+<code>shift</code>, and <code>unshift</code> change the array you call them on.
+<code>slice</code> and <code>concat</code> leave the original untouched and hand
+back a new array. Rust's borrow checker forces you to say <code>&mut</code>
+whenever you plan to mutate, so the compiler flags it for you; in JavaScript
+there is no such signal — mutation happens silently, and you have to track it
+yourself.</p>`,
+
+  rust: `let nums: Vec<i32> = vec![10, 20, 30];
+
+fn appended(xs: &[i32], value: i32) -> Vec<i32> {
+    let mut out = xs.to_vec();  // non-mutating copy
+    out.push(value);
+    out
+}
+
+fn has(xs: &[i32], value: i32) -> bool {
+    xs.contains(&value)
+}
+
+fn labels(xs: &[i32]) -> String {
+    xs.iter()
+        .map(|n| n.to_string())
+        .collect::<Vec<_>>()
+        .join(", ")
+}`,
+
+  task: `
+<p>Write the plain-JavaScript runtime versions. No type annotations in your code.</p>
+<ol>
+  <li>Export <code>nums</code>, an array literal <code>[10, 20, 30]</code>.</li>
+  <li><code>pushed(xs, value)</code> — call <code>xs.push(value)</code> so it
+      <em>mutates</em> <code>xs</code>, then return <code>xs</code>. (This proves
+      push changes the original.)</li>
+  <li><code>withoutFirst(xs)</code> — return a <em>copy</em> of <code>xs</code>
+      with the first element removed, using <code>slice</code>, so the original
+      is left intact.</li>
+  <li><code>has(xs, value)</code> — return whether <code>value</code> is in
+      <code>xs</code> using <code>includes</code>.</li>
+  <li><code>positionOf(xs, value)</code> — return the index of <code>value</code>
+      using <code>indexOf</code> (<code>-1</code> if absent).</li>
+  <li><code>labels(xs)</code> — return the elements joined into one string with
+      <code>", "</code> using <code>join</code>.</li>
+</ol>`,
+
+  starter: `// 1. nums
+const nums = [10, 20, 30];
+
+// 2. pushed(xs, value) -> mutates xs with push, returns xs
+function pushed(xs, value) {
+  // TODO
+  return xs;
+}
+
+// 3. withoutFirst(xs) -> a slice copy without the first element
+function withoutFirst(xs) {
+  // TODO
+  return [];
+}
+
+// 4. has(xs, value) -> boolean, using includes
+function has(xs, value) {
+  // TODO
+  return false;
+}
+
+// 5. positionOf(xs, value) -> index or -1, using indexOf
+function positionOf(xs, value) {
+  // TODO
+  return -1;
+}
+
+// 6. labels(xs) -> elements joined by ", "
+function labels(xs) {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["nums", "pushed", "withoutFirst", "has", "positionOf", "labels"],
+
+  requirements: [
+    { pattern: /\.push\s*\(/, message: "Use .push() inside pushed" },
+    { pattern: /\.slice\s*\(/, message: "Use .slice() inside withoutFirst" },
+    { pattern: /\.includes\s*\(/, message: "Use .includes() inside has" },
+    { pattern: /\.indexOf\s*\(/, message: "Use .indexOf() inside positionOf" },
+    { pattern: /\.join\s*\(/, message: "Use .join() inside labels" },
+  ],
+
+  tests: [
+    { name: "nums is [10, 20, 30]", run: (x) => expectDeepEqual(x.nums, [10, 20, 30]) },
+    { name: "pushed appends and returns the array", run: (x) => expectDeepEqual(x.pushed([1, 2], 3), [1, 2, 3]) },
+    { name: "pushed mutates the original array", run: (x) => {
+      const a = [1, 2];
+      x.pushed(a, 3);
+      expectDeepEqual(a, [1, 2, 3]);
+    } },
+    { name: "withoutFirst drops the first element", run: (x) => expectDeepEqual(x.withoutFirst([10, 20, 30]), [20, 30]) },
+    { name: "withoutFirst does NOT mutate the original (slice copies)", run: (x) => {
+      const a = [10, 20, 30];
+      x.withoutFirst(a);
+      expectDeepEqual(a, [10, 20, 30]);
+    } },
+    { name: "has finds a present value", run: (x) => expectEqual(x.has([10, 20, 30], 20), true) },
+    { name: "has rejects an absent value", run: (x) => expectEqual(x.has([10, 20, 30], 99), false) },
+    { name: "positionOf returns the index", run: (x) => expectEqual(x.positionOf([10, 20, 30], 30), 2) },
+    { name: "positionOf returns -1 when absent", run: (x) => expectEqual(x.positionOf([10, 20, 30], 99), -1) },
+    { name: "labels joins with a comma and space", run: (x) => expectEqual(x.labels([10, 20, 30]), "10, 20, 30") },
+  ],
+
+  solution: `const nums = [10, 20, 30];
+
+function pushed(xs, value) {
+  xs.push(value);
+  return xs;
+}
+
+function withoutFirst(xs) {
+  return xs.slice(1);
+}
+
+function has(xs, value) {
+  return xs.includes(value);
+}
+
+function positionOf(xs, value) {
+  return xs.indexOf(value);
+}
+
+function labels(xs) {
+  return xs.join(", ");
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Operation</th><th>Method</th><th>Mutates?</th></tr>
+  <tr><td>Add to end</td><td><code>xs.push(v)</code></td><td>yes — returns new length</td></tr>
+  <tr><td>Remove from end</td><td><code>xs.pop()</code></td><td>yes — returns the element</td></tr>
+  <tr><td>Remove from front</td><td><code>xs.shift()</code></td><td>yes — returns the element</td></tr>
+  <tr><td>Add to front</td><td><code>xs.unshift(v)</code></td><td>yes — returns new length</td></tr>
+  <tr><td>Copy a range</td><td><code>xs.slice(start, end)</code></td><td>no — returns a new array</td></tr>
+  <tr><td>Join two arrays</td><td><code>xs.concat(ys)</code></td><td>no — returns a new array</td></tr>
+</table>
+<p>A useful mental rule: the four <em>verbs of place</em> — push/pop/shift/unshift —
+mutate; the two <em>copy</em> methods — slice/concat — do not. When you want a
+non-mutating "add", prefer the spread copy <code>[...xs, v]</code> over
+<code>push</code>, exactly as Rust's <code>xs.to_vec()</code> followed by
+<code>push</code> on the copy achieves without touching the original.</p>
+<table>
+  <tr><th>Query</th><th>Rust</th><th>JavaScript runtime</th></tr>
+  <tr><td>Membership</td><td><code>xs.contains(&v)</code> → <code>bool</code></td><td><code>xs.includes(v)</code> → <code>true</code>/<code>false</code></td></tr>
+  <tr><td>Position</td><td><code>xs.iter().position(|&n| n == v)</code> → <code>Option&lt;usize&gt;</code></td><td><code>xs.indexOf(v)</code> → index or <code>-1</code></td></tr>
+  <tr><td>Stringify</td><td><code>xs.join(sep)</code> (on <code>&[String]</code>) → <code>String</code></td><td><code>xs.join(sep)</code> → <code>string</code></td></tr>
+</table>
+<p>One runtime gotcha Rust's type system would never let slide: JavaScript's
+<code>includes</code> and <code>indexOf</code> compare with strict equality
+(<code>===</code>) plus a special case that lets <code>includes</code> find
+<code>NaN</code> while <code>indexOf</code> cannot — there is no <code>Option</code>
+forcing you to handle the "not found" case, just a sentinel <code>-1</code> you
+must remember to check. And <code>.length</code> is a live, writable property —
+<code>xs.length = 0</code> empties the array in place, something no safe Rust API
+would allow without an explicit <code>clear()</code> call.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

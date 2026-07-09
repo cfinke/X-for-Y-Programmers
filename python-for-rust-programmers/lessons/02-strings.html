@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>Rust strings come in two flavors — the owned, growable <code>String</code>
+and the borrowed <code>&amp;str</code> slice — and the borrow checker makes
+sure you never dangle a reference. Python has just one string type, it is
+always immutable, and there is no ownership to track: every method returns a
+fresh string rather than mutating in place. The names differ too — Python
+spells interpolation with an <em>f-string</em>, and slicing replaces
+<code>&amp;s[a..b]</code> with the equally compact <code>s[a:b]</code>
+syntax.</p>
+<table>
+  <tr><th>Rust</th><th>Python</th></tr>
+  <tr><td><code>format!("Hi {name}")</code></td><td><code>f"Hi {name}"</code></td></tr>
+  <tr><td><code>s.to_uppercase()</code></td><td><code>s.upper()</code></td></tr>
+  <tr><td><code>s.trim()</code></td><td><code>s.strip()</code></td></tr>
+  <tr><td><code>s.replace("a", "b")</code></td><td><code>s.replace("a", "b")</code></td></tr>
+  <tr><td><code>s.split(",")</code></td><td><code>s.split(",")</code></td></tr>
+  <tr><td><code>arr.join("-")</code></td><td><code>"-".join(arr)</code></td></tr>
+  <tr><td><code>&amp;s[0..3]</code></td><td><code>s[0:3]</code></td></tr>
+  <tr><td><code>s.parse::&lt;i32&gt;()</code> / <code>n.to_string()</code></td><td><code>int(s)</code> / <code>str(n)</code></td></tr>
+</table>
+<p>Two things to unlearn. First, Rust's <code>str::replace</code> already
+replaces <em>every</em> occurrence, same as Python's — neither language needs
+a separate <code>replaceAll</code>. Second, <code>join</code> is a method on
+the <em>separator</em> string, not on the collection: you write
+<code>", ".join(parts)</code>, and every element must already be a string
+(no <code>.to_string()</code> calls needed, and no <code>Result</code> to
+unwrap). And <code>find</code> returns <code>-1</code> when the substring is
+absent, rather than Rust's <code>Option&lt;usize&gt;</code>.</p>`,
+
+  rust: `fn initials(full_name: &str) -> String {
+    full_name
+        .trim()
+        .split(' ')
+        .map(|p| p.chars().next().unwrap().to_ascii_uppercase().to_string())
+        .collect::<Vec<_>>()
+        .join(".")
+}
+
+let slug = "  Hello World  ".trim().to_lowercase().replace(" ", "-");`,
+
+  task: `
+<p>Write these small pure string functions:</p>
+<ol>
+  <li><code>shout(text)</code> — strip surrounding whitespace and return the
+      result in UPPERCASE, e.g. <code>"  hi "</code> becomes <code>"HI"</code>.</li>
+  <li><code>slugify(title)</code> — lowercase the title, strip its ends, and
+      replace every space with <code>"-"</code>. Use an f-string nowhere here;
+      just chain the methods.</li>
+  <li><code>initials(full_name)</code> — split on spaces and return the first
+      letter of each part, uppercased and joined with <code>"."</code>, e.g.
+      <code>"ada lovelace"</code> becomes <code>"A.L"</code>.</li>
+  <li><code>label(name, score)</code> — return an f-string like
+      <code>"ada: 42"</code> where <code>score</code> is an int.</li>
+  <li><code>parse_total(a, b)</code> — the arguments are numeric strings;
+      convert them with <code>int()</code>, add them, and return the sum as a
+      string, e.g. <code>("2", "3")</code> gives <code>"5"</code>.</li>
+</ol>`,
+
+  starter: `# 1. shout(text) -> stripped, uppercased
+def shout(text):
+    return ""  # TODO
+
+
+# 2. slugify(title) -> lowercased, stripped, spaces -> "-"
+def slugify(title):
+    return ""  # TODO
+
+
+# 3. initials(full_name) -> "A.L"
+def initials(full_name):
+    return ""  # TODO
+
+
+# 4. label(name, score) -> "ada: 42" (use an f-string)
+def label(name, score):
+    return ""  # TODO
+
+
+# 5. parse_total(a, b) -> str(int(a) + int(b))
+def parse_total(a, b):
+    return ""  # TODO
+`,
+
+  requirements: [
+    { pattern: /f["']/, message: "Build the label string with an f-string" },
+    { pattern: /\.join\s*\(/, message: "Use str.join to combine the initials" },
+    { pattern: /\bint\s*\(/, message: "Use int() to convert the numeric strings" },
+  ],
+
+  tests: [
+    { name: 'shout("  hi ") is "HI"', code: "    expect_eq(shout(\"  hi \"), \"HI\")" },
+    { name: 'shout("Loud") is "LOUD"', code: "    expect_eq(shout(\"Loud\"), \"LOUD\")" },
+    { name: 'slugify("  Hello World  ") is "hello-world"', code: "    expect_eq(slugify(\"  Hello World  \"), \"hello-world\")" },
+    { name: 'initials("ada lovelace") is "A.L"', code: "    expect_eq(initials(\"ada lovelace\"), \"A.L\")" },
+    { name: 'initials("grace brewster hopper") is "G.B.H"', code: "    expect_eq(initials(\"grace brewster hopper\"), \"G.B.H\")" },
+    { name: 'label("ada", 42) is "ada: 42"', code: "    expect_eq(label(\"ada\", 42), \"ada: 42\")" },
+    { name: 'parse_total("2", "3") is "5"', code: "    expect_eq(parse_total(\"2\", \"3\"), \"5\")" },
+  ],
+
+  solution: `def shout(text):
+    return text.strip().upper()
+
+
+def slugify(title):
+    return title.strip().lower().replace(" ", "-")
+
+
+def initials(full_name):
+    parts = full_name.split(" ")
+    return ".".join(p[0].upper() for p in parts)
+
+
+def label(name, score):
+    return f"{name}: {score}"
+
+
+def parse_total(a, b):
+    return str(int(a) + int(b))
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+  <tr><td>Interpolation</td><td><code>format!("{x}")</code></td><td><code>f"{x}"</code></td></tr>
+  <tr><td>Substring</td><td><code>&amp;s[1..4]</code></td><td><code>s[1:4]</code></td></tr>
+  <tr><td>Last char</td><td><code>s.chars().last()</code></td><td><code>s[-1]</code></td></tr>
+  <tr><td>Contains</td><td><code>s.contains("x")</code></td><td><code>"x" in s</code></td></tr>
+  <tr><td>Index of</td><td><code>s.find("x")</code> (<code>Option&lt;usize&gt;</code>)</td><td><code>s.find("x")</code> (-1 if absent)</td></tr>
+  <tr><td>Prefix / suffix</td><td><code>s.starts_with / ends_with</code></td><td><code>s.startswith / endswith</code></td></tr>
+  <tr><td>Repeat</td><td><code>"ab".repeat(3)</code></td><td><code>"ab" * 3</code></td></tr>
+</table>
+<p>Slices never raise on out-of-range bounds: <code>s[0:99]</code> just returns
+the whole string, and a negative index counts from the end, so <code>s[-3:]</code>
+is the last three characters — no <code>panic!</code> the way an out-of-bounds
+Rust slice would trigger. Because strings are immutable in both languages you
+can happily chain <code>.strip().lower().replace(...)</code> — each call hands
+back a fresh string, no <code>.to_owned()</code> or <code>String::from</code>
+required. If you need case-insensitive membership, lowercase both sides first
+(<code>"x" in s.lower()</code>); there is no <code>includes</code> flag for
+it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

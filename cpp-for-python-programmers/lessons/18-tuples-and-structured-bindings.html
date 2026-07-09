@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Tuples &amp; Structured Bindings</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Tuples & Structured Bindings",
+
+  intro: `
+<p>In Python you reach for a tuple like <code>(name, age)</code> when you want
+to return two values without defining a whole class, and you pull them apart
+with unpacking: <code>name, age = pair</code>. C++ has the same tools.
+<code>std::pair&lt;A, B&gt;</code> holds exactly two values,
+<code>std::tuple&lt;...&gt;</code> holds any fixed number, and
+<em>structured bindings</em> — <code>auto [a, b] = ...</code> — are C++'s
+unpacking.</p>
+<table>
+  <tr><th>Python</th><th>C++</th></tr>
+  <tr><td><code>p = ("Ada", 36)</code></td><td><code>std::pair&lt;std::string, int&gt; p{"Ada", 36};</code></td></tr>
+  <tr><td><code>tuple[str, int, bool]</code></td><td><code>std::tuple&lt;std::string, int, bool&gt;</code></td></tr>
+  <tr><td><code>n, a = p</code></td><td><code>auto [n, a] = p;</code></td></tr>
+  <tr><td><code>p[0]</code>, <code>p[1]</code></td><td><code>p.first</code>, <code>p.second</code> (pair) / <code>std::get&lt;0&gt;(t)</code> (tuple)</td></tr>
+  <tr><td><code>return x, y</code></td><td><code>return {x, y};</code> or <code>std::make_tuple(x, y)</code></td></tr>
+</table>
+<p>Two differences to keep in mind. First, tuple element access is by
+<em>compile-time</em> index: <code>std::get&lt;0&gt;(t)</code>, not
+<code>t[0]</code> — the index lives in angle brackets because each slot can be a
+different type. Second, structured bindings copy by default; write
+<code>auto&amp; [a, b] = ...</code> to bind to the original (handy when you
+iterate a <code>std::map</code> and each entry is a
+<code>pair&lt;const Key, Value&gt;</code>).</p>`,
+
+  python: `def min_max(v):
+    lo = hi = v[0]
+    for x in v:
+        if x < lo: lo = x
+        if x > hi: hi = x
+    return lo, hi
+
+lo, hi = min_max([3, 1, 4, 1, 5])
+
+scores = {"Ada": 90, "Rob": 80}
+total = 0
+for name, score in scores.items():
+    total += score`,
+
+  task: `
+<p>Use tuples, pairs, and structured bindings:</p>
+<ol>
+  <li><code>minMax(const std::vector&lt;int&gt;&amp; v)</code> returns a
+      <code>std::pair&lt;int, int&gt;</code> of <code>{smallest, largest}</code>.
+      Assume <code>v</code> is non-empty.</li>
+  <li><code>stats(const std::vector&lt;int&gt;&amp; v)</code> returns a
+      <code>std::tuple&lt;int, int, double&gt;</code> of
+      <code>{sum, count, average}</code>. Build it with
+      <code>std::make_tuple(...)</code>.</li>
+  <li><code>rangeOf(const std::vector&lt;int&gt;&amp; v)</code> returns the
+      spread <code>hi - lo</code> as an <code>int</code>. Call
+      <code>minMax</code> and pull the two values out with a structured
+      binding: <code>auto [lo, hi] = minMax(v);</code>.</li>
+  <li><code>totalScore(const std::map&lt;std::string, int&gt;&amp; scores)</code>
+      returns the sum of every value. Loop with
+      <code>for (const auto&amp; [name, score] : scores)</code> and add up
+      <code>score</code>.</li>
+</ol>`,
+
+  starter: `std::pair<int, int> minMax(const std::vector<int>& v) {
+  return {}; // TODO
+}
+
+std::tuple<int, int, double> stats(const std::vector<int>& v) {
+  return {}; // TODO: use std::make_tuple
+}
+
+int rangeOf(const std::vector<int>& v) {
+  return 0; // TODO: structured-bind minMax(v)
+}
+
+int totalScore(const std::map<std::string, int>& scores) {
+  return 0; // TODO: structured-binding loop
+}
+`,
+
+  requirements: [
+    { pattern: /auto\s*\[/, message: "Use a structured binding (auto [ ... ]) to destructure a pair/tuple/map entry" },
+    { pattern: /std::make_tuple/, message: "Build the stats result with std::make_tuple" },
+  ],
+
+  tests: [
+    { name: "minMax picks smallest and largest", code: "    auto mm = minMax({3, 1, 4, 1, 5, 9, 2});\n    expect_eq(mm.first, 1);\n    expect_eq(mm.second, 9);" },
+    { name: "stats returns sum, count, average", code: "    auto s = stats({2, 4, 6});\n    expect_eq(std::get<0>(s), 12);\n    expect_eq(std::get<1>(s), 3);\n    expect_eq(std::get<2>(s), 4.0);" },
+    { name: "stats average is fractional", code: "    auto s = stats({1, 2});\n    expect_eq(std::get<2>(s), 1.5);" },
+    { name: "rangeOf is hi minus lo", code: "    expect_eq(rangeOf({3, 1, 4, 1, 5, 9, 2}), 8);" },
+    { name: "totalScore sums map values", code: "    std::map<std::string, int> m{{\"Ada\", 90}, {\"Rob\", 80}, {\"Kay\", 70}};\n    expect_eq(totalScore(m), 240);" },
+    { name: "totalScore of empty map is 0", code: "    std::map<std::string, int> empty;\n    expect_eq(totalScore(empty), 0);" },
+  ],
+
+  solution: `std::pair<int, int> minMax(const std::vector<int>& v) {
+  int lo = v[0], hi = v[0];
+  for (int x : v) {
+    if (x < lo) lo = x;
+    if (x > hi) hi = x;
+  }
+  return {lo, hi};
+}
+
+std::tuple<int, int, double> stats(const std::vector<int>& v) {
+  int sum = 0;
+  for (int x : v) sum += x;
+  int count = static_cast<int>(v.size());
+  double average = static_cast<double>(sum) / count;
+  return std::make_tuple(sum, count, average);
+}
+
+int rangeOf(const std::vector<int>& v) {
+  auto [lo, hi] = minMax(v);
+  return hi - lo;
+}
+
+int totalScore(const std::map<std::string, int>& scores) {
+  int total = 0;
+  for (const auto& [name, score] : scores) {
+    total += score;
+  }
+  return total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>C++</th></tr>
+  <tr><td>Two-value pack</td><td><code>(a, b)</code></td><td><code>std::pair&lt;A, B&gt;</code></td></tr>
+  <tr><td>N-value pack</td><td><code>(a, b, c)</code></td><td><code>std::tuple&lt;A, B, C&gt;</code></td></tr>
+  <tr><td>Build it</td><td><code>return x, y</code></td><td><code>return {x, y};</code> / <code>std::make_tuple(x, y)</code></td></tr>
+  <tr><td>Index access</td><td><code>t[0]</code></td><td><code>std::get&lt;0&gt;(t)</code> (compile-time index)</td></tr>
+  <tr><td>Destructure</td><td><code>a, b = t</code></td><td><code>auto [a, b] = t;</code></td></tr>
+  <tr><td>Destructure by ref</td><td>—</td><td><code>auto&amp; [a, b] = t;</code></td></tr>
+</table>
+<p>A pair is just a two-element tuple; <code>p.first</code>/<code>p.second</code>
+are shorthand for its two slots. Because <code>std::get</code> takes the index
+in angle brackets, you cannot index a tuple with a runtime variable — the
+compiler must know which slot (and thus which type) you mean. When a function
+naturally returns several values, a tuple beats juggling out-parameters or
+pointers. And structured bindings shine over a <code>std::map</code>: each entry
+is a <code>std::pair&lt;const Key, Value&gt;</code>, so
+<code>for (const auto&amp; [key, value] : m)</code> reads exactly like the
+Python <code>for k, v in d.items():</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Classes",
+
+  intro: `
+<p>Python classes will feel less rigid than C++'s. There is no constructor
+named after the class — you write a method named <code>__init__</code>
+instead. Every method takes the instance as its first parameter, spelled
+<code>self</code> by convention; C++ has an equivalent, the implicit
+<code>this</code> pointer, but you almost never write it out, whereas
+Python's <code>self</code> must appear in every method signature. You create
+instance attributes by assigning to <code>self.something</code>, usually
+inside <code>__init__</code>; there is no header-style declaration of member
+variables up front, and no fixed memory layout decided at compile time.</p>
+<table>
+  <tr><th>C++</th><th>Python</th></tr>
+  <tr><td><code>class Dog {</code></td><td><code>class Dog:</code></td></tr>
+  <tr><td><code>Dog(std::string name) : name(name) {}</code></td><td><code>def __init__(self, name):</code></td></tr>
+  <tr><td><code>this->name = name;</code></td><td><code>self.name = name</code></td></tr>
+  <tr><td><code>void bark() { … }</code></td><td><code>def bark(self): …</code></td></tr>
+  <tr><td><code>Dog d("Rex");</code></td><td><code>Dog("Rex")</code></td></tr>
+  <tr><td><code>static inline std::string species = "…";</code></td><td><code>species = "…"</code> (in class body)</td></tr>
+</table>
+<p>A name assigned directly in the class body (not on <code>self</code>) is a
+<em>class attribute</em> — shared by every instance, similar to a C++
+<code>static</code> member, and reachable as <code>self.species</code> or
+<code>Dog.species</code>. Notice there's no stack-vs-heap distinction and no
+<code>new</code>: <code>Dog("Rex")</code> runs <code>__init__</code> and
+hands back the instance, and the garbage collector reclaims it once nothing
+references it anymore — no destructor to write for ordinary cleanup.</p>
+<p>Python has no <code>private</code> keyword the compiler enforces.
+Encapsulation is <em>by convention</em>: a leading underscore
+(<code>_balance</code>) signals "internal, please don't touch." Unlike
+C++'s <code>private:</code> section, which the compiler actually checks,
+nothing enforces this in Python — it is a promise between programmers, not
+a rule the language checks for you.</p>`,
+
+  cpp: `class Account {
+public:
+  static inline std::string bank = "Pygmy Bank";
+  std::string owner;
+
+  Account(std::string owner, double opening)
+      : owner(owner), _balance(opening) {}
+
+  void deposit(double amount) {
+    _balance += amount;
+  }
+
+  double balance() const {
+    return _balance;
+  }
+
+private:
+  double _balance;
+};
+
+Account a("Ada", 100);
+a.deposit(50);
+a.balance(); // 150`,
+
+  task: `
+<p>Write an <code>Account</code> class:</p>
+<ol>
+  <li>Give it a <strong>class attribute</strong> <code>bank = "Pygmy Bank"</code>
+      shared by all instances.</li>
+  <li><code>__init__(self, owner, opening)</code> stores <code>owner</code> as a
+      public attribute and the opening amount in a "private-by-convention"
+      attribute <code>_balance</code>.</li>
+  <li><code>deposit(self, amount)</code> adds to <code>_balance</code> and
+      returns the new balance.</li>
+  <li><code>withdraw(self, amount)</code> subtracts from <code>_balance</code> if
+      there are sufficient funds and returns <code>True</code>; otherwise it
+      leaves the balance untouched and returns <code>False</code>.</li>
+  <li><code>balance(self)</code> returns the current <code>_balance</code>.</li>
+</ol>`,
+
+  starter: `class Account:
+    # 1. class attribute shared by all instances
+    bank = ""  # TODO
+
+    def __init__(self, owner, opening):
+        pass  # TODO: set self.owner and self._balance
+
+    def deposit(self, amount):
+        return None  # TODO: add to _balance, return new balance
+
+    def withdraw(self, amount):
+        return None  # TODO: return True on success, False if insufficient
+
+    def balance(self):
+        return None  # TODO: return current balance
+`,
+
+  requirements: [
+    { pattern: /def\s+__init__\s*\(\s*self/, message: "Define __init__(self, ...)" },
+    { pattern: /self\._balance/, message: "Store the balance in a _balance attribute (private by convention)" },
+    { pattern: /bank\s*=\s*["']Pygmy Bank["']/, message: "Add a class attribute bank = \"Pygmy Bank\"" },
+  ],
+
+  tests: [
+    { name: "constructs with owner and balance", code: "    a = Account(\"Ada\", 100)\n    expect_eq(a.owner, \"Ada\")\n    expect_eq(a.balance(), 100)" },
+    { name: "deposit increases balance and returns it", code: "    a = Account(\"Ada\", 100)\n    expect_eq(a.deposit(50), 150)\n    expect_eq(a.balance(), 150)" },
+    { name: "withdraw succeeds when funds suffice", code: "    a = Account(\"Ada\", 100)\n    expect_eq(a.withdraw(40), True)\n    expect_eq(a.balance(), 60)" },
+    { name: "withdraw fails when funds insufficient", code: "    a = Account(\"Ada\", 100)\n    expect_eq(a.withdraw(500), False)\n    expect_eq(a.balance(), 100)" },
+    { name: "bank is a shared class attribute", code: "    a = Account(\"Ada\", 100)\n    b = Account(\"Rob\", 5)\n    expect_eq(a.bank, \"Pygmy Bank\")\n    expect_eq(Account.bank, \"Pygmy Bank\")\n    expect_true(a.bank == b.bank)" },
+    { name: "instances hold independent balances", code: "    a = Account(\"Ada\", 100)\n    b = Account(\"Rob\", 5)\n    a.deposit(10)\n    expect_eq(a.balance(), 110)\n    expect_eq(b.balance(), 5)" },
+  ],
+
+  solution: `class Account:
+    bank = "Pygmy Bank"
+
+    def __init__(self, owner, opening):
+        self.owner = owner
+        self._balance = opening
+
+    def deposit(self, amount):
+        self._balance += amount
+        return self._balance
+
+    def withdraw(self, amount):
+        if amount > self._balance:
+            return False
+        self._balance -= amount
+        return True
+
+    def balance(self):
+        return self._balance
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+  <tr><td>Constructor</td><td><code>Account(…) : owner(…) {}</code></td><td><code>def __init__(self, …)</code></td></tr>
+  <tr><td>Instantiate</td><td><code>Account a("Ada", 100);</code></td><td><code>Account("Ada", 100)</code></td></tr>
+  <tr><td>Instance field</td><td><code>this->owner = …;</code></td><td><code>self.owner = …</code></td></tr>
+  <tr><td>Method receiver</td><td>implicit <code>this</code> pointer</td><td>explicit first param <code>self</code></td></tr>
+  <tr><td>Static / shared</td><td><code>static inline std::string bank = …;</code></td><td><code>bank = …</code> in class body</td></tr>
+  <tr><td>Private</td><td><code>private:</code> section (enforced)</td><td><code>_x</code> (convention only)</td></tr>
+</table>
+<p>The leading underscore is a naming convention, not a barrier —
+<code>a._balance</code> is still readable from outside. Two leading underscores
+(<code>__balance</code>) trigger <em>name mangling</em>, rewriting the attribute
+to <code>_Account__balance</code> to dodge accidental clashes in subclasses; it
+is still reachable, just harder to hit by accident. Prefer the single underscore
+for ordinary "internal" state.</p>
+<p>One trap: class attributes are shared, so a <em>mutable</em> class attribute
+(e.g. <code>tags = []</code> in the class body) is shared across every instance
+and mutations leak between them. Keep per-instance state on <code>self</code>
+inside <code>__init__</code>, and reserve class attributes for constants and
+truly shared data like <code>bank</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

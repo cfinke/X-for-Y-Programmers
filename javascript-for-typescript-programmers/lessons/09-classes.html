@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes",
+
+  intro: `
+<p>TypeScript classes look almost identical to JavaScript classes — because they
+<em>are</em> JavaScript classes with annotations bolted on. The interesting part
+is what survives compilation. Type annotations on fields and parameters vanish.
+So do <code>public</code>/<code>private</code>/<code>protected</code>: those are
+compile-time-only visibility checks. A field marked <code>private</code> in
+TypeScript is fully accessible at runtime — nothing stops
+<code>obj["secret"]</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>JavaScript</th></tr>
+  <tr><td><code>private balance: number;</code></td><td><code>#balance;</code> (truly private) or a plain field</td></tr>
+  <tr><td><code>constructor(private x: number) {}</code></td><td>no parameter properties — assign <code>this.x</code> yourself</td></tr>
+  <tr><td><code>readonly id: string;</code></td><td>plain field (no runtime enforcement)</td></tr>
+  <tr><td><code>get area(): number { … }</code></td><td><code>get area() { … }</code> (same)</td></tr>
+  <tr><td><code>static count: number = 0;</code></td><td><code>static count = 0;</code></td></tr>
+</table>
+<p>If you actually want a field that outside code cannot read or write, JavaScript
+gives you <code>#private</code> fields — a real runtime feature, not a type-checker
+promise. That is the one class feature that has no direct pre-ES2022 analogue, so
+it is worth getting comfortable with.</p>`,
+
+  typescript: `class Counter {
+  static instances: number = 0;
+  #count: number = 0;
+
+  constructor(private label: string, start: number = 0) {
+    this.#count = start;
+    Counter.instances++;
+  }
+
+  increment(): number {
+    this.#count++;
+    return this.#count;
+  }
+
+  get value(): number {
+    return this.#count;
+  }
+
+  describe(): string {
+    return \`\${this.label}: \${this.#count}\`;
+  }
+
+  static reset(): void {
+    Counter.instances = 0;
+  }
+}`,
+
+  task: `
+<p>Write the plain-JavaScript runtime version of a <code>Counter</code> class.
+No type annotations, no <code>private</code> keyword, no parameter properties —
+just the runtime constructs.</p>
+<ol>
+  <li>A <code>constructor(label, start = 0)</code> that stores the label and
+      seeds a <strong><code>#count</code> private field</strong> from
+      <code>start</code>. It must also bump a
+      <strong><code>static instances</code> field</strong> each time an instance
+      is created.</li>
+  <li>An instance method <code>increment()</code> that adds 1 to
+      <code>#count</code> and returns the new value.</li>
+  <li>A <strong>getter</strong> <code>value</code> that returns the current
+      <code>#count</code>.</li>
+  <li>An instance method <code>describe()</code> returning
+      <code>"&lt;label&gt;: &lt;count&gt;"</code>, e.g. <code>"hits: 3"</code>.</li>
+  <li>A <strong>static method</strong> <code>reset()</code> that sets
+      <code>Counter.instances</code> back to <code>0</code>.</li>
+</ol>
+<p>Export the class as <code>Counter</code>.</p>`,
+
+  starter: `class Counter {
+  // static field: total instances created
+
+  // #private field: the current count
+
+  constructor(label, start = 0) {
+    // TODO: store label, seed #count from start, bump the static counter
+  }
+
+  increment() {
+    // TODO: add 1 to #count and return the new value
+  }
+
+  get value() {
+    // TODO: return the current count
+  }
+
+  describe() {
+    // TODO: return "<label>: <count>"
+    return "";
+  }
+
+  static reset() {
+    // TODO: set instances back to 0
+  }
+}
+`,
+
+  exportNames: ["Counter"],
+
+  requirements: [
+    { pattern: /#count/, message: "Use a #private field named #count" },
+    { pattern: /static\s+instances/, message: "Declare a static field named instances" },
+    { pattern: /get\s+value\s*\(/, message: "Define a getter named value" },
+    { pattern: /static\s+reset\s*\(/, message: "Define a static method named reset" },
+  ],
+
+  tests: [
+    {
+      name: "constructor seeds count and value getter reads it",
+      run: (x) => {
+        const c = new x.Counter("hits", 5);
+        expectEqual(c.value, 5);
+      },
+    },
+    {
+      name: "start defaults to 0",
+      run: (x) => {
+        const c = new x.Counter("hits");
+        expectEqual(c.value, 0);
+      },
+    },
+    {
+      name: "increment returns the new value and mutates count",
+      run: (x) => {
+        const c = new x.Counter("hits", 0);
+        expectEqual(c.increment(), 1);
+        expectEqual(c.increment(), 2);
+        expectEqual(c.value, 2);
+      },
+    },
+    {
+      name: "describe formats label and count",
+      run: (x) => {
+        const c = new x.Counter("hits", 2);
+        c.increment();
+        expectEqual(c.describe(), "hits: 3");
+      },
+    },
+    {
+      name: "static instances counts constructions; reset zeroes it",
+      run: (x) => {
+        x.Counter.reset();
+        new x.Counter("a");
+        new x.Counter("b");
+        expectEqual(x.Counter.instances, 2);
+        x.Counter.reset();
+        expectEqual(x.Counter.instances, 0);
+      },
+    },
+    {
+      name: "#count is truly private (not an own enumerable property)",
+      run: (x) => {
+        const c = new x.Counter("hits", 9);
+        expectDeepEqual(Object.keys(c), ["label"]);
+      },
+    },
+  ],
+
+  solution: `class Counter {
+  static instances = 0;
+  #count = 0;
+
+  constructor(label, start = 0) {
+    this.label = label;
+    this.#count = start;
+    Counter.instances++;
+  }
+
+  increment() {
+    this.#count++;
+    return this.#count;
+  }
+
+  get value() {
+    return this.#count;
+  }
+
+  describe() {
+    return \`\${this.label}: \${this.#count}\`;
+  }
+
+  static reset() {
+    Counter.instances = 0;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>JavaScript runtime</th></tr>
+  <tr><td>Visibility</td><td><code>private x</code> — checked by compiler</td><td><code>#x</code> — enforced by the engine</td></tr>
+  <tr><td>Parameter property</td><td><code>constructor(private x) {}</code></td><td>write <code>this.x = x</code> by hand</td></tr>
+  <tr><td>Field types</td><td><code>count: number = 0</code></td><td><code>count = 0</code></td></tr>
+  <tr><td>Getter</td><td><code>get value(): number</code></td><td><code>get value()</code></td></tr>
+  <tr><td>Static</td><td><code>static count = 0</code></td><td><code>static count = 0</code> (same)</td></tr>
+</table>
+<p>A few runtime facts worth internalizing. <code>#count</code> is not a string
+key — <code>c["#count"]</code> is <code>undefined</code>, and reaching for
+<code>#count</code> from outside the class body is a <em>syntax</em> error, not
+just a type error. That is why <code>Object.keys(c)</code> lists only
+<code>label</code>. Static members live on the class object itself
+(<code>Counter.instances</code>), not on instances, so <code>this.instances</code>
+inside a method would be <code>undefined</code> — reference the class by name.
+And remember the old TypeScript conveniences that produced no output: parameter
+properties and <code>readonly</code> were pure compile-time sugar. In plain JS you
+assign fields yourself, and "read-only" is a discipline, not a guarantee.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

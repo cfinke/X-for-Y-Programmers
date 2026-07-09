@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Lambdas & Functional Tools</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Lambdas & Functional Tools",
+
+  intro: `
+<p>In Rust you reach for closures constantly — <code>iter.map(|x| x * 2)</code>,
+<code>iter.filter(|x| *x &gt; 0)</code>, <code>vec.sort_by(|a, b| a.cmp(b))</code>. Python
+has the same building blocks, but they live as <em>standalone</em> functions
+(<code>map</code>, <code>filter</code>, <code>sorted</code>) that take a callable as
+an argument, not as methods hanging off the iterator.</p>
+<p>Python's closure is the <code>lambda</code>: a single expression, no braces, no
+<code>return</code>. <code>lambda x: x * 2</code> is exactly <code>|x| x * 2</code>.
+A lambda's body must be one expression whose value is returned automatically — there's
+no <code>move</code> keyword to think about either, since Python closures always capture
+by reference to the enclosing scope.</p>
+<table>
+  <tr><th>Rust</th><th>Python</th></tr>
+  <tr><td><code>|x| x * 2</code></td><td><code>lambda x: x * 2</code></td></tr>
+  <tr><td><code>xs.iter().map(f).collect()</code></td><td><code>map(f, xs)</code> &rarr; wrap in <code>list(...)</code></td></tr>
+  <tr><td><code>xs.iter().filter(f).collect()</code></td><td><code>filter(f, xs)</code> &rarr; wrap in <code>list(...)</code></td></tr>
+  <tr><td><code>xs.sort_by(|a,b| a.cmp(b))</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+  <tr><td><code>xs.iter().fold(init, f)</code></td><td><code>reduce(f, xs, init)</code></td></tr>
+</table>
+<p>Two key differences. First, <code>map</code> and <code>filter</code> return lazy
+iterators, not lists — you usually wrap them in <code>list(...)</code> to see the
+results (much like a Rust iterator chain that does nothing until <code>.collect()</code>
+is called). Second, <code>sorted</code> does not take a comparator; it takes a
+<code>key=</code> function that maps each element to the value you want to sort
+<em>by</em> (closer to <code>sort_by_key</code> than <code>sort_by</code>). Often a
+comprehension reads better than <code>map</code>/<code>filter</code> — prefer
+<code>[x * 2 for x in xs]</code> over <code>list(map(lambda x: x * 2, xs))</code>.
+Reserve the functional tools for when you already have a named function to pass, or for
+<code>sorted(key=...)</code> and <code>reduce</code>, where they shine.</p>`,
+
+  rust: `let nums = vec![1, 2, 3, 4, 5];
+
+let doubled: Vec<i32> = nums.iter().map(|x| x * 2).collect();
+let evens: Vec<i32> = nums.iter().filter(|x| *x % 2 == 0).cloned().collect();
+let mut by_len = vec!["bb", "a", "ccc"];
+by_len.sort_by_key(|s| s.len());
+let total: i32 = nums.iter().fold(0, |acc, x| acc + x);
+
+fn apply_twice(f: impl Fn(i32) -> i32, x: i32) -> i32 {
+    f(f(x))
+}`,
+
+  task: `
+<p>Rewrite the Rust above using Python's functional tools:</p>
+<ol>
+  <li><code>double_all(nums)</code> — return a <em>list</em> of each number doubled,
+      using <code>map</code> with a <code>lambda</code>.</li>
+  <li><code>keep_evens(nums)</code> — return a <em>list</em> of the even numbers,
+      using <code>filter</code> with a <code>lambda</code>.</li>
+  <li><code>by_length(words)</code> — return the words sorted shortest-first, using
+      <code>sorted</code> with <code>key=len</code> (do not mutate the input).</li>
+  <li><code>total(nums)</code> — sum the numbers using
+      <code>functools.reduce</code> (import it) with a starting value of
+      <code>0</code>.</li>
+  <li><code>apply_twice(f, x)</code> — take a callable <code>f</code> and return
+      <code>f(f(x))</code>.</li>
+</ol>`,
+
+  starter: `from functools import reduce
+
+
+# 1. map + lambda -> list of doubled numbers
+def double_all(nums):
+    return []  # TODO
+
+
+# 2. filter + lambda -> list of even numbers
+def keep_evens(nums):
+    return []  # TODO
+
+
+# 3. sorted(key=...) -> words shortest-first
+def by_length(words):
+    return []  # TODO
+
+
+# 4. functools.reduce -> sum with start 0
+def total(nums):
+    return 0  # TODO
+
+
+# 5. apply a callable twice: f(f(x))
+def apply_twice(f, x):
+    return None  # TODO
+`,
+
+  requirements: [
+    { pattern: /lambda/, message: "Use a lambda in at least one function" },
+    { pattern: /reduce\s*\(/, message: "Use functools.reduce in total" },
+    { pattern: /key\s*=/, message: "Sort with sorted(..., key=...)" },
+  ],
+
+  tests: [
+    { name: "double_all doubles each number", code: "    expect_eq(double_all([1, 2, 3, 4, 5]), [2, 4, 6, 8, 10])" },
+    { name: "double_all returns a list (not an iterator)", code: "    expect_eq(type(double_all([1])).__name__, \"list\")" },
+    { name: "keep_evens keeps only evens", code: "    expect_eq(keep_evens([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "by_length sorts shortest first", code: "    expect_eq(by_length([\"bb\", \"a\", \"ccc\"]), [\"a\", \"bb\", \"ccc\"])" },
+    { name: "by_length does not mutate its input", code: "    words = [\"bb\", \"a\", \"ccc\"]\n    by_length(words)\n    expect_eq(words, [\"bb\", \"a\", \"ccc\"])" },
+    { name: "total sums via reduce", code: "    expect_eq(total([1, 2, 3, 4, 5]), 15)" },
+    { name: "total of empty list is 0", code: "    expect_eq(total([]), 0)" },
+    { name: "apply_twice applies f twice", code: "    expect_eq(apply_twice(lambda n: n + 3, 10), 16)" },
+  ],
+
+  solution: `from functools import reduce
+
+
+def double_all(nums):
+    return list(map(lambda x: x * 2, nums))
+
+
+def keep_evens(nums):
+    return list(filter(lambda x: x % 2 == 0, nums))
+
+
+def by_length(words):
+    return sorted(words, key=len)
+
+
+def total(nums):
+    return reduce(lambda acc, x: acc + x, nums, 0)
+
+
+def apply_twice(f, x):
+    return f(f(x))
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+  <tr><td>Closure / lambda</td><td><code>|x| x + 1</code></td><td><code>lambda x: x + 1</code></td></tr>
+  <tr><td>Map</td><td><code>xs.iter().map(f).collect()</code></td><td><code>list(map(f, xs))</code></td></tr>
+  <tr><td>Filter</td><td><code>xs.iter().filter(f).collect()</code></td><td><code>list(filter(f, xs))</code></td></tr>
+  <tr><td>Sort by key</td><td><code>xs.sort_by_key(|x| ...)</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+  <tr><td>Reduce</td><td><code>xs.iter().fold(0, f)</code></td><td><code>reduce(f, xs, 0)</code></td></tr>
+  <tr><td>Reverse sort</td><td><code>xs.sort_by_key(...); xs.reverse()</code></td><td><code>sorted(xs, key=..., reverse=True)</code></td></tr>
+</table>
+<p>A <code>lambda</code> is limited to a single expression — no statements, no
+multi-line bodies. If you need branches or locals, use <code>def</code> and pass
+the function by name; Python functions are first-class objects just like Rust closures
+and function pointers. For summing specifically, prefer the built-in
+<code>sum(nums)</code> over <code>reduce</code> — <code>reduce</code> earns its keep for
+folds that aren't already built in (running products, flattening, custom accumulation),
+much as you'd reach for <code>.fold()</code> in Rust only when <code>.sum()</code> doesn't
+fit.</p>
+<p>When choosing between <code>map</code>/<code>filter</code> and a comprehension,
+lean Pythonic: <code>[x * 2 for x in xs if x &gt; 0]</code> replaces a nested
+<code>map</code>+<code>filter</code> and reads top-to-bottom. Reach for
+<code>map</code>/<code>filter</code> when you already have a named callable to pass
+(e.g. <code>map(str, xs)</code>), and remember that both return lazy iterators —
+they compute nothing until you iterate or wrap them in <code>list(...)</code>, the
+same laziness Rust's iterator chains give you before a <code>.collect()</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

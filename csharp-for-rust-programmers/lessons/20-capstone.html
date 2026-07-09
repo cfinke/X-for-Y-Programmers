@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put the whole course together. You'll build a small
+<strong>typed in-memory repository</strong> — the same shape you'd reach for in
+Rust with a <code>HashMap&lt;u32, T&gt;</code> behind a struct, but assembled
+from the C# tools you've collected: a generic class with a constraint, an
+interface, LINQ, and real exceptions instead of returning a
+<code>Result::Err</code>.</p>
+<table>
+  <tr><th>Rust</th><th>C#</th></tr>
+  <tr><td><code>struct Repo&lt;T: Entity&gt;</code></td><td><code>class Repository&lt;T&gt; where T : IEntity</code></td></tr>
+  <tr><td><code>items: HashMap&lt;u32, T&gt;</code></td><td><code>Dictionary&lt;int, T&gt;</code></td></tr>
+  <tr><td><code>items.values()</code> then <code>.filter(...)</code></td><td><code>items.Values.Where(...)</code> (LINQ)</td></tr>
+  <tr><td><code>Err(NotFoundError(...))</code></td><td><code>throw new NotFoundException(...)</code></td></tr>
+  <tr><td>return <code>Result&lt;T, NotFoundError&gt;</code></td><td>return <code>T</code>, or <em>throw</em></td></tr>
+</table>
+<p>Two design habits carry over cleanly. The generic <em>constraint</em>
+(<code>where T : IEntity</code>) is C#'s answer to Rust's trait bound
+(<code>T: Entity</code>): it lets the repository read <code>item.Id</code>
+because every <code>T</code> is guaranteed to have it. And where Rust often
+returns <code>Result&lt;T, E&gt;</code> for a fallible lookup, idiomatic C#
+throws a custom exception derived from <code>Exception</code> — the caller
+either gets a valid <code>T</code> or a failure it can <code>catch</code> by
+type.</p>`,
+
+  rust: `trait Entity {
+    fn id(&self) -> u32;
+}
+
+struct NotFoundError(String);
+
+struct Repository<T: Entity> {
+    items: std::collections::HashMap<u32, T>,
+}
+
+impl<T: Entity> Repository<T> {
+    fn new() -> Self {
+        Repository { items: std::collections::HashMap::new() }
+    }
+
+    fn add(&mut self, item: T) -> Result<(), String> {
+        if self.items.contains_key(&item.id()) {
+            return Err(format!("id {} already exists", item.id()));
+        }
+        self.items.insert(item.id(), item);
+        Ok(())
+    }
+
+    fn get(&self, id: u32) -> Result<&T, NotFoundError> {
+        self.items
+            .get(&id)
+            .ok_or_else(|| NotFoundError(format!("id {} not found", id)))
+    }
+
+    fn where_(&self, predicate: impl Fn(&T) -> bool) -> Vec<&T> {
+        let mut matches: Vec<&T> = self.items.values().filter(|x| predicate(x)).collect();
+        matches.sort_by_key(|x| x.id());
+        matches
+    }
+
+    fn count(&self) -> usize {
+        self.items.len()
+    }
+}`,
+
+  task: `
+<p>Build the typed repository in C#. Everything lives in top-level types — the
+harness supplies <code>Main</code>.</p>
+<ol>
+  <li>Declare <code>interface IEntity</code> with a read-only
+      <code>int Id { get; }</code>.</li>
+  <li>Declare <code>class NotFoundException : Exception</code> with a constructor
+      that takes a <code>string message</code> and forwards it with
+      <code>: base(message)</code>.</li>
+  <li>Declare a generic <code>class Repository&lt;T&gt; where T : IEntity</code>
+      backed by a <code>Dictionary&lt;int, T&gt;</code>:
+    <ul>
+      <li><code>void Add(T item)</code> — store it by <code>item.Id</code>, but
+          <code>throw new InvalidOperationException</code> if that id is already
+          present.</li>
+      <li><code>T Get(int id)</code> — return the stored item, or
+          <code>throw new NotFoundException</code> if the id is missing.</li>
+      <li><code>bool Remove(int id)</code> — remove it, returning whether anything
+          was removed.</li>
+      <li><code>List&lt;T&gt; Where(Func&lt;T, bool&gt; predicate)</code> — use
+          <strong>LINQ</strong> to filter the values, ordered by <code>Id</code>
+          ascending: <code>items.Values.Where(predicate).OrderBy(x =&gt; x.Id).ToList()</code>.</li>
+      <li><code>int Count { get; }</code> — how many items are stored.</li>
+    </ul>
+  </li>
+  <li>Declare a concrete <code>class User : IEntity</code> with a constructor
+      <code>User(int id, string name, int age)</code> exposing
+      <code>Id</code>, <code>Name</code>, and <code>Age</code>.</li>
+</ol>`,
+
+  starter: `interface IEntity {
+  int Id { get; }
+}
+
+class NotFoundException : Exception {
+  public NotFoundException(string message) : base(message) {
+  }
+}
+
+class Repository<T> where T : IEntity {
+  private Dictionary<int, T> items = new Dictionary<int, T>();
+
+  public void Add(T item) {
+    // TODO: throw InvalidOperationException on a duplicate id, else store it
+  }
+
+  public T Get(int id) {
+    return default(T); // TODO: throw NotFoundException if missing
+  }
+
+  public bool Remove(int id) {
+    return false; // TODO
+  }
+
+  public List<T> Where(Func<T, bool> predicate) {
+    return null; // TODO: LINQ filter, ordered by Id
+  }
+
+  public int Count {
+    get { return 0; } // TODO
+  }
+}
+
+class User : IEntity {
+  public int Id { get; private set; }
+  public string Name { get; private set; }
+  public int Age { get; private set; }
+
+  public User(int id, string name, int age) {
+    // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Repository\s*<\s*T\s*>\s+where\s+T\s*:\s*IEntity/, message: "Repository must be generic with a constraint: class Repository<T> where T : IEntity" },
+    { pattern: /throw\s+new\s+NotFoundException/, message: "Get must throw a NotFoundException when the id is missing" },
+    { pattern: /\.Where\s*\(/, message: "Use LINQ's .Where(...) to filter the stored values" },
+  ],
+
+  tests: [
+    { name: "Add then Get returns the stored item", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      expect_eq(repo.Get(1).Name, \"Ada\");" },
+    { name: "Count reflects how many items are stored", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      repo.Add(new User(2, \"Rob\", 68));\n      expect_eq(repo.Count, 2);" },
+    { name: "Get on a missing id throws NotFoundException", code: "      var repo = new Repository<User>();\n      bool threw = false;\n      try { repo.Get(99); } catch (NotFoundException) { threw = true; }\n      expect_true(threw);" },
+    { name: "Add with a duplicate id throws InvalidOperationException", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      bool threw = false;\n      try { repo.Add(new User(1, \"Grace\", 40)); } catch (InvalidOperationException) { threw = true; }\n      expect_true(threw);" },
+    { name: "Where filters with LINQ, ordered by Id", code: "      var repo = new Repository<User>();\n      repo.Add(new User(3, \"Carol\", 40));\n      repo.Add(new User(1, \"Ada\", 36));\n      repo.Add(new User(2, \"Rob\", 68));\n      var adults = repo.Where(u => u.Age >= 40);\n      expect_eq(adults.Count, 2);\n      expect_eq(adults[0].Id, 2);\n      expect_eq(adults[1].Id, 3);" },
+    { name: "Remove deletes an item and reports success", code: "      var repo = new Repository<User>();\n      repo.Add(new User(1, \"Ada\", 36));\n      expect_true(repo.Remove(1));\n      expect_eq(repo.Count, 0);\n      expect_true(!repo.Remove(1));" },
+  ],
+
+  solution: `interface IEntity {
+  int Id { get; }
+}
+
+class NotFoundException : Exception {
+  public NotFoundException(string message) : base(message) {
+  }
+}
+
+class Repository<T> where T : IEntity {
+  private Dictionary<int, T> items = new Dictionary<int, T>();
+
+  public void Add(T item) {
+    if (items.ContainsKey(item.Id)) {
+      throw new InvalidOperationException($"id {item.Id} already exists");
+    }
+    items[item.Id] = item;
+  }
+
+  public T Get(int id) {
+    T value;
+    if (!items.TryGetValue(id, out value)) {
+      throw new NotFoundException($"id {id} not found");
+    }
+    return value;
+  }
+
+  public bool Remove(int id) {
+    return items.Remove(id);
+  }
+
+  public List<T> Where(Func<T, bool> predicate) {
+    return items.Values.Where(predicate).OrderBy(x => x.Id).ToList();
+  }
+
+  public int Count {
+    get { return items.Count; }
+  }
+}
+
+class User : IEntity {
+  public int Id { get; private set; }
+  public string Name { get; private set; }
+  public int Age { get; private set; }
+
+  public User(int id, string name, int age) {
+    Id = id;
+    Name = name;
+    Age = age;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+  <tr><td>Constrained generic</td><td><code>struct Repo&lt;T: Entity&gt;</code></td><td><code>class Repository&lt;T&gt; where T : IEntity</code></td></tr>
+  <tr><td>Keyed store</td><td><code>HashMap&lt;u32, T&gt;</code></td><td><code>Dictionary&lt;int, T&gt;</code></td></tr>
+  <tr><td>Safe lookup</td><td><code>map.get(&amp;id)</code> → <code>Option&lt;&amp;T&gt;</code></td><td><code>TryGetValue(id, out value)</code></td></tr>
+  <tr><td>Filter</td><td><code>iter.filter(p)</code></td><td><code>seq.Where(p)</code> (LINQ)</td></tr>
+  <tr><td>Custom error</td><td><code>struct E(String)</code> impl <code>Error</code></td><td><code>class E : Exception</code></td></tr>
+  <tr><td>Handle by type</td><td><code>match result { Err(e) =&gt; ... }</code></td><td><code>catch (E ex) { }</code></td></tr>
+</table>
+<p>A few things came together here. <code>where T : IEntity</code> is what unlocks
+<code>item.Id</code> inside the generic — without the constraint the compiler only
+knows <code>T</code> is <em>some</em> type and would reject the member access, the
+same way a missing <code>T: Entity</code> bound would leave <code>item.id()</code>
+unreachable in Rust. The LINQ chain
+<code>Where(...).OrderBy(...).ToList()</code> is lazy until <code>ToList()</code>
+forces it, mirroring how Rust's iterator adapters like <code>.filter(...)</code>
+stay lazy until a consuming call such as <code>.collect()</code> or
+<code>.sort_by_key(...)</code> forces them.</p>
+<p>The big idiomatic shift from Rust is error handling: rather than returning
+<code>Result&lt;T, E&gt;</code> and making every caller <code>match</code> on it
+or propagate it with <code>?</code>, C# code throws a typed exception on the
+exceptional path. Callers <code>catch</code> by exception type —
+<code>catch (NotFoundException ex)</code> — which is both more precise and
+more discoverable than a runtime check on which enum variant a
+<code>Result</code> holds. That's the whole course in one small object: types
+that are real at runtime, generics with constraints, interfaces as contracts,
+LINQ for querying, and exceptions for failure.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

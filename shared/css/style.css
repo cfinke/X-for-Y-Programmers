@@ -272,6 +272,16 @@ li.fail .mark { color: var(--fail); }
   font-size: 0.95rem;
 }
 
+.site-footer {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.site-footer a { color: inherit; }
+
 /* index page */
 
 .hero { margin-bottom: 1.5rem; }

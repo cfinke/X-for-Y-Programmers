@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Tuples & Deconstruction</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Tuples & Deconstruction",
+
+  intro: `
+<p>In C++ you reach for <code>std::pair&lt;int, std::string&gt;</code> or
+<code>std::tuple&lt;int, std::string&gt;</code>, or a small struct, whenever you
+want to return two values without declaring a whole class. C# has a direct
+equivalent: the <strong>value tuple</strong>. It is written with parentheses —
+<code>(int, string)</code> — and it is a lightweight <code>struct</code>, so it
+copies by value and compares by value, much like <code>std::tuple</code>.</p>
+<table>
+  <tr><th>C++</th><th>C#</th></tr>
+  <tr><td><code>std::tuple&lt;int, std::string&gt;</code></td><td><code>(int, string)</code></td></tr>
+  <tr><td><code>std::get&lt;0&gt;(t)</code>, <code>std::get&lt;1&gt;(t)</code> (positional)</td><td><code>(int Count, string Name)</code> (named)</td></tr>
+  <tr><td><code>auto [a, b] = pair;</code></td><td><code>var (a, b) = pair;</code></td></tr>
+  <tr><td><code>return {n, s};</code></td><td><code>return (n, s);</code></td></tr>
+  <tr><td><code>std::get&lt;0&gt;(t)</code>, <code>std::get&lt;1&gt;(t)</code></td><td><code>t.Item1</code>, <code>t.Item2</code> (or names)</td></tr>
+</table>
+<p>Unlike <code>std::tuple</code>, a C# tuple's elements can carry <em>names</em>
+(<code>(int Count, string Name)</code>), so you read <code>result.Count</code>
+instead of pulling elements out by index with <code>std::get&lt;N&gt;</code>. And
+the names are just labels — two tuples with the same element types are the same
+type regardless of the names, and <code>==</code>/<code>Equals</code> compare
+element by element.</p>
+<p>To pull a tuple apart you <strong>deconstruct</strong> it:
+<code>var (a, b) = GetPair();</code> — the same idea as C++17's structured
+bindings, <code>auto [a, b] = GetPair();</code>. Any type can opt into this by
+defining a <code>Deconstruct</code> method with <code>out</code> parameters, and
+then it too works with the <code>var (…)</code> syntax.</p>`,
+
+  cpp: `std::pair<int, int> minMax(const std::vector<int>& nums) {
+  int lo = nums[0], hi = nums[0];
+  for (int n : nums) { lo = std::min(lo, n); hi = std::max(hi, n); }
+  return {lo, hi};
+}
+
+auto [low, high] = minMax({4, 1, 9, 2});
+
+struct Point {
+  int x, y;
+};
+Point p{3, 4};
+auto [x, y] = p;`,
+
+  task: `
+<p>Build a <code>static class Stats</code> plus a small <code>Point</code> class
+that shows off tuples and deconstruction:</p>
+<ol>
+  <li><code>MinMax(int[] nums)</code> returns a <strong>named</strong> tuple
+      <code>(int Min, int Max)</code> — the smallest and largest values.</li>
+  <li><code>Divide(int a, int b)</code> returns
+      <code>(int Quotient, int Remainder)</code> using <code>/</code> and
+      <code>%</code>.</li>
+  <li><code>Range(int[] nums)</code> must <strong>deconstruct</strong> the result
+      of <code>MinMax</code> with <code>var (min, max) = …</code> and return
+      <code>max - min</code>.</li>
+  <li>Give <code>Point</code> a constructor <code>(int x, int y)</code>, public
+      <code>X</code>/<code>Y</code> properties, and a
+      <code>Deconstruct(out int x, out int y)</code> method so a caller can write
+      <code>var (x, y) = point;</code>.</li>
+</ol>`,
+
+  starter: `static class Stats {
+  public static (int Min, int Max) MinMax(int[] nums) {
+    return (0, 0); // TODO
+  }
+
+  public static (int Quotient, int Remainder) Divide(int a, int b) {
+    return (0, 0); // TODO: use / and %
+  }
+
+  public static int Range(int[] nums) {
+    return 0; // TODO: deconstruct MinMax with var (min, max) = ...
+  }
+}
+
+class Point {
+  public int X { get; }
+  public int Y { get; }
+
+  public Point(int x, int y) {
+    X = x;
+    Y = y;
+  }
+
+  public void Deconstruct(out int x, out int y) {
+    x = 0; // TODO
+    y = 0; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /var\s*\(\s*\w+\s*,\s*\w+\s*\)\s*=/, message: "Deconstruct a tuple with the var (a, b) = ... syntax" },
+    { pattern: /\(\s*int\s+Min\s*,\s*int\s+Max\s*\)/, message: "MinMax should return a named tuple (int Min, int Max)" },
+    { pattern: /void\s+Deconstruct\s*\(\s*out\s+int/, message: "Give Point a Deconstruct(out int x, out int y) method" },
+  ],
+
+  tests: [
+    { name: "MinMax finds the extremes", code: "      var mm = Stats.MinMax(new int[]{4, 1, 9, 2});\n      expect_eq(mm.Min, 1);\n      expect_eq(mm.Max, 9);" },
+    { name: "MinMax tuple equals a literal tuple", code: "      expect_true(Stats.MinMax(new int[]{5, 3, 8}).Equals((3, 8)));" },
+    { name: "Divide returns quotient and remainder", code: "      var d = Stats.Divide(17, 5);\n      expect_eq(d.Quotient, 3);\n      expect_eq(d.Remainder, 2);" },
+    { name: "Range deconstructs MinMax", code: "      expect_eq(Stats.Range(new int[]{4, 1, 9, 2}), 8);" },
+    { name: "Point deconstructs into x and y", code: "      var p = new Point(3, 4);\n      int x, y;\n      p.Deconstruct(out x, out y);\n      expect_eq(x, 3);\n      expect_eq(y, 4);" },
+    { name: "Divide result compares by value", code: "      expect_true(Stats.Divide(10, 3).Equals((3, 1)));" },
+  ],
+
+  solution: `static class Stats {
+  public static (int Min, int Max) MinMax(int[] nums) {
+    int lo = nums[0], hi = nums[0];
+    foreach (var n in nums) {
+      if (n < lo) lo = n;
+      if (n > hi) hi = n;
+    }
+    return (lo, hi);
+  }
+
+  public static (int Quotient, int Remainder) Divide(int a, int b) {
+    return (a / b, a % b);
+  }
+
+  public static int Range(int[] nums) {
+    var (min, max) = MinMax(nums);
+    return max - min;
+  }
+}
+
+class Point {
+  public int X { get; }
+  public int Y { get; }
+
+  public Point(int x, int y) {
+    X = x;
+    Y = y;
+  }
+
+  public void Deconstruct(out int x, out int y) {
+    x = X;
+    y = Y;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>C#</th></tr>
+  <tr><td>Tuple type</td><td><code>std::tuple&lt;int, std::string&gt;</code></td><td><code>(int, string)</code></td></tr>
+  <tr><td>Named elements</td><td>— (use a struct)</td><td><code>(int Count, string Name)</code></td></tr>
+  <tr><td>Construct</td><td><code>std::make_tuple(1, "a")</code> or <code>{1, "a"}</code></td><td><code>(1, "a")</code></td></tr>
+  <tr><td>Access</td><td><code>std::get&lt;0&gt;(t)</code></td><td><code>t.Item1</code> or <code>t.Count</code></td></tr>
+  <tr><td>Deconstruct</td><td><code>auto [a, b] = t;</code></td><td><code>var (a, b) = t;</code></td></tr>
+  <tr><td>Struct destructure</td><td><code>auto [x, y] = p;</code></td><td><code>var (x, y) = p;</code> via <code>Deconstruct</code></td></tr>
+</table>
+<p>A value tuple is a <code>struct</code> (<code>System.ValueTuple</code>), so it
+copies on assignment and <code>==</code>/<code>Equals</code> compare element by
+element — handy in tests, and closer to <code>std::tuple</code>'s value semantics
+than to a heap-allocated object. The element names are compile-time sugar only:
+<code>(int Min, int Max)</code> and <code>(int, int)</code> are the same runtime
+type, which is why <code>MinMax(...) == (3, 8)</code> works against a nameless
+literal.</p>
+<p>You can also mix deconstruction into <code>foreach</code>
+(<code>foreach (var (k, v) in dict)</code>) and discard pieces you don't need with
+<code>_</code>: <code>var (_, max) = MinMax(nums);</code> — similar to using
+<code>std::ignore</code> with <code>std::tie</code> in C++. Any type — not just
+tuples — becomes deconstructible the moment it exposes a <code>Deconstruct</code>
+method with <code>out</code> parameters, and you can even provide several
+overloads for different arities.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

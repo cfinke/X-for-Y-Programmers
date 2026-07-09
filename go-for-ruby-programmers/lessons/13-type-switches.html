@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Type Switches</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Type Switches",
+
+  intro: `
+<p>Ruby is duck-typed: you rarely ask an object what class it is before calling
+a method on it, and when you do, you reach for <code>is_a?</code>,
+<code>instance_of?</code>, or a <code>case</code>/<code>when</code> that matches
+against classes. Go's equivalent is asking an <code>interface{}</code> (aka
+<code>any</code>) value what concrete type it is holding at runtime. That is a
+<em>type assertion</em>, and the multi-branch form is a <em>type switch</em>.</p>
+<table>
+  <tr><th>Ruby</th><th>Go</th></tr>
+  <tr><td><code>x.is_a?(Integer)</code></td><td><code>v, ok := x.(int)</code></td></tr>
+  <tr><td><code>x.to_str</code> (raises if wrong)</td><td><code>x.(string)</code> (panics if wrong)</td></tr>
+  <tr><td><code>case x; when String then … end</code></td><td><code>switch v := x.(type) { case string: … }</code></td></tr>
+  <tr><td><code>else</code></td><td><code>default:</code> case</td></tr>
+</table>
+<p>The comma-ok form <code>v, ok := x.(int)</code> never panics: on a match
+<code>ok</code> is <code>true</code> and <code>v</code> holds the value; on a
+mismatch <code>ok</code> is <code>false</code> and <code>v</code> is the zero
+value. The single-result form <code>x.(int)</code> panics on a mismatch, so
+reach for it only when you are certain. Inside a type switch, the bound variable
+<code>v</code> has the specific type of whichever <code>case</code> matched —
+the compiler narrows it for you, something Ruby's dynamic dispatch never needs
+to do but that Go requires because it is statically typed.</p>`,
+
+  ruby: `def describe(x)
+  case x
+  when Integer
+    "int: #{x}"
+  when String
+    "string of length #{x.length}"
+  when TrueClass, FalseClass
+    x ? "the boolean true" : "the boolean false"
+  else
+    "unknown type"
+  end
+end`,
+
+  task: `
+<p>Write two package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>Describe(x interface{}) string</code> classifies <code>x</code> by its
+      dynamic type using a <strong>type switch</strong>:
+    <ul>
+      <li><code>int</code> &rarr; <code>"int: N"</code> (e.g. <code>"int: 7"</code>) — use
+          <code>fmt.Sprintf("int: %d", v)</code>.</li>
+      <li><code>string</code> &rarr; <code>"string of length N"</code> using
+          <code>len(v)</code>.</li>
+      <li><code>bool</code> &rarr; <code>"the boolean true"</code> or
+          <code>"the boolean false"</code>.</li>
+      <li>anything else &rarr; <code>"unknown type"</code> (the <code>default</code> case).</li>
+    </ul>
+  </li>
+  <li><code>AsInt(x interface{}) (int, bool)</code> uses the comma-ok assertion
+      <code>v, ok := x.(int)</code> and returns both results. For a non-int it
+      returns <code>(0, false)</code>.</li>
+</ol>`,
+
+  starter: `func Describe(x interface{}) string {
+	return "" // TODO: use a type switch
+}
+
+func AsInt(x interface{}) (int, bool) {
+	return 0, false // TODO: use the comma-ok assertion x.(int)
+}
+`,
+
+  requirements: [
+    { pattern: /switch\s+\w+\s*:=\s*\w+\.\(type\)/, message: "Use a type switch: switch v := x.(type)" },
+    { pattern: /\.\(int\)/, message: "Use the comma-ok assertion x.(int) in AsInt" },
+  ],
+
+  tests: [
+    { name: "Describe(7) is \"int: 7\"", code: "\t\texpect_eq(Describe(7), \"int: 7\")" },
+    { name: "Describe(\"hello\") is \"string of length 5\"", code: "\t\texpect_eq(Describe(\"hello\"), \"string of length 5\")" },
+    { name: "Describe(true) is \"the boolean true\"", code: "\t\texpect_eq(Describe(true), \"the boolean true\")" },
+    { name: "Describe(false) is \"the boolean false\"", code: "\t\texpect_eq(Describe(false), \"the boolean false\")" },
+    { name: "Describe(3.14) is \"unknown type\"", code: "\t\texpect_eq(Describe(3.14), \"unknown type\")" },
+    { name: "AsInt(42) is (42, true)", code: "\t\tv, ok := AsInt(42)\n\t\texpect_eq(v, 42)\n\t\texpect_true(ok)" },
+    { name: "AsInt(\"nope\") is (0, false)", code: "\t\tv, ok := AsInt(\"nope\")\n\t\texpect_eq(v, 0)\n\t\texpect_eq(ok, false)" },
+  ],
+
+  solution: `func Describe(x interface{}) string {
+	switch v := x.(type) {
+	case int:
+		return fmt.Sprintf("int: %d", v)
+	case string:
+		return fmt.Sprintf("string of length %d", len(v))
+	case bool:
+		if v {
+			return "the boolean true"
+		}
+		return "the boolean false"
+	default:
+		return "unknown type"
+	}
+}
+
+func AsInt(x interface{}) (int, bool) {
+	v, ok := x.(int)
+	return v, ok
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Go</th></tr>
+  <tr><td>Checked narrow</td><td><code>x.is_a?(Integer)</code></td><td><code>v, ok := x.(int)</code></td></tr>
+  <tr><td>Unchecked cast</td><td><code>Integer(x)</code> (raises if wrong)</td><td><code>x.(int)</code> (panics if wrong)</td></tr>
+  <tr><td>Multi-way narrow</td><td><code>case x; when …</code></td><td><code>switch v := x.(type)</code></td></tr>
+  <tr><td>Nil interface</td><td><code>x.nil?</code></td><td><code>case nil:</code></td></tr>
+</table>
+<p>Two habits to carry over. First, prefer the comma-ok form over the panicking
+single-result assertion unless a mismatch is truly impossible — it is Go's
+equivalent of checking <code>x.is_a?(Integer)</code> before trusting a value.
+Second, inside <code>switch v := x.(type)</code> the variable <code>v</code>
+takes on the matched case's concrete type, so you can call type-specific
+methods on it without another assertion — Ruby never needs this step because
+every variable already carries its own class at runtime. If you list several
+types in one case (<code>case int, int64:</code>), <code>v</code> keeps the
+original <code>interface{}</code> type in that branch, since Go cannot pick just
+one. A <code>case nil:</code> matches an interface holding no value at all.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

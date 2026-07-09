@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Dictionaries</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Dictionaries",
+
+  intro: `
+<p>In PHP you reach for an associative array whenever you need key/value
+lookups — it doubles as both a list and a map. C#'s workhorse is
+<code>Dictionary&lt;K, V&gt;</code> — a real generic type where both the key
+and value types are fixed at compile time. Unlike a PHP array, keys are
+strongly typed and there is no automatic numeric-string coercion, and
+iteration order is not guaranteed.</p>
+<table>
+  <tr><th>PHP</th><th>C#</th></tr>
+  <tr><td><code>$m = [];</code></td><td><code>new Dictionary&lt;string, int&gt;()</code></td></tr>
+  <tr><td><code>$m["a"] = 1;</code></td><td><code>d["a"] = 1;</code> or <code>d.Add("a", 1)</code></td></tr>
+  <tr><td><code>$m["a"]</code></td><td><code>d["a"]</code> (throws if absent)</td></tr>
+  <tr><td><code>array_key_exists("a", $m)</code></td><td><code>d.ContainsKey("a")</code></td></tr>
+  <tr><td><code>count($m)</code></td><td><code>d.Count</code></td></tr>
+</table>
+<p>One sharp edge: the indexer <code>d["a"]</code> <em>throws</em>
+<code>KeyNotFoundException</code> when the key is missing — unlike PHP, which
+just emits a warning and evaluates to <code>null</code>. The idiomatic safe
+lookup is <code>TryGetValue(key, out value)</code>, which returns a
+<code>bool</code> and hands you the value through an <code>out</code> parameter
+— it plays the role of PHP's <code>?? default</code> null-coalescing idiom.
+Assigning through the indexer (<code>d["a"] = 1</code>) inserts or overwrites,
+while <code>Add</code> throws if the key already exists.</p>`,
+
+  php: `$scores = [
+  "Ada" => 90,
+  "Rob" => 75,
+];
+
+function get(array $scores, string $name): int {
+  return $scores[$name] ?? 0;
+}
+
+function total(array $scores): int {
+  $sum = 0;
+  foreach ($scores as $score) {
+    $sum += $score;
+  }
+  return $sum;
+}`,
+
+  task: `
+<p>Write a <code>static class Scores</code> that builds and queries a
+<code>Dictionary&lt;string, int&gt;</code>:</p>
+<ol>
+  <li><code>Build()</code> returns a <code>Dictionary&lt;string, int&gt;</code>
+      created with a <em>collection initializer</em> holding
+      <code>"Ada" =&gt; 90</code>, <code>"Rob" =&gt; 75</code>, and
+      <code>"Grace" =&gt; 88</code>.</li>
+  <li><code>GetOrZero(dict, name)</code> returns the score for
+      <code>name</code>, or <code>0</code> if the key is absent — use
+      <code>TryGetValue</code> with an <code>out</code> variable, not the
+      throwing indexer.</li>
+  <li><code>Total(dict)</code> sums every value by iterating the
+      <code>KeyValuePair&lt;string, int&gt;</code> entries with
+      <code>foreach</code>.</li>
+  <li><code>Count(dict)</code> returns how many entries the dictionary holds
+      (<code>Count</code>).</li>
+</ol>`,
+
+  starter: `static class Scores {
+  public static Dictionary<string, int> Build() {
+    return null; // TODO: use a collection initializer
+  }
+
+  public static int GetOrZero(Dictionary<string, int> dict, string name) {
+    return 0; // TODO: use TryGetValue(name, out ...)
+  }
+
+  public static int Total(Dictionary<string, int> dict) {
+    return 0; // TODO: foreach over KeyValuePair entries
+  }
+
+  public static int Count(Dictionary<string, int> dict) {
+    return 0; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /TryGetValue/, message: "Use TryGetValue(name, out ...) for the safe lookup" },
+    { pattern: /foreach/, message: "Iterate the entries with foreach" },
+    { pattern: /\{\s*"Ada"\s*,\s*90\s*\}/, message: "Populate Build() with a collection initializer like { \"Ada\", 90 }" },
+  ],
+
+  tests: [
+    { name: "Build() has 3 entries", code: "      expect_eq(Scores.Build().Count, 3);" },
+    { name: "Build()[\"Ada\"] is 90", code: "      expect_eq(Scores.Build()[\"Ada\"], 90);" },
+    { name: "GetOrZero for present key", code: "      expect_eq(Scores.GetOrZero(Scores.Build(), \"Rob\"), 75);" },
+    { name: "GetOrZero for missing key is 0", code: "      expect_eq(Scores.GetOrZero(Scores.Build(), \"Nobody\"), 0);" },
+    { name: "Total sums all values", code: "      expect_eq(Scores.Total(Scores.Build()), 253);" },
+    { name: "Count matches", code: "      expect_eq(Scores.Count(Scores.Build()), 3);" },
+  ],
+
+  solution: `static class Scores {
+  public static Dictionary<string, int> Build() {
+    return new Dictionary<string, int> {
+      { "Ada", 90 },
+      { "Rob", 75 },
+      { "Grace", 88 },
+    };
+  }
+
+  public static int GetOrZero(Dictionary<string, int> dict, string name) {
+    if (dict.TryGetValue(name, out int score)) {
+      return score;
+    }
+    return 0;
+  }
+
+  public static int Total(Dictionary<string, int> dict) {
+    int sum = 0;
+    foreach (KeyValuePair<string, int> entry in dict) {
+      sum += entry.Value;
+    }
+    return sum;
+  }
+
+  public static int Count(Dictionary<string, int> dict) {
+    return dict.Count;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP (array)</th><th>C#</th></tr>
+  <tr><td>Create + fill</td><td><code>["a" =&gt; 1]</code></td><td><code>new Dictionary&lt;string,int&gt; { { "a", 1 } }</code></td></tr>
+  <tr><td>Insert/overwrite</td><td><code>$m["a"] = 1;</code></td><td><code>d["a"] = 1;</code></td></tr>
+  <tr><td>Insert (fail if exists)</td><td>—</td><td><code>d.Add("a", 1)</code></td></tr>
+  <tr><td>Safe read</td><td><code>$m["a"] ?? $default</code></td><td><code>d.TryGetValue("a", out v)</code></td></tr>
+  <tr><td>Has key</td><td><code>array_key_exists("a", $m)</code></td><td><code>d.ContainsKey("a")</code></td></tr>
+  <tr><td>Iterate</td><td><code>foreach ($m as $k =&gt; $v)</code></td><td><code>foreach (var kv in d)</code> → <code>kv.Key</code>, <code>kv.Value</code></td></tr>
+</table>
+<p>The <code>out</code> parameter on <code>TryGetValue</code> is the pattern to
+memorize: you can declare the variable inline (<code>out int score</code>) right
+at the call site. When the key is missing, the <code>out</code> value is set to
+the type's default (<code>0</code> for <code>int</code>), so some code even skips
+checking the returned <code>bool</code> — but relying on that hides the
+missing-key case. Prefer the explicit <code>if (dict.TryGetValue(...))</code>
+form. For iteration, each element is a <code>KeyValuePair&lt;K, V&gt;</code> with
+read-only <code>Key</code> and <code>Value</code> properties; you can also loop
+<code>dict.Keys</code> or <code>dict.Values</code> directly — analogous to
+<code>array_keys($m)</code> and <code>array_values($m)</code> in PHP.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

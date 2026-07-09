@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Kotlin functions start with the <code>fun</code> keyword, and — much like
+Rust — the parameter type follows the name and the return type comes last,
+after an arrow-like colon: <code>fun greet(name: String): String</code> reads
+almost the same as <code>fn greet(name: &amp;str) -&gt; String</code>. But three
+of Kotlin's function features have no true built-in equivalent in Rust:
+default parameter values, named arguments, and variadic (vararg) parameters.
+Rust normally reaches for <code>Option&lt;T&gt;</code>, a builder struct, or a
+fixed <code>&amp;[T]</code> slice to approximate them.</p>
+<table>
+  <tr><th>Rust</th><th>Kotlin</th></tr>
+  <tr><td><code>fn add(a: i32, b: i32) -&gt; i32</code></td><td><code>fun add(a: Int, b: Int): Int</code></td></tr>
+  <tr><td><code>greeting: Option&lt;&amp;str&gt;</code> (no true default)</td><td><code>greeting: String = "Hi"</code></td></tr>
+  <tr><td>positional only (no named arguments)</td><td><code>add(b = 2, a = 1)</code> (named args)</td></tr>
+  <tr><td><code>nums: &amp;[i32]</code> (fixed slice)</td><td><code>vararg nums: Int</code></td></tr>
+  <tr><td><code>-&gt; ()</code> (usually omitted)</td><td><code>: Unit</code> (usually omitted)</td></tr>
+</table>
+<p>Two things that feel new, relative to Rust. First, when a function is just
+<em>one</em> expression you can drop the braces and <code>return</code> and use
+<code>=</code>: <code>fun square(n: Int) = n * n</code>. This will feel
+familiar — Rust functions already return a trailing tail expression without
+<code>return</code> — but Kotlin lets you drop the braces entirely, and the
+return type is inferred from that one expression. Second, Kotlin has real
+<strong>named arguments</strong>: you can pass <code>greet(name = "Ada")</code>
+and even reorder them, which pairs beautifully with default values so you only
+name the arguments you want to change; Rust has no built-in equivalent, so the
+usual workaround is a struct of named fields or the builder pattern.</p>`,
+
+  rust: `fn greet(name: &str, greeting: Option<&str>) -> String {
+    format!("{}, {}!", greeting.unwrap_or("Hello"), name)
+}
+
+fn sum(nums: &[i32]) -> i32 {
+    nums.iter().sum()
+}
+
+fn log_message(log: &mut Vec<String>, message: &str) {
+    log.push(message.to_string());
+}`,
+
+  task: `
+<p>Rewrite these three functions in idiomatic Kotlin. Top-level declarations are
+fine — no class or <code>main</code> needed:</p>
+<ol>
+  <li>Write <code>greet(name: String, greeting: String = "Hello"): String</code>
+      as a <strong>single-expression</strong> function that returns a template
+      like <code>"Hello, Ada!"</code>. The default lets callers write
+      <code>greet("Ada")</code>, and named arguments let them write
+      <code>greet(name = "Ada", greeting = "Hi")</code>.</li>
+  <li>Write <code>sum(vararg nums: Int): Int</code> as a single-expression
+      function that adds up any number of arguments (hint: <code>nums.sum()</code>).
+      With no arguments it returns <code>0</code>.</li>
+  <li>Write <code>logMessage(message: String)</code>, which returns
+      <code>Unit</code> and appends <code>message</code> to the top-level
+      <code>log</code> list.</li>
+</ol>`,
+
+  starter: `// A shared log the tests inspect.
+val log = mutableListOf<String>()
+
+// 1. Single-expression function with a default argument.
+fun greet(name: String, greeting: String = "Hello"): String = "" // TODO
+
+// 2. Single-expression function taking a vararg of Ints.
+fun sum(vararg nums: Int): Int = 0 // TODO
+
+// 3. A Unit-returning function (no return type needed).
+fun logMessage(message: String) {
+    // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /fun\s+greet\([^)]*greeting:\s*String\s*=\s*"Hello"[^)]*\)\s*:\s*String\s*=/, message: "Write greet as a single-expression function with a default: greeting: String = \"Hello\"" },
+    { pattern: /fun\s+sum\(\s*vararg\s+nums:\s*Int\s*\)\s*:\s*Int\s*=/, message: "Write sum as a single-expression function taking vararg nums: Int" },
+    { pattern: /log\.add\(/, message: "logMessage should append to the log list with log.add(...)" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default greeting', code: '        expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'greet("Ada", "Hi") overrides the greeting', code: '        expect_eq(greet("Ada", "Hi"), "Hi, Ada!")' },
+    { name: "greet with named arguments", code: '        expect_eq(greet(name = "Ada", greeting = "Hey"), "Hey, Ada!")' },
+    { name: "greet with reordered named arguments", code: '        expect_eq(greet(greeting = "Yo", name = "Bo"), "Yo, Bo!")' },
+    { name: "sum() with no arguments is 0", code: "        expect_eq(sum(), 0)" },
+    { name: "sum(1, 2, 3) is 6", code: "        expect_eq(sum(1, 2, 3), 6)" },
+    { name: "sum spreads an array with *", code: "        val nums = intArrayOf(4, 5, 6)\n        expect_eq(sum(*nums), 15)" },
+    { name: "logMessage returns Unit and appends", code: '        val before = log.size\n        val result: Unit = logMessage("hello")\n        expect_true(result == Unit)\n        expect_eq(log.size, before + 1)\n        expect_eq(log.last(), "hello")' },
+  ],
+
+  solution: `val log = mutableListOf<String>()
+
+fun greet(name: String, greeting: String = "Hello"): String = "$greeting, $name!"
+
+fun sum(vararg nums: Int): Int = nums.sum()
+
+fun logMessage(message: String) {
+    log.add(message)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+  <tr><td>Single expression</td><td><code>fn f(n: i32) -&gt; i32 { n * n }</code> (tail expr)</td><td><code>fun f(n: Int) = n * n</code></td></tr>
+  <tr><td>Default argument</td><td>— (no built-in defaults)</td><td><code>fun f(x: Int = 1)</code></td></tr>
+  <tr><td>Named argument</td><td>— (no built-in named args)</td><td><code>f(x = 1)</code></td></tr>
+  <tr><td>Rest / vararg</td><td><code>fn f(xs: &amp;[i32])</code></td><td><code>fun f(vararg xs: Int)</code></td></tr>
+  <tr><td>Spread a collection</td><td><code>f(&amp;arr)</code> (slices need no spreading)</td><td><code>f(*arr)</code></td></tr>
+  <tr><td>No return value</td><td><code>-&gt; ()</code> (usually omitted)</td><td><code>: Unit</code> (omit it)</td></tr>
+</table>
+<p>A few Kotlin-isms worth remembering. Named arguments are not just sugar — they
+make call sites self-documenting and are the reason Kotlin rarely needs the
+builder-struct pattern you'd reach for in Rust to fake optional or named
+parameters. To pass an existing array into a <code>vararg</code>, use the
+<em>spread operator</em> <code>*</code> (e.g. <code>sum(*nums)</code>) — Rust
+needs nothing analogous here, since <code>sum</code> just takes a
+<code>&amp;[i32]</code> slice directly. Finally, <code>Unit</code> is a real
+type with a single value (also written <code>Unit</code>), the counterpart of
+Rust's <code>()</code> unit type; a function with no declared return type
+returns it implicitly, so you almost never type it out, just as Rust functions
+usually omit <code>-&gt; ()</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Destructuring &amp; Spread</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Destructuring & Spread",
+
+  intro: `
+<p>Destructuring and spread are pure syntax — they survive the trip to
+JavaScript completely unchanged. What disappears is everything Kotlin's compiler
+was doing <em>around</em> them: no <code>componentN()</code> contract checked
+against a <code>data class</code>, no verifying that a default matches its
+declared type, no complaint when you merge two maps with conflicting value
+types. The runtime just reads properties and copies values.</p>
+<table>
+  <tr><th>Kotlin</th><th>JavaScript</th></tr>
+  <tr><td><code>val (x, y) = p</code> (positional, via <code>componentN()</code>)</td><td><code>const { x, y } = p;</code> (by name)</td></tr>
+  <tr><td><code>val (a, b) = pair</code> — no built-in "rest" destructuring</td><td><code>const [a, ...rest] = xs;</code></td></tr>
+  <tr><td><code>fun f(n: Int) {}</code> — no destructured parameters</td><td><code>function f({ n }) {}</code></td></tr>
+  <tr><td>missing/undeclared property = compile error</td><td>missing property = <code>undefined</code></td></tr>
+</table>
+<p>A default only fires when the value is <code>undefined</code> — not for
+<code>null</code>, not for <code>0</code>, not for <code>""</code>. Destructuring
+a property that does not exist gives you <code>undefined</code> silently, so
+defaults are your only guardrail. And <code>{ ...a, ...b }</code> is a shallow
+copy: last-writer-wins on keys, and nested objects are shared by reference, not
+cloned — much like how Kotlin's <code>mapA + mapB</code> keeps the last value
+for a repeated key but never deep-copies what is inside.</p>`,
+
+  kotlin: `data class Point(val x: Int, val y: Int)
+data class Address(val city: String? = null)
+data class User(val name: String, val address: Address? = null)
+
+fun renamed(p: Point): Pair<Int, Int> {
+    val (left, top) = p
+    return left to top
+}
+
+fun cityOf(u: User): String {
+    return u.address?.city ?: "Unknown"
+}
+
+fun <T> merge(base: Map<String, T>, overrides: Map<String, T>): Map<String, T> {
+    return base + overrides
+}`,
+
+  task: `
+<p>Write the plain-JavaScript runtime versions. No type annotations in your code.</p>
+<ol>
+  <li><code>renamed(point)</code> — destructure <code>x</code> and <code>y</code>
+      out of <code>point</code>, <strong>renaming</strong> them to
+      <code>left</code> and <code>top</code>, and return
+      <code>{ left, top }</code>.</li>
+  <li><code>cityOf(user)</code> — use <strong>nested</strong> destructuring with a
+      <strong>default</strong> to pull <code>user.address.city</code>, returning
+      <code>"Unknown"</code> when either the address or the city is missing.</li>
+  <li><code>headAndRest(arr)</code> — use array destructuring with a
+      <strong>rest</strong> element to return
+      <code>{ head, rest }</code> (the first item and an array of the remainder).</li>
+  <li><code>greet({ name, greeting = "Hello" })</code> — take a
+      <strong>destructured parameter</strong> with a default and return a string
+      like <code>"Hello, Ada!"</code>.</li>
+  <li><code>merge(base, overrides)</code> — return a new object combining both with
+      the <strong>spread</strong> operator (overrides win); do not mutate
+      <code>base</code>.</li>
+  <li><code>concatAll(...arrays)</code> — accept any number of arrays and return one
+      flat array using <strong>spread</strong>.</li>
+</ol>`,
+
+  starter: `// 1. renamed(point) -> { left, top }
+function renamed(point) {
+  // TODO: const { x: left, y: top } = point;
+  return {};
+}
+
+// 2. cityOf(user) -> user.address.city or "Unknown"
+function cityOf(user) {
+  // TODO: nested destructuring with defaults
+  return "";
+}
+
+// 3. headAndRest(arr) -> { head, rest }
+function headAndRest(arr) {
+  // TODO: const [head, ...rest] = arr;
+  return {};
+}
+
+// 4. greet({ name, greeting = "Hello" }) -> "Hello, Ada!"
+function greet(person) {
+  // TODO: destructure the parameter with a default
+  return "";
+}
+
+// 5. merge(base, overrides) -> new merged object
+function merge(base, overrides) {
+  // TODO: spread both
+  return {};
+}
+
+// 6. concatAll(...arrays) -> one flat array
+function concatAll() {
+  // TODO: rest params + spread
+  return [];
+}
+`,
+
+  exportNames: ["renamed", "cityOf", "headAndRest", "greet", "merge", "concatAll"],
+
+  requirements: [
+    { pattern: /\{\s*x\s*:\s*left\s*,\s*y\s*:\s*top\s*\}/, message: "Rename x and y to left and top while destructuring" },
+    { pattern: /\[\s*head\s*,\s*\.\.\.rest\s*\]/, message: "Use a rest element in the array destructuring" },
+    { pattern: /\{\s*name\s*,\s*greeting\s*=\s*["']Hello["']\s*\}/, message: "Destructure the greet parameter with a default" },
+    { pattern: /\{\s*\.\.\.base\s*,\s*\.\.\.overrides\s*\}/, message: "Use spread to merge base and overrides" },
+    { pattern: /\.\.\.arrays/, message: "Use a rest parameter in concatAll" },
+  ],
+
+  tests: [
+    { name: "renamed relabels x/y to left/top", run: (x) => expectDeepEqual(x.renamed({ x: 1, y: 2 }), { left: 1, top: 2 }) },
+    { name: "cityOf reads a nested city", run: (x) => expectEqual(x.cityOf({ name: "Ada", address: { city: "London" } }), "London") },
+    { name: "cityOf falls back when address is missing", run: (x) => expectEqual(x.cityOf({ name: "Ada" }), "Unknown") },
+    { name: "cityOf falls back when city is missing", run: (x) => expectEqual(x.cityOf({ name: "Ada", address: {} }), "Unknown") },
+    { name: "headAndRest splits an array", run: (x) => expectDeepEqual(x.headAndRest([10, 20, 30]), { head: 10, rest: [20, 30] }) },
+    { name: "headAndRest of a single item gives empty rest", run: (x) => expectDeepEqual(x.headAndRest([9]), { head: 9, rest: [] }) },
+    { name: "greet uses the default greeting", run: (x) => expectEqual(x.greet({ name: "Ada" }), "Hello, Ada!") },
+    { name: "greet honors an explicit greeting", run: (x) => expectEqual(x.greet({ name: "Rob", greeting: "Hi" }), "Hi, Rob!") },
+    { name: "merge lets overrides win", run: (x) => expectDeepEqual(x.merge({ a: 1, b: 2 }, { b: 9, c: 3 }), { a: 1, b: 9, c: 3 }) },
+    { name: "merge does not mutate base", run: (x) => {
+        const base = { a: 1 };
+        x.merge(base, { a: 2 });
+        expectEqual(base.a, 1);
+      } },
+    { name: "concatAll flattens several arrays", run: (x) => expectDeepEqual(x.concatAll([1], [2, 3], [4]), [1, 2, 3, 4]) },
+    { name: "concatAll with no arguments is empty", run: (x) => expectDeepEqual(x.concatAll(), []) },
+  ],
+
+  solution: `function renamed(point) {
+  const { x: left, y: top } = point;
+  return { left, top };
+}
+
+function cityOf(user) {
+  const { address: { city = "Unknown" } = {} } = user;
+  return city;
+}
+
+function headAndRest(arr) {
+  const [head, ...rest] = arr;
+  return { head, rest };
+}
+
+function greet({ name, greeting = "Hello" }) {
+  return \`\${greeting}, \${name}!\`;
+}
+
+function merge(base, overrides) {
+  return { ...base, ...overrides };
+}
+
+function concatAll(...arrays) {
+  return [].concat(...arrays);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+  <tr><td>Rename</td><td><code>val (left, top) = p</code> (positional; call it anything)</td><td><code>const { x: left } = p;</code> (by key)</td></tr>
+  <tr><td>Default</td><td><code>u.address?.city ?: "Unknown"</code>; null-checked</td><td>fires on <code>undefined</code> only</td></tr>
+  <tr><td>Nested + default</td><td><code>u.address?.city ?: "Unknown"</code> (safe-call chain)</td><td><code>const { a: { b = 1 } = {} } = o;</code>, no shape check</td></tr>
+  <tr><td>Spread merge</td><td><code>mapA + mapB</code>, last write wins</td><td><code>{ ...a, ...b }</code>, shallow</td></tr>
+  <tr><td>Rest/vararg param</td><td><code>fun f(vararg xs: Int)</code></td><td><code>(...xs)</code></td></tr>
+</table>
+<p>Two runtime gotchas Kotlin's null-safety used to guard against. First, a
+default only triggers for <code>undefined</code>:
+<code>const { n = 5 } = { n: null }</code> leaves <code>n</code> as
+<code>null</code>, and <code>{ n: 0 }</code> keeps <code>0</code> — JavaScript
+has no <code>?:</code> elvis check baked into destructuring, only an
+<code>undefined</code> check. Second, that nested <code>= {}</code> in
+<code>{ address: { city } = {} }</code> is load-bearing — without it,
+destructuring <code>city</code> from a missing <code>address</code> throws
+<code>TypeError: Cannot destructure property 'city' of undefined</code>, the
+same crash Kotlin's <code>?.</code> safe call exists to prevent.</p>
+<p>Spread copies are <strong>shallow</strong>. In <code>{ ...base, ...overrides }</code>
+any nested object is shared, not cloned — mutating a nested value through the copy
+mutates the original too, just like Kotlin's <code>mapA + mapB</code> never deep-copies
+the values it holds. And <code>[].concat(...arrays)</code> flattens exactly
+one level, which is all "spread the arguments" gets you — comparable to how
+Kotlin's <code>vararg</code> spread (<code>*array</code>) only unpacks one level too.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

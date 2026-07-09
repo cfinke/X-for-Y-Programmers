@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Generics",
+
+  intro: `
+<p>Generics look a lot like Rust's. You put a type parameter in angle brackets
+on a function or a class, and the compiler threads the concrete type through
+for you. Rust monomorphizes each instantiation at compile time while Kotlin
+erases generics at runtime, but the declaration syntax lines up closely.</p>
+<table>
+  <tr><th>Rust</th><th>Kotlin</th></tr>
+  <tr><td><code>fn first&lt;T&gt;(xs: &amp;[T]) -&gt; &amp;T</code></td><td><code>fun &lt;T&gt; first(xs: List&lt;T&gt;): T</code></td></tr>
+  <tr><td><code>struct Box&lt;T&gt; { value: T }</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td><code>&lt;T: Ord&gt;</code></td><td><code>&lt;T : Comparable&lt;T&gt;&gt;</code></td></tr>
+  <tr><td>inferred (implicit)</td><td><code>out</code> / <code>in</code> (declared)</td></tr>
+</table>
+<p>One thing differs. The type parameter on a Kotlin <em>function</em> goes
+before the function name — <code>fun &lt;T&gt; first(...)</code>, not
+<code>fun first&lt;T&gt;(...)</code> — whereas Rust (like most languages) puts
+it right after the name: <code>fn first&lt;T&gt;(...)</code>. On a class it
+stays after the name in both, matching Rust's <code>struct Box&lt;T&gt;</code>.
+One thing will feel familiar: a bound uses a colon
+(<code>T : Comparable&lt;T&gt;</code>), just like Rust's own trait-bound syntax
+(<code>T: Ord</code>) — no separate <code>extends</code> keyword to learn.
+Because Kotlin has no bare <code>&gt;</code> operator on arbitrary types, a
+constraint like <code>Comparable&lt;T&gt;</code> is what lets you write
+<code>a &gt; b</code> inside a generic function at all, exactly as Rust
+requires an <code>Ord</code>/<code>PartialOrd</code> bound before you can
+compare generic values with <code>&gt;</code>.</p>`,
+
+  rust: `struct Box<T> {
+    value: T,
+}
+
+impl<T> Box<T> {
+    fn map<R>(self, f: impl FnOnce(T) -> R) -> Box<R> {
+        Box { value: f(self.value) }
+    }
+}
+
+// T must be comparable so we can use > on it
+fn largest<T: PartialOrd + Copy>(items: &[T]) -> T {
+    items.iter().copied().reduce(|a, b| if b > a { b } else { a }).unwrap()
+}`,
+
+  task: `
+<p>Build a small generic toolkit. Everything is top-level — no
+<code>main</code> needed.</p>
+<ol>
+  <li>Define a generic container <code>class Box&lt;T&gt;(val value: T)</code>.
+      Give it <code>fun &lt;R&gt; map(transform: (T) -&gt; R): Box&lt;R&gt;</code>
+      that returns a new box holding the transformed value, and a
+      <code>toString()</code> that returns <code>"Box(&lt;value&gt;)"</code>.</li>
+  <li>Write <code>describe(box: Box&lt;out Any?&gt;): String</code> that returns
+      <code>box.toString()</code>. The <code>out</code> projection is use-site
+      variance — it lets a <code>Box&lt;Int&gt;</code> be passed where any
+      <code>Box</code> is accepted.</li>
+  <li>Write <code>largest</code> as a constrained generic
+      <code>fun &lt;T : Comparable&lt;T&gt;&gt; largest(items: List&lt;T&gt;): T</code>
+      that returns the biggest element of a non-empty list using
+      <code>&gt;</code>.</li>
+</ol>`,
+
+  starter: `// 1. Box<T> — a generic container holding one value of type T
+class Box<T>(val value: T) {
+    // map: turn a Box<T> into a Box<R> by transforming the value
+    fun <R> map(transform: (T) -> R): Box<R> = TODO()
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+// 2. describe — accept a Box of anything using use-site variance (out)
+fun describe(box: Box<out Any?>): String = TODO()
+
+// 3. largest — the largest element of a non-empty list, via a Comparable constraint
+fun <T : Comparable<T>> largest(items: List<T>): T = TODO()
+`,
+
+  requirements: [
+    { pattern: /class\s+Box\s*<\s*T\s*>/, message: "Define a generic container: class Box<T>" },
+    { pattern: /fun\s*<\s*T\s*:\s*Comparable\s*<\s*T\s*>\s*>/, message: "Write largest with a constraint: fun <T : Comparable<T>>" },
+    { pattern: /Box\s*<\s*out\b/, message: "Accept any Box with use-site variance: Box<out Any?>" },
+  ],
+
+  tests: [
+    { name: "Box holds its value", code: "        expect_eq(Box(42).value, 42)" },
+    { name: "map transforms Int -> Int", code: "        expect_eq(Box(3).map { it * 2 }.value, 6)" },
+    { name: "map can change the type (String -> Int)", code: "        expect_eq(Box(\"hi\").map { it.length }.value, 2)" },
+    { name: "describe accepts a Box<Int> via out", code: "        expect_eq(describe(Box(5)), \"Box(5)\")" },
+    { name: "largest of Ints", code: "        expect_eq(largest(listOf(3, 9, 2)), 9)" },
+    { name: "largest of Strings", code: "        expect_eq(largest(listOf(\"apple\", \"pear\", \"kiwi\")), \"pear\")" },
+  ],
+
+  solution: `class Box<T>(val value: T) {
+    fun <R> map(transform: (T) -> R): Box<R> = Box(transform(value))
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+fun describe(box: Box<out Any?>): String = box.toString()
+
+fun <T : Comparable<T>> largest(items: List<T>): T {
+    var result = items[0]
+    for (item in items) {
+        if (item > result) result = item
+    }
+    return result
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+  <tr><td>Generic function</td><td><code>fn f&lt;T&gt;(x: T)</code></td><td><code>fun &lt;T&gt; f(x: T)</code></td></tr>
+  <tr><td>Generic struct/class</td><td><code>struct Box&lt;T&gt; { value: T }</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td>Trait bound</td><td><code>&lt;T: X&gt;</code></td><td><code>&lt;T : X&gt;</code></td></tr>
+  <tr><td>Producer (covariant)</td><td><code>&amp;'a T</code> is covariant in <code>T</code> (implicit)</td><td><code>class Src&lt;out T&gt;</code> / <code>Box&lt;out T&gt;</code></td></tr>
+  <tr><td>Consumer (contravariant)</td><td><code>Fn(T)</code> is contravariant in <code>T</code> (implicit)</td><td><code>class Sink&lt;in T&gt;</code></td></tr>
+</table>
+<p>Kotlin makes variance <em>explicit</em>, whereas Rust's variance is worked
+out by the compiler from how a type stores or exposes its parameter — you
+almost never annotate it yourself. An <code>out T</code> means the type only
+ever <em>produces</em> a <code>T</code> (like a read-only source), so
+<code>Box&lt;Int&gt;</code> can safely stand in for <code>Box&lt;Any?&gt;</code>
+— the same idea as <code>&amp;'a String</code> being usable wherever
+<code>&amp;'a dyn Display</code> is expected because shared references are
+covariant. An <code>in T</code> means the type only <em>consumes</em> a
+<code>T</code>, mirroring how <code>Fn(T)</code> is contravariant in its
+argument. You can declare variance on the class (declaration-site) or, as in
+<code>Box&lt;out Any?&gt;</code> above, at the point of use (use-site
+projection) — Rust has no direct equivalent since its variance is inferred
+rather than written down.</p>
+<p>The multiple bounds you'd write with <code>&lt;T: A + B&gt;</code> in Rust
+become a <code>where</code> clause in Kotlin:
+<code>fun &lt;T&gt; f(x: T) where T : A, T : B</code>. And unlike Rust, where
+generics are monomorphized so the concrete type is always known at compile
+time, Kotlin generics are erased at runtime — except when a function is marked
+<code>inline</code> with a <code>reified</code> parameter, which recovers
+Rust-like compile-time knowledge of the type for checks like
+<code>x is T</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

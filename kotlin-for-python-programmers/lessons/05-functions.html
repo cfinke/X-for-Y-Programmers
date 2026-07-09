@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Kotlin functions start with the <code>fun</code> keyword, and — as in
+Python's annotated <code>def</code> syntax — the parameter type follows the
+name; the return type comes last, after a colon, in place of Python's
+<code>-&gt;</code>. The features you reach for in Python all have direct
+Kotlin equivalents, often with less ceremony.</p>
+<table>
+  <tr><th>Python</th><th>Kotlin</th></tr>
+  <tr><td><code>def add(a: int, b: int) -&gt; int:</code></td><td><code>fun add(a: Int, b: Int): Int</code></td></tr>
+  <tr><td><code>greeting: str = "Hi"</code> (default)</td><td><code>greeting: String = "Hi"</code></td></tr>
+  <tr><td><code>add(b=2, a=1)</code> (keyword args)</td><td><code>add(b = 2, a = 1)</code> (named args)</td></tr>
+  <tr><td><code>def f(*nums: int):</code></td><td><code>vararg nums: Int</code></td></tr>
+  <tr><td><code>-&gt; None</code></td><td><code>: Unit</code> (usually omitted)</td></tr>
+</table>
+<p>Two things that feel new. First, when a function is just <em>one</em>
+expression you can drop the braces and <code>return</code> and use
+<code>=</code>: <code>fun square(n: Int) = n * n</code>. The return type is
+inferred, a bit like a Python <code>lambda</code> body — except a
+single-expression Kotlin function keeps its name, its type annotations, and
+can still hold a fairly rich expression, not just the one statement a
+<code>lambda</code> is limited to. Second, Kotlin's <strong>named
+arguments</strong> work exactly like Python's keyword arguments: you can pass
+<code>greet(name = "Ada")</code> and even reorder them, which pairs
+beautifully with default values so you only name the arguments you want to
+change — this part will already feel completely familiar.</p>`,
+
+  python: `def greet(name: str, greeting: str = "Hello") -> str:
+    return f"{greeting}, {name}!"
+
+def total(*nums: int) -> int:
+    return sum(nums)
+
+log: list[str] = []
+def log_message(message: str) -> None:
+    log.append(message)`,
+
+  task: `
+<p>Rewrite these three functions in idiomatic Kotlin. Top-level declarations are
+fine — no class or <code>main</code> needed:</p>
+<ol>
+  <li>Write <code>greet(name: String, greeting: String = "Hello"): String</code>
+      as a <strong>single-expression</strong> function that returns a template
+      like <code>"Hello, Ada!"</code>. The default lets callers write
+      <code>greet("Ada")</code>, and named arguments let them write
+      <code>greet(name = "Ada", greeting = "Hi")</code>.</li>
+  <li>Write <code>sum(vararg nums: Int): Int</code> as a single-expression
+      function that adds up any number of arguments (hint: <code>nums.sum()</code>).
+      With no arguments it returns <code>0</code>.</li>
+  <li>Write <code>logMessage(message: String)</code>, which returns
+      <code>Unit</code> and appends <code>message</code> to the top-level
+      <code>log</code> list.</li>
+</ol>`,
+
+  starter: `// A shared log the tests inspect.
+val log = mutableListOf<String>()
+
+// 1. Single-expression function with a default argument.
+fun greet(name: String, greeting: String = "Hello"): String = "" // TODO
+
+// 2. Single-expression function taking a vararg of Ints.
+fun sum(vararg nums: Int): Int = 0 // TODO
+
+// 3. A Unit-returning function (no return type needed).
+fun logMessage(message: String) {
+    // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /fun\s+greet\([^)]*greeting:\s*String\s*=\s*"Hello"[^)]*\)\s*:\s*String\s*=/, message: "Write greet as a single-expression function with a default: greeting: String = \"Hello\"" },
+    { pattern: /fun\s+sum\(\s*vararg\s+nums:\s*Int\s*\)\s*:\s*Int\s*=/, message: "Write sum as a single-expression function taking vararg nums: Int" },
+    { pattern: /log\.add\(/, message: "logMessage should append to the log list with log.add(...)" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default greeting', code: '        expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'greet("Ada", "Hi") overrides the greeting', code: '        expect_eq(greet("Ada", "Hi"), "Hi, Ada!")' },
+    { name: "greet with named arguments", code: '        expect_eq(greet(name = "Ada", greeting = "Hey"), "Hey, Ada!")' },
+    { name: "greet with reordered named arguments", code: '        expect_eq(greet(greeting = "Yo", name = "Bo"), "Yo, Bo!")' },
+    { name: "sum() with no arguments is 0", code: "        expect_eq(sum(), 0)" },
+    { name: "sum(1, 2, 3) is 6", code: "        expect_eq(sum(1, 2, 3), 6)" },
+    { name: "sum spreads an array with *", code: "        val nums = intArrayOf(4, 5, 6)\n        expect_eq(sum(*nums), 15)" },
+    { name: "logMessage returns Unit and appends", code: '        val before = log.size\n        val result: Unit = logMessage("hello")\n        expect_true(result == Unit)\n        expect_eq(log.size, before + 1)\n        expect_eq(log.last(), "hello")' },
+  ],
+
+  solution: `val log = mutableListOf<String>()
+
+fun greet(name: String, greeting: String = "Hello"): String = "$greeting, $name!"
+
+fun sum(vararg nums: Int): Int = nums.sum()
+
+fun logMessage(message: String) {
+    log.add(message)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+  <tr><td>Single expression</td><td><code>f = lambda n: n * n</code></td><td><code>fun f(n: Int) = n * n</code></td></tr>
+  <tr><td>Default argument</td><td><code>def f(x=1):</code></td><td><code>fun f(x: Int = 1)</code></td></tr>
+  <tr><td>Named argument</td><td><code>f(x=1)</code></td><td><code>f(x = 1)</code></td></tr>
+  <tr><td>Rest / vararg</td><td><code>def f(*xs):</code></td><td><code>fun f(vararg xs: Int)</code></td></tr>
+  <tr><td>Spread a collection</td><td><code>f(*arr)</code></td><td><code>f(*arr)</code></td></tr>
+  <tr><td>No return value</td><td><code>-&gt; None</code></td><td><code>: Unit</code> (omit it)</td></tr>
+</table>
+<p>A few Kotlin-isms worth remembering. Named arguments work just like the
+keyword arguments you already reach for in Python — they make call sites
+self-documenting, so Kotlin never needs a Python-style <code>**kwargs</code>
+dict or an options bag to get the same effect. To pass an existing array into a
+<code>vararg</code>, use the <em>spread operator</em> <code>*</code> (e.g.
+<code>sum(*nums)</code>) — the very same symbol Python uses for
+<code>def f(*args):</code> and for unpacking a list at a call site, though in
+Kotlin it only appears at the call site, not in the parameter list. Finally,
+<code>Unit</code> is a real type with a single value (also written
+<code>Unit</code>) — the rough counterpart of Python's implicit
+<code>None</code>; a function with no declared return type returns it
+implicitly, so you almost never type it out.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

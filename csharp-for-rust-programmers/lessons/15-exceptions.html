@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Exceptions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Exceptions",
+
+  intro: `
+<p>C# exceptions are a different world from Rust's error handling. Rust has no
+<code>throw</code>/<code>catch</code> for recoverable errors — a function that can
+fail returns <code>Result&lt;T, E&gt;</code>, and callers handle the <code>Err</code>
+case explicitly (often with the <code>?</code> operator) instead of a value
+implicitly unwinding the call stack. C# throws objects that derive from
+<code>System.Exception</code>, and each <code>catch</code> names the exception
+type it handles — the nearest Rust equivalent is matching on the variant of an
+error enum, but in Rust that match is exhaustive and checked by the compiler
+rather than resolved by catch-block ordering.</p>
+<table>
+  <tr><th>Rust</th><th>C#</th></tr>
+  <tr><td><code>return Err(ValidationError("bad".into()))</code></td><td><code>throw new Exception("bad")</code></td></tr>
+  <tr><td><code>match result { Err(e) => … }</code></td><td><code>catch (Exception e) { … }</code></td></tr>
+  <tr><td><code>match result { Err(ValidationError(_)) => … }</code></td><td><code>catch (ValidationException e) { … }</code></td></tr>
+  <tr><td><code>struct ValidationError(String);</code></td><td><code>class E : Exception {}</code></td></tr>
+  <tr><td><code>e.0</code> (the field you defined)</td><td><code>e.Message</code></td></tr>
+  <tr><td><code>impl Drop for Resource { fn drop(&mut self) { … } }</code></td><td><code>using (var conn = …) { … }</code></td></tr>
+</table>
+<p>The last row is the big new idea. Rust guarantees cleanup through the
+<code>Drop</code> trait — a value's <code>drop</code> runs automatically when it
+goes out of scope. C# has no automatic destructor like that; instead it has
+<code>IDisposable</code>: any type with a <code>Dispose()</code> method. A
+<code>using</code> block guarantees <code>Dispose()</code> runs when the block
+exits — normally or via an exception — so it is the idiomatic replacement for
+Rust's compiler-inserted <code>drop</code> calls, except you must opt in to it
+explicitly.</p>`,
+
+  rust: `#[derive(Debug)]
+struct ValidationError(String);
+
+fn validate_age(age: i32) -> Result<i32, ValidationError> {
+    if age < 0 {
+        return Err(ValidationError("age cannot be negative".into()));
+    }
+    if age > 150 {
+        return Err(ValidationError("age is unrealistically large".into()));
+    }
+    Ok(age)
+}
+
+fn safe_validate_age(age: i32, fallback: i32) -> i32 {
+    match validate_age(age) {
+        Ok(valid) => valid,
+        Err(_) => fallback,
+    }
+}`,
+
+  task: `
+<p>Build a small validation module that throws, catches, and cleans up.</p>
+<ol>
+  <li>Define a custom exception <code>class ValidationException : Exception</code>
+      with a constructor that forwards a message:
+      <code>public ValidationException(string message) : base(message) { }</code>.</li>
+  <li>Define <code>class Resource : IDisposable</code> that tracks a static
+      <code>OpenCount</code>: the constructor increments it, and
+      <code>Dispose()</code> decrements it and sets <code>Disposed = true</code>.</li>
+  <li>In <code>static class Validator</code>, write <code>ValidateAge(int age)</code>
+      that <code>throw</code>s a <code>ValidationException</code> when
+      <code>age &lt; 0</code> (message <code>"age cannot be negative"</code>) or
+      <code>age &gt; 150</code> (message <code>"age is unrealistically large"</code>),
+      otherwise returns <code>age</code>.</li>
+  <li><code>SafeValidateAge(int age, int fallback)</code> calls
+      <code>ValidateAge</code> inside a <code>try</code> and returns
+      <code>fallback</code> from a <code>catch (ValidationException)</code>.</li>
+  <li><code>Process(int age)</code> opens a <code>Resource</code> in a
+      <code>using</code> block, then in a <code>try</code>/<code>catch</code>/<code>finally</code>
+      builds a log string: <code>"ok:{age}"</code> on success or
+      <code>"error:{message}"</code> when validation fails, always appending
+      <code>"|cleanup"</code> in the <code>finally</code>. Return the string.</li>
+</ol>`,
+
+  starter: `class ValidationException : Exception {
+  public ValidationException(string message) : base(message) { }
+}
+
+class Resource : IDisposable {
+  public static int OpenCount = 0;
+  public bool Disposed = false;
+
+  public Resource() {
+    // TODO: track that a resource was opened
+  }
+
+  public void Dispose() {
+    // TODO: mark disposed and release
+  }
+}
+
+static class Validator {
+  public static int ValidateAge(int age) {
+    return 0; // TODO: throw ValidationException for bad input
+  }
+
+  public static int SafeValidateAge(int age, int fallback) {
+    return 0; // TODO: try ValidateAge, catch ValidationException, return fallback
+  }
+
+  public static string Process(int age) {
+    return ""; // TODO: using + try/catch/finally, build the log string
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+ValidationException\s*:\s*Exception/, message: "Define a custom exception: class ValidationException : Exception" },
+    { pattern: /using\s*\(/, message: "Use a using statement for deterministic IDisposable cleanup" },
+    { pattern: /\bfinally\b/, message: "Use a finally block so cleanup always runs" },
+  ],
+
+  tests: [
+    { name: "ValidateAge(30) returns 30", code: "      expect_eq(Validator.ValidateAge(30), 30);" },
+    { name: "ValidateAge(-1) throws ValidationException", code: "      bool threw = false;\n      try { Validator.ValidateAge(-1); } catch (ValidationException) { threw = true; }\n      expect_true(threw);" },
+    { name: "SafeValidateAge(-5, 0) catches and returns fallback 0", code: "      expect_eq(Validator.SafeValidateAge(-5, 0), 0);" },
+    { name: "SafeValidateAge(200, 18) catches and returns fallback 18", code: "      expect_eq(Validator.SafeValidateAge(200, 18), 18);" },
+    { name: "SafeValidateAge(42, -1) passes through valid input", code: "      expect_eq(Validator.SafeValidateAge(42, -1), 42);" },
+    { name: "Process(25) logs success then cleanup", code: "      expect_eq(Validator.Process(25), \"ok:25|cleanup\");" },
+    { name: "Process(-1) logs the error message then cleanup", code: "      expect_eq(Validator.Process(-1), \"error:age cannot be negative|cleanup\");" },
+    { name: "using disposes the Resource (OpenCount back to 0)", code: "      Validator.Process(30);\n      expect_eq(Resource.OpenCount, 0);" },
+  ],
+
+  solution: `class ValidationException : Exception {
+  public ValidationException(string message) : base(message) { }
+}
+
+class Resource : IDisposable {
+  public static int OpenCount = 0;
+  public bool Disposed = false;
+
+  public Resource() {
+    OpenCount++;
+  }
+
+  public void Dispose() {
+    Disposed = true;
+    OpenCount--;
+  }
+}
+
+static class Validator {
+  public static int ValidateAge(int age) {
+    if (age < 0) throw new ValidationException("age cannot be negative");
+    if (age > 150) throw new ValidationException("age is unrealistically large");
+    return age;
+  }
+
+  public static int SafeValidateAge(int age, int fallback) {
+    try {
+      return ValidateAge(age);
+    } catch (ValidationException) {
+      return fallback;
+    }
+  }
+
+  public static string Process(int age) {
+    var log = new StringBuilder();
+    using (var res = new Resource()) {
+      try {
+        int valid = ValidateAge(age);
+        log.Append($"ok:{valid}");
+      } catch (ValidationException ex) {
+        log.Append($"error:{ex.Message}");
+      } finally {
+        log.Append("|cleanup");
+      }
+    }
+    return log.ToString();
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+  <tr><td>Signal failure</td><td><code>return Err(MyError::new("x"))</code></td><td><code>throw new Exception("x")</code></td></tr>
+  <tr><td>Handle by variant</td><td><code>match result { Err(MyError::T(_)) => … }</code></td><td><code>catch (T e)</code></td></tr>
+  <tr><td>Custom error type</td><td><code>struct E { message: String }</code></td><td><code>class E : Exception</code></td></tr>
+  <tr><td>Message</td><td><code>e.message</code> (a field you define)</td><td><code>e.Message</code></td></tr>
+  <tr><td>Deterministic cleanup</td><td><code>impl Drop for X { fn drop(&mut self) { … } }</code></td><td><code>using (var x = …)</code></td></tr>
+</table>
+<p>A few things worth internalizing. Order your <code>catch</code> blocks
+most-specific first — a <code>catch (Exception)</code> ahead of
+<code>catch (ValidationException)</code> is a compile error because the second is
+unreachable. Rust has no equivalent ordering hazard: <code>match</code> arms on
+an enum are checked for exhaustiveness by the compiler, not by the order you
+write them in. To catch by type but keep going, use a bare
+<code>catch (ValidationException)</code> with no variable (as in
+<code>SafeValidateAge</code>) when you do not need <code>e</code> — the closest
+Rust idiom is a wildcard arm, <code>Err(_) => fallback</code>, inside a
+<code>match</code>.</p>
+<p>A <code>using</code> block is pure sugar for
+<code>try { … } finally { x.Dispose(); }</code>, and it is how C# programmers write
+"close this no matter what." In Rust the compiler inserts the equivalent call to
+<code>drop</code> for you automatically at the end of scope; in C# nothing runs
+automatically, so you must opt in with <code>using</code> around files, streams,
+database connections, and locks. When you need a real custom exception, derive
+from <code>Exception</code> (or a more specific base such as
+<code>ArgumentException</code>) and forward the message with <code>: base(message)</code>
+so <code>e.Message</code> works for free — comparable to defining a
+<code>message</code> field on your own Rust error struct.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

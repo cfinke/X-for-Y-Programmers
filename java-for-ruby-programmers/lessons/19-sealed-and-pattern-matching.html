@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Sealed Types &amp; Pattern Matching</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Sealed Types & Pattern Matching",
+
+  intro: `
+<p>Ruby has no static type system, so it cannot express a closed set of
+variants at compile time. The nearest idiom is <code>case/in</code> pattern
+matching (Ruby 3.0+), which matches on an object's class and destructures its
+data in one step, together with <code>Data.define</code> (Ruby 3.2+) for
+terse, immutable value objects that plug straight into that matching. Modern
+Java (17–21) reaches a similar destination with two features working
+together: <strong>sealed</strong> types that spell out exactly which classes
+may implement an interface, and <strong>pattern matching</strong> that both
+tests a type and binds a typed variable in one step.</p>
+<table>
+  <tr><th>Ruby</th><th>Java</th></tr>
+  <tr><td>separate classes; no closed set enforced</td><td><code>sealed interface Shape permits Circle, Rect {}</code></td></tr>
+  <tr><td>the object's class is the discriminant</td><td>the runtime class itself is the discriminant</td></tr>
+  <tr><td><code>case s in Circle(r:)</code> narrows and binds</td><td><code>if (s instanceof Circle c)</code> narrows and binds</td></tr>
+  <tr><td><code>case s in Circle(r:) ... in Rect(w:, h:) ... end</code></td><td><code>switch (s) { case Circle c -> ... }</code></td></tr>
+  <tr><td><code>NoMatchingPatternError</code> at runtime if nothing matches</td><td>a covered sealed hierarchy needs no <code>default</code></td></tr>
+</table>
+<p>Because a <code>sealed</code> hierarchy is closed, the Java compiler knows the
+complete list of subtypes. A <code>switch</code> that has one <code>case</code>
+per permitted subtype is <em>exhaustive</em>, so you can drop the
+<code>default</code> branch entirely — and if you later add a variant, the switch
+stops compiling until you handle it. Records make excellent sealed members: they
+are terse, final, and pair naturally with the arrow-form switch. Ruby's
+<code>case/in</code> only catches a missed branch when that code path actually
+runs.</p>`,
+
+  ruby: `Circle = Data.define(:r)
+Rect = Data.define(:w, :h)
+
+def area(s)
+  case s
+  in Circle(r:)
+    Math::PI * r * r
+  in Rect(w:, h:)
+    w * h
+  end
+end`,
+
+  task: `
+<p>Model a small closed set of shapes and pattern-match over it. Records keep the
+data classes to one line each.</p>
+<ol>
+  <li>Declare a <code>sealed interface Shape</code> that <code>permits</code>
+      <code>Circle</code> and <code>Rect</code>.</li>
+  <li>Make <code>Circle(double r)</code> and <code>Rect(double w, double h)</code>
+      records that implement <code>Shape</code>.</li>
+  <li>In a class <code>Shapes</code>, write a <code>static double area(Shape s)</code>
+      that uses a <strong>switch with pattern matching</strong>
+      (<code>case Circle c -> ...</code>) over the hierarchy. A circle's area is
+      <code>Math.PI * r * r</code>; a rectangle's is <code>w * h</code>. No
+      <code>default</code> is needed — the hierarchy is sealed.</li>
+  <li>Also write <code>static String describe(Shape s)</code> that uses
+      <strong>pattern matching for <code>instanceof</code></strong> to return
+      <code>"circle"</code> for a <code>Circle</code> and <code>"rect"</code>
+      otherwise.</li>
+</ol>`,
+
+  starter: `sealed interface Shape permits Circle, Rect {}
+
+record Circle(double r) implements Shape {}
+
+record Rect(double w, double h) implements Shape {}
+
+class Shapes {
+  static double area(Shape s) {
+    return 0; // TODO: switch with pattern matching over the sealed hierarchy
+  }
+
+  static String describe(Shape s) {
+    return ""; // TODO: use instanceof pattern matching
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /sealed\s+interface\s+Shape\s+permits\s+Circle\s*,\s*Rect/, message: "Declare a sealed interface Shape that permits Circle, Rect" },
+    { pattern: /switch\s*\(\s*s\s*\)/, message: "Use a switch over the Shape value in area()" },
+    { pattern: /case\s+Circle\s+\w+\s*->/, message: "Use switch pattern matching (case Circle c -> ...)" },
+    { pattern: /instanceof\s+Circle\s+\w+/, message: "Use instanceof pattern matching in describe()" },
+  ],
+
+  tests: [
+    { name: "area of Circle(2) is PI*4", code: "      expect_eq(Shapes.area(new Circle(2)), Math.PI * 4);" },
+    { name: "area of Rect(3, 4) is 12", code: "      expect_eq(Shapes.area(new Rect(3, 4)), 12.0);" },
+    { name: "area of Circle(1) is PI", code: "      expect_eq(Shapes.area(new Circle(1)), Math.PI);" },
+    { name: 'describe(Circle) is "circle"', code: "      expect_eq(Shapes.describe(new Circle(5)), \"circle\");" },
+    { name: 'describe(Rect) is "rect"', code: "      expect_eq(Shapes.describe(new Rect(1, 2)), \"rect\");" },
+    { name: "Shape is a sealed interface", code: "      expect_true(Shape.class.isSealed());" },
+  ],
+
+  solution: `sealed interface Shape permits Circle, Rect {}
+
+record Circle(double r) implements Shape {}
+
+record Rect(double w, double h) implements Shape {}
+
+class Shapes {
+  static double area(Shape s) {
+    return switch (s) {
+      case Circle c -> Math.PI * c.r() * c.r();
+      case Rect r   -> r.w() * r.h();
+    };
+  }
+
+  static String describe(Shape s) {
+    if (s instanceof Circle c) {
+      return "circle";
+    }
+    return "rect";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+  <tr><td>Closed variant set</td><td>no closed-set enforcement; separate classes</td><td><code>sealed … permits A, B</code></td></tr>
+  <tr><td>One-line data class</td><td><code>Circle = Data.define(:r)</code></td><td><code>record Circle(double r) implements Shape {}</code></td></tr>
+  <tr><td>Test + narrow</td><td><code>case s in Circle(r:)</code></td><td><code>if (s instanceof Circle c)</code></td></tr>
+  <tr><td>Match on type</td><td><code>case s in Circle(r:) ... in Rect(w:, h:) ... end</code></td><td><code>switch (s) { case Circle c -> … }</code></td></tr>
+  <tr><td>Exhaustiveness</td><td><code>NoMatchingPatternError</code> only if reached</td><td>automatic over a sealed type</td></tr>
+</table>
+<p>A permitted subtype must itself be <code>final</code>, <code>sealed</code>, or
+<code>non-sealed</code> — records are implicitly final, which is why they slot in
+cleanly. The arrow form <code>case Circle c -&gt;</code> avoids fall-through and
+lets the whole <code>switch</code> be an expression that yields a value.</p>
+<p>The payoff is a guarantee Ruby simply cannot give you at compile time:
+because the hierarchy is closed and every branch is covered, there is no
+<code>default</code>, and adding a third shape turns the missing branch into a
+compile error rather than a silent runtime surprise — in Ruby, a missing
+<code>in</code> branch only raises <code>NoMatchingPatternError</code> once
+that exact input is actually matched. Java 21 goes further with
+<em>record patterns</em> (<code>case Circle(double r) -&gt;</code>) that
+destructure in the label, much like Ruby's own <code>in Circle(r:)</code>
+destructuring.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

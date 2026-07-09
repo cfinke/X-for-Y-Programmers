@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>Generics will feel closely related in shape: both languages write the type
+parameter in angle brackets, and both use them to make containers and helpers
+reusable without giving up type safety. Where they diverge is under the hood.
+Rust <em>monomorphizes</em> generics — the compiler generates a separate copy
+of the function or struct for each concrete type you use, so a
+<code>Vec&lt;i32&gt;</code> really is a vector of primitive ints. Java generics
+are implemented via <em>type erasure</em>: <code>&lt;T&gt;</code> is checked at
+compile time, then erased to <code>Object</code> (or its bound) in the compiled
+bytecode, and the JVM only ever sees a single class regardless of the type
+argument.</p>
+<table>
+  <tr><th>Rust</th><th>Java</th></tr>
+  <tr><td><code>struct Box&lt;T&gt; { ... }</code></td><td><code>class Box&lt;T&gt; { ... }</code></td></tr>
+  <tr><td><code>fn id&lt;T&gt;(x: T) -&gt; T</code></td><td><code>&lt;T&gt; T id(T x)</code></td></tr>
+  <tr><td><code>&lt;T: Ord&gt;</code></td><td><code>&lt;T extends Comparable&lt;T&gt;&gt;</code></td></tr>
+  <tr><td><code>Vec&lt;i32&gt;</code>, primitives allowed</td><td><code>List&lt;Integer&gt;</code>, no primitives in generics</td></tr>
+</table>
+<p>Two differences bite. First, a generic method puts its type parameter
+<em>before</em> the return type — <code>static &lt;T&gt; T identity(T x)</code> —
+not after the name the way Rust's <code>fn id&lt;T&gt;(x: T) -&gt; T</code>
+does. Second, Java generics are <em>invariant</em>: a
+<code>List&lt;Integer&gt;</code> is <strong>not</strong> a
+<code>List&lt;Number&gt;</code>, so there's nothing like passing a
+<code>Vec&lt;i32&gt;</code> somewhere a more general container is expected. To
+accept "a list of some subtype of Number" you use a wildcard:
+<code>List&lt;? extends Number&gt;</code> — Rust has no equivalent syntax
+because monomorphization already gives each instantiation its own concrete
+type. And because Java erases to reference types, generics only work over
+boxed types, so you write <code>Box&lt;Integer&gt;</code>, never
+<code>Box&lt;int&gt;</code> — Rust's <code>Box&lt;i32&gt;</code> needs no such
+distinction.</p>`,
+
+  rust: `struct Box<T> {
+    value: T,
+}
+
+impl<T> Box<T> {
+    fn new(value: T) -> Self {
+        Box { value }
+    }
+
+    fn get(&self) -> &T {
+        &self.value
+    }
+}
+
+fn identity<T>(x: T) -> T {
+    x
+}
+
+fn max<T: PartialOrd + Copy>(items: &[T]) -> T {
+    let mut best = items[0];
+    for &x in items {
+        if x > best {
+            best = x;
+        }
+    }
+    best
+}
+
+fn sum(nums: &[f64]) -> f64 {
+    nums.iter().sum()
+}`,
+
+  task: `
+<p>Build a small generic toolkit. Write two top-level types:</p>
+<ol>
+  <li>A generic container <code>class Box&lt;T&gt;</code> with a constructor
+      taking a <code>T</code>, a method <code>T get()</code>, and a method
+      <code>void set(T value)</code>.</li>
+  <li>A utility <code>class Generics</code> with three static methods:
+    <ul>
+      <li><code>&lt;T&gt; T identity(T x)</code> — returns its argument
+          unchanged (note the <code>&lt;T&gt;</code> before the return type).</li>
+      <li><code>&lt;T extends Comparable&lt;T&gt;&gt; T max(List&lt;T&gt; items)</code>
+          — returns the largest element using <code>compareTo</code>.</li>
+      <li><code>double sum(List&lt;? extends Number&gt; nums)</code> — adds the
+          numbers, calling <code>doubleValue()</code> on each. The wildcard lets
+          it accept a <code>List&lt;Integer&gt;</code> or a
+          <code>List&lt;Double&gt;</code>.</li>
+    </ul>
+  </li>
+</ol>`,
+
+  starter: `class Box<T> {
+  Box(T value) {
+    // TODO: store value
+  }
+
+  T get() {
+    return null; // TODO
+  }
+
+  void set(T value) {
+    // TODO
+  }
+}
+
+class Generics {
+  static <T> T identity(T x) {
+    return null; // TODO
+  }
+
+  static <T extends Comparable<T>> T max(List<T> items) {
+    return null; // TODO: find the largest with compareTo
+  }
+
+  static double sum(List<? extends Number> nums) {
+    return 0; // TODO: sum via doubleValue()
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Box<T>/, message: "Declare a generic class Box<T>" },
+    { pattern: /<T\s+extends\s+Comparable<T>>/, message: "Use a bounded type parameter <T extends Comparable<T>> on max" },
+    { pattern: /List<\?\s+extends\s+Number>/, message: "Accept a List<? extends Number> wildcard in sum" },
+  ],
+
+  tests: [
+    { name: "Box holds and returns a value", code: "      Box<String> b = new Box<>(\"hi\");\n      expect_eq(b.get(), \"hi\");" },
+    { name: "Box.set replaces the value", code: "      Box<Integer> b = new Box<>(1);\n      b.set(42);\n      expect_eq(b.get(), 42);" },
+    { name: "identity returns its argument", code: "      expect_eq(Generics.identity(\"abc\"), \"abc\");\n      expect_eq(Generics.identity(7), 7);" },
+    { name: "max of integers", code: "      expect_eq(Generics.max(List.of(3, 9, 1, 7)), 9);" },
+    { name: "max of strings (lexicographic)", code: "      expect_eq(Generics.max(List.of(\"apple\", \"pear\", \"fig\")), \"pear\");" },
+    { name: "sum accepts List<Integer>", code: "      expect_eq(Generics.sum(List.of(1, 2, 3)), 6.0);" },
+    { name: "sum accepts List<Double>", code: "      expect_eq(Generics.sum(List.of(1.5, 2.5)), 4.0);" },
+  ],
+
+  solution: `class Box<T> {
+  private T value;
+
+  Box(T value) {
+    this.value = value;
+  }
+
+  T get() {
+    return value;
+  }
+
+  void set(T value) {
+    this.value = value;
+  }
+}
+
+class Generics {
+  static <T> T identity(T x) {
+    return x;
+  }
+
+  static <T extends Comparable<T>> T max(List<T> items) {
+    T best = items.get(0);
+    for (T x : items) {
+      if (x.compareTo(best) > 0) {
+        best = x;
+      }
+    }
+    return best;
+  }
+
+  static double sum(List<? extends Number> nums) {
+    double total = 0;
+    for (Number n : nums) {
+      total += n.doubleValue();
+    }
+    return total;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Java</th></tr>
+  <tr><td>Generic class</td><td><code>struct Box&lt;T&gt;</code></td><td><code>class Box&lt;T&gt;</code></td></tr>
+  <tr><td>Generic method</td><td><code>fn id&lt;T&gt;(x: T) -&gt; T</code></td><td><code>&lt;T&gt; T id(T x)</code> (param before return type)</td></tr>
+  <tr><td>Upper bound</td><td><code>&lt;T: X&gt;</code></td><td><code>&lt;T extends X&gt;</code></td></tr>
+  <tr><td>Covariant read</td><td>each instantiation is its own concrete type</td><td><code>List&lt;? extends Number&gt;</code> (explicit wildcard)</td></tr>
+  <tr><td>Element type</td><td><code>Box&lt;i32&gt;</code></td><td><code>Box&lt;Integer&gt;</code> (no <code>int</code>)</td></tr>
+</table>
+<p>The wildcard is the piece with no direct Rust equivalent. Because Java lists
+are invariant, a method that only <em>reads</em> Numbers should say
+<code>List&lt;? extends Number&gt;</code> so callers can pass a
+<code>List&lt;Integer&gt;</code>. The mirror image, <code>? super T</code>, is
+for lists you only <em>write</em> to — the classic "producer extends, consumer
+super" rule; Rust sidesteps the whole issue because monomorphization gives each
+instantiation its own concrete type instead of a shared erased one. Also
+remember erasure: at runtime a <code>Box&lt;String&gt;</code> and a
+<code>Box&lt;Integer&gt;</code> are the same class, so you cannot write
+<code>new T()</code> or <code>x instanceof Box&lt;String&gt;</code> — the kind
+of information Rust's monomorphized generics make trivially available.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

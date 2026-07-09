@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Objects</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Objects",
+
+  intro: `
+<p>In C# an object is an instance of a <code>class</code> or <code>record</code>:
+the compiler knows which members exist, what each value's type is, and
+refuses to compile if you read a member that was never declared. A
+plain-JavaScript object has no such backing type. It is just a bag of string
+keys pointing at values — a record and a dictionary at the same time, with no
+class watching over it.</p>
+<table>
+  <tr><th>C#</th><th>JavaScript</th></tr>
+  <tr><td><code>class User { public string Name; }</code></td><td>no classes — just the object</td></tr>
+  <tr><td><code>user.Name</code> (member must exist)</td><td><code>user.name</code> or <code>user["name"]</code></td></tr>
+  <tr><td>missing member = compile error</td><td>missing key = <code>undefined</code></td></tr>
+  <tr><td>reflection needed to check a member by name</td><td><code>"name" in user</code> is a plain runtime check</td></tr>
+</table>
+<p>Because there is no compiler and no class, reading a key that is not there
+does not throw — it quietly returns <code>undefined</code>. That is why the
+runtime tools matter: the <code>in</code> operator to ask whether a key
+exists, bracket access for keys you compute as strings, and
+<code>Object.keys</code> / <code>Object.values</code> / <code>Object.entries</code>
+to walk an object whose shape you do not know ahead of time — the rough
+JavaScript equivalent of iterating a <code>Dictionary&lt;string, object&gt;</code>.</p>`,
+
+  csharp: `class Product
+{
+    public string Name;
+    public double Price;
+}
+
+Product MakeProduct(string name, double price)
+{
+    return new Product { Name = name, Price = price };
+}
+
+bool HasKey(Dictionary<string, object> obj, string key)
+{
+    return obj.ContainsKey(key);
+}
+
+double Total(Dictionary<string, double> prices)
+{
+    return prices.Values.Sum();
+}`,
+
+  task: `
+<p>Build a few small functions that create and inspect plain objects — no
+classes, no declared members, just runtime records:</p>
+<ol>
+  <li><code>makeProduct(name, price)</code> — return an object
+      <code>{ name, price }</code> using property shorthand.</li>
+  <li><code>rename(product, newName)</code> — return a <em>new</em> object like
+      <code>product</code> but with <code>name</code> set to <code>newName</code>
+      (do not mutate the original).</li>
+  <li><code>tag(key, value)</code> — return an object with a single
+      <em>computed</em> key: the key is whatever string <code>key</code> holds.</li>
+  <li><code>hasKey(obj, key)</code> — return <code>true</code>/<code>false</code>
+      for whether <code>key</code> exists on <code>obj</code>, using the
+      <code>in</code> operator.</li>
+  <li><code>total(prices)</code> — given an object whose values are numbers,
+      return the sum of all its values using <code>Object.values</code>.</li>
+</ol>`,
+
+  starter: `// 1. makeProduct(name, price) -> { name, price } (property shorthand)
+function makeProduct(name, price) {
+  // TODO
+  return {};
+}
+
+// 2. rename(product, newName) -> a new object, original untouched
+function rename(product, newName) {
+  // TODO
+  return {};
+}
+
+// 3. tag(key, value) -> object with a computed key
+function tag(key, value) {
+  // TODO
+  return {};
+}
+
+// 4. hasKey(obj, key) -> boolean, using the 'in' operator
+function hasKey(obj, key) {
+  // TODO
+  return false;
+}
+
+// 5. total(prices) -> sum of the object's values
+function total(prices) {
+  // TODO
+  return 0;
+}
+`,
+
+  exportNames: ["makeProduct", "rename", "tag", "hasKey", "total"],
+
+  requirements: [
+    { pattern: /\{\s*name\s*,\s*price\s*\}/, message: "Use property shorthand { name, price } in makeProduct" },
+    { pattern: /\[\s*key\s*\]\s*:/, message: "Use a computed key [key]: value in tag" },
+    { pattern: /\bin\b/, message: "Use the in operator inside hasKey" },
+    { pattern: /Object\.values/, message: "Use Object.values inside total" },
+  ],
+
+  tests: [
+    { name: "makeProduct builds { name, price }", run: (x) => expectDeepEqual(x.makeProduct("Pen", 3), { name: "Pen", price: 3 }) },
+    { name: "rename returns a new name", run: (x) => expectEqual(x.rename({ name: "Pen", price: 3 }, "Pencil").name, "Pencil") },
+    { name: "rename keeps other fields", run: (x) => expectEqual(x.rename({ name: "Pen", price: 3 }, "Pencil").price, 3) },
+    { name: "rename does not mutate the original", run: (x) => {
+      const p = { name: "Pen", price: 3 };
+      x.rename(p, "Pencil");
+      expectEqual(p.name, "Pen");
+    } },
+    { name: "tag uses a computed key", run: (x) => expectDeepEqual(x.tag("color", "red"), { color: "red" }) },
+    { name: "hasKey is true for present keys", run: (x) => expectEqual(x.hasKey({ a: 1 }, "a"), true) },
+    { name: "hasKey is false for missing keys", run: (x) => expectEqual(x.hasKey({ a: 1 }, "b"), false) },
+    { name: "total sums the values", run: (x) => expectEqual(x.total({ pen: 3, ink: 5, pad: 2 }), 10) },
+    { name: "total of an empty object is 0", run: (x) => expectEqual(x.total({}), 0) },
+  ],
+
+  solution: `function makeProduct(name, price) {
+  return { name, price };
+}
+
+function rename(product, newName) {
+  return { ...product, name: newName };
+}
+
+function tag(key, value) {
+  return { [key]: value };
+}
+
+function hasKey(obj, key) {
+  return key in obj;
+}
+
+function total(prices) {
+  return Object.values(prices).reduce((sum, n) => sum + n, 0);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>JavaScript</th></tr>
+  <tr><td>Property shorthand</td><td><code>new { name }</code> (anonymous type, typed field)</td><td><code>{ name }</code></td></tr>
+  <tr><td>Computed key</td><td><code>dict[k] = v</code> on a <code>Dictionary</code></td><td><code>{ [k]: v }</code> keyed by <code>String(k)</code></td></tr>
+  <tr><td>Read a missing key</td><td><code>KeyNotFoundException</code> (dictionary) or compile error (class member)</td><td><code>undefined</code></td></tr>
+  <tr><td>Key existence</td><td><code>dict.ContainsKey("k")</code></td><td><code>"k" in obj</code> is a plain boolean</td></tr>
+  <tr><td>Enumerate keys</td><td><code>dict.Keys</code> — unordered by default</td><td><code>Object.keys(o)</code> — insertion order</td></tr>
+</table>
+<p>The trio <code>Object.keys</code>, <code>Object.values</code>, and
+<code>Object.entries</code> all return arrays in the object's own insertion
+order (with the quirk that integer-like keys sort numerically first).
+<code>Object.entries(o)</code> gives <code>[key, value]</code> pairs, which pairs
+nicely with <code>for (const [k, v] of Object.entries(o))</code> — the rough
+equivalent of <code>foreach (var kv in dict)</code> over a
+<code>Dictionary&lt;string, T&gt;</code>.</p>
+<p>Two runtime gotchas worth remembering: <code>obj.foo</code> and
+<code>obj["foo"]</code> are identical — brackets just let the key be a computed
+string. And <code>key in obj</code> is not the same as
+<code>obj[key] !== undefined</code>: a key can exist while holding the value
+<code>undefined</code>, so <code>in</code> is the honest existence check.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

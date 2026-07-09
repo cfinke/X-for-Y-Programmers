@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Equality & Truthiness</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Equality & Truthiness",
+
+  intro: `
+<p>Ruby gives you exactly one equality operator for value comparison —
+<code>==</code> — and exactly two things are falsy: <code>nil</code> and
+<code>false</code>. Everything else, including <code>0</code>, <code>""</code>,
+and <code>[]</code>, is truthy. JavaScript throws that simplicity out. It has
+two different equality operators, and truthiness has eight falsy values
+instead of two. This lesson is about the runtime rules behind comparison and
+truthiness: what <code>==</code> actually does, which values are
+<em>falsy</em>, and how <code>??</code>, <code>||</code>, <code>&amp;&amp;</code>,
+and <code>?.</code> short-circuit.</p>
+<table>
+  <tr><th>Ruby</th><th>JavaScript (runtime)</th></tr>
+  <tr><td><code>a == b</code> — value equality, no separate strict form</td><td><code>a === b</code> — no coercion, checked live</td></tr>
+  <tr><td>no coercing equality operator</td><td><code>a == b</code> — coerces operands first</td></tr>
+  <tr><td><code>x || d</code> — only <code>nil</code>/<code>false</code> fall through</td><td><code>x ?? d</code> — only <code>null</code>/<code>undefined</code> fall through</td></tr>
+  <tr><td><code>x.nil? ? d : x</code> for a nil-only default</td><td><code>x || d</code> — every falsy value falls through</td></tr>
+  <tr><td><code>obj&amp;.prop</code> safe navigation</td><td><code>obj?.prop</code> — short-circuits to <code>undefined</code></td></tr>
+</table>
+<p>The key insight: <code>||</code> reacts to <em>truthiness</em>, while
+<code>??</code> reacts only to <em>nullishness</em>. The eight falsy values are
+<code>false</code>, <code>0</code>, <code>-0</code>, <code>0n</code>,
+<code>""</code>, <code>null</code>, <code>undefined</code>, and
+<code>NaN</code>. Everything else — including <code>"0"</code>,
+<code>[]</code>, and <code>{}</code> — is truthy.</p>`,
+
+  ruby: `def classify(x)
+  return "nullish" if x.nil?
+  x ? "truthy" : "falsy"
+end
+
+def with_default(value, fallback)
+  value.nil? ? fallback : value
+end
+
+def loose_eq(a, b)
+  a == b # Ruby's == does not coerce types the way JS's does
+end`,
+
+  task: `
+<p>Write four pure functions that expose the runtime comparison rules:</p>
+<ol>
+  <li><code>classify(x)</code> — return <code>"nullish"</code> if <code>x</code>
+      is <code>null</code> or <code>undefined</code>, else <code>"falsy"</code>
+      for any other falsy value, else <code>"truthy"</code>.</li>
+  <li><code>looseEq(a, b)</code> — return the result of the coercing
+      <code>==</code> comparison (not <code>===</code>).</li>
+  <li><code>withDefault(value, fallback)</code> — return <code>value</code>
+      unless it is <code>null</code>/<code>undefined</code>, in which case return
+      <code>fallback</code>. Use <code>??</code> so <code>0</code> and
+      <code>""</code> are kept.</li>
+  <li><code>cityOf(user)</code> — safely read
+      <code>user.address.city</code> using optional chaining, returning
+      <code>"unknown"</code> when any link is missing.</li>
+</ol>`,
+
+  starter: `// 1. classify(x) -> "nullish" | "falsy" | "truthy"
+function classify(x) {
+  // TODO
+  return "";
+}
+
+// 2. looseEq(a, b) -> result of == (coercing) comparison
+function looseEq(a, b) {
+  // TODO
+  return false;
+}
+
+// 3. withDefault(value, fallback) -> value unless nullish (use ??)
+function withDefault(value, fallback) {
+  // TODO
+  return fallback;
+}
+
+// 4. cityOf(user) -> user.address.city, or "unknown" if missing (use ?.)
+function cityOf(user) {
+  // TODO
+  return "unknown";
+}
+`,
+
+  exportNames: ["classify", "looseEq", "withDefault", "cityOf"],
+
+  requirements: [
+    { pattern: /\?\?/, message: "Use the nullish coalescing operator ?? in withDefault" },
+    { pattern: /\?\./, message: "Use optional chaining ?. in cityOf" },
+    { pattern: /[^=!<>]==[^=]/, message: "Use the loose (coercing) == operator in looseEq" },
+  ],
+
+  tests: [
+    { name: 'classify(null) is "nullish"', run: (x) => expectEqual(x.classify(null), "nullish") },
+    { name: 'classify(undefined) is "nullish"', run: (x) => expectEqual(x.classify(undefined), "nullish") },
+    { name: 'classify(0) is "falsy"', run: (x) => expectEqual(x.classify(0), "falsy") },
+    { name: 'classify("") is "falsy"', run: (x) => expectEqual(x.classify(""), "falsy") },
+    { name: 'classify("0") is "truthy"', run: (x) => expectEqual(x.classify("0"), "truthy") },
+    { name: 'classify([]) is "truthy"', run: (x) => expectEqual(x.classify([]), "truthy") },
+    { name: "looseEq(0, false) is true", run: (x) => expectEqual(x.looseEq(0, false), true) },
+    { name: 'looseEq("1", 1) is true', run: (x) => expectEqual(x.looseEq("1", 1), true) },
+    { name: "looseEq(null, undefined) is true", run: (x) => expectEqual(x.looseEq(null, undefined), true) },
+    { name: "withDefault keeps 0", run: (x) => expectEqual(x.withDefault(0, 99), 0) },
+    { name: "withDefault replaces null", run: (x) => expectEqual(x.withDefault(null, 99), 99) },
+    { name: "withDefault replaces undefined", run: (x) => expectEqual(x.withDefault(undefined, 99), 99) },
+    { name: "cityOf reads nested city", run: (x) => expectEqual(x.cityOf({ address: { city: "Paris" } }), "Paris") },
+    { name: 'cityOf returns "unknown" when address missing', run: (x) => expectEqual(x.cityOf({}), "unknown") },
+    { name: 'cityOf returns "unknown" for null user', run: (x) => expectEqual(x.cityOf(null), "unknown") },
+  ],
+
+  solution: `function classify(x) {
+  if (x === null || x === undefined) return "nullish";
+  return x ? "truthy" : "falsy";
+}
+
+function looseEq(a, b) {
+  return a == b;
+}
+
+function withDefault(value, fallback) {
+  return value ?? fallback;
+}
+
+function cityOf(user) {
+  return user?.address?.city ?? "unknown";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Expression</th><th>Result</th><th>Why</th></tr>
+  <tr><td><code>0 == false</code></td><td><code>true</code></td><td><code>==</code> coerces both to numbers</td></tr>
+  <tr><td><code>0 === false</code></td><td><code>false</code></td><td><code>===</code> compares type + value</td></tr>
+  <tr><td><code>0 || "d"</code></td><td><code>"d"</code></td><td><code>0</code> is falsy</td></tr>
+  <tr><td><code>0 ?? "d"</code></td><td><code>0</code></td><td><code>0</code> is not nullish</td></tr>
+  <tr><td><code>a?.b</code> when <code>a</code> is null</td><td><code>undefined</code></td><td>short-circuits, no throw</td></tr>
+</table>
+<p><code>&amp;&amp;</code> and <code>||</code> do not return booleans — they
+return one of their <em>operands</em>. <code>a && b</code> yields <code>a</code>
+if <code>a</code> is falsy, otherwise <code>b</code>; <code>a || b</code> yields
+<code>a</code> if <code>a</code> is truthy, otherwise <code>b</code>. Ruby's
+<code>&amp;&amp;</code> and <code>||</code> behave the same way — they too
+return an operand rather than a strict boolean — but Ruby only treats
+<code>nil</code> and <code>false</code> as falsy, so <code>0 || "d"</code>
+in Ruby stays <code>0</code>, whereas in JavaScript it becomes <code>"d"</code>.
+That is why <code>user?.address?.city ?? "unknown"</code> is the idiomatic
+JavaScript pattern: optional chaining collapses a missing link to
+<code>undefined</code>, and <code>??</code> supplies the default only for that
+nullish case — leaving a genuine empty string or <code>0</code> intact, which
+<code>||</code> would have clobbered.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

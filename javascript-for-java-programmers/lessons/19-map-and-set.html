@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Map &amp; Set</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Map & Set",
+
+  intro: `
+<p>In Java you reach for <code>Map&lt;K, V&gt;</code> (typically a
+<code>HashMap</code> or <code>LinkedHashMap</code>) and <code>Set&lt;T&gt;</code>
+(typically a <code>HashSet</code> or <code>LinkedHashSet</code>), each backed by
+an interface with several concrete implementations to choose between. JavaScript
+gives you just one <code>Map</code> and one <code>Set</code> — no interface, no
+implementation choice — and their behaviour is fixed: insertion order is always
+preserved, the way <code>LinkedHashMap</code> and <code>LinkedHashSet</code>
+behave in Java, not the unordered way plain <code>HashMap</code>/<code>HashSet</code>
+do.</p>
+<table>
+  <tr><th>Java</th><th>JavaScript</th></tr>
+  <tr><td><code>new HashMap&lt;String, Integer&gt;()</code></td><td><code>new Map()</code></td></tr>
+  <tr><td><code>new HashSet&lt;String&gt;()</code></td><td><code>new Set()</code></td></tr>
+  <tr><td>keys constrained to <code>K</code></td><td><em>any</em> value can be a key</td></tr>
+  <tr><td><code>map.get(k)</code> returns <code>V</code> or <code>null</code></td><td><code>map.get(k)</code>, undefined if absent</td></tr>
+</table>
+<p>Two runtime facts matter most. First, a <code>Map</code> key can be
+<em>anything</em> — an object, a function, <code>NaN</code>, not just a string —
+whereas plain object keys are coerced to strings. Second, a <code>Map</code>
+remembers insertion order and reports its <code>size</code> directly, where an
+object makes you reach for <code>Object.keys(o).length</code>. A <code>Set</code>
+is the same story for uniqueness: membership is O(1) and duplicates simply do not
+take.</p>`,
+
+  java: `Map<String, Integer> counts = new HashMap<>();
+counts.merge("go", 1, Integer::sum);
+
+Set<Integer> seen = new HashSet<>();
+seen.add(1);
+seen.add(1); // no-op
+seen.size(); // 1`,
+
+  task: `
+<p>Build a few small utilities on top of <code>Map</code> and <code>Set</code>:</p>
+<ol>
+  <li><code>wordCount(text)</code> — split <code>text</code> on whitespace and
+      return a <code>Map</code> from each word to how many times it appears.
+      Assume words are already lowercased and clean; an empty string yields an
+      empty Map.</li>
+  <li><code>unique(arr)</code> — return a new array with duplicates removed,
+      preserving first-seen order, using a <code>Set</code>.</li>
+  <li><code>mostCommon(text)</code> — return the word with the highest count from
+      <code>wordCount</code> (first one to reach that count wins on ties), or
+      <code>null</code> for empty input.</li>
+  <li><code>keyTypes(map)</code> — return a <code>Set</code> of the
+      <code>typeof</code> string for every key in <code>map</code>
+      (demonstrating that Map keys need not be strings).</li>
+</ol>`,
+
+  starter: `// 1. wordCount(text) -> Map<word, count>
+function wordCount(text) {
+  // TODO
+  return new Map();
+}
+
+// 2. unique(arr) -> array with duplicates removed, order preserved
+function unique(arr) {
+  // TODO
+  return [];
+}
+
+// 3. mostCommon(text) -> the most frequent word, or null if none
+function mostCommon(text) {
+  // TODO
+  return null;
+}
+
+// 4. keyTypes(map) -> Set of typeof for each key
+function keyTypes(map) {
+  // TODO
+  return new Set();
+}
+`,
+
+  exportNames: ["wordCount", "unique", "mostCommon", "keyTypes"],
+
+  requirements: [
+    { pattern: /new\s+Map/, message: "Use a Map in wordCount" },
+    { pattern: /new\s+Set/, message: "Use a Set in unique or keyTypes" },
+    { pattern: /\.set\s*\(/, message: "Use Map.set to record counts" },
+  ],
+
+  tests: [
+    {
+      name: "wordCount counts repeats",
+      run: (x) => {
+        const m = x.wordCount("go go stop go");
+        expectEqual(m.get("go"), 3);
+        expectEqual(m.get("stop"), 1);
+        expectEqual(m.size, 2);
+      },
+    },
+    {
+      name: "wordCount('') is an empty Map",
+      run: (x) => {
+        const m = x.wordCount("");
+        expectEqual(m.size, 0);
+        expectEqual(m.get("anything"), undefined);
+      },
+    },
+    {
+      name: "unique preserves first-seen order",
+      run: (x) => expectDeepEqual(x.unique([3, 1, 3, 2, 1, 2]), [3, 1, 2]),
+    },
+    {
+      name: "unique keeps distinct objects distinct",
+      run: (x) => {
+        const a = {}, b = {};
+        expectEqual(x.unique([a, a, b]).length, 2);
+      },
+    },
+    {
+      name: "mostCommon picks the top word",
+      run: (x) => expectEqual(x.mostCommon("a b a c a b"), "a"),
+    },
+    {
+      name: "mostCommon('') is null",
+      run: (x) => expectEqual(x.mostCommon(""), null),
+    },
+    {
+      name: "keyTypes reports mixed key types",
+      run: (x) => {
+        const m = new Map();
+        m.set("s", 1);
+        m.set(42, 2);
+        m.set({}, 3);
+        const types = x.keyTypes(m);
+        expectTruthy(types.has("string"));
+        expectTruthy(types.has("number"));
+        expectTruthy(types.has("object"));
+        expectEqual(types.size, 3);
+      },
+    },
+  ],
+
+  solution: `function wordCount(text) {
+  const counts = new Map();
+  const words = text.split(/\\s+/).filter((w) => w.length > 0);
+  for (const word of words) {
+    counts.set(word, (counts.get(word) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function unique(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const item of arr) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+function mostCommon(text) {
+  const counts = wordCount(text);
+  let best = null;
+  let bestCount = 0;
+  for (const [word, count] of counts) {
+    if (count > bestCount) {
+      best = word;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+function keyTypes(map) {
+  const types = new Set();
+  for (const key of map.keys()) {
+    types.add(typeof key);
+  }
+  return types;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>JavaScript Map / Set</th></tr>
+  <tr><td>Any-typed keys</td><td>keys typed via generics, but must implement <code>hashCode</code>/<code>equals</code></td><td><code>map.set(obj, v)</code> keeps identity</td></tr>
+  <tr><td>Size</td><td><code>map.size()</code> / <code>set.size()</code></td><td><code>map.size</code> / <code>set.size</code></td></tr>
+  <tr><td>Membership</td><td><code>map.containsKey(k)</code> / <code>set.contains(v)</code></td><td><code>map.has(k)</code> / <code>set.has(v)</code></td></tr>
+  <tr><td>Iteration order</td><td><code>HashMap</code>/<code>HashSet</code> unordered; need <code>LinkedHashMap</code>/<code>LinkedHashSet</code></td><td>strict insertion order, always</td></tr>
+  <tr><td>Dedupe</td><td><code>new ArrayList&lt;&gt;(new LinkedHashSet&lt;&gt;(list))</code></td><td><code>[...new Set(arr)]</code></td></tr>
+</table>
+<p>A <code>Map</code> uses SameValueZero for key equality, so <code>NaN</code>
+works as a key (unlike <code>===</code>) but <code>{}</code> and a different
+<code>{}</code> are distinct keys because objects compare by identity — much
+like relying on the default, identity-based <code>hashCode</code>/<code>equals</code>
+on a Java object that hasn't overridden them. That is exactly why
+<code>unique([{}, {}])</code> keeps both — the Set sees two different
+references.</p>
+<p>Prefer <code>Map</code> over a plain object when keys are dynamic, non-string,
+or you care about size and order; prefer <code>Set</code> over an array when you
+need fast membership or dedupe. Reach back for objects and arrays when you want
+JSON serialization or a fixed, known shape — <code>JSON.stringify</code> ignores
+Map and Set contents entirely.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

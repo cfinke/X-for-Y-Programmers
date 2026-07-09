@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Comparisons & Type Juggling</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Comparisons & Type Juggling",
+
+  intro: `
+<p>In Kotlin, <code>==</code> compares value (it calls <code>.equals()</code>)
+and <code>===</code> compares identity (same reference). PHP redraws that line
+in a dangerous place — and reuses the same two operators for different jobs.
+PHP's <code>==</code> compares <em>value after type juggling</em> — it
+converts the operands toward each other first, so <code>"1" == 1</code> is
+true. The operator you actually want is <code>===</code>: value equality
+<em>plus</em> a type check. Careful: PHP's <code>===</code> is <strong>not</strong>
+Kotlin's <code>===</code> (identity) — it's closest to Kotlin's <code>==</code>
+with an added type check. The rule experienced PHP developers live by is
+simple: <strong>always use <code>===</code> (and <code>!==</code>)</strong>,
+and treat a bare <code>==</code> in review the way you'd treat comparing a
+<code>String</code> with an <code>Int</code> in Kotlin.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>a === b</code> (identity for objects)</td><td><code>$a == $b</code> — value with juggling: <code>"1" == 1</code> is true. Avoid.</td></tr>
+  <tr><td><code>a == b</code> (value, calls <code>equals()</code>)</td><td><code>$a === $b</code> — value <em>and</em> type. Use always.</td></tr>
+  <tr><td><code>a.compareTo(b)</code></td><td><code>$a &lt;=&gt; $b</code> — the spaceship operator</td></tr>
+  <tr><td><code>if (flag)</code> — must be <code>Boolean</code></td><td><code>if ($anything)</code> — truthiness applies</td></tr>
+  <tr><td>no direct equivalent</td><td><code>(bool) $v</code> — explicit truthiness cast</td></tr>
+</table>
+<p>The second habit shift: PHP conditions are not boolean-only. Any value can
+sit in an <code>if</code>, and it is converted by the same juggling rules —
+<code>""</code>, <code>0</code>, <code>0.0</code>, <code>null</code>,
+<code>[]</code>, and (the one that bites everyone) the <em>string</em>
+<code>"0"</code> are all falsy; everything else, including <code>"false"</code>
+and <code>"0.0"</code>, is truthy. Finally, the spaceship operator
+<code>&lt;=&gt;</code> is <code>compareTo</code> in operator form: it returns
+a negative int, zero, or a positive int, and it's what you hand to sorting
+functions.</p>`,
+
+  kotlin: `val a: String = "1"
+val b: Int = 1
+// Kotlin won't even compile a == b here: comparing String and Int is an error.
+// PHP's == would happily say "1" equals 1.
+
+val x = String(charArrayOf('h', 'i'))
+val y = String(charArrayOf('h', 'i'))
+println(x === y)        // false — identity
+println(x == y)         // true  — value (calls equals())
+// PHP's === is Kotlin's == plus a type check, in operator form.
+
+val cmp = 3.compareTo(7)        // negative, like 3 <=> 7 in PHP
+"apple".compareTo("banana")     // negative, zero, or positive
+
+val flag = list.isEmpty()
+if (flag) { ... }   // conditions must be Boolean — no truthiness`,
+
+  task: `
+<p>Implement three small functions that pin down the comparison rules:</p>
+<ol>
+  <li><code>same_value_and_type(mixed $a, mixed $b): bool</code> — return
+      whether the two values are equal <em>without any juggling</em>. That is
+      one use of <code>===</code>. (<code>mixed</code> is PHP's
+      <code>Any?</code>-ish "any type" declaration.)</li>
+  <li><code>is_truthy(mixed $v): bool</code> — return what PHP's
+      <code>if</code> would decide about <code>$v</code>, by casting with
+      <code>(bool)</code>. Remember: <code>"0"</code> comes out false.</li>
+  <li><code>compare_nums(int $a, int $b): int</code> — your
+      <code>compareTo</code>: negative / zero / positive, via the
+      spaceship operator <code>&lt;=&gt;</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. === compares value AND type: no juggling, ever.
+function same_value_and_type(mixed $a, mixed $b): bool {
+    throw new Exception("TODO: implement same_value_and_type with ===");
+}
+
+// 2. (bool) applies PHP's truthiness rules: "", 0, "0", [], null are falsy.
+function is_truthy(mixed $v): bool {
+    throw new Exception("TODO: implement is_truthy with (bool)");
+}
+
+// 3. <=> is compareTo as an operator: negative, zero, or positive.
+function compare_nums(int $a, int $b): int {
+    throw new Exception("TODO: implement compare_nums with <=>");
+}
+`,
+
+  requirements: [
+    { pattern: /===/, message: "Use === (strict comparison) — not ==" },
+    { pattern: /<=>/, message: "Use the spaceship operator <=> in compare_nums" },
+    { pattern: /\(bool\)/, message: "Cast with (bool) in is_truthy" },
+  ],
+
+  tests: [
+    { name: "same_value_and_type(1, 1) is true",
+      code: "expect_true(same_value_and_type(1, 1));" },
+    { name: 'same_value_and_type("1", 1) is false — no juggling allowed',
+      code: 'expect_true(!same_value_and_type("1", 1));' },
+    { name: "same_value_and_type(0, false) is false — types differ",
+      code: "expect_true(!same_value_and_type(0, false));" },
+    { name: 'is_truthy: the string "0" is falsy, "false" is truthy',
+      code: 'expect_true(!is_truthy("0"));\nexpect_true(is_truthy("false"));' },
+    { name: "is_truthy: empty string and empty array are falsy",
+      code: 'expect_true(!is_truthy(""));\nexpect_true(!is_truthy([]));\nexpect_true(is_truthy(42));' },
+    { name: "compare_nums follows the compareTo contract",
+      code: "expect_eq(compare_nums(1, 2), -1);\nexpect_eq(compare_nums(5, 5), 0);\nexpect_eq(compare_nums(9, 3), 1);" },
+  ],
+
+  solution: `<?php
+
+function same_value_and_type(mixed $a, mixed $b): bool {
+    return $a === $b;
+}
+
+function is_truthy(mixed $v): bool {
+    return (bool) $v;
+}
+
+function compare_nums(int $a, int $b): int {
+    return $a <=> $b;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Value equality</td><td><code>a == b</code> (calls <code>equals()</code>)</td><td><code>$a === $b</code> (value + type)</td></tr>
+  <tr><td>Loose equality</td><td>—</td><td><code>$a == $b</code> — juggles types; avoid</td></tr>
+  <tr><td>Not equal</td><td><code>a != b</code></td><td><code>$a !== $b</code></td></tr>
+  <tr><td>Three-way compare</td><td><code>a.compareTo(b)</code></td><td><code>$a &lt;=&gt; $b</code></td></tr>
+  <tr><td>Condition type</td><td><code>Boolean</code> only</td><td>anything — truthiness applies</td></tr>
+  <tr><td>Falsy values</td><td>—</td><td><code>false, 0, 0.0, "", "0", [], null</code></td></tr>
+</table>
+<p>The mental model that sticks: <code>==</code> in PHP is not Kotlin's
+<code>==</code> (value) <em>or</em> Kotlin's <code>===</code> (identity) —
+it's a third thing with conversion rules you shouldn't spend memory on. Reach
+for <code>===</code> unconditionally and the entire type-juggling gotcha table
+(the classic "<code>PHP == comparison chart</code>") becomes trivia instead
+of a bug source. The only juggling you keep is deliberate: truthiness in
+conditions, made explicit with <code>(bool)</code> when you need the value
+itself.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

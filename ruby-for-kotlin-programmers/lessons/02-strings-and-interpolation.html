@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>Kotlin already spoiled you with string templates: <code>"Hello, $name!"</code>,
+and <code>"Hello, \${name.uppercase()}!"</code> when you need an expression.
+Ruby's version is nearly identical, just with a different sigil: any
+double-quoted string can embed an expression with <code>#{...}</code> —
+<code>"Hello, #{name}!"</code>. Concatenation with <code>+</code> exists in
+both languages, but in Ruby, as in Kotlin, nobody reaches for it when a
+template will do. Inside the braces you can put any expression, not just a
+variable.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>"Hello, $name!"</code></td><td><code>"Hello, #{name}!"</code></td></tr>
+  <tr><td><code>s.uppercase()</code></td><td><code>s.upcase</code></td></tr>
+  <tr><td><code>s.contains("x")</code></td><td><code>s.include?("x")</code></td></tr>
+  <tr><td><code>s.length</code></td><td><code>s.length</code> (no parens needed)</td></tr>
+  <tr><td><code>list.joinToString(", ")</code></td><td><code>list.join(", ")</code></td></tr>
+  <tr><td><code>a == b</code></td><td><code>a == b</code></td></tr>
+</table>
+<p>Two culture shocks in the method names. First, empty parentheses are
+optional, so getter-ish calls drop them: <code>s.length</code>,
+<code>s.upcase</code> — where Kotlin makes <code>length</code> a property but
+still calls <code>uppercase()</code>, Ruby drops the parens on both. Second,
+methods that answer yes/no end in a question mark — <code>s.include?("x")</code>,
+<code>s.empty?</code> — the convention Kotlin approximates with an
+<code>is</code>/<code>has</code> prefix or <code>isEmpty()</code>. One thing
+that carries straight over: Kotlin's <code>==</code> already compares
+<em>values</em> (calling <code>equals</code> under the hood), and Ruby's
+<code>==</code> works the same way — no <code>.equals()</code> reflex to unlearn
+here.</p>`,
+
+  kotlin: `fun main() {
+    val name = "Ada"
+    val greeting = "Hello, $name!"            // string template
+
+    val loud = greeting.uppercase()
+    val hasName = greeting.contains("Ada")
+    val len = greeting.length                 // property, no parens
+
+    val words = listOf("one", "two", "three")
+    val joined = words.joinToString(", ")     // receiver is the list
+
+    // == already compares values in Kotlin, calling equals under the hood:
+    val same = greeting == "Hello, Ada!"
+}`,
+
+  task: `
+<p>Rewrite the string handling in Ruby:</p>
+<ol>
+  <li><code>shout(s)</code> — the whole string uppercased.
+      <code>uppercase()</code> becomes <code>upcase</code>, no parentheses
+      required.</li>
+  <li><code>greet(name)</code> — produce <code>"Hello, Ada!"</code> for
+      <code>"Ada"</code>, using <code>#{}</code> interpolation. It maps directly
+      to Kotlin's <code>$name</code> template — just a different sigil.</li>
+  <li><code>contains_word?(haystack, needle)</code> — true when
+      <code>haystack</code> contains <code>needle</code>. Note the method name:
+      predicates end in <code>?</code>, and <code>include?</code> is the
+      string method you want (Kotlin's <code>contains</code>).</li>
+  <li><code>join_words(words)</code> — join an array of strings with
+      <code>", "</code>. This is Kotlin's <code>joinToString(", ")</code>: the
+      array is the receiver, and the method is simply named <code>.join</code>.</li>
+</ol>`,
+
+  starter: `# 1. shout: Java s.toUpperCase()  ->  Ruby s.upcase (parens optional)
+def shout(s)
+  raise NotImplementedError, "TODO: implement shout"
+end
+
+# 2. greet: build "Hello, Ada!" with #{} interpolation, not +.
+def greet(name)
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 3. contains_word?: predicates end in ? — use haystack.include?(...)
+def contains_word?(haystack, needle)
+  raise NotImplementedError, "TODO: implement contains_word?"
+end
+
+# 4. join_words: String.join(", ", words) flips to words.join(", ")
+def join_words(words)
+  raise NotImplementedError, "TODO: implement join_words"
+end
+`,
+
+  requirements: [
+    { pattern: /#\{/, message: "Use #{} interpolation in greet" },
+    { pattern: /\.upcase/, message: "Use .upcase in shout" },
+    { pattern: /\.include\?/, message: "Use .include? in contains_word?" },
+    { pattern: /\.join/, message: "Call .join on the array in join_words" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: '  expect_eq(shout("hello"), "HELLO")' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: '  expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'contains_word?("ruby is fun", "fun") is true',
+      code: '  expect_true(contains_word?("ruby is fun", "fun"))' },
+    { name: 'contains_word?("ruby is fun", "java") is false',
+      code: '  expect_eq(contains_word?("ruby is fun", "java"), false)' },
+    { name: 'join_words(["one", "two", "three"]) returns "one, two, three"',
+      code: '  expect_eq(join_words(["one", "two", "three"]), "one, two, three")' },
+  ],
+
+  solution: `def shout(s)
+  s.upcase
+end
+
+def greet(name)
+  "Hello, #{name}!"
+end
+
+def contains_word?(haystack, needle)
+  haystack.include?(needle)
+end
+
+def join_words(words)
+  words.join(", ")
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Build a string</td><td><code>"Hi, $name!"</code></td><td><code>"Hi, #{name}!"</code></td></tr>
+  <tr><td>Uppercase / lowercase</td><td><code>s.uppercase()</code> / <code>s.lowercase()</code></td><td><code>s.upcase</code> / <code>s.downcase</code></td></tr>
+  <tr><td>Substring check</td><td><code>s.contains("x")</code></td><td><code>s.include?("x")</code></td></tr>
+  <tr><td>Empty check</td><td><code>s.isEmpty()</code></td><td><code>s.empty?</code></td></tr>
+  <tr><td>Length</td><td><code>s.length</code></td><td><code>s.length</code> or <code>s.size</code></td></tr>
+  <tr><td>Join</td><td><code>list.joinToString(", ")</code></td><td><code>list.join(", ")</code></td></tr>
+  <tr><td>Value equality</td><td><code>a == b</code></td><td><code>a == b</code></td></tr>
+  <tr><td>Trim</td><td><code>s.trim()</code></td><td><code>s.strip</code></td></tr>
+</table>
+<p>One real difference: Ruby strings are <em>mutable</em> — <code>s &lt;&lt; " more"</code>
+appends in place — whereas Kotlin's <code>String</code> is immutable and you'd
+reach for a <code>StringBuilder</code>. In practice idiomatic Ruby mostly builds
+new strings with interpolation anyway, and frozen string literals are common in
+production code, so the mental model transfers better than you'd fear.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

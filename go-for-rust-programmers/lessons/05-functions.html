@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Functions in Go are first-class values, just like in Rust — you can pass
+them as arguments, store them in variables, and return them. But Go adds a few
+things Rust does not have: a function can return <em>multiple</em> values
+without wrapping them in a tuple or struct, those results can be
+<em>named</em>, and the last parameter can be <em>variadic</em> with
+<code>...</code>.</p>
+<table>
+  <tr><th>Rust</th><th>Go</th></tr>
+  <tr><td><code>fn f() -&gt; (i32, bool)</code></td><td><code>func f() (int, bool)</code> (same idea, built in)</td></tr>
+  <tr><td><code>let (q, ok) = f();</code></td><td><code>q, ok := f()</code></td></tr>
+  <tr><td><code>fn sum(ns: &amp;[i32]) -&gt; i32</code> (slice, no <code>...</code>)</td><td><code>func Sum(ns ...int) int</code> (true variadic)</td></tr>
+  <tr><td><code>fn(i32) -&gt; i32</code></td><td><code>func(int) int</code></td></tr>
+</table>
+<p>The <code>(value, ok)</code> pair is a pervasive Go idiom: instead of
+returning <code>Option&lt;T&gt;</code>, a lookup returns two values where the
+second is a <code>bool</code> that says whether the first is meaningful.
+Named return values let you declare the result variables in the signature and
+<code>return</code> with no arguments — a "naked" return. And a variadic
+parameter collects extra arguments into a slice, so inside <code>Sum</code>
+the parameter <code>ns</code> is just an <code>[]int</code> — Rust has no
+direct equivalent, since a variadic-looking call site there is really a macro
+(<code>vec![1, 2, 3]</code>) or you pass a slice explicitly.</p>`,
+
+  rust: `fn safe_divide(a: i32, b: i32) -> (i32, bool) {
+    if b == 0 {
+        return (0, false);
+    }
+    (a / b, true)
+}
+
+fn sum(ns: &[i32]) -> i32 {
+    ns.iter().sum()
+}
+
+fn transform(f: impl Fn(i32) -> i32, ns: &[i32]) -> Vec<i32> {
+    ns.iter().map(|&n| f(n)).collect()
+}`,
+
+  task: `
+<p>Write these as package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>Sum(nums ...int) int</code> — a <strong>variadic</strong> function that
+      returns the total of all arguments. <code>Sum()</code> is <code>0</code>,
+      <code>Sum(1, 2, 3)</code> is <code>6</code>.</li>
+  <li><code>SafeDivide(a, b int) (q int, ok bool)</code> — use <strong>named
+      returns</strong>. When <code>b</code> is <code>0</code>, return
+      <code>0, false</code>; otherwise return the quotient and <code>true</code>.</li>
+  <li><code>Transform(f func(int) int, nums []int) []int</code> — take a
+      <strong>function as a parameter</strong> and return a new slice with
+      <code>f</code> applied to each element.</li>
+</ol>`,
+
+  starter: `func Sum(nums ...int) int {
+	return 0 // TODO
+}
+
+func SafeDivide(a, b int) (q int, ok bool) {
+	return 0, false // TODO
+}
+
+func Transform(f func(int) int, nums []int) []int {
+	return nil // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /nums\s+\.\.\.int/, message: "Sum must take a variadic parameter (nums ...int)" },
+    { pattern: /\(q int, ok bool\)/, message: "SafeDivide must use named return values (q int, ok bool)" },
+    { pattern: /f\s+func\(int\)\s*int/, message: "Transform must take a function parameter f func(int) int" },
+  ],
+
+  tests: [
+    { name: "Sum() is 0", code: "\t\texpect_eq(Sum(), 0)" },
+    { name: "Sum(1, 2, 3) is 6", code: "\t\texpect_eq(Sum(1, 2, 3), 6)" },
+    { name: "Sum(5, 10, 15, 20) is 50", code: "\t\texpect_eq(Sum(5, 10, 15, 20), 50)" },
+    { name: "SafeDivide(10, 2) is 5, true", code: "\t\tq, ok := SafeDivide(10, 2)\n\t\texpect_eq(q, 5)\n\t\texpect_true(ok)" },
+    { name: "SafeDivide(7, 0) is 0, false", code: "\t\tq, ok := SafeDivide(7, 0)\n\t\texpect_eq(q, 0)\n\t\texpect_true(!ok)" },
+    { name: "Transform squares each element", code: "\t\tgot := Transform(func(x int) int { return x * x }, []int{1, 2, 3})\n\t\texpect_eq(got, []int{1, 4, 9})" },
+    { name: "Transform doubles each element", code: "\t\tgot := Transform(func(x int) int { return x * 2 }, []int{4, 5})\n\t\texpect_eq(got, []int{8, 10})" },
+  ],
+
+  solution: `func Sum(nums ...int) int {
+	total := 0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}
+
+func SafeDivide(a, b int) (q int, ok bool) {
+	if b == 0 {
+		return 0, false
+	}
+	q = a / b
+	ok = true
+	return
+}
+
+func Transform(f func(int) int, nums []int) []int {
+	out := make([]int, len(nums))
+	for i, n := range nums {
+		out[i] = f(n)
+	}
+	return out
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Go</th></tr>
+  <tr><td>Multiple returns</td><td><code>(i32, bool)</code> tuple</td><td><code>(int, bool)</code> native</td></tr>
+  <tr><td>Destructure result</td><td><code>let (q, ok) = f();</code></td><td><code>q, ok := f()</code></td></tr>
+  <tr><td>Named returns</td><td>—</td><td><code>func f() (q int, ok bool)</code> + naked <code>return</code></td></tr>
+  <tr><td>Variadic</td><td><code>&amp;[i32]</code> slice param (no true variadic)</td><td><code>ns ...int</code></td></tr>
+  <tr><td>Function type</td><td><code>fn(i32) -&gt; i32</code> / <code>impl Fn(i32) -&gt; i32</code></td><td><code>func(int) int</code></td></tr>
+  <tr><td>Absent value</td><td><code>Option&lt;T&gt;</code></td><td><code>(T, bool)</code> comma-ok</td></tr>
+</table>
+<p>The <code>(value, ok)</code> convention is everywhere in Go: map access
+(<code>v, ok := m[k]</code>), type assertions, and channel receives all return it.
+Preferring it over an <code>Option</code>-like wrapper means the caller is nudged
+to check <code>ok</code> before trusting the value, though unlike Rust's
+<code>Option</code> the compiler will not force that check for you. Named returns
+are handy for short functions and for documenting what each result means, but a
+bare <code>return</code> in a long function hurts readability — use them sparingly.
+To spread a slice into a variadic call, write <code>Sum(xs...)</code>; Rust has no
+equivalent syntax since a "variadic" Rust function is really just one that takes a
+slice, so you'd write <code>sum(&amp;xs)</code> directly.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

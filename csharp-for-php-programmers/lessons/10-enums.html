@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Enums</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Enums",
+
+  intro: `
+<p>In PHP you probably reach for a handful of string or int constants
+(<code>const LOW = "low"; const MEDIUM = "medium"; const HIGH = "high";</code>)
+or a class of class-constants far more often than PHP's own <code>enum</code>
+keyword, which only arrived in PHP 8.1 and is still relatively new territory
+for a lot of codebases. C# enums are the opposite: they're a first-class,
+everyday tool that has been around since the beginning. An <code>enum</code>
+is a named set of integer constants — a real value type backed by
+<code>int</code> (by default) that you can cast, switch on, and combine with
+bitwise operators.</p>
+<table>
+  <tr><th>PHP</th><th>C#</th></tr>
+  <tr><td><code>enum Priority { case Low; case Medium; case High; }</code></td><td><code>enum Priority { Low, Medium, High }</code></td></tr>
+  <tr><td><code>Priority::High-&gt;value</code> is <code>2</code></td><td><code>(int)Priority.High</code> is <code>2</code></td></tr>
+  <tr><td><code>Priority::High-&gt;name</code> → <code>"High"</code></td><td><code>Priority.High.ToString()</code> → <code>"High"</code></td></tr>
+  <tr><td>parse: <code>Priority::from($value)</code></td><td><code>Enum.Parse(typeof(Priority), "High")</code></td></tr>
+  <tr><td>bit flags: hand-rolled numbers</td><td><code>[Flags]</code> + <code>|</code> <code>&amp;</code></td></tr>
+</table>
+<p>Members auto-number from <code>0</code>, but you can assign explicit
+underlying values (<code>Low = 1</code>). Casting is explicit in both directions:
+<code>(int)p</code> and <code>(Priority)n</code>. For a set of independent
+on/off options, tag the enum with <code>[Flags]</code>, give members
+power-of-two values, and combine them with <code>|</code> / test them with
+<code>&amp;</code>.</p>`,
+
+  php: `enum FileAccess: string {
+    case Read = "read";
+    case Write = "write";
+    case Execute = "execute";
+}
+
+enum Priority: int {
+    case Low = 1;
+    case Medium = 2;
+    case High = 3;
+}
+
+function describe(Priority $p): string {
+    return match ($p) {
+        Priority::Low => "can wait",
+        Priority::Medium => "soon",
+        Priority::High => "now",
+        default => "unknown",
+    };
+}`,
+
+  task: `
+<p>Model task priorities and file permissions with enums. Two top-level enums and
+a <code>static class Enums</code> of helpers:</p>
+<ol>
+  <li>An <code>enum Priority</code> with explicit values
+      <code>Low = 1</code>, <code>Medium = 2</code>, <code>High = 3</code>.</li>
+  <li>A <code>[Flags] enum Access</code> with <code>None = 0</code>,
+      <code>Read = 1</code>, <code>Write = 2</code>, <code>Execute = 4</code>.</li>
+  <li><code>ToInt(Priority p)</code> — cast the enum to its underlying
+      <code>int</code>.</li>
+  <li><code>FromInt(int n)</code> — cast an <code>int</code> back to a
+      <code>Priority</code>.</li>
+  <li><code>Parse(string s)</code> — turn <code>"High"</code> into
+      <code>Priority.High</code> with <code>Enum.Parse</code>.</li>
+  <li><code>Describe(Priority p)</code> — use a <code>switch</code>
+      <em>statement</em> returning <code>"can wait"</code>, <code>"soon"</code>,
+      <code>"now"</code>, or <code>"unknown"</code>.</li>
+  <li><code>CanWrite(Access a)</code> — <code>true</code> when the
+      <code>Write</code> bit is set (<code>(a &amp; Access.Write) == Access.Write</code>).</li>
+  <li><code>Grant(Access a, Access flag)</code> — return <code>a</code> with
+      <code>flag</code> turned on (<code>a | flag</code>).</li>
+</ol>`,
+
+  starter: `enum Priority {
+  Low = 1,
+  Medium = 2,
+  High = 3,
+}
+
+[Flags]
+enum Access {
+  None = 0,
+  Read = 1,
+  Write = 2,
+  Execute = 4,
+}
+
+static class Enums {
+  public static int ToInt(Priority p) {
+    return 0; // TODO: cast to int
+  }
+
+  public static Priority FromInt(int n) {
+    return default(Priority); // TODO: cast from int
+  }
+
+  public static Priority Parse(string s) {
+    return default(Priority); // TODO: use Enum.Parse
+  }
+
+  public static string Describe(Priority p) {
+    return ""; // TODO: switch statement
+  }
+
+  public static bool CanWrite(Access a) {
+    return false; // TODO: test the Write bit
+  }
+
+  public static Access Grant(Access a, Access flag) {
+    return Access.None; // TODO: set the flag bit
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /\[Flags\]/, message: "Tag the flags enum with [Flags]" },
+    { pattern: /switch\s*\(/, message: "Describe must use a switch statement" },
+    { pattern: /Enum\.Parse/, message: "Parse must use Enum.Parse" },
+  ],
+
+  tests: [
+    { name: "ToInt(Priority.High) is 3", code: "      expect_eq(Enums.ToInt(Priority.High), 3);" },
+    { name: "FromInt(2) is Priority.Medium", code: "      expect_true(Enums.FromInt(2) == Priority.Medium);" },
+    { name: "Parse(\"High\") is Priority.High", code: "      expect_true(Enums.Parse(\"High\") == Priority.High);" },
+    { name: "Describe(Priority.Medium) is \"soon\"", code: "      expect_eq(Enums.Describe(Priority.Medium), \"soon\");" },
+    { name: "Describe(Priority.High) is \"now\"", code: "      expect_eq(Enums.Describe(Priority.High), \"now\");" },
+    { name: "Priority.High names itself \"High\"", code: "      expect_eq(Priority.High.ToString(), \"High\");" },
+    { name: "CanWrite(Read|Write) is true, Read alone is false", code: "      expect_true(Enums.CanWrite(Access.Read | Access.Write));\n      expect_true(!Enums.CanWrite(Access.Read));" },
+    { name: "Grant(Read, Write) sets the Write bit", code: "      expect_true(Enums.Grant(Access.Read, Access.Write) == (Access.Read | Access.Write));" },
+  ],
+
+  solution: `enum Priority {
+  Low = 1,
+  Medium = 2,
+  High = 3,
+}
+
+[Flags]
+enum Access {
+  None = 0,
+  Read = 1,
+  Write = 2,
+  Execute = 4,
+}
+
+static class Enums {
+  public static int ToInt(Priority p) {
+    return (int)p;
+  }
+
+  public static Priority FromInt(int n) {
+    return (Priority)n;
+  }
+
+  public static Priority Parse(string s) {
+    return (Priority)Enum.Parse(typeof(Priority), s);
+  }
+
+  public static string Describe(Priority p) {
+    switch (p) {
+      case Priority.Low:
+        return "can wait";
+      case Priority.Medium:
+        return "soon";
+      case Priority.High:
+        return "now";
+      default:
+        return "unknown";
+    }
+  }
+
+  public static bool CanWrite(Access a) {
+    return (a & Access.Write) == Access.Write;
+  }
+
+  public static Access Grant(Access a, Access flag) {
+    return a | flag;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+  <tr><td>Declare</td><td><code>enum P { case Low; case Medium; case High; }</code></td><td><code>enum P { Low, Medium, High }</code></td></tr>
+  <tr><td>Explicit value</td><td><code>case Low = 1;</code> (backed enum)</td><td><code>Low = 1</code></td></tr>
+  <tr><td>To number</td><td><code>$p-&gt;value</code></td><td><code>(int)p</code></td></tr>
+  <tr><td>From number</td><td><code>P::from($n)</code></td><td><code>(P)n</code></td></tr>
+  <tr><td>To name</td><td><code>$p-&gt;name</code></td><td><code>p.ToString()</code></td></tr>
+  <tr><td>From name</td><td><code>constant("P::High")</code></td><td><code>Enum.Parse(typeof(P), "High")</code></td></tr>
+  <tr><td>Bit flags</td><td>manual numbers</td><td><code>[Flags]</code>, <code>|</code>, <code>&amp;</code></td></tr>
+</table>
+<p>A few things worth knowing. Casting from <code>int</code> is unchecked — an
+undefined value like <code>(Priority)99</code> won't throw, so validate with
+<code>Enum.IsDefined(typeof(Priority), n)</code> when the number comes from
+outside. <code>Enum.Parse</code> throws on an unknown name; use
+<code>Enum.TryParse</code> for the safe path.</p>
+<p>The <code>switch</code> here is a <em>statement</em> — each
+<code>case</code> ends in <code>return</code> (or would need <code>break</code>),
+and C# forbids fall-through between non-empty cases. C# also has a
+<em>switch expression</em> (<code>p =&gt; ...</code>), but that arrived after the
+version this course targets, so stick with the statement form.</p>
+<p><code>[Flags]</code> doesn't change how the enum stores bits — it only makes
+<code>ToString()</code> render combinations as <code>"Read, Write"</code> instead
+of a bare number. The real work is done by giving each member a distinct power of
+two and combining them with bitwise <code>|</code> (set), <code>&amp;</code>
+(test), and <code>&amp; ~</code> (clear). <code>a.HasFlag(Access.Write)</code> is
+a readable alternative to the <code>&amp;</code> test.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

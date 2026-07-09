@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Array Iteration</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Array Iteration",
+
+  intro: `
+<p>In Python you reach for comprehensions and builtins to keep transformations
+tidy: a list comprehension gives you a new list, <code>filter</code> narrows
+(lazily, wrapped in <code>list(...)</code> to see it), <code>functools.reduce</code>
+threads an accumulator you seed explicitly. JavaScript has no comprehension
+syntax at all — every one of those jobs is a method call on the array itself,
+chained left to right.</p>
+<table>
+  <tr><th>Python</th><th>JavaScript</th></tr>
+  <tr><td><code>[str(x) for x in arr]</code></td><td><code>arr.map((x) =&gt; ...)</code></td></tr>
+  <tr><td><code>functools.reduce(fn, arr, 0)</code></td><td><code>arr.reduce(fn, 0)</code></td></tr>
+  <tr><td><code>next((x for x in arr if ...), None)</code></td><td><code>arr.find(...)</code> — may be <code>undefined</code></td></tr>
+  <tr><td>list/generator, duck-typed</td><td>result is whatever the callback returned</td></tr>
+</table>
+<p>The idiomatic move — in both languages — is to <em>chain</em> these methods
+instead of writing manual <code>for</code> loops: describe the transformation as
+a pipeline (<code>filter</code> then <code>map</code> then <code>reduce</code>)
+rather than a sequence of mutations. At runtime each link allocates a new array,
+so the pipeline reads top-to-bottom as a series of pure steps. Two runtime facts
+worth holding onto: <code>find</code> returns <code>undefined</code> when nothing
+matches (Python's <code>next(..., None)</code> makes you choose the sentinel; JS
+always hands you <code>undefined</code>), and <code>reduce</code> on an empty
+array <em>throws</em> if you gave it no initial value — much like Python's
+<code>functools.reduce</code> raising <code>TypeError</code> in the same
+situation.</p>`,
+
+  python: `def paid_total(orders):
+    return sum(o["total"] for o in orders if o["paid"])
+
+def customer_names(orders):
+    return [o["customer"] for o in orders]`,
+
+  task: `
+<p>You are given an array of order objects, each shaped like
+<code>{ id, customer, total, paid }</code>. Build a little reporting toolkit —
+no manual <code>for</code>/<code>while</code> loops, use the array methods:</p>
+<ol>
+  <li><code>paidTotal(orders)</code> — sum of <code>total</code> across only the
+      <em>paid</em> orders (chain <code>filter</code> then <code>reduce</code>).
+      Returns <code>0</code> for an empty array.</li>
+  <li><code>bigSpenders(orders, min)</code> — an array of the
+      <code>customer</code> names whose order <code>total</code> is greater than
+      or equal to <code>min</code> (chain <code>filter</code> then
+      <code>map</code>).</li>
+  <li><code>findOrder(orders, id)</code> — the first order object with the given
+      <code>id</code>, or <code>undefined</code> if there is none (use
+      <code>find</code>).</li>
+  <li><code>allPaid(orders)</code> — <code>true</code> if every order is paid
+      (use <code>every</code>).</li>
+  <li><code>anyUnpaid(orders)</code> — <code>true</code> if at least one order is
+      unpaid (use <code>some</code>).</li>
+  <li><code>totalByCustomer(orders)</code> — an object mapping each customer name
+      to the sum of their order totals, built with a single <code>reduce</code>.</li>
+</ol>`,
+
+  starter: `// The data the tests will pass in looks like:
+// { id: 1, customer: "Ada", total: 40, paid: true }
+
+// 1. Sum of totals across only paid orders.
+function paidTotal(orders) {
+  // TODO: filter then reduce
+  return 0;
+}
+
+// 2. Names of customers whose order total is >= min.
+function bigSpenders(orders, min) {
+  // TODO: filter then map
+  return [];
+}
+
+// 3. First order with matching id, or undefined.
+function findOrder(orders, id) {
+  // TODO: find
+  return undefined;
+}
+
+// 4. True if every order is paid.
+function allPaid(orders) {
+  // TODO: every
+  return false;
+}
+
+// 5. True if at least one order is unpaid.
+function anyUnpaid(orders) {
+  // TODO: some
+  return false;
+}
+
+// 6. Map of customer name -> summed total, via one reduce.
+function totalByCustomer(orders) {
+  // TODO: reduce into an object
+  return {};
+}
+`,
+
+  exportNames: ["paidTotal", "bigSpenders", "findOrder", "allPaid", "anyUnpaid", "totalByCustomer"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter() to select orders" },
+    { pattern: /\.map\s*\(/, message: "Use .map() to project customer names" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce() to aggregate totals" },
+    { pattern: /\.find\s*\(/, message: "Use .find() to locate an order by id" },
+  ],
+
+  tests: [
+    {
+      name: "paidTotal sums only paid orders",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+          { id: 3, customer: "Ada", total: 10, paid: true },
+        ];
+        expectEqual(x.paidTotal(orders), 50);
+      },
+    },
+    {
+      name: "paidTotal returns 0 for an empty array",
+      run: (x) => expectEqual(x.paidTotal([]), 0),
+    },
+    {
+      name: "bigSpenders keeps names at or above min",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+          { id: 3, customer: "Cy", total: 100, paid: true },
+        ];
+        expectDeepEqual(x.bigSpenders(orders, 40), ["Ada", "Cy"]);
+      },
+    },
+    {
+      name: "findOrder returns the matching order",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+        ];
+        expectEqual(x.findOrder(orders, 2).customer, "Rob");
+      },
+    },
+    {
+      name: "findOrder returns undefined when nothing matches",
+      run: (x) => expectEqual(x.findOrder([{ id: 1, customer: "Ada", total: 40, paid: true }], 99), undefined),
+    },
+    {
+      name: "allPaid and anyUnpaid reflect the paid flags",
+      run: (x) => {
+        const mixed = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+        ];
+        const clean = [{ id: 3, customer: "Cy", total: 10, paid: true }];
+        expectEqual(x.allPaid(mixed), false);
+        expectEqual(x.allPaid(clean), true);
+        expectEqual(x.anyUnpaid(mixed), true);
+        expectEqual(x.anyUnpaid(clean), false);
+      },
+    },
+    {
+      name: "totalByCustomer groups totals by name",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+          { id: 3, customer: "Ada", total: 10, paid: true },
+        ];
+        expectDeepEqual(x.totalByCustomer(orders), { Ada: 50, Rob: 25 });
+      },
+    },
+  ],
+
+  solution: `function paidTotal(orders) {
+  return orders
+    .filter((o) => o.paid)
+    .reduce((sum, o) => sum + o.total, 0);
+}
+
+function bigSpenders(orders, min) {
+  return orders
+    .filter((o) => o.total >= min)
+    .map((o) => o.customer);
+}
+
+function findOrder(orders, id) {
+  return orders.find((o) => o.id === id);
+}
+
+function allPaid(orders) {
+  return orders.every((o) => o.paid);
+}
+
+function anyUnpaid(orders) {
+  return orders.some((o) => !o.paid);
+}
+
+function totalByCustomer(orders) {
+  return orders.reduce((acc, o) => {
+    acc[o.customer] = (acc[o.customer] || 0) + o.total;
+    return acc;
+  }, {});
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>JavaScript (runtime)</th></tr>
+  <tr><td>Mapped result</td><td>list comprehension or <code>list(map(...))</code></td><td>whatever the callback returns</td></tr>
+  <tr><td>reduce accumulator</td><td><code>functools.reduce(fn, it, initial)</code></td><td>whatever you seed and return</td></tr>
+  <tr><td>find miss</td><td><code>next(gen, None)</code> — sentinel you pick</td><td>silently <code>undefined</code></td></tr>
+  <tr><td>reduce, no seed, empty array</td><td><code>functools.reduce</code> raises <code>TypeError</code></td><td>throws <code>TypeError</code> at runtime</td></tr>
+  <tr><td>Grouping accumulator</td><td><code>dict</code> or <code>collections.defaultdict(int)</code></td><td>a plain <code>{}</code> object</td></tr>
+</table>
+<p>Python's <code>functools.reduce</code> already behaves the way JavaScript's
+<code>reduce</code> does here — no initial value, empty sequence, and you get a
+<code>TypeError</code> in both languages, so that habit transfers directly.
+Where things differ is <code>find</code>: Python has no dedicated method, so you
+write <code>next((o for o in orders if o["id"] == id), None)</code> and choose
+your own "not found" sentinel, while JavaScript's <code>find</code> always hands
+back <code>undefined</code> — reaching straight into <code>.customer</code> on
+that result can blow up with "Cannot read properties of undefined", so guard it
+or use <code>?.</code>. And each of <code>filter</code>/<code>map</code>
+allocates a fresh array (Python's <code>filter</code>/<code>map</code> are lazy
+generators unless you wrap them in <code>list(...)</code>), so a long JS chain
+over a huge list does more allocation work than a single comprehension; for the
+sizes in everyday code the readability of the pipeline wins, but it is a real
+cost worth knowing about.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

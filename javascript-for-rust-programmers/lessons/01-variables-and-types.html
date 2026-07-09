@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Coming from Rust, you're used to the compiler enforcing types and mutability
+before your program ever runs. JavaScript has no compiler standing guard — this
+course is about what your code does at <em>runtime</em>, with no borrow checker
+and no type checker in the room. Start with the smallest change: variables lose
+their type annotations, and <code>let</code> no longer means "immutable by
+default."</p>
+<table>
+  <tr><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td><code>let age: u32 = 36;</code></td><td><code>let age = 36;</code></td></tr>
+  <tr><td><code>let name: &amp;str = "Ada";</code></td><td><code>const name = "Ada";</code></td></tr>
+  <tr><td>types checked at compile time</td><td><code>typeof</code> checked at run time</td></tr>
+</table>
+<p>Without the compiler, a variable's "type" is just whatever value it holds
+right now — and nothing stops it changing. <code>let x = 1; x = "one";</code> is
+perfectly legal JavaScript; there is no <code>rustc</code> to reject it. Two habits
+carry you a long way: reach for <code>const</code> by default (JavaScript's
+closest thing to Rust's default immutability, though it only prevents
+reassignment, not mutation), and use the <code>typeof</code> operator when you
+genuinely need to know what you are holding.</p>`,
+
+  rust: `let age: u32 = 36;
+let user_name: &str = "Ada";
+
+fn describe(name: &str, age: u32) -> String {
+    format!("{name} is {age}")
+}`,
+
+  task: `
+<p>Write the plain-JavaScript runtime version of the same code:</p>
+<ol>
+  <li>Declare a constant <code>userName</code> = <code>"Ada"</code> and a
+      variable <code>userAge</code> = <code>36</code> — no type annotations,
+      and use <code>let</code> for <code>userAge</code>.</li>
+  <li>Write <code>describe(name, age)</code> that returns a string like
+      <code>"Ada is 36"</code> using a template literal.</li>
+  <li>Write <code>typeOf(value)</code> that returns the JavaScript
+      <code>typeof</code> string for whatever it is given.</li>
+</ol>`,
+
+  starter: `// 1. userName (const) and userAge (let) — no annotations
+
+
+// 2. describe(name, age) -> "<name> is <age>"
+function describe(name, age) {
+  // TODO
+  return "";
+}
+
+// 3. typeOf(value) -> the typeof string, e.g. "number"
+function typeOf(value) {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["userName", "userAge", "describe", "typeOf"],
+
+  requirements: [
+    { pattern: /const\s+userName/, message: "Declare userName with const" },
+    { pattern: /let\s+userAge/, message: "Declare userAge with let" },
+    { pattern: /typeof/, message: "Use the typeof operator inside typeOf" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', run: (x) => expectEqual(x.userName, "Ada") },
+    { name: "userAge is 36", run: (x) => expectEqual(x.userAge, 36) },
+    { name: 'describe("Ada", 36) returns "Ada is 36"', run: (x) => expectEqual(x.describe("Ada", 36), "Ada is 36") },
+    { name: 'describe("Rob", 68) returns "Rob is 68"', run: (x) => expectEqual(x.describe("Rob", 68), "Rob is 68") },
+    { name: 'typeOf(1) is "number"', run: (x) => expectEqual(x.typeOf(1), "number") },
+    { name: 'typeOf("a") is "string"', run: (x) => expectEqual(x.typeOf("a"), "string") },
+    { name: 'typeOf(true) is "boolean"', run: (x) => expectEqual(x.typeOf(true), "boolean") },
+  ],
+
+  solution: `const userName = "Ada";
+let userAge = 36;
+
+function describe(name, age) {
+  return \`\${name} is \${age}\`;
+}
+
+function typeOf(value) {
+  return typeof value;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td>Typed declaration</td><td><code>let x: i32 = 1;</code></td><td><code>let x = 1;</code></td></tr>
+  <tr><td>Immutable binding</td><td><code>let x = 1;</code> (immutable by default)</td><td><code>const x = 1;</code> (must opt in)</td></tr>
+  <tr><td>Mutable binding</td><td><code>let mut x = 1;</code></td><td><code>let x = 1;</code></td></tr>
+  <tr><td>Runtime type check</td><td>the compiler (no runtime concept of "type")</td><td><code>typeof x</code></td></tr>
+  <tr><td>Reassign a new type</td><td>compile error</td><td>allowed at runtime</td></tr>
+</table>
+<p><code>typeof</code> returns one of a small set of strings: <code>"number"</code>,
+<code>"string"</code>, <code>"boolean"</code>, <code>"undefined"</code>,
+<code>"object"</code>, <code>"function"</code>, <code>"symbol"</code>, and
+<code>"bigint"</code>. Its famous wart: <code>typeof null === "object"</code>.
+Rust erases types to machine representations at compile time and gives you
+nothing to inspect at runtime; <code>typeof</code> is JavaScript's substitute —
+a live, dynamic answer to "what is this value right now?" that Rust never
+needs because the compiler already settled the question.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

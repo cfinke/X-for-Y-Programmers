@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: The collections Module</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "The collections Module",
+
+  intro: `
+<p>In C++ you reach for a <code>std::map</code> or <code>std::unordered_map</code>
+and hand-roll the counting and grouping logic yourself — check whether a key
+exists, seed it with <code>0</code> or an empty <code>std::vector</code>, then
+update. Python's standard library ships that boilerplate as ready-made
+containers in the <code>collections</code> module. Three of them come up
+constantly.</p>
+<table>
+  <tr><th>C++</th><th>Python</th></tr>
+  <tr><td><code>std::unordered_map&lt;std::string, int&gt; m;</code></td><td><code>Counter(words)</code></td></tr>
+  <tr><td><code>m[k]++;</code></td><td><code>counter[k] += 1</code></td></tr>
+  <tr><td><code>groups[k].push_back(v);</code></td><td><code>groups[k].append(v)</code></td></tr>
+  <tr><td><code>struct Point { int x; int y; };</code></td><td><code>Point = namedtuple("Point", ["x", "y"])</code></td></tr>
+</table>
+<p><code>Counter</code> is a <code>dict</code> subclass that tallies hashable
+items for you: pass it any iterable and it counts occurrences.
+<code>defaultdict</code> is a <code>dict</code> that calls a factory function to
+supply a default the first time you touch a missing key — perfect for grouping.
+<code>namedtuple</code> builds a lightweight tuple subclass whose fields have
+names, giving you <code>p.x</code> access without writing a class.</p>`,
+
+  cpp: `#include <string>
+#include <unordered_map>
+#include <vector>
+
+// Counting by hand with an unordered_map:
+std::unordered_map<std::string, int> counts;
+for (const std::string& w : {"a", "b", "a"}) {
+  counts[w]++;
+}
+
+// Grouping by hand:
+std::unordered_map<char, std::vector<std::string>> groups;
+for (const std::string& w : {"apple", "avocado", "beet"}) {
+  groups[w[0]].push_back(w);
+}
+
+// A named record:
+struct Point {
+  int x;
+  int y;
+};
+Point p{1, 2};`,
+
+  task: `
+<p>Import from <code>collections</code> and write three functions:</p>
+<ol>
+  <li><code>count_words(text)</code> — split <code>text</code> on whitespace and
+      return a <code>Counter</code> mapping each word to how many times it
+      appears.</li>
+  <li><code>count_chars(text)</code> — return a <code>Counter</code> of the
+      characters in <code>text</code> (pass the string straight to
+      <code>Counter</code>).</li>
+  <li><code>group_by_first_letter(words)</code> — return a
+      <code>defaultdict(list)</code> mapping each word's first letter to the
+      list of words starting with it, in their original order.</li>
+  <li><code>make_point(x, y)</code> — return a <code>namedtuple</code> called
+      <code>Point</code> with fields <code>x</code> and <code>y</code>, built
+      from the arguments.</li>
+</ol>`,
+
+  starter: `from collections import Counter, defaultdict, namedtuple
+
+
+# 1. count_words(text) -> Counter of words
+def count_words(text):
+    return None  # TODO
+
+
+# 2. count_chars(text) -> Counter of characters
+def count_chars(text):
+    return None  # TODO
+
+
+# 3. group_by_first_letter(words) -> defaultdict(list)
+def group_by_first_letter(words):
+    return None  # TODO
+
+
+# 4. make_point(x, y) -> Point namedtuple
+def make_point(x, y):
+    return None  # TODO
+`,
+
+  requirements: [
+    { pattern: /Counter\s*\(/, message: "Use Counter to tally items" },
+    { pattern: /defaultdict\s*\(\s*list\s*\)/, message: "Use defaultdict(list) for grouping" },
+    { pattern: /namedtuple\s*\(/, message: "Use namedtuple to build Point" },
+  ],
+
+  tests: [
+    { name: "count_words tallies repeated words", code: "    expect_eq(count_words(\"a b a c a b\"), {\"a\": 3, \"b\": 2, \"c\": 1})" },
+    { name: "count_words returns a Counter", code: "    from collections import Counter\n    expect_true(isinstance(count_words(\"hi hi\"), Counter))" },
+    { name: "count_chars counts letters", code: "    expect_eq(count_chars(\"mississippi\"), {\"m\": 1, \"i\": 4, \"s\": 4, \"p\": 2})" },
+    { name: "count_chars most_common works", code: "    expect_eq(count_chars(\"aaab\").most_common(1), [(\"a\", 3)])" },
+    { name: "group_by_first_letter groups in order", code: "    result = group_by_first_letter([\"apple\", \"avocado\", \"beet\", \"berry\"])\n    expect_eq(result[\"a\"], [\"apple\", \"avocado\"])\n    expect_eq(result[\"b\"], [\"beet\", \"berry\"])" },
+    { name: "group_by_first_letter missing key yields []", code: "    result = group_by_first_letter([\"apple\"])\n    expect_eq(result[\"z\"], [])" },
+    { name: "make_point exposes named fields", code: "    p = make_point(3, 4)\n    expect_eq(p.x, 3)\n    expect_eq(p.y, 4)\n    expect_eq(tuple(p), (3, 4))" },
+  ],
+
+  solution: `from collections import Counter, defaultdict, namedtuple
+
+
+def count_words(text):
+    return Counter(text.split())
+
+
+def count_chars(text):
+    return Counter(text)
+
+
+def group_by_first_letter(words):
+    groups = defaultdict(list)
+    for word in words:
+        groups[word[0]].append(word)
+    return groups
+
+
+Point = namedtuple("Point", ["x", "y"])
+
+
+def make_point(x, y):
+    return Point(x, y)
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+  <tr><td>Count items</td><td><code>m[k]++;</code></td><td><code>Counter(items)</code></td></tr>
+  <tr><td>Top N</td><td>sort entries yourself</td><td><code>counter.most_common(3)</code></td></tr>
+  <tr><td>Group into lists</td><td><code>groups[k].push_back(v);</code></td><td><code>defaultdict(list)</code></td></tr>
+  <tr><td>Named record</td><td><code>struct P { int x; };</code></td><td><code>namedtuple("P", ["x"])</code></td></tr>
+  <tr><td>Field access</td><td><code>p.x</code></td><td><code>p.x</code> (also <code>p[0]</code>)</td></tr>
+</table>
+<p>A <code>Counter</code> compares equal to a plain <code>dict</code> with the
+same counts, and missing keys read as <code>0</code> instead of raising —
+handy, but it means a typo silently returns zero rather than a
+<code>KeyError</code>. Its <code>most_common(n)</code> returns
+<code>(item, count)</code> pairs sorted high to low.</p>
+<p>A <code>defaultdict</code> takes a zero-argument <em>factory</em>
+(<code>list</code>, <code>int</code>, <code>set</code>, or any callable). Merely
+<em>reading</em> a missing key inserts the default and returns it, so
+<code>d["z"]</code> both creates and returns an empty list. A
+<code>namedtuple</code> is still an immutable tuple — it unpacks and indexes like
+one — but its named fields make code far more readable than positional
+<code>t[0]</code>/<code>t[1]</code> access.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes & Objects</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>Kotlin already killed the POJO for you: a <code>val</code> property writes its
+getter, a <code>var</code> writes getter and setter, and the primary constructor
+folds field declaration and assignment into one line. Ruby plays the same trick
+from a different angle — <code>attr_reader :owner</code> <em>writes the getter</em>
+and <code>attr_accessor</code> writes getter and setter both. Where Kotlin bakes
+the accessor into the property, Ruby keeps the instance variable and the accessor
+as separate pieces: <code>attr_reader</code> is just a class-level method call
+that generates the method for you.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>class BankAccount(val owner: String)</code></td><td><code>def initialize(owner) ... end</code></td></tr>
+  <tr><td><code>var balance: Int = 0</code> (property + getter)</td><td><code>@balance</code> + <code>attr_reader :balance</code></td></tr>
+  <tr><td><code>this.owner = owner</code></td><td><code>@owner = owner</code></td></tr>
+  <tr><td><code>BankAccount("Ada")</code> — no <code>new</code></td><td><code>BankAccount.new("Ada")</code> — <code>new</code> is a method on the class</td></tr>
+  <tr><td><code>val</code>/<code>var</code>, <code>private set</code> for control</td><td>methods public by default; fields <em>always</em> private</td></tr>
+</table>
+<p>The constructor is a plain method named <code>initialize</code>, called for
+you by <code>ClassName.new(...)</code> — not the primary-constructor syntax you
+know from Kotlin. Instance variables are the <code>@</code>-prefixed names — no
+declaration, no <code>val</code>/<code>var</code>, they spring into being on
+first assignment — and they are <strong>truly private</strong>. Just as Kotlin
+has no public fields (every access goes through an accessor), Ruby's only way for
+outside code to touch state is through methods. That's why <code>attr_reader</code>
+matters: "exposing a field" always means "generating an accessor method."</p>`,
+
+  kotlin: `class BankAccount(val owner: String) {
+    var balance: Int = 0
+        private set
+
+    fun deposit(amount: Int) {
+        balance += amount
+    }
+
+    fun withdraw(amount: Int): Boolean {
+        if (amount > balance) return false
+        balance -= amount
+        return true
+    }
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code> to Ruby:</p>
+<ol>
+  <li>Define <code>class BankAccount</code> with
+      <code>attr_reader :owner, :balance</code> — that one line does what
+      Kotlin's <code>val owner</code> and the auto-generated getter for
+      <code>balance</code> give you.</li>
+  <li>Write <code>initialize(owner)</code>: store <code>@owner</code> and
+      start <code>@balance</code> at <code>0</code>.</li>
+  <li>Write <code>deposit(amount)</code>: add to <code>@balance</code>.</li>
+  <li>Write <code>withdraw(amount)</code>: if the balance is insufficient,
+      return <code>false</code> and change nothing; otherwise subtract and
+      return <code>true</code>. (A modifier-if guard from lesson 8 makes the
+      first line.)</li>
+</ol>
+<p>Callers will use it as
+<code>account = BankAccount.new("Ada")</code>, then
+<code>account.deposit(100)</code> and <code>account.balance</code>.</p>`,
+
+  starter: `class BankAccount
+  # These two symbols generate the owner and balance getter methods.
+  attr_reader :owner, :balance
+
+  # Called by BankAccount.new("Ada") — set @owner, start @balance at 0.
+  def initialize(owner)
+    raise NotImplementedError, "TODO: assign the instance variables"
+  end
+
+  def deposit(amount)
+    raise NotImplementedError, "TODO: add amount to @balance"
+  end
+
+  # Return false (leaving @balance untouched) when funds are insufficient,
+  # true after a successful withdrawal.
+  def withdraw(amount)
+    raise NotImplementedError, "TODO: guard, subtract, return true"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Define class BankAccount" },
+    { pattern: /def\s+initialize/, message: "Define the constructor as def initialize" },
+    { pattern: /attr_reader|attr_accessor/, message: "Generate the getters with attr_reader (or attr_accessor)" },
+    { pattern: /@balance/, message: "Store state in the @balance instance variable" },
+  ],
+
+  tests: [
+    { name: 'BankAccount.new("Ada") has owner "Ada" and balance 0',
+      code: '  account = BankAccount.new("Ada")\n  expect_eq(account.owner, "Ada")\n  expect_eq(account.balance, 0)' },
+    { name: "deposit(100) brings the balance to 100",
+      code: '  account = BankAccount.new("Ada")\n  account.deposit(100)\n  expect_eq(account.balance, 100)' },
+    { name: "two deposits accumulate: 100 + 50 = 150",
+      code: '  account = BankAccount.new("Ada")\n  account.deposit(100)\n  account.deposit(50)\n  expect_eq(account.balance, 150)' },
+    { name: "withdraw(30) from 100 returns true and leaves 70",
+      code: '  account = BankAccount.new("Ada")\n  account.deposit(100)\n  expect_true(account.withdraw(30))\n  expect_eq(account.balance, 70)' },
+    { name: "withdraw(500) from 100 returns false and the balance is unchanged",
+      code: '  account = BankAccount.new("Ada")\n  account.deposit(100)\n  expect_eq(account.withdraw(500), false)\n  expect_eq(account.balance, 100)' },
+  ],
+
+  solution: `class BankAccount
+  attr_reader :owner, :balance
+
+  def initialize(owner)
+    @owner = owner
+    @balance = 0
+  end
+
+  def deposit(amount)
+    @balance += amount
+  end
+
+  def withdraw(amount)
+    return false if amount > @balance
+
+    @balance -= amount
+    true
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Constructor</td><td><code>class ClassName(...)</code> (primary)</td><td><code>def initialize(...)</code></td></tr>
+  <tr><td>Instantiate</td><td><code>ClassName(args)</code> (no <code>new</code>)</td><td><code>ClassName.new(args)</code></td></tr>
+  <tr><td>Field</td><td><code>var balance: Int</code> property</td><td><code>@balance</code> — exists on first assignment</td></tr>
+  <tr><td>Getter</td><td>auto-generated from <code>val</code>/<code>var</code></td><td><code>attr_reader :balance</code></td></tr>
+  <tr><td>Getter + setter</td><td><code>var balance</code> (public <code>set</code>)</td><td><code>attr_accessor :balance</code></td></tr>
+  <tr><td>this</td><td><code>this.owner</code></td><td><code>@owner</code> (or <code>self</code> for the object itself)</td></tr>
+</table>
+<p>Note what's absent relative to Kotlin: no type annotations, no
+<code>val</code>/<code>var</code> keywords, no property declarations at all. And
+accessors follow Ruby naming — readers are <code>account.balance</code>, not
+<code>getBalance()</code>, and a generated writer is
+<code>account.balance = 50</code> (sugar for the method <code>balance=</code>).
+Because <code>@ivars</code> are unreachable from outside, choosing
+<code>attr_reader</code> over <code>attr_accessor</code> is your encapsulation
+decision — exactly like putting <code>private set</code> on a Kotlin
+<code>var</code>: this account exposes reads, but only
+<code>deposit</code>/<code>withdraw</code> can change the balance.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

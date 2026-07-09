@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance & Virtual Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Virtual Functions",
+
+  intro: `
+<p>Rust has no class inheritance at all. Shared behavior comes from
+<strong>traits</strong>, and dispatch is a choice you make at the call site, not
+a property of the method. Generic code (<code>fn f&lt;T: Animal&gt;(x: &amp;T)</code>)
+is monomorphized — the compiler stamps out a specialized function per concrete
+type, resolved at compile time, exactly like an ordinary non-<code>virtual</code>
+C++ call. Only when you go through a trait object (<code>&amp;dyn Animal</code>
+or <code>Box&lt;dyn Animal&gt;</code>) does Rust build a vtable and dispatch at
+runtime — that is the direct analogue of a C++ <code>virtual</code> call through
+a <code>Base&amp;</code> or <code>Base*</code>.</p>
+<table>
+  <tr><th>Rust</th><th>C++</th></tr>
+  <tr><td><code>impl Animal for Dog { … }</code></td><td><code>class Dog : public Animal {}</code></td></tr>
+  <tr><td>trait method called on <code>&amp;T</code> (static dispatch)</td><td><code>virtual std::string speak() const</code></td></tr>
+  <tr><td>method in a trait <code>impl</code> block</td><td><code>std::string speak() const override</code></td></tr>
+  <tr><td><code>fn area(&amp;self) -&gt; f64;</code> (no body)</td><td><code>virtual double area() const = 0;</code></td></tr>
+  <tr><td><code>trait Shape { fn area(&amp;self) -&gt; f64; }</code></td><td>class with a pure virtual (<code>= 0</code>)</td></tr>
+</table>
+<p>Three rules to carry over. First, <code>virtual</code> in the base is what
+enables dynamic dispatch; write <code>override</code> in the derived class so the
+compiler checks you actually matched a base signature. Second, a pure virtual
+(<code>= 0</code>) makes the class abstract — you cannot instantiate it, exactly
+like a trait method with no default body forces every implementor to supply one.
+Third, a base class with any virtual function needs a
+<code>virtual ~Base() = default;</code> destructor so deleting through a base
+pointer cleans up the derived part.</p>`,
+
+  rust: `trait Animal {
+    fn name(&self) -> &str;
+    fn speak(&self) -> String;
+    // Default method — the trait equivalent of a non-abstract base method
+    fn describe(&self) -> String {
+        format!("{} says {}", self.name(), self.speak())
+    }
+}
+
+struct Dog { name: String }
+impl Animal for Dog {
+    fn name(&self) -> &str { &self.name }
+    fn speak(&self) -> String { "Woof".to_string() }
+}
+
+struct Cat { name: String }
+impl Animal for Cat {
+    fn name(&self) -> &str { &self.name }
+    fn speak(&self) -> String { "Meow".to_string() }
+}
+
+// &dyn Animal erases the concrete type and dispatches through a vtable
+fn announce(a: &dyn Animal) -> String {
+    a.describe()
+}`,
+
+  task: `
+<p>Model the same hierarchy in C++.</p>
+<ol>
+  <li>An abstract base <code>Animal</code> holding a <code>std::string name</code>
+      (constructor takes it). Give it a pure virtual
+      <code>virtual std::string speak() const = 0;</code> and a non-virtual
+      <code>describe()</code> returning <code>name + " says " + speak()</code>.
+      Add <code>virtual ~Animal() = default;</code>.</li>
+  <li><code>Dog</code> and <code>Cat</code> deriving <code>public Animal</code>,
+      each with a constructor forwarding the name to <code>Animal</code> and an
+      <code>override</code> of <code>speak()</code> returning <code>"Woof"</code>
+      / <code>"Meow"</code>.</li>
+  <li>A free function <code>announce(const Animal&amp; a)</code> returning
+      <code>a.describe()</code> — proving dispatch works through a
+      <code>Base&amp;</code>.</li>
+</ol>`,
+
+  starter: `class Animal {
+public:
+  explicit Animal(std::string name) : name(std::move(name)) {}
+  virtual ~Animal() = default;
+  // TODO: make speak() a pure virtual (= 0) so Animal is abstract
+  virtual std::string speak() const { return ""; }
+  std::string describe() const {
+    return ""; // TODO: return name + " says " + speak()
+  }
+protected:
+  std::string name;
+};
+
+class Dog : public Animal {
+public:
+  explicit Dog(std::string name) : Animal(std::move(name)) {}
+  // TODO: override speak() to return "Woof"
+  std::string speak() const override { return ""; }
+};
+
+class Cat : public Animal {
+public:
+  explicit Cat(std::string name) : Animal(std::move(name)) {}
+  // TODO: override speak() to return "Meow"
+  std::string speak() const override { return ""; }
+};
+
+std::string announce(const Animal& a) {
+  return ""; // TODO: return a.describe()
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*0\s*;/, message: "Give Animal a pure virtual method (= 0) so it is abstract" },
+    { pattern: /\boverride\b/, message: "Mark the derived speak() with override" },
+    { pattern: /virtual\s+~Animal/, message: "Give the base a virtual destructor" },
+  ],
+
+  tests: [
+    { name: "Dog speaks Woof", code: "    Dog d(\"Rex\");\n    expect_eq(d.speak(), std::string(\"Woof\"));" },
+    { name: "Cat speaks Meow", code: "    Cat c(\"Tom\");\n    expect_eq(c.speak(), std::string(\"Meow\"));" },
+    { name: "describe uses the override", code: "    Dog d(\"Rex\");\n    expect_eq(d.describe(), std::string(\"Rex says Woof\"));" },
+    { name: "announce dispatches through Animal&", code: "    Cat c(\"Tom\");\n    expect_eq(announce(c), std::string(\"Tom says Meow\"));" },
+    { name: "polymorphism through a base pointer", code: "    std::unique_ptr<Animal> p = std::make_unique<Dog>(\"Fido\");\n    expect_eq(p->describe(), std::string(\"Fido says Woof\"));" },
+  ],
+
+  solution: `class Animal {
+public:
+  explicit Animal(std::string name) : name(std::move(name)) {}
+  virtual ~Animal() = default;
+  virtual std::string speak() const = 0;
+  std::string describe() const {
+    return name + " says " + speak();
+  }
+protected:
+  std::string name;
+};
+
+class Dog : public Animal {
+public:
+  explicit Dog(std::string name) : Animal(std::move(name)) {}
+  std::string speak() const override { return "Woof"; }
+};
+
+class Cat : public Animal {
+public:
+  explicit Cat(std::string name) : Animal(std::move(name)) {}
+  std::string speak() const override { return "Meow"; }
+};
+
+std::string announce(const Animal& a) {
+  return a.describe();
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>C++</th></tr>
+  <tr><td>Implement shared behavior</td><td><code>impl Animal for Dog</code></td><td><code>class Dog : public Animal</code></td></tr>
+  <tr><td>Enable dispatch</td><td>choose <code>&amp;dyn Animal</code></td><td><code>virtual</code> in the base</td></tr>
+  <tr><td>Override</td><td>method inside the <code>impl</code> block</td><td><code>m() const override</code></td></tr>
+  <tr><td>Abstract method</td><td>trait method with no default body</td><td><code>virtual T m() const = 0;</code></td></tr>
+  <tr><td>Call super ctor</td><td>(no inheritance — compose the field directly)</td><td><code>: Animal(name)</code> init list</td></tr>
+  <tr><td>Base handle</td><td><code>&amp;dyn Animal</code> / <code>Box&lt;dyn Animal&gt;</code></td><td><code>const Animal&amp;</code> / <code>Animal*</code></td></tr>
+</table>
+<p>The gotcha for Rust refugees: in Rust, a call through <code>&amp;dyn
+Animal</code> <em>always</em> dispatches dynamically — once you've erased the
+concrete type there is no way to accidentally fall back to static dispatch. C++
+offers no such guarantee. Forget <code>virtual</code> and <code>announce</code>
+would call <code>Animal::speak</code> directly — except here it cannot, because
+<code>speak</code> is pure, so the class would not compile as concrete at all. In
+a hierarchy where the base <em>did</em> supply a body, dropping
+<code>virtual</code> silently gives you static dispatch and the wrong answer.
+Note also that value semantics matter here in a way Rust's ownership model
+sidesteps entirely: assigning a <code>Dog</code> into an <code>Animal</code>
+variable <em>slices</em> off the derived part. Rust has no by-value
+<code>Animal</code> at all — only <code>&amp;dyn Animal</code> or
+<code>Box&lt;dyn Animal&gt;</code> exist, so there is nothing to slice.
+Polymorphism in C++ only works through a reference (<code>Animal&amp;</code>) or
+a pointer (<code>Animal*</code> / <code>std::unique_ptr&lt;Animal&gt;</code>),
+never a by-value base.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

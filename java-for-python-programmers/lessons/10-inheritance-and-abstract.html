@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Python and Java share the same object model: a class extends a
+base, calls the superclass initializer, and overrides methods. The differences are in
+the ceremony. Java has a real <code>abstract</code> keyword for classes and
+methods, a <code>@Override</code> annotation the compiler actually enforces, and
+a <code>final</code> keyword that blocks further subclassing or reassignment.
+There is no structural typing — a subtype relationship exists only if you wrote
+<code>extends</code>.</p>
+<table>
+  <tr><th>Python</th><th>Java</th></tr>
+  <tr><td><code>class Dog(Animal):</code></td><td><code>class Dog extends Animal</code></td></tr>
+  <tr><td><code>super().__init__(name)</code></td><td><code>super(name);</code></td></tr>
+  <tr><td><code>super().speak()</code></td><td><code>super.speak();</code></td></tr>
+  <tr><td><code>ABC</code> / <code>@abstractmethod</code></td><td><code>abstract class</code> / <code>abstract T m();</code></td></tr>
+  <tr><td><code>isinstance(x, Dog)</code></td><td><code>x instanceof Dog</code></td></tr>
+</table>
+<p>Two things trip up newcomers. First, <code>@Override</code> is optional but
+you should always write it — if the signature does not actually match a
+superclass method, the compiler errors instead of silently creating a new
+method. Second, <code>final</code> does double duty: on a field or local it means
+"assign once" (Python has no direct equivalent — by convention you'd just avoid
+reassigning), and on a class or method it forbids subclassing or overriding.</p>`,
+
+  python: `from abc import ABC, abstractmethod
+
+class Employee(ABC):
+    def __init__(self, name: str):
+        self.name = name
+
+    @abstractmethod
+    def base_pay(self) -> float: ...
+
+    def total_pay(self) -> float:
+        return self.base_pay()
+
+    def describe(self) -> str:
+        return f"{self.name}: {self.total_pay()}"
+
+class Manager(Employee):
+    def __init__(self, name: str, bonus: float):
+        super().__init__(name)
+        self.bonus = bonus
+
+    def base_pay(self) -> float:
+        return 8000
+
+    def total_pay(self) -> float:
+        return super().total_pay() + self.bonus`,
+
+  task: `
+<p>Build a small employee hierarchy that exercises every inheritance feature.</p>
+<ol>
+  <li>An <code>abstract class Employee</code> with a <code>final</code> field
+      <code>name</code>, a constructor that sets it, an
+      <code>abstract double basePay()</code>, a concrete
+      <code>double totalPay()</code> that returns <code>basePay()</code>, and a
+      <code>String describe()</code> returning <code>name + ": " + totalPay()</code>
+      (e.g. <code>"Ada: 5000.0"</code>).</li>
+  <li>A <code>Developer extends Employee</code> whose constructor calls
+      <code>super(name)</code> and whose <code>basePay()</code> (marked
+      <code>@Override</code>) returns <code>5000</code>.</li>
+  <li>A <code>Manager extends Employee</code> with an extra <code>double bonus</code>.
+      Its <code>basePay()</code> returns <code>8000</code>, and its
+      <code>totalPay()</code> returns <code>super.totalPay() + bonus</code>.</li>
+  <li>A class <code>Payroll</code> with static <code>double totalPayroll(Employee[] emps)</code>
+      (sum of every <code>totalPay()</code>) and
+      <code>int countManagers(Employee[] emps)</code> using
+      <code>instanceof</code>.</li>
+</ol>`,
+
+  starter: `abstract class Employee {
+  protected final String name;
+
+  protected Employee(String name) {
+    this.name = name;
+  }
+
+  abstract double basePay();
+
+  double totalPay() {
+    return 0; // TODO
+  }
+
+  String describe() {
+    return ""; // TODO
+  }
+}
+
+class Developer extends Employee {
+  Developer(String name) {
+    super(name);
+  }
+
+  @Override
+  double basePay() {
+    return 0; // TODO
+  }
+}
+
+class Manager extends Employee {
+  private final double bonus;
+
+  Manager(String name, double bonus) {
+    super(name);
+    this.bonus = bonus;
+  }
+
+  @Override
+  double basePay() {
+    return 0; // TODO
+  }
+
+  @Override
+  double totalPay() {
+    return 0; // TODO: add bonus to super.totalPay()
+  }
+}
+
+class Payroll {
+  static double totalPayroll(Employee[] emps) {
+    return 0; // TODO
+  }
+
+  static int countManagers(Employee[] emps) {
+    return 0; // TODO: use instanceof
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Employee/, message: "Make Employee an abstract class" },
+    { pattern: /extends\s+Employee/, message: "Have Developer and Manager extend Employee" },
+    { pattern: /instanceof/, message: "Use instanceof to count managers" },
+  ],
+
+  tests: [
+    { name: "Developer.totalPay() is 5000.0", code: "      expect_eq(new Developer(\"Ada\").totalPay(), 5000.0);" },
+    { name: "Manager.totalPay() adds bonus via super", code: "      expect_eq(new Manager(\"Rob\", 2000).totalPay(), 10000.0);" },
+    { name: "describe() uses name and totalPay", code: "      expect_eq(new Manager(\"Rob\", 2000).describe(), \"Rob: 10000.0\");" },
+    { name: "polymorphism: Employee ref calls override", code: "      Employee e = new Manager(\"Sue\", 500);\n      expect_eq(e.totalPay(), 8500.0);" },
+    { name: "Payroll.totalPayroll sums the team", code: "      Employee[] team = { new Developer(\"A\"), new Manager(\"B\", 1000) };\n      expect_eq(Payroll.totalPayroll(team), 14000.0);" },
+    { name: "Payroll.countManagers uses instanceof", code: "      Employee[] team = { new Developer(\"A\"), new Manager(\"B\", 1000), new Manager(\"C\", 0) };\n      expect_eq(Payroll.countManagers(team), 2);" },
+    { name: "a Manager is an Employee", code: "      expect_true(new Manager(\"X\", 0) instanceof Employee);" },
+  ],
+
+  solution: `abstract class Employee {
+  protected final String name;
+
+  protected Employee(String name) {
+    this.name = name;
+  }
+
+  abstract double basePay();
+
+  double totalPay() {
+    return basePay();
+  }
+
+  String describe() {
+    return name + ": " + totalPay();
+  }
+}
+
+class Developer extends Employee {
+  Developer(String name) {
+    super(name);
+  }
+
+  @Override
+  double basePay() {
+    return 5000;
+  }
+}
+
+class Manager extends Employee {
+  private final double bonus;
+
+  Manager(String name, double bonus) {
+    super(name);
+    this.bonus = bonus;
+  }
+
+  @Override
+  double basePay() {
+    return 8000;
+  }
+
+  @Override
+  double totalPay() {
+    return super.totalPay() + bonus;
+  }
+}
+
+class Payroll {
+  static double totalPayroll(Employee[] emps) {
+    double sum = 0;
+    for (Employee e : emps) {
+      sum += e.totalPay();
+    }
+    return sum;
+  }
+
+  static int countManagers(Employee[] emps) {
+    int count = 0;
+    for (Employee e : emps) {
+      if (e instanceof Manager) {
+        count++;
+      }
+    }
+    return count;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Java</th></tr>
+  <tr><td>Subclass</td><td><code>class B(A):</code></td><td><code>class B extends A</code></td></tr>
+  <tr><td>Super constructor</td><td><code>super().__init__(x)</code></td><td><code>super(x);</code></td></tr>
+  <tr><td>Super method</td><td><code>super().m()</code></td><td><code>super.m()</code></td></tr>
+  <tr><td>Mark an override</td><td>(implicit)</td><td><code>@Override</code> (compiler-checked)</td></tr>
+  <tr><td>Abstract member</td><td><code>@abstractmethod def m(self) -> T: ...</code></td><td><code>abstract T m();</code></td></tr>
+  <tr><td>No subclassing</td><td>(none built in)</td><td><code>final class</code> / <code>final</code> method</td></tr>
+  <tr><td>Runtime type check</td><td><code>isinstance(x, B)</code></td><td><code>x instanceof B</code></td></tr>
+</table>
+<p>Polymorphism works exactly like Python: an <code>Employee</code> reference
+holding a <code>Manager</code> runs <code>Manager.totalPay()</code>. The big
+wins over Python are compiler-enforced overrides (<code>@Override</code>
+catches typos in method names) plus compile-time-checked abstract methods (Python's
+<code>ABC</code>/<code>@abstractmethod</code> only raises at instantiation time, not compile
+time), and <code>final</code>, which lets you lock a
+class or method against further extension. Note that a class with even one
+<code>abstract</code> method must itself be <code>abstract</code> and cannot be
+instantiated with <code>new</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

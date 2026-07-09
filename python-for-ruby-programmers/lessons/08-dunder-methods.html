@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Dunder Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Dunder Methods",
+
+  intro: `
+<p>In Ruby, giving a class rich behavior means defining plain instance methods
+with special names: define <code>to_s</code> and string interpolation or
+<code>puts</code> uses it; define <code>==</code> and the <code>==</code>
+operator uses it; define <code>+</code> and the <code>+</code> operator uses
+it. Python's approach looks similar — special method names that hook into
+built-in syntax — but it goes further and is more uniform: Python funnels
+these through global functions (<code>repr(obj)</code>, <code>len(obj)</code>)
+rather than calling the method directly, and every one of these hook methods
+is spelled with leading and trailing double underscores — "dunders" — to mark
+it as a protocol method rather than ordinary API you'd call yourself. Define
+<code>__repr__</code> and <code>repr(obj)</code> uses it; define
+<code>__eq__</code> and the <code>==</code> operator uses it; define
+<code>__add__</code> and the <code>+</code> operator uses it.</p>
+<table>
+  <tr><th>Ruby</th><th>Python</th></tr>
+  <tr><td><code>def initialize(x) ... end</code></td><td><code>def __init__(self, x):</code></td></tr>
+  <tr><td><code>def to_s ... end</code></td><td><code>def __repr__(self):</code></td></tr>
+  <tr><td><code>def ==(other) ... end</code></td><td><code>a == b</code> → <code>__eq__</code></td></tr>
+  <tr><td><code>a.length</code> / <code>a.size</code></td><td><code>len(a)</code> → <code>__len__</code></td></tr>
+  <tr><td><code>def +(other) ... end</code></td><td><code>a + b</code> → <code>__add__</code></td></tr>
+</table>
+<p>This is why Python feels so uniform: <code>len(x)</code>, <code>x == y</code>,
+<code>print(x)</code>, and <code>x + y</code> all work on lists, strings, and
+your own classes through the exact same protocol. Implement the right dunders
+and your type becomes a first-class citizen of the language.</p>`,
+
+  ruby: `class Vector
+  attr_reader :components
+
+  def initialize(*components)
+    @components = components
+  end
+
+  def to_s
+    "Vector(#{components.join(", ")})"
+  end
+
+  def ==(other)
+    other.is_a?(Vector) && components == other.components
+  end
+
+  def length
+    components.length
+  end
+
+  def +(other)
+    Vector.new(*components.zip(other.components).map { |a, b| a + b })
+  end
+end`,
+
+  task: `
+<p>Build a <code>Vector</code> value type whose instances print nicely, compare
+by value, report their length, and can be added with <code>+</code>:</p>
+<ol>
+  <li><code>__init__(self, *components)</code> — accept any number of numbers and
+      store them (a tuple is convenient).</li>
+  <li><code>__repr__(self)</code> — return a string like
+      <code>"Vector(1, 2, 3)"</code>.</li>
+  <li><code>__eq__(self, other)</code> — two vectors are equal when their
+      components are equal, so <code>Vector(1, 2) == Vector(1, 2)</code>.</li>
+  <li><code>__len__(self)</code> — the number of components, so
+      <code>len(Vector(1, 2, 3)) == 3</code>.</li>
+  <li><code>__add__(self, other)</code> — element-wise addition, so
+      <code>Vector(1, 2) + Vector(3, 4) == Vector(4, 6)</code>.</li>
+</ol>`,
+
+  starter: `class Vector:
+    def __init__(self, *components):
+        self.components = ()  # TODO: store the components
+
+    def __repr__(self):
+        return ""  # TODO
+
+    def __eq__(self, other):
+        return NotImplemented  # TODO
+
+    def __len__(self):
+        return 0  # TODO
+
+    def __add__(self, other):
+        return NotImplemented  # TODO
+`,
+
+  requirements: [
+    { pattern: /def\s+__repr__\s*\(/, message: "Define __repr__ so the vector prints nicely" },
+    { pattern: /def\s+__eq__\s*\(/, message: "Define __eq__ so vectors compare by value" },
+    { pattern: /def\s+__add__\s*\(/, message: "Define __add__ so + works on vectors" },
+  ],
+
+  tests: [
+    { name: "repr(Vector(1, 2, 3)) is \"Vector(1, 2, 3)\"", code: "    expect_eq(repr(Vector(1, 2, 3)), \"Vector(1, 2, 3)\")" },
+    { name: "equal vectors compare equal by value", code: "    expect_true(Vector(1, 2) == Vector(1, 2))" },
+    { name: "different vectors are not equal", code: "    expect_true(Vector(1, 2) != Vector(1, 3))" },
+    { name: "len() counts the components", code: "    expect_eq(len(Vector(1, 2, 3, 4)), 4)" },
+    { name: "empty vector has length 0", code: "    expect_eq(len(Vector()), 0)" },
+    { name: "+ adds element-wise", code: "    expect_true(Vector(1, 2) + Vector(3, 4) == Vector(4, 6))" },
+    { name: "chained + stays a Vector", code: "    total = Vector(1, 1) + Vector(2, 2) + Vector(3, 3)\n    expect_eq(repr(total), \"Vector(6, 6)\")" },
+  ],
+
+  solution: `class Vector:
+    def __init__(self, *components):
+        self.components = tuple(components)
+
+    def __repr__(self):
+        inner = ", ".join(repr(c) for c in self.components)
+        return f"Vector({inner})"
+
+    def __eq__(self, other):
+        if not isinstance(other, Vector):
+            return NotImplemented
+        return self.components == other.components
+
+    def __len__(self):
+        return len(self.components)
+
+    def __add__(self, other):
+        if not isinstance(other, Vector):
+            return NotImplemented
+        return Vector(*(a + b for a, b in zip(self.components, other.components)))
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Python</th></tr>
+  <tr><td>Constructor</td><td><code>def initialize(…)</code></td><td><code>__init__(self, …)</code></td></tr>
+  <tr><td>Debug string</td><td><code>to_s</code> / <code>inspect</code></td><td><code>__repr__(self)</code></td></tr>
+  <tr><td>Value equality</td><td><code>def ==(other)</code></td><td><code>a == b</code> (<code>__eq__</code>)</td></tr>
+  <tr><td>Length / size</td><td><code>a.length</code></td><td><code>len(a)</code> (<code>__len__</code>)</td></tr>
+  <tr><td>Addition</td><td><code>def +(other)</code></td><td><code>a + b</code> (<code>__add__</code>)</td></tr>
+</table>
+<p>A few things worth knowing. Returning <code>NotImplemented</code> (not the same
+as raising <code>NotImplementedError</code>) from <code>__eq__</code> or
+<code>__add__</code> tells Python "I don't know how to handle that other type" —
+it then tries the other operand's reflected method or, for equality, falls back
+to identity. You get <code>!=</code> for free once <code>__eq__</code> is defined;
+Python derives <code>__ne__</code> from it automatically.</p>
+<p>Two subtleties for later. First, <code>__repr__</code> is aimed at developers
+(and used by the REPL and containers); there is also <code>__str__</code> for the
+user-facing <code>str(obj)</code>, and if you only define <code>__repr__</code> it
+serves as the fallback for both. Second, defining <code>__eq__</code> makes your
+class unhashable unless you also define <code>__hash__</code>, so an instance
+can't go in a <code>set</code> or be a <code>dict</code> key until you do — often
+you'll reach for <code>@dataclass</code> (a later topic) to generate all of these
+at once.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

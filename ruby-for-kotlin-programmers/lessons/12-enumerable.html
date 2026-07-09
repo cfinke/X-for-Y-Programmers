@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Enumerable: map, select & Friends</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Enumerable: map, select & Friends",
+
+  intro: `
+<p>Kotlin's collection extensions already spared you the ceremony: no
+<code>stream()</code> to enter, no <code>collect(toList())</code> to escape —
+<code>.filter</code> and <code>.map</code> live directly on any
+<code>List</code>, and each step hands you a fresh list. Ruby works the same
+way: <strong>collections are the pipeline</strong>. Every Array and Hash mixes
+in <code>Enumerable</code>, so <code>.map</code> and friends live right on the
+object, and each call returns a plain Array, ready for the next step.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>list.map { it.name }</code></td><td><code>arr.map { |x| ... }</code></td></tr>
+  <tr><td><code>.filter { it.inStock }</code></td><td><code>.select { |p| p[:in_stock] }</code></td></tr>
+  <tr><td><code>.sumOf { it.priceCents }</code></td><td><code>.sum { |p| p[:price_cents] }</code></td></tr>
+  <tr><td><code>.sortedBy { it.price }</code></td><td><code>.sort_by { |p| p[:price] }</code></td></tr>
+  <tr><td><code>.minByOrNull { it.priceCents }!!</code></td><td><code>.min_by { |p| p[:price_cents] }</code></td></tr>
+</table>
+<p>The renames to learn: <code>filter</code> is <code>select</code>, and the
+lambda's <code>it</code> becomes an explicit block parameter,
+<code>{ |p| ... }</code>. Where Kotlin's <code>minByOrNull</code> and
+<code>maxByOrNull</code> hand you a nullable <code>T?</code> that you unwrap
+with <code>!!</code> or <code>?:</code>, Ruby's <code>min_by</code> and
+<code>max_by</code> just return the element (or <code>nil</code> for an empty
+array) — no <code>OrNull</code> suffix to remember. And <code>sumOf</code>
+becomes <code>sum</code> with a block.</p>`,
+
+  kotlin: `data class Product(val name: String, val priceCents: Int, val inStock: Boolean)
+
+object Catalog {
+    fun inStockNames(products: List<Product>): List<String> =
+        products
+            .filter { it.inStock }
+            .map { it.name }
+
+    fun totalValue(products: List<Product>): Int =
+        products.sumOf { it.priceCents }
+
+    fun cheapestName(products: List<Product>): String =
+        products.minByOrNull { it.priceCents }!!.name
+}`,
+
+  task: `
+<p>The products are symbol-keyed hashes, Ruby's stand-in for the data class:
+<code>{ name: "Desk", price_cents: 24900, in_stock: true }</code>. Rewrite the
+three Kotlin methods:</p>
+<ol>
+  <li><code>in_stock_names(products)</code> — <code>select</code> the hashes
+      whose <code>p[:in_stock]</code> is true (Kotlin's <code>filter</code>),
+      then <code>map</code> to <code>p[:name]</code>. Chain the two calls
+      directly.</li>
+  <li><code>total_value(products)</code> — add up the prices with
+      <code>sum { |p| p[:price_cents] }</code>; the block is Ruby's
+      <code>sumOf</code>.</li>
+  <li><code>cheapest_name(products)</code> — <code>min_by</code> the price (a
+      key function, like Kotlin's <code>minByOrNull</code>) returns the whole
+      hash; index it with <code>[:name]</code> — no <code>!!</code> to
+      unwrap.</li>
+</ol>`,
+
+  starter: `# Products look like: { name: "Desk", price_cents: 24900, in_stock: true }
+
+# 1. in_stock_names: .select { ... } then .map { ... } — chained directly,
+#    no stream(), no collect().
+def in_stock_names(products)
+  raise NotImplementedError, "TODO: implement in_stock_names"
+end
+
+# 2. total_value: .sum takes a block — no mapToInt detour.
+def total_value(products)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 3. cheapest_name: .min_by takes a key function, not a Comparator.
+#    It returns the whole hash; pull out [:name].
+def cheapest_name(products)
+  raise NotImplementedError, "TODO: implement cheapest_name"
+end
+`,
+
+  requirements: [
+    { pattern: /\.select/, message: "Filter with .select (Kotlin's .filter)" },
+    { pattern: /\.map/, message: "Transform with .map" },
+    { pattern: /\.sum/, message: "Total the prices with .sum and a block" },
+    { pattern: /min_by|sort_by/, message: "Find the cheapest with a key function: min_by (or sort_by)" },
+  ],
+
+  tests: [
+    { name: 'in_stock_names returns ["Desk", "Lamp"]',
+      code: `  products = [
+    { name: "Desk", price_cents: 24900, in_stock: true },
+    { name: "Chair", price_cents: 9900, in_stock: false },
+    { name: "Lamp", price_cents: 3500, in_stock: true },
+  ]
+  expect_eq(in_stock_names(products), ["Desk", "Lamp"])` },
+    { name: "in_stock_names returns [] when nothing is in stock",
+      code: `  products = [{ name: "Desk", price_cents: 24900, in_stock: false }]
+  expect_eq(in_stock_names(products), [])` },
+    { name: "total_value sums price_cents to 38300",
+      code: `  products = [
+    { name: "Desk", price_cents: 24900, in_stock: true },
+    { name: "Chair", price_cents: 9900, in_stock: false },
+    { name: "Lamp", price_cents: 3500, in_stock: true },
+  ]
+  expect_eq(total_value(products), 38300)` },
+    { name: "total_value of an empty catalog is 0",
+      code: "  expect_eq(total_value([]), 0)" },
+    { name: 'cheapest_name returns "Lamp"',
+      code: `  products = [
+    { name: "Desk", price_cents: 24900, in_stock: true },
+    { name: "Chair", price_cents: 9900, in_stock: false },
+    { name: "Lamp", price_cents: 3500, in_stock: true },
+  ]
+  expect_eq(cheapest_name(products), "Lamp")` },
+  ],
+
+  solution: `def in_stock_names(products)
+  products.select { |p| p[:in_stock] }.map { |p| p[:name] }
+end
+
+def total_value(products)
+  products.sum { |p| p[:price_cents] }
+end
+
+def cheapest_name(products)
+  products.min_by { |p| p[:price_cents] }[:name]
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Enter/exit pipeline</td><td>nothing — <code>.filter</code>/<code>.map</code> are extensions on <code>List</code></td><td>nothing — the collection is the pipeline</td></tr>
+  <tr><td>Transform</td><td><code>.map { it.name }</code></td><td><code>.map { |p| p[:name] }</code></td></tr>
+  <tr><td>Keep matching</td><td><code>.filter { it.inStock }</code></td><td><code>.select { |p| p[:in_stock] }</code></td></tr>
+  <tr><td>Drop matching</td><td><code>.filterNot { it.inStock }</code></td><td><code>.reject { |p| p[:in_stock] }</code></td></tr>
+  <tr><td>Total</td><td><code>.sumOf { it.priceCents }</code></td><td><code>.sum { |p| p[:price_cents] }</code></td></tr>
+  <tr><td>Sort</td><td><code>.sortedBy { it.priceCents }</code></td><td><code>.sort_by { |p| p[:price_cents] }</code></td></tr>
+  <tr><td>Min / max</td><td><code>.minByOrNull { ... }!!</code></td><td><code>.min_by { ... }</code> / <code>.max_by { ... }</code></td></tr>
+</table>
+<p>Notice the nullable that vanished: Kotlin's <code>minByOrNull</code> hands
+back a <code>Product?</code> that you unwrap with <code>!!</code> or a
+<code>?:</code> default. Ruby's <code>min_by</code> returns the element itself
+(or <code>nil</code> for an empty array) — no <code>!!</code>, no
+<code>OrNull</code> suffix in the name. The key-function habit is the same in
+both languages: hand the method the value to compare by, not a
+<code>Comparator</code>, and <code>sort_by</code>, <code>min_by</code>,
+<code>max_by</code>, and <code>group_by</code> (next lesson) all speak it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Generics",
+
+  intro: `
+<p>Ruby never needed generics: <code>def map(xs, &f)</code> just works on any
+<code>xs</code>, and Ruby only complains at runtime if an element doesn't
+respond to the method you call on it. Go's <code>interface{}</code> (pre-1.18)
+was the closest equivalent — accept anything, then hope — but it traded away
+compile-time checking. Go 1.18 added <em>type parameters</em>, so you can now
+write the same <code>map</code>-style, duck-typed-feeling helpers you'd write
+in Ruby without arguments, except Go checks them before the program ever
+runs.</p>
+<p>There's no Ruby syntax to compare against directly, since Ruby methods are
+generic by default and pay no syntactic tax for it. In Go, every type
+parameter goes in <strong>square brackets after the name</strong> and needs a
+<em>constraint</em> — an interface describing which types are allowed.
+<code>any</code> (an alias for <code>interface{}</code>) means "no
+restriction, like an ordinary Ruby argument", <code>comparable</code> means
+"usable with <code>==</code>", and <code>cmp.Ordered</code> means "usable with
+<code>&lt;</code>, <code>&gt;</code>".</p>
+<table>
+  <tr><th>Ruby</th><th>Go</th></tr>
+  <tr><td><code>def id(x); x; end</code></td><td><code>func Id[T any](x T) T</code></td></tr>
+  <tr><td>no type parameter syntax</td><td><code>[T any]</code> (square brackets, needs a constraint)</td></tr>
+  <tr><td><code>def f(x, y); ...; end</code></td><td><code>[T, U any]</code></td></tr>
+  <tr><td>any object (duck typing)</td><td><code>any</code> (= <code>interface{}</code>)</td></tr>
+  <tr><td>relies on <code>respond_to?</code> or raises at runtime</td><td><code>comparable</code>, <code>cmp.Ordered</code>, or an interface</td></tr>
+</table>
+<p>Unlike Ruby's fully dynamic duck typing, Go's generics are checked and real
+at compile time: the compiler stamps out a version for the types you use, and
+it rejects your code before running it if a type doesn't satisfy the
+constraint. In exchange you must be explicit about what operations a type
+parameter supports — you can only use <code>&lt;</code> on a <code>T</code>
+whose constraint promises ordering, something Ruby would only discover the
+first time that line of code actually executed.</p>`,
+
+  ruby: `def map(xs, &f)
+  xs.map(&f)
+end
+
+def max(a, b)
+  a > b ? a : b
+end
+
+def contains(xs, v)
+  xs.include?(v)
+end`,
+
+  task: `
+<p>Write three generic helpers as package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you). The
+<code>cmp</code> package is available without importing.</p>
+<ol>
+  <li><code>Map[T, U any](s []T, f func(T) U) []U</code> — apply <code>f</code> to
+      every element and return a new slice of results.</li>
+  <li><code>Max[T cmp.Ordered](a, b T) T</code> — return the larger of the two.
+      The <code>cmp.Ordered</code> constraint is what lets you use
+      <code>&gt;</code> on a type parameter.</li>
+  <li><code>Contains[T comparable](s []T, v T) bool</code> — report whether
+      <code>v</code> appears in <code>s</code>. The <code>comparable</code>
+      constraint is what lets you use <code>==</code>.</li>
+</ol>`,
+
+  starter: `func Map[T, U any](s []T, f func(T) U) []U {
+	return nil // TODO
+}
+
+func Max[T cmp.Ordered](a, b T) T {
+	var zero T
+	return zero // TODO
+}
+
+func Contains[T comparable](s []T, v T) bool {
+	return false // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /func\s+Map\s*\[\s*T\s*,\s*U\s+any\s*\]/, message: "Define Map with type parameters [T, U any]" },
+    { pattern: /cmp\.Ordered/, message: "Constrain Max's type parameter with cmp.Ordered" },
+    { pattern: /\bcomparable\b/, message: "Constrain Contains's type parameter with comparable" },
+  ],
+
+  tests: [
+    { name: "Map doubles ints", code: "\t\texpect_eq(Map([]int{1, 2, 3}, func(n int) int { return n * 2 }), []int{2, 4, 6})" },
+    { name: "Map maps strings to lengths", code: "\t\texpect_eq(Map([]string{\"a\", \"bb\", \"ccc\"}, func(s string) int { return len(s) }), []int{1, 2, 3})" },
+    { name: "Max of ints", code: "\t\texpect_eq(Max(3, 7), 7)" },
+    { name: "Max of ints, first larger", code: "\t\texpect_eq(Max(9, 2), 9)" },
+    { name: "Max of strings", code: "\t\texpect_eq(Max(\"apple\", \"banana\"), \"banana\")" },
+    { name: "Contains finds an int", code: "\t\texpect_true(Contains([]int{1, 2, 3}, 2))" },
+    { name: "Contains misses a string", code: "\t\texpect_eq(Contains([]string{\"a\", \"b\"}, \"c\"), false)" },
+  ],
+
+  solution: `func Map[T, U any](s []T, f func(T) U) []U {
+	result := make([]U, len(s))
+	for i, v := range s {
+		result[i] = f(v)
+	}
+	return result
+}
+
+func Max[T cmp.Ordered](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func Contains[T comparable](s []T, v T) bool {
+	for _, x := range s {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Go</th></tr>
+  <tr><td>Generic function</td><td><code>def f(x); ...; end</code> (implicitly generic)</td><td><code>func F[T any](x T)</code></td></tr>
+  <tr><td>Two parameters</td><td><code>def f(x, y); ...; end</code></td><td><code>[T, U any]</code></td></tr>
+  <tr><td>Equality bound</td><td>implicit (<code>==</code> or <code>eql?</code> at runtime)</td><td><code>[T comparable]</code></td></tr>
+  <tr><td>Ordering bound</td><td>implicit (<code>&lt;=&gt;</code> at runtime)</td><td><code>[T cmp.Ordered]</code></td></tr>
+  <tr><td>Generic type</td><td><code>class Box; def initialize(x); ...; end; end</code></td><td><code>type Box[T any] struct{ ... }</code></td></tr>
+</table>
+<p>Type inference usually lets you call <code>Map(xs, f)</code> and
+<code>Max(3, 7)</code> without writing the type arguments — the compiler reads
+them off the values, so the call site looks almost as unadorned as the Ruby
+version. When inference can't (an empty slice, say), you spell them
+explicitly: <code>Max[int](a, b)</code>.</p>
+<p>Two rules trip up newcomers coming from Ruby. First, only what the
+constraint promises is allowed: you can <code>==</code> a
+<code>comparable</code> but not <code>&lt;</code> it — that needs
+<code>cmp.Ordered</code> — whereas Ruby would happily let you try
+<code>&lt;</code> on anything and just raise <code>NoMethodError</code> if it
+doesn't work out. Second, Go deliberately has no generic <em>methods</em> (a
+method can't introduce its own type parameter), and idiomatic Go still
+prefers a plain <code>interface</code> when behavior, not a container, is
+what varies — much like Ruby leans on duck typing and modules for
+polymorphism rather than parameterizing a class by type. Generics are for
+containers and algorithms; interfaces are for polymorphism. The standard
+library leans on this split with the <code>slices</code> and <code>maps</code>
+packages, which are just generic helpers over the built-in types — the Go
+analogues of Ruby's <code>Enumerable</code> methods like <code>map</code> and
+<code>include?</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

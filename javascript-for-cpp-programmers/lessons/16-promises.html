@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Promises</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Promises",
+
+  intro: `
+<p>In C++ you'd reach for <code>std::future&lt;T&gt;</code> paired with
+<code>std::promise&lt;T&gt;</code> to represent a value that will be ready
+later — the compiler checks that <code>T</code> matches on both ends, and
+<code>future.get()</code> either returns exactly a <code>T</code> or rethrows
+the stored exception. A JavaScript Promise carries no such compile-time
+contract. It's just an object with a settled state (<em>pending</em>,
+<em>fulfilled</em>, or <em>rejected</em>) and a value. Nothing checks that the
+value matches what you expected; <code>then</code> hands you whatever the
+previous step actually produced.</p>
+<table>
+  <tr><th>C++</th><th>JavaScript</th></tr>
+  <tr><td><code>std::future&lt;int&gt;</code> — single-use, value consumed by <code>get()</code></td><td><code>Promise.resolve(1)</code> — value is just <code>1</code>, and <code>then</code> can be attached many times</td></tr>
+  <tr><td><code>future.get()</code> rethrows a stored exception</td><td><code>.then((n) =&gt; ...)</code> — <code>n</code> is whatever came through</td></tr>
+  <tr><td><code>promise.set_exception(...)</code> stores a <code>std::exception_ptr</code></td><td>reject with anything; <code>catch</code> receives it as-is</td></tr>
+  <tr><td>no standard "wait for all" combinator</td><td><code>Promise.all([...])</code> resolves to a plain array</td></tr>
+</table>
+<p>Two behaviors that <code>std::future</code> doesn't share. First, <code>then</code>
+always returns a <em>new</em> Promise, and if your callback returns a value that
+value becomes the next Promise's fulfillment — returning a Promise flattens it,
+there is no <code>Promise&lt;Promise&lt;T&gt;&gt;</code>. Second, a <code>throw</code>
+inside a <code>then</code> callback turns into a rejection of the returned
+Promise, which is why <code>catch</code> can sit at the end of a chain and
+catch anything above it.</p>`,
+
+  cpp: `std::future<int> double_(int n) {
+  std::promise<int> p;
+  p.set_value(n * 2);
+  return p.get_future();
+}
+
+std::future<int> safe_divide(int a, int b) {
+  std::promise<int> p;
+  if (b == 0) {
+    p.set_exception(std::make_exception_ptr(std::runtime_error("divide by zero")));
+  } else {
+    p.set_value(a / b);
+  }
+  return p.get_future();
+}
+
+int first_done(std::vector<std::future<int>>& tasks) {
+  // std::future has no built-in "race"; poll until one is ready
+  while (true) {
+    for (auto& t : tasks) {
+      if (t.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+        return t.get();
+      }
+    }
+  }
+}`,
+
+  task: `
+<p>Everything here settles immediately — no timers. Build a few functions that
+exercise the Promise API, JavaScript's answer to the
+<code>std::future</code>/<code>std::promise</code> pair you'd reach for in
+C++.</p>
+<ol>
+  <li><code>double(n)</code> — return a Promise that <strong>fulfills</strong> with
+      <code>n * 2</code> (use <code>Promise.resolve</code>).</li>
+  <li><code>safeDivide(a, b)</code> — return a Promise. If <code>b</code> is
+      <code>0</code>, <strong>reject</strong> with <code>new Error("divide by zero")</code>
+      (use <code>Promise.reject</code>); otherwise resolve with <code>a / b</code>.</li>
+  <li><code>chainDouble(n)</code> — call <code>double(n)</code> and use
+      <code>.then(...)</code> to return a Promise that fulfills with the doubled
+      value <em>plus 1</em>.</li>
+  <li><code>divideOrDefault(a, b, fallback)</code> — call <code>safeDivide</code>
+      and use <code>.catch(...)</code> so that on rejection it fulfills with
+      <code>fallback</code> instead.</li>
+  <li><code>sumAll(promises)</code> — use <code>Promise.all</code> to wait for an
+      array of number-promises, then resolve with their sum.</li>
+  <li><code>describeSettled(promises)</code> — use <code>Promise.allSettled</code>
+      and resolve with an array of strings: <code>"ok:&lt;value&gt;"</code> for each
+      fulfilled entry and <code>"err:&lt;message&gt;"</code> for each rejected one.</li>
+</ol>`,
+
+  starter: `// 1. double(n) -> Promise fulfilling with n * 2
+function double(n) {
+  // TODO: use Promise.resolve
+}
+
+// 2. safeDivide(a, b) -> Promise; reject with Error("divide by zero") when b === 0
+function safeDivide(a, b) {
+  // TODO: use Promise.reject / Promise.resolve
+}
+
+// 3. chainDouble(n) -> double(n) then + 1
+function chainDouble(n) {
+  // TODO: use .then
+}
+
+// 4. divideOrDefault(a, b, fallback) -> safeDivide, .catch -> fallback
+function divideOrDefault(a, b, fallback) {
+  // TODO: use .catch
+}
+
+// 5. sumAll(promises) -> Promise of the sum
+function sumAll(promises) {
+  // TODO: use Promise.all
+}
+
+// 6. describeSettled(promises) -> ["ok:<value>" | "err:<message>", ...]
+function describeSettled(promises) {
+  // TODO: use Promise.allSettled
+}
+`,
+
+  exportNames: ["double", "safeDivide", "chainDouble", "divideOrDefault", "sumAll", "describeSettled"],
+
+  requirements: [
+    { pattern: /Promise\.resolve/, message: "Use Promise.resolve" },
+    { pattern: /Promise\.reject/, message: "Use Promise.reject for the divide-by-zero case" },
+    { pattern: /\.then\s*\(/, message: "Use .then to chain in chainDouble" },
+    { pattern: /\.catch\s*\(/, message: "Use .catch in divideOrDefault" },
+    { pattern: /Promise\.all\b/, message: "Use Promise.all in sumAll" },
+    { pattern: /Promise\.allSettled/, message: "Use Promise.allSettled in describeSettled" },
+  ],
+
+  tests: [
+    { name: "double(21) fulfills with 42", run: async (x) => expectEqual(await x.double(21), 42) },
+    { name: "safeDivide(10, 2) fulfills with 5", run: async (x) => expectEqual(await x.safeDivide(10, 2), 5) },
+    {
+      name: "safeDivide(1, 0) rejects with the right message",
+      run: async (x) => {
+        let msg = null;
+        await x.safeDivide(1, 0).catch((e) => { msg = e.message; });
+        expectEqual(msg, "divide by zero");
+      },
+    },
+    { name: "chainDouble(20) fulfills with 41", run: async (x) => expectEqual(await x.chainDouble(20), 41) },
+    { name: "divideOrDefault(8, 2, -1) fulfills with 4", run: async (x) => expectEqual(await x.divideOrDefault(8, 2, -1), 4) },
+    { name: "divideOrDefault(8, 0, -1) falls back to -1", run: async (x) => expectEqual(await x.divideOrDefault(8, 0, -1), -1) },
+    {
+      name: "sumAll resolves the total",
+      run: async (x) => expectEqual(await x.sumAll([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)]), 6),
+    },
+    {
+      name: "describeSettled reports ok and err entries",
+      run: async (x) => expectDeepEqual(
+        await x.describeSettled([Promise.resolve(7), Promise.reject(new Error("nope"))]),
+        ["ok:7", "err:nope"]
+      ),
+    },
+  ],
+
+  solution: `function double(n) {
+  return Promise.resolve(n * 2);
+}
+
+function safeDivide(a, b) {
+  if (b === 0) return Promise.reject(new Error("divide by zero"));
+  return Promise.resolve(a / b);
+}
+
+function chainDouble(n) {
+  return double(n).then((d) => d + 1);
+}
+
+function divideOrDefault(a, b, fallback) {
+  return safeDivide(a, b).catch(() => fallback);
+}
+
+function sumAll(promises) {
+  return Promise.all(promises).then((values) => values.reduce((t, v) => t + v, 0));
+}
+
+function describeSettled(promises) {
+  return Promise.allSettled(promises).then((results) =>
+    results.map((r) =>
+      r.status === "fulfilled" ? "ok:" + r.value : "err:" + r.reason.message
+    )
+  );
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>JavaScript (runtime)</th></tr>
+  <tr><td>Already-settled value</td><td><code>std::promise&lt;int&gt; p; p.set_value(1);</code></td><td><code>Promise.resolve(1)</code></td></tr>
+  <tr><td>Rejection value</td><td>type-erased behind <code>std::exception_ptr</code></td><td>whatever you rejected with</td></tr>
+  <tr><td>Chaining</td><td>no combinator; call <code>get()</code> and build the next future by hand</td><td><code>then</code> returns a new Promise; returned values flatten</td></tr>
+  <tr><td>Wait for all</td><td>no standard combinator; loop and call <code>get()</code> on each future</td><td>resolves to a plain array, rejects on first failure</td></tr>
+  <tr><td>Wait for all, keep errors</td><td>none; wrap each <code>get()</code> in your own <code>try/catch</code></td><td><code>Promise.allSettled</code> → <code>{status, value|reason}[]</code>, never rejects</td></tr>
+  <tr><td>First to settle</td><td>none; poll futures with <code>wait_for</code> in a loop</td><td><code>Promise.race</code> settles with the first result, win or lose</td></tr>
+</table>
+<p>Reach for <code>Promise.all</code> when you need every result and one failure
+should sink the whole thing; reach for <code>Promise.allSettled</code> when you
+want to inspect each outcome — its result objects are <code>{ status:
+"fulfilled", value }</code> or <code>{ status: "rejected", reason }</code>.
+<code>Promise.race</code> settles as soon as the first input does, whether that
+first one fulfills or rejects.</p>
+<p>Runtime gotcha with no C++ analogue: <code>Promise.reject(x)</code> creates
+an already-rejected Promise, and if nothing ever attaches a <code>catch</code>
+to it you get an "unhandled rejection" warning at runtime. A
+<code>std::future</code> that stored an exception via <code>set_exception</code>
+gives you no such warning — if you never call <code>get()</code>, the exception
+is simply discarded when the future is destroyed. And because a thrown error
+inside <code>then</code> becomes a rejection, a single trailing
+<code>.catch</code> (or <code>try/await/catch</code>) covers the whole chain
+above it.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Enums</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Enums",
+
+  intro: `
+<p>A Rust <code>enum</code> already lets each variant carry its own data via
+tuple or struct fields, but a plain C-like enum with an integer discriminant
+is closer to what Kotlin gives you. Kotlin's <code>enum class</code> takes
+that idea further: each constant is a real singleton object, so it can carry
+its own <em>properties</em> (via a constructor), share <em>methods</em>, and
+even override behaviour per constant.</p>
+<table>
+  <tr><th>Rust</th><th>Kotlin</th></tr>
+  <tr><td><code>enum Status { Ok, Error }</code></td><td><code>enum class Status { OK, ERROR }</code></td></tr>
+  <tr><td><code>Status::Ok</code></td><td><code>Status.OK</code></td></tr>
+  <tr><td><code>format!("{:?}", Status::Ok)</code> → <code>"Ok"</code></td><td><code>Status.OK.name</code> → <code>"OK"</code></td></tr>
+  <tr><td><code>Status::Ok as i32</code></td><td><code>Status.OK.ordinal</code> → <code>0</code></td></tr>
+  <tr><td>manual <code>match</code> on a <code>&str</code></td><td><code>Status.valueOf("OK")</code></td></tr>
+  <tr><td><code>Status::iter()</code> (via <code>strum</code>)</td><td><code>Status.values()</code></td></tr>
+</table>
+<p>Because a constant can take constructor arguments, you attach data directly:
+<code>OK(200)</code> stores <code>200</code> in a <code>val code</code> property.
+Every constant automatically gets <code>.name</code> (its declared identifier as
+a <code>String</code>) and <code>.ordinal</code> (its zero-based position). And a
+<code>when</code> over an enum is <em>exhaustive</em> — if you handle every
+constant, you need no <code>else</code>, and the compiler will flag you the day
+someone adds a new one, much like Rust's exhaustive <code>match</code>.</p>`,
+
+  rust: `#[derive(Debug, PartialEq)]
+enum HttpStatus {
+    Ok = 200,
+    NotFound = 404,
+    ServerError = 500,
+}
+
+fn is_error(s: &HttpStatus) -> bool {
+    (*s as i32) >= 400
+}
+
+fn label(s: &HttpStatus) -> &'static str {
+    match s {
+        HttpStatus::Ok => "OK",
+        HttpStatus::NotFound => "Not Found",
+        HttpStatus::ServerError => "Server Error",
+    }
+}`,
+
+  task: `
+<p>Model HTTP statuses as a proper Kotlin <code>enum class</code>:</p>
+<ol>
+  <li>Declare <code>enum class HttpStatus(val code: Int)</code> with three
+      constants: <code>OK(200)</code>, <code>NOT_FOUND(404)</code>,
+      <code>SERVER_ERROR(500)</code>.</li>
+  <li>Give the enum a method <code>isError(): Boolean</code> that returns
+      <code>true</code> when <code>code &gt;= 400</code> (shared by every
+      constant).</li>
+  <li>Write <code>label(status: HttpStatus): String</code> using an exhaustive
+      <code>when</code> — <code>"OK"</code>, <code>"Not Found"</code>,
+      <code>"Server Error"</code>.</li>
+  <li>Write <code>allCodes(): List&lt;Int&gt;</code> that maps
+      <code>HttpStatus.values()</code> to their codes.</li>
+  <li>Write <code>fromName(name: String): HttpStatus</code> using
+      <code>HttpStatus.valueOf(name)</code>.</li>
+</ol>`,
+
+  starter: `// 1. + 2. The enum. Fill in the real codes and the isError() body.
+enum class HttpStatus(val code: Int) {
+    OK(0),           // TODO: 200
+    NOT_FOUND(0),    // TODO: 404
+    SERVER_ERROR(0); // TODO: 500
+
+    fun isError(): Boolean = false // TODO: code >= 400
+}
+
+// 3. label(status) -> human-readable label via an exhaustive when
+fun label(status: HttpStatus): String {
+    return "" // TODO
+}
+
+// 4. allCodes() -> the code of every constant, in declaration order
+fun allCodes(): List<Int> {
+    return emptyList() // TODO
+}
+
+// 5. fromName(name) -> the constant with that exact name
+fun fromName(name: String): HttpStatus {
+    return TODO()
+}
+`,
+
+  requirements: [
+    { pattern: /enum class HttpStatus\(val code: Int\)/, message: "Declare enum class HttpStatus(val code: Int)" },
+    { pattern: /when\s*\(\s*status\s*\)/, message: "Use a when over the status in label()" },
+    { pattern: /HttpStatus\.valueOf\(/, message: "Use HttpStatus.valueOf(name) in fromName()" },
+  ],
+
+  tests: [
+    { name: "OK carries code 200", code: "        expect_eq(HttpStatus.OK.code, 200)" },
+    { name: "SERVER_ERROR carries code 500", code: "        expect_eq(HttpStatus.SERVER_ERROR.code, 500)" },
+    { name: "OK is not an error", code: "        expect_true(!HttpStatus.OK.isError())" },
+    { name: "NOT_FOUND is an error", code: "        expect_true(HttpStatus.NOT_FOUND.isError())" },
+    { name: "name gives the identifier", code: "        expect_eq(HttpStatus.NOT_FOUND.name, \"NOT_FOUND\")" },
+    { name: "ordinal is zero-based position", code: "        expect_eq(HttpStatus.SERVER_ERROR.ordinal, 2)" },
+    { name: "label(OK) is \"OK\"", code: "        expect_eq(label(HttpStatus.OK), \"OK\")" },
+    { name: "label(NOT_FOUND) is \"Not Found\"", code: "        expect_eq(label(HttpStatus.NOT_FOUND), \"Not Found\")" },
+    { name: "allCodes lists every code", code: "        expect_eq(allCodes(), listOf(200, 404, 500))" },
+    { name: "fromName round-trips", code: "        expect_eq(fromName(\"SERVER_ERROR\"), HttpStatus.SERVER_ERROR)" },
+  ],
+
+  solution: `enum class HttpStatus(val code: Int) {
+    OK(200),
+    NOT_FOUND(404),
+    SERVER_ERROR(500);
+
+    fun isError(): Boolean = code >= 400
+}
+
+fun label(status: HttpStatus): String {
+    return when (status) {
+        HttpStatus.OK -> "OK"
+        HttpStatus.NOT_FOUND -> "Not Found"
+        HttpStatus.SERVER_ERROR -> "Server Error"
+    }
+}
+
+fun allCodes(): List<Int> {
+    return HttpStatus.values().map { it.code }
+}
+
+fun fromName(name: String): HttpStatus {
+    return HttpStatus.valueOf(name)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+  <tr><td>Declare</td><td><code>enum Status { Ok }</code></td><td><code>enum class Status { OK }</code></td></tr>
+  <tr><td>Attach data</td><td><code>Ok(200)</code> tuple variant, or a separate <code>match</code></td><td><code>OK(200)</code> + <code>val code</code></td></tr>
+  <tr><td>Constant name</td><td><code>format!("{:?}", Status::Ok)</code></td><td><code>Status.OK.name</code></td></tr>
+  <tr><td>Position</td><td><code>Status::Ok as i32</code></td><td><code>Status.OK.ordinal</code></td></tr>
+  <tr><td>By name</td><td>manual <code>match</code> on a <code>&str</code></td><td><code>Status.valueOf("OK")</code></td></tr>
+  <tr><td>All members</td><td><code>Status::iter()</code> (needs <code>strum</code>)</td><td><code>Status.values()</code></td></tr>
+  <tr><td>Switch</td><td>exhaustive <code>match</code></td><td>exhaustive <code>when</code> — no <code>else</code></td></tr>
+</table>
+<p>Constants can also override a method individually: declare an
+<code>abstract fun</code> in the enum body and give each constant a <code>{ ... }</code>
+block — the enum becomes a compact strategy table, similar to putting the same
+data in each variant of a Rust enum and matching on it. Note the semicolon
+after the last constant: it is required whenever the enum body contains
+members (a constructor property, method, or override). And <code>valueOf</code>
+throws <code>IllegalArgumentException</code> for an unknown name — the Kotlin
+analogue of Rust's <code>FromStr::from_str</code> returning a <code>Result</code>
+— so reach for <code>entries.find { it.name == name }</code> or
+<code>enumValueOf&lt;HttpStatus&gt;(...)</code> in a <code>try</code> when the
+input is untrusted.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

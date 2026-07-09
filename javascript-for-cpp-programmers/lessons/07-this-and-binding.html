@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: this & Binding</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "this & Binding",
+
+  intro: `
+<p>In C++ <code>this</code> is a pointer whose meaning is fixed at compile time:
+inside a member function, <code>this</code> always points at the object the
+function was invoked on, full stop. You can copy a member function pointer
+around, but calling it still requires an object
+(<code>(obj.*mfp)()</code> or <code>(objPtr-&gt;*mfp)()</code>) — there is no way to
+accidentally "detach" it the way you can in JavaScript. In JavaScript,
+<code>this</code> is not decided by where a function is <em>defined</em>; it is
+decided by how the function is <em>called</em>, every single time.</p>
+<table>
+  <tr><th>C++</th><th>JavaScript (runtime)</th></tr>
+  <tr><td><code>this</code> fixed at the call, tied to the object type</td><td><code>this</code> is bound at the call site</td></tr>
+  <tr><td><code>obj.m()</code> — <code>this</code> is <code>&amp;obj</code></td><td><code>obj.m()</code> — <code>this</code> <em>is</em> <code>obj</code></td></tr>
+  <tr><td>a bare member function pointer cannot be called without an object</td><td>detached call — <code>this</code> is <code>undefined</code>/global</td></tr>
+  <tr><td>lambda <code>[this]</code> captures the object pointer</td><td>arrow captures <code>this</code> lexically</td></tr>
+</table>
+<p>There are only a few rules. A <strong>method call</strong>
+<code>obj.greet()</code> sets <code>this</code> to <code>obj</code>. A <strong>bare
+call</strong> <code>fn()</code> — the same function pulled off the object — sets
+<code>this</code> to <code>undefined</code> (strict) or the global object.
+<strong>Arrow functions</strong> ignore all of this and inherit <code>this</code>
+from the enclosing scope. And <code>bind</code>/<code>call</code>/<code>apply</code>
+let you pin <code>this</code> yourself.</p>`,
+
+  cpp: `class Greeter {
+public:
+  explicit Greeter(std::string name) : name(std::move(name)) {}
+  std::string greet() const {
+    return "Hi, I'm " + name;
+  }
+  std::string name;
+};
+
+Greeter g("Ada");
+// A member function pointer still needs an object to call it on:
+std::string (Greeter::*greetPtr)() const = &Greeter::greet;
+std::string result = (g.*greetPtr)();`,
+
+  task: `
+<p>Build a small object with a <code>this</code>-using method, then tame
+<code>this</code> the three runtime ways. Export these symbols:</p>
+<ol>
+  <li><code>greeter</code> — an object with a <code>name</code> property
+      (<code>"Ada"</code>) and a <code>greet()</code> method that returns
+      <code>"Hi, I'm Ada"</code> using <code>this.name</code>. Use a real method
+      (not an arrow), so <code>this</code> depends on the call.</li>
+  <li><code>boundGreet</code> — a standalone function made from
+      <code>greeter.greet</code> with <code>this</code> permanently pinned to
+      <code>greeter</code> via <code>.bind()</code>, so it still works when
+      called bare.</li>
+  <li><code>greetWith(who)</code> — reuse <code>greeter.greet</code> against a
+      <em>different</em> object by calling it with <code>.call()</code> (or
+      <code>.apply()</code>), passing <code>who</code> as <code>this</code>.</li>
+  <li><code>counter</code> — an object <code>{ count: 0, step: 2, addAll(nums) }</code>
+      whose <code>addAll</code> loops with <code>nums.forEach(...)</code> using an
+      <strong>arrow</strong> callback so <code>this</code> still points at
+      <code>counter</code>; each number adds <code>n * this.step</code> to
+      <code>this.count</code> and the method returns the new <code>this.count</code>.</li>
+</ol>`,
+
+  starter: `// 1. greeter: object with a real method that uses this.name
+const greeter = {
+  name: "Ada",
+  greet() {
+    // TODO: return "Hi, I'm <name>" using this.name
+    return "";
+  },
+};
+
+// 2. boundGreet: greeter.greet with this pinned to greeter
+const boundGreet = greeter.greet; // TODO: pin this with .bind()
+
+// 3. greetWith(who): run greeter.greet with who as this
+function greetWith(who) {
+  // TODO: use .call() or .apply()
+  return "";
+}
+
+// 4. counter: addAll uses an arrow callback so this stays the counter
+const counter = {
+  count: 0,
+  step: 2,
+  addAll(nums) {
+    // TODO: nums.forEach((n) => { this.count += n * this.step; });
+    return this.count;
+  },
+};
+`,
+
+  exportNames: ["greeter", "boundGreet", "greetWith", "counter"],
+
+  requirements: [
+    { pattern: /this\./, message: "Reference this inside a method (e.g. this.name)" },
+    { pattern: /\.bind\(/, message: "Create boundGreet with .bind()" },
+    { pattern: /\.call\(|\.apply\(/, message: "Implement greetWith with .call() or .apply()" },
+  ],
+
+  tests: [
+    { name: 'greeter.greet() returns "Hi, I\'m Ada"', run: (x) => expectEqual(x.greeter.greet(), "Hi, I'm Ada") },
+    { name: "boundGreet still works when detached from the object", run: (x) => {
+        const detached = x.boundGreet;
+        expectEqual(detached(), "Hi, I'm Ada");
+      } },
+    { name: "greetWith runs greet against a different this", run: (x) => expectEqual(x.greetWith({ name: "Grace" }), "Hi, I'm Grace") },
+    { name: "greetWith does not mutate greeter.name", run: (x) => {
+        x.greetWith({ name: "Linus" });
+        expectEqual(x.greeter.name, "Ada");
+      } },
+    { name: "counter.addAll keeps this via the arrow callback", run: (x) => expectEqual(x.counter.addAll([1, 2, 3]), 12) },
+    { name: "counter.count accumulates across calls", run: (x) => {
+        const c = { count: 0, step: 2, addAll: x.counter.addAll };
+        expectEqual(c.addAll([10]), 20);
+        expectEqual(c.count, 20);
+      } },
+  ],
+
+  solution: `const greeter = {
+  name: "Ada",
+  greet() {
+    return \`Hi, I'm \${this.name}\`;
+  },
+};
+
+const boundGreet = greeter.greet.bind(greeter);
+
+function greetWith(who) {
+  return greeter.greet.call(who);
+}
+
+const counter = {
+  count: 0,
+  step: 2,
+  addAll(nums) {
+    nums.forEach((n) => {
+      this.count += n * this.step;
+    });
+    return this.count;
+  },
+};
+`,
+
+  notes: `
+<table>
+  <tr><th>Call form</th><th>What <code>this</code> becomes</th><th>C++'s role</th></tr>
+  <tr><td><code>obj.m()</code></td><td><code>obj</code></td><td><code>this</code> is <code>&amp;obj</code>, fixed by the call</td></tr>
+  <tr><td><code>const f = obj.m; f()</code></td><td><code>undefined</code> / global</td><td>no equivalent — a member function pointer cannot be called without an object</td></tr>
+  <tr><td><code>f.call(x)</code> / <code>f.apply(x, [])</code></td><td><code>x</code></td><td><code>(x.*mfp)()</code> — the object is supplied explicitly</td></tr>
+  <tr><td><code>f.bind(x)</code></td><td>permanently <code>x</code></td><td><code>std::bind</code> or a lambda capturing <code>&amp;x</code></td></tr>
+  <tr><td>arrow <code>() =&gt; ...</code></td><td>the enclosing <code>this</code></td><td>lambda with <code>[this]</code> capture</td></tr>
+</table>
+<p><code>call</code> and <code>apply</code> are twins: both invoke immediately with
+a chosen <code>this</code>, differing only in how arguments arrive —
+<code>f.call(x, a, b)</code> vs <code>f.apply(x, [a, b])</code>. <code>bind</code>
+does not call; it returns a new function with <code>this</code> (and optionally
+leading arguments) locked in forever — a later <code>.call</code> cannot override
+a bound <code>this</code>.</p>
+<p>The classic runtime bug: passing a method as a callback
+(<code>arr.forEach(obj.method)</code>, <code>el.addEventListener("click", obj.handler)</code>).
+The method is called bare, so <code>this</code> is lost. Fix it by binding
+(<code>obj.method.bind(obj)</code>) or by wrapping in an arrow
+(<code>() =&gt; obj.method()</code>) — the same instinct behind capturing
+<code>this</code> in a C++ lambda so a callback can still reach the object.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

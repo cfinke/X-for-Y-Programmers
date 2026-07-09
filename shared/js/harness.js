@@ -230,11 +230,13 @@ function buildPhpProgram(userCode, tests) {
   return out;
 }
 
-async function runWandbox(compiler, program) {
+async function runWandbox(compiler, program, optionRaw) {
+  const body = { code: program, compiler: compiler };
+  if (optionRaw) body["compiler-option-raw"] = optionRaw;
   const resp = await fetch("https://wandbox.org/api/compile.json", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code: program, compiler: compiler }),
+    body: JSON.stringify(body),
   });
   if (!resp.ok) {
     throw new Error("Wandbox returned HTTP " + resp.status + ". Try again in a moment.");
@@ -278,6 +280,225 @@ function buildRubyProgram(userCode, tests) {
 
 function runRubyProgram(program) {
   return runWandbox("ruby-3.4.9", program);
+}
+
+/* ---------- Java runner (target: "java") ---------- */
+
+/*
+ * Same shape as the other Wandbox runners. The learner writes top-level,
+ * package-private types (classes/interfaces/enums/records) — no `public`
+ * modifier and no `main` — and the harness appends a non-public `Main` class
+ * holding the expect_eq / expect_true helpers and a main() that runs each test
+ * in its own try/catch, printing ::PASS::<i> / ::FAIL::<i>::<message> lines.
+ * (Main is non-public because Wandbox compiles the file as prog.java, which a
+ * public class named Main would reject.) Executed on wandbox.org.
+ */
+function buildJavaProgram(userCode, tests) {
+  let out = "";
+  out += "import java.util.*;\n";
+  out += "import java.util.stream.*;\n\n";
+  out += userCode + "\n\n";
+  out += "class Main {\n";
+  out += "  static String __s(Object o){ return o == null ? \"null\" : o.toString(); }\n";
+  out += "  static void expect_eq(Object a, Object b){ if(!Objects.equals(a, b)) throw new RuntimeException(\"expected \" + __s(b) + \" but got \" + __s(a)); }\n";
+  out += "  static void expect_true(boolean c){ if(!c) throw new RuntimeException(\"expected a truthy value\"); }\n";
+  out += "  public static void main(String[] args){\n";
+  tests.forEach(function (t, i) {
+    out += "    try {\n" + t.code + "\n      System.out.println(\"::PASS::" + i + "\");\n";
+    out += "    } catch (Throwable e){ System.out.println(\"::FAIL::" + i + "::\" + String.valueOf(e.getMessage()).replace(\"\\n\", \" \")); }\n";
+  });
+  out += "  }\n}\n";
+  return out;
+}
+
+function runJavaProgram(program) {
+  return runWandbox("openjdk-jdk-21+35", program);
+}
+
+/* ---------- C++ runner (target: "cpp") ---------- */
+
+/*
+ * Same shape as the other Wandbox runners. The learner writes top-level code
+ * (free functions, classes, structs) but NOT a main; the harness prepends a
+ * broad set of standard includes and appends the expect_eq / expect_true
+ * helpers plus a main() that runs each test in its own try/catch, printing
+ * ::PASS::<i> / ::FAIL::<i>::<message> lines. Compiled with -std=c++20 on
+ * wandbox.org (gcc).
+ */
+function buildCppProgram(userCode, tests) {
+  let out = "";
+  const headers = ["iostream", "string", "vector", "map", "unordered_map", "set",
+    "unordered_set", "algorithm", "numeric", "memory", "optional", "variant",
+    "functional", "stdexcept", "sstream", "tuple", "array", "cstdint", "cctype", "cmath"];
+  headers.forEach(function (h) { out += "#include <" + h + ">\n"; });
+  out += "\n" + userCode + "\n\n";
+  out += "template<class A, class B> static void expect_eq(const A& a, const B& b){ if(!(a == b)) throw std::runtime_error(\"expected values to be equal\"); }\n";
+  out += "static void expect_true(bool c){ if(!c) throw std::runtime_error(\"expected a truthy value\"); }\n\n";
+  out += "int main(){\n";
+  tests.forEach(function (t, i) {
+    out += "  try {\n" + t.code + "\n    std::cout << \"::PASS::" + i + "\\n\";\n";
+    out += "  } catch (const std::exception& e){ std::cout << \"::FAIL::" + i + "::\" << e.what() << \"\\n\"; }\n";
+    out += "  catch (...) { std::cout << \"::FAIL::" + i + "::unknown error\\n\"; }\n";
+  });
+  out += "  return 0;\n}\n";
+  return out;
+}
+
+function runCppProgram(program) {
+  return runWandbox("gcc-13.2.0", program, "-std=c++20");
+}
+
+/* ---------- Python runner (target: "python") ---------- */
+
+/*
+ * Same shape as the other Wandbox runners. The learner writes top-level Python
+ * (functions, classes); the harness prepends the expect_eq / expect_true
+ * helpers and appends one function per test (Python is whitespace-sensitive, so
+ * each test's code sits in its own def body) run inside try/except, printing
+ * ::PASS::<i> / ::FAIL::<i>::<message> lines. Executed on wandbox.org.
+ */
+function buildPythonProgram(userCode, tests) {
+  let out = "";
+  out += "def expect_eq(actual, expected):\n";
+  out += "    if actual != expected:\n";
+  out += "        raise AssertionError(f\"expected {expected!r} but got {actual!r}\")\n\n";
+  out += "def expect_true(cond):\n";
+  out += "    if not cond:\n";
+  out += "        raise AssertionError(\"expected a truthy value\")\n\n";
+  out += userCode + "\n\n";
+  out += "def __run(fn, i):\n";
+  out += "    try:\n";
+  out += "        fn()\n";
+  out += "        print(f\"::PASS::{i}\")\n";
+  out += "    except Exception as e:\n";
+  out += "        print(f\"::FAIL::{i}::\" + str(e).replace(chr(10), ' '))\n\n";
+  tests.forEach(function (t, i) {
+    out += "def __t" + i + "():\n" + t.code + "\n";
+    out += "__run(__t" + i + ", " + i + ")\n";
+  });
+  return out;
+}
+
+function runPythonProgram(program) {
+  return runWandbox("cpython-3.13.8", program);
+}
+
+/* ---------- C# runner (target: "csharp") ---------- */
+
+/*
+ * Same shape as the other Wandbox runners. The learner writes top-level C#
+ * types (classes, structs, enums, interfaces) but NOT a Main; the harness
+ * prepends common `using`s and appends a `Program` class holding the
+ * expect_eq / expect_true helpers and a Main() that runs each test in its own
+ * try/catch, printing ::PASS::<i> / ::FAIL::<i>::<message> lines. Compiled with
+ * mono (C# 7.3) on wandbox.org.
+ */
+function buildCsharpProgram(userCode, tests) {
+  let out = "";
+  ["System", "System.Collections", "System.Collections.Generic", "System.Linq", "System.Text"]
+    .forEach(function (u) { out += "using " + u + ";\n"; });
+  out += "\n" + userCode + "\n\n";
+  out += "class Program {\n";
+  out += "  static void expect_eq(object a, object b){ if(!object.Equals(a, b)) throw new Exception($\"expected {b} but got {a}\"); }\n";
+  out += "  static void expect_true(bool c){ if(!c) throw new Exception(\"expected a truthy value\"); }\n";
+  out += "  static void Main(){\n";
+  tests.forEach(function (t, i) {
+    out += "    try {\n" + t.code + "\n      Console.WriteLine(\"::PASS::" + i + "\");\n";
+    out += "    } catch (Exception e){ Console.WriteLine(\"::FAIL::" + i + "::\" + e.Message.Replace(\"\\n\", \" \")); }\n";
+  });
+  out += "  }\n}\n";
+  return out;
+}
+
+function runCsharpProgram(program) {
+  return runWandbox("mono-6.12.0.199", program, "-langversion:latest");
+}
+
+/* ---------- Go runner (target: "go") ---------- */
+
+/*
+ * Same shape as the other Wandbox runners. The learner writes package-level Go
+ * (functions, types) but NOT `package`, `import`, or `main`. The harness wraps
+ * it in `package main`, an import block containing only the standard packages
+ * the code actually references (fmt and reflect are always present, for the
+ * helpers), the expect_eq / expect_true helpers, and a main() that runs each
+ * test in its own closure with recover(), printing ::PASS::<i> / ::FAIL::<i>::
+ * lines. Compiled with go on wandbox.org.
+ */
+var GO_CANDIDATE_PKGS = {
+  strings: "strings", strconv: "strconv", sort: "sort", errors: "errors",
+  math: "math", unicode: "unicode", utf8: "unicode/utf8", sync: "sync",
+  time: "time", bytes: "bytes", json: "encoding/json", regexp: "regexp",
+  bufio: "bufio", io: "io", os: "os", slices: "slices", maps: "maps", cmp: "cmp",
+};
+
+function buildGoProgram(userCode, tests) {
+  let scan = userCode + "\n" + tests.map(function (t) { return t.code; }).join("\n");
+  scan = scan.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const imports = ['"fmt"', '"reflect"'];
+  Object.keys(GO_CANDIDATE_PKGS).forEach(function (sym) {
+    if (new RegExp("\\b" + sym + "\\.").test(scan)) imports.push('"' + GO_CANDIDATE_PKGS[sym] + '"');
+  });
+  const uniq = imports.filter(function (v, i) { return imports.indexOf(v) === i; });
+  let out = "package main\n\nimport (\n" + uniq.map(function (i) { return "\t" + i; }).join("\n") + "\n)\n\n";
+  out += userCode + "\n\n";
+  out += "func expect_eq(a, b interface{}) {\n\tif !reflect.DeepEqual(a, b) {\n\t\tpanic(fmt.Sprintf(\"expected %v but got %v\", b, a))\n\t}\n}\n\n";
+  out += "func expect_true(c bool) {\n\tif !c {\n\t\tpanic(\"expected a truthy value\")\n\t}\n}\n\n";
+  out += "func runTest(i int, fn func()) {\n\tdefer func() {\n\t\tif r := recover(); r != nil {\n\t\t\tfmt.Printf(\"::FAIL::%d::%v\\n\", i, r)\n\t\t}\n\t}()\n\tfn()\n\tfmt.Printf(\"::PASS::%d\\n\", i)\n}\n\n";
+  out += "func main() {\n";
+  tests.forEach(function (t, i) { out += "\trunTest(" + i + ", func() {\n" + t.code + "\n\t})\n"; });
+  out += "}\n";
+  return out;
+}
+
+function runGoProgram(program) {
+  return runWandbox("go-1.23.2", program);
+}
+
+/* ---------- Kotlin runner (target: "kotlin") ---------- */
+
+/*
+ * Kotlin has no Wandbox compiler, so it runs on the Kotlin Playground service
+ * (api.kotlinlang.org), the same backend the official playground widget uses.
+ * The learner writes top-level Kotlin (functions, classes, and — at the very
+ * top — any needed imports) but NOT main; the harness appends the expect_eq /
+ * expect_true helpers and a main() that runs each test in its own lambda with a
+ * try/catch, printing ::PASS::<i> / ::FAIL::<i>:: lines. Program output comes
+ * back wrapped in <outStream> tags.
+ */
+function buildKotlinProgram(userCode, tests) {
+  let out = userCode + "\n\n";
+  out += "fun expect_eq(a: Any?, b: Any?) { if (a != b) throw RuntimeException(\"expected $b but got $a\") }\n";
+  out += "fun expect_true(c: Boolean) { if (!c) throw RuntimeException(\"expected a truthy value\") }\n";
+  out += "fun runTest(i: Int, fn: () -> Unit) {\n";
+  out += "    try { fn(); println(\"::PASS::$i\") } catch (e: Throwable) { println(\"::FAIL::$i::\" + (e.message ?: e.toString()).replace(\"\\n\", \" \")) }\n";
+  out += "}\n\n";
+  out += "fun main() {\n";
+  tests.forEach(function (t, i) { out += "    runTest(" + i + ") {\n" + t.code + "\n    }\n"; });
+  out += "}\n";
+  return out;
+}
+
+async function runKotlinProgram(program) {
+  const resp = await fetch("https://api.kotlinlang.org/api/2.0.20/compiler/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ args: "", files: [{ name: "File.kt", text: program }] }),
+  });
+  if (!resp.ok) {
+    throw new Error("The Kotlin Playground returned HTTP " + resp.status + ". Try again in a moment.");
+  }
+  const data = await resp.json();
+  const text = data.text || "";
+  const stdout = (text.match(/<outStream>([\s\S]*?)<\/outStream>/g) || [])
+    .map(function (m) { return m.replace(/<\/?outStream>/g, ""); }).join("");
+  let stderr = (text.match(/<errStream>([\s\S]*?)<\/errStream>/g) || [])
+    .map(function (m) { return m.replace(/<\/?errStream>/g, ""); }).join("");
+  const errs = (data.errors && data.errors["File.kt"]) || [];
+  const compileErrs = errs.filter(function (e) { return e.severity === "ERROR"; }).map(function (e) { return e.message; });
+  if (compileErrs.length) stderr += " " + compileErrs.join("; ");
+  if (data.exception) stderr += " " + (data.exception.message || "runtime exception");
+  return { stdout: stdout, stderr: stderr };
 }
 
 /* ---------- rendering ---------- */
@@ -394,6 +615,9 @@ function renderLesson() {
     : el("span", null, '<a href="../index.html">Back to the course index →</a>'));
   app.appendChild(nav);
 
+  app.appendChild(el("footer", "site-footer",
+    '<a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a>'));
+
   document.addEventListener("keydown", function (e) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -437,17 +661,29 @@ async function runTests(editor, runBtn) {
   // 2 & 3. Compile & execute, then behavior tests (per target language)
   let runResult = null;
   const target = COURSE.target || "typescript";
-  if (target === "rust" || target === "php" || target === "ruby") {
-    const service = target === "rust" ? "the Rust Playground" : "Wandbox";
+  if (target === "rust" || target === "php" || target === "ruby" || target === "java" || target === "cpp" || target === "python" || target === "csharp" || target === "go" || target === "kotlin") {
+    const service = target === "rust" ? "the Rust Playground" : target === "kotlin" ? "the Kotlin Playground" : "Wandbox";
     const status = el("p", "run-status", "Compiling and running on " + service + "…");
     results.appendChild(status);
     try {
       const program = target === "rust" ? buildRustProgram(source, LESSON.tests)
         : target === "php" ? buildPhpProgram(source, LESSON.tests)
-        : buildRubyProgram(source, LESSON.tests);
+        : target === "ruby" ? buildRubyProgram(source, LESSON.tests)
+        : target === "java" ? buildJavaProgram(source, LESSON.tests)
+        : target === "cpp" ? buildCppProgram(source, LESSON.tests)
+        : target === "python" ? buildPythonProgram(source, LESSON.tests)
+        : target === "csharp" ? buildCsharpProgram(source, LESSON.tests)
+        : target === "go" ? buildGoProgram(source, LESSON.tests)
+        : buildKotlinProgram(source, LESSON.tests);
       const data = target === "rust" ? await runRustProgram(program)
         : target === "php" ? await runPhpProgram(program)
-        : await runRubyProgram(program);
+        : target === "ruby" ? await runRubyProgram(program)
+        : target === "java" ? await runJavaProgram(program)
+        : target === "cpp" ? await runCppProgram(program)
+        : target === "python" ? await runPythonProgram(program)
+        : target === "csharp" ? await runCsharpProgram(program)
+        : target === "go" ? await runGoProgram(program)
+        : await runKotlinProgram(program);
       const outcomes = {};
       const logs = [];
       (data.stdout || "").split("\n").forEach(function (line) {
@@ -462,7 +698,7 @@ async function runTests(editor, runBtn) {
         const errText = target === "rust" ? rustCompileErrors(data.stderr) : (data.stderr || "").trim();
         items.push({
           ok: false,
-          label: target === "rust" ? "Your code must compile" : "Your code must parse and run",
+          label: target === "rust" || target === "java" || target === "cpp" || target === "csharp" || target === "go" || target === "kotlin" ? "Your code must compile" : "Your code must parse and run",
           detail: errText || "The program produced no test output.",
         });
       } else {

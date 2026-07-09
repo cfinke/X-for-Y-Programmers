@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>Go got generics in Go 1.18, and the shape will feel familiar: both
+languages write the type parameter right next to the type or function name,
+and both use them to make containers and helpers reusable without giving up
+type safety. But the mechanics diverge more than you'd expect — Go uses
+square brackets and structural constraint interfaces where Java uses angle
+brackets and <code>extends</code>.</p>
+<table>
+  <tr><th>Go</th><th>Java</th></tr>
+  <tr><td><code>type Box[T any] struct { ... }</code></td><td><code>class Box&lt;T&gt; { ... }</code></td></tr>
+  <tr><td><code>func Id[T any](x T) T</code></td><td><code>&lt;T&gt; T id(T x)</code></td></tr>
+  <tr><td><code>[T cmp.Ordered]</code></td><td><code>&lt;T extends Comparable&lt;T&gt;&gt;</code></td></tr>
+  <tr><td><code>Box[int]</code> — primitives work directly</td><td><code>List&lt;Integer&gt;</code>, no primitives in generics</td></tr>
+</table>
+<p>Two differences bite. First, Java tucks the type parameter
+<em>before</em> the return type — <code>static &lt;T&gt; T identity(T x)</code> —
+rather than right after the function name the way Go's
+<code>func Identity[T any](x T) T</code> does. Second, Java has no structural
+constraints: instead of a Go-style union like
+<code>[T ~int | ~int64 | ~float64]</code>, Java expresses "several related
+types" with a bounded wildcard on a common supertype:
+<code>List&lt;? extends Number&gt;</code>. And because of type erasure,
+Java generics only work over reference types, so you write
+<code>Box&lt;Integer&gt;</code>, never <code>Box&lt;int&gt;</code> — Go has
+no such restriction, since <code>Box[int]</code> compiles just like
+<code>Box[string]</code>.</p>`,
+
+  go: `type Box[T any] struct {
+	value T
+}
+
+func NewBox[T any](value T) *Box[T] {
+	return &Box[T]{value: value}
+}
+
+func (b *Box[T]) Get() T { return b.value }
+
+func Identity[T any](x T) T { return x }
+
+func Max[T any](items []T, less func(a, b T) bool) T {
+	best := items[0]
+	for _, x := range items {
+		if less(best, x) {
+			best = x
+		}
+	}
+	return best
+}
+
+func Sum(nums []float64) float64 {
+	total := 0.0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}`,
+
+  task: `
+<p>Build a small generic toolkit. Write two top-level types:</p>
+<ol>
+  <li>A generic container <code>class Box&lt;T&gt;</code> with a constructor
+      taking a <code>T</code>, a method <code>T get()</code>, and a method
+      <code>void set(T value)</code>.</li>
+  <li>A utility <code>class Generics</code> with three static methods:
+    <ul>
+      <li><code>&lt;T&gt; T identity(T x)</code> — returns its argument
+          unchanged (note the <code>&lt;T&gt;</code> before the return type).</li>
+      <li><code>&lt;T extends Comparable&lt;T&gt;&gt; T max(List&lt;T&gt; items)</code>
+          — returns the largest element using <code>compareTo</code>.</li>
+      <li><code>double sum(List&lt;? extends Number&gt; nums)</code> — adds the
+          numbers, calling <code>doubleValue()</code> on each. The wildcard lets
+          it accept a <code>List&lt;Integer&gt;</code> or a
+          <code>List&lt;Double&gt;</code>.</li>
+    </ul>
+  </li>
+</ol>`,
+
+  starter: `class Box<T> {
+  Box(T value) {
+    // TODO: store value
+  }
+
+  T get() {
+    return null; // TODO
+  }
+
+  void set(T value) {
+    // TODO
+  }
+}
+
+class Generics {
+  static <T> T identity(T x) {
+    return null; // TODO
+  }
+
+  static <T extends Comparable<T>> T max(List<T> items) {
+    return null; // TODO: find the largest with compareTo
+  }
+
+  static double sum(List<? extends Number> nums) {
+    return 0; // TODO: sum via doubleValue()
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Box<T>/, message: "Declare a generic class Box<T>" },
+    { pattern: /<T\s+extends\s+Comparable<T>>/, message: "Use a bounded type parameter <T extends Comparable<T>> on max" },
+    { pattern: /List<\?\s+extends\s+Number>/, message: "Accept a List<? extends Number> wildcard in sum" },
+  ],
+
+  tests: [
+    { name: "Box holds and returns a value", code: "      Box<String> b = new Box<>(\"hi\");\n      expect_eq(b.get(), \"hi\");" },
+    { name: "Box.set replaces the value", code: "      Box<Integer> b = new Box<>(1);\n      b.set(42);\n      expect_eq(b.get(), 42);" },
+    { name: "identity returns its argument", code: "      expect_eq(Generics.identity(\"abc\"), \"abc\");\n      expect_eq(Generics.identity(7), 7);" },
+    { name: "max of integers", code: "      expect_eq(Generics.max(List.of(3, 9, 1, 7)), 9);" },
+    { name: "max of strings (lexicographic)", code: "      expect_eq(Generics.max(List.of(\"apple\", \"pear\", \"fig\")), \"pear\");" },
+    { name: "sum accepts List<Integer>", code: "      expect_eq(Generics.sum(List.of(1, 2, 3)), 6.0);" },
+    { name: "sum accepts List<Double>", code: "      expect_eq(Generics.sum(List.of(1.5, 2.5)), 4.0);" },
+  ],
+
+  solution: `class Box<T> {
+  private T value;
+
+  Box(T value) {
+    this.value = value;
+  }
+
+  T get() {
+    return value;
+  }
+
+  void set(T value) {
+    this.value = value;
+  }
+}
+
+class Generics {
+  static <T> T identity(T x) {
+    return x;
+  }
+
+  static <T extends Comparable<T>> T max(List<T> items) {
+    T best = items.get(0);
+    for (T x : items) {
+      if (x.compareTo(best) > 0) {
+        best = x;
+      }
+    }
+    return best;
+  }
+
+  static double sum(List<? extends Number> nums) {
+    double total = 0;
+    for (Number n : nums) {
+      total += n.doubleValue();
+    }
+    return total;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+  <tr><td>Generic class</td><td><code>type Box[T any]</code></td><td><code>class Box&lt;T&gt;</code></td></tr>
+  <tr><td>Generic method</td><td><code>func Id[T any](x T) T</code></td><td><code>&lt;T&gt; T id(T x)</code> (param before return type)</td></tr>
+  <tr><td>Upper bound</td><td><code>[T Constraint]</code> (constraint interface)</td><td><code>&lt;T extends X&gt;</code></td></tr>
+  <tr><td>Covariant read</td><td>invariant; no variance</td><td><code>List&lt;? extends Number&gt;</code> (explicit wildcard)</td></tr>
+  <tr><td>Element type</td><td><code>Box[int]</code></td><td><code>Box&lt;Integer&gt;</code> (no <code>int</code>)</td></tr>
+</table>
+<p>The wildcard is the piece with no Go equivalent. Because Java lists
+are invariant, a method that only <em>reads</em> Numbers should say
+<code>List&lt;? extends Number&gt;</code> so callers can pass a
+<code>List&lt;Integer&gt;</code>. The mirror image, <code>? super T</code>, is
+for lists you only <em>write</em> to — the classic "producer extends, consumer
+super" rule. Also remember erasure: at runtime a <code>Box&lt;String&gt;</code>
+and a <code>Box&lt;Integer&gt;</code> are the same class, so you cannot write
+<code>new T()</code> or <code>x instanceof Box&lt;String&gt;</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

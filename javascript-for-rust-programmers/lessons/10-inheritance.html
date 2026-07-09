@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance",
+
+  intro: `
+<p>Rust has no inheritance at all — no <code>class</code>, no
+<code>extends</code>, no <code>super</code>. Instead you compose behavior with
+<code>struct</code>s holding data and <code>trait</code>s providing shared
+methods, plus explicit fields (or an <code>enum</code>) when one type needs to
+"contain" another. JavaScript's <code>class</code> hierarchies map onto none of
+that directly: <code>extends</code> and <code>super</code> are real runtime
+machinery, and there is no compiler enforcing anything about how you use them.</p>
+<table>
+  <tr><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td><code>struct Dog { name: String, breed: String }</code></td><td><code>class Dog extends Animal {}</code></td></tr>
+  <tr><td>trait method with a default impl</td><td>a method inherited via the prototype chain</td></tr>
+  <tr><td>no <code>super</code> — call the inner value's method explicitly</td><td><code>super.describe()</code></td></tr>
+  <tr><td>compiler enforces all fields are initialized</td><td>runtime throws if you touch <code>this</code> before <code>super()</code></td></tr>
+  <tr><td><code>dyn Trait</code> / enum matching for runtime polymorphism</td><td><code>instanceof</code> walks the prototype chain</td></tr>
+</table>
+<p>Two runtime rules matter in JavaScript, neither of which Rust needs a
+runtime check for. First, in a subclass constructor you must call
+<code>super(...)</code> before you read or write <code>this</code> — the engine
+throws a <code>ReferenceError</code> otherwise. Second, <code>instanceof</code>
+walks the prototype chain, so a <code>Dog</code> is genuinely an
+<code>Animal</code> at run time — the closest Rust analogue is matching on an
+<code>enum</code> variant or checking a trait object, since Rust has no
+built-in "is-a" runtime relationship between structs.</p>`,
+
+  rust: `struct Animal {
+    name: String,
+}
+
+impl Animal {
+    fn new(name: &str) -> Self {
+        Animal { name: name.to_string() }
+    }
+    fn speak(&self) -> String {
+        format!("{} makes a sound", self.name)
+    }
+    fn describe(&self) -> String {
+        format!("{} is an animal", self.name)
+    }
+}
+
+struct Dog {
+    animal: Animal,
+    breed: String,
+}
+
+impl Dog {
+    fn new(name: &str, breed: &str) -> Self {
+        Dog { animal: Animal::new(name), breed: breed.to_string() }
+    }
+    fn speak(&self) -> String {
+        format!("{} barks", self.animal.name)
+    }
+    fn describe(&self) -> String {
+        format!("{}, specifically a {}", self.animal.describe(), self.breed)
+    }
+}`,
+
+  task: `
+<p>Build the same class hierarchy in plain JavaScript — no traits, no structs,
+no manual composition (JavaScript's own <code>class</code>/<code>extends</code>
+does the job):</p>
+<ol>
+  <li>A base class <code>Animal</code> whose constructor takes <code>name</code>
+      and stores it on <code>this.name</code>. Give it <code>speak()</code>
+      returning <code>"&lt;name&gt; makes a sound"</code> and
+      <code>describe()</code> returning <code>"&lt;name&gt; is an animal"</code>.</li>
+  <li>A subclass <code>Dog</code> that <code>extends Animal</code>. Its
+      constructor takes <code>name</code> and <code>breed</code>, calls
+      <code>super(name)</code>, then stores <code>this.breed</code>. Override
+      <code>speak()</code> to return <code>"&lt;name&gt; barks"</code>, and
+      override <code>describe()</code> to call <code>super.describe()</code> and
+      append <code>", specifically a &lt;breed&gt;"</code>.</li>
+  <li>A function <code>identify(x)</code> that returns <code>"dog"</code> if
+      <code>x</code> is a <code>Dog</code>, <code>"animal"</code> if it is any
+      other <code>Animal</code>, and <code>"unknown"</code> otherwise — using
+      <code>instanceof</code>.</li>
+</ol>`,
+
+  starter: `// 1. Base class
+class Animal {
+  constructor(name) {
+    // TODO: store name
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO
+    return "";
+  }
+}
+
+// 2. Subclass that overrides and calls super
+class Dog extends Animal {
+  constructor(name, breed) {
+    // TODO: call super, then store breed
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO: reuse super.describe()
+    return "";
+  }
+}
+
+// 3. identify(x) using instanceof
+function identify(x) {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["Animal", "Dog", "identify"],
+
+  requirements: [
+    { pattern: /class\s+Dog\s+extends\s+Animal/, message: "Dog must extend Animal" },
+    { pattern: /super\s*\(/, message: "Call super(...) in the Dog constructor" },
+    { pattern: /super\.describe\s*\(/, message: "Dog.describe() must call super.describe()" },
+    { pattern: /instanceof/, message: "Use instanceof inside identify" },
+  ],
+
+  tests: [
+    { name: 'Animal.speak() uses the base behavior', run: (x) => expectEqual(new x.Animal("Rex").speak(), "Rex makes a sound") },
+    { name: 'Dog overrides speak()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").speak(), "Rex barks") },
+    { name: 'super(name) sets the inherited field', run: (x) => expectEqual(new x.Dog("Rex", "Lab").name, "Rex") },
+    { name: 'Dog.describe() calls super.describe()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").describe(), "Rex is an animal, specifically a Lab") },
+    { name: 'a Dog is an Animal (prototype chain)', run: (x) => expectTruthy(new x.Dog("Rex", "Lab") instanceof x.Animal) },
+    { name: 'identify distinguishes Dog, Animal, and other', run: (x) => {
+        expectEqual(x.identify(new x.Dog("Rex", "Lab")), "dog");
+        expectEqual(x.identify(new x.Animal("Generic")), "animal");
+        expectEqual(x.identify(42), "unknown");
+    } },
+  ],
+
+  solution: `class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return \`\${this.name} makes a sound\`;
+  }
+  describe() {
+    return \`\${this.name} is an animal\`;
+  }
+}
+
+class Dog extends Animal {
+  constructor(name, breed) {
+    super(name);
+    this.breed = breed;
+  }
+  speak() {
+    return \`\${this.name} barks\`;
+  }
+  describe() {
+    return \`\${super.describe()}, specifically a \${this.breed}\`;
+  }
+}
+
+function identify(x) {
+  if (x instanceof Dog) return "dog";
+  if (x instanceof Animal) return "animal";
+  return "unknown";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td>Subclass</td><td><code>struct Dog { animal: Animal, ... }</code> (composition, not inheritance)</td><td><code>class Dog extends Animal</code></td></tr>
+  <tr><td>Base constructor</td><td><code>Animal::new(name)</code> called explicitly</td><td><code>super(name)</code> (required before <code>this</code>)</td></tr>
+  <tr><td>Field from a param</td><td><code>breed: breed.to_string()</code> in the struct literal</td><td><code>this.breed = breed;</code></td></tr>
+  <tr><td>Call base method</td><td><code>self.animal.describe()</code></td><td><code>super.describe()</code></td></tr>
+  <tr><td>Runtime type test</td><td><code>enum</code> match / <code>dyn Trait</code> downcast</td><td><code>x instanceof Animal</code></td></tr>
+</table>
+<p>Order matters in <code>identify</code>: check <code>instanceof Dog</code> before
+<code>instanceof Animal</code>, because a <code>Dog</code> passes both — that is
+what inheritance means at runtime. <code>instanceof</code> is checking whether
+<code>Animal.prototype</code> appears anywhere on <code>x</code>'s prototype
+chain. Rust has nothing quite like this: without a shared base type, the
+closest equivalent is matching on an <code>enum</code> variant, since a Rust
+<code>struct</code> never "is-a" another struct the way a JS subclass instance
+is genuinely its parent class too.</p>
+<p>One gotcha Rust's compiler would never let you hit: forget
+<code>super(name)</code> and the program does not silently misbehave — the
+engine throws <code>ReferenceError: must call super constructor</code> the
+moment you touch <code>this</code>. And because JavaScript has no privacy
+enforcement comparable to Rust's module-based <code>pub</code>/private-by-default
+fields, every property you set with <code>this.x = ...</code> is publicly
+reachable; naming conventions or <code>#private</code> fields are your only
+real fences.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

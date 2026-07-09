@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Objects &amp; Companions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Objects & Companions",
+
+  intro: `
+<p>C# gives you three separate tools for "one-of-a-kind" and
+"class-level" code: the singleton pattern (a class with a private constructor
+and a static instance field) for a one-of-a-kind object, the
+<code>static</code> keyword for members that hang off the class rather than
+an instance, and an anonymous type or lambda-backed interface implementation
+for a throwaway implementation. Kotlin folds all three under one keyword —
+<code>object</code>.</p>
+<table>
+  <tr><th>C#</th><th>Kotlin</th></tr>
+  <tr><td>Singleton pattern (private ctor + static instance)</td><td><code>object Tally { … }</code></td></tr>
+  <tr><td><code>static Parse(…)</code> on a class</td><td><code>companion object { fun parse(…) }</code></td></tr>
+  <tr><td>Anonymous class implementing an interface</td><td><code>object : Greeter { … }</code></td></tr>
+  <tr><td><code>private User(…)</code> (private constructor)</td><td><code>class User private constructor(…)</code></td></tr>
+</table>
+<p>An <strong>object declaration</strong> (<code>object Name { … }</code>) is a
+lazily-created singleton — there is exactly one instance and you reach it by its
+name. A <strong>companion object</strong> is a singleton that lives inside a
+class, so its members read like C# <code>static</code> members
+(<code>User.parse(…)</code>), and because it can see the class's
+<code>private</code> constructor it is the idiomatic home for factory functions.
+An <strong>object expression</strong> (<code>object : Greeter { … }</code>) is an
+anonymous instance created on the spot, Kotlin's answer to C#'s anonymous class
+implementing an interface.</p>`,
+
+  csharp: `// Singleton: private constructor + static instance
+class Tally {
+    private static readonly Tally _instance = new Tally();
+    public static Tally Instance => _instance;
+    private readonly List<string> items = new List<string>();
+    private Tally() {}
+    public void Add(string item) => items.Add(item);
+    public int Count() => items.Count;
+}
+
+interface IGreeter { string Greet(string name); }
+
+// Static factory + private constructor
+class User {
+    private User(string name, int age) { Name = name; Age = age; }
+    public string Name { get; }
+    public int Age { get; }
+    public static readonly string Species = "human";
+    public static User Parse(string text) {
+        var parts = text.Split(':');
+        return new User(parts[0], int.Parse(parts[1]));
+    }
+}
+
+// Anonymous class implementing an interface
+IGreeter PoliteGreeter() {
+    return new PoliteGreeterImpl();
+}
+class PoliteGreeterImpl : IGreeter {
+    public string Greet(string name) => \$"Hello, {name}";
+}`,
+
+  task: `
+<p>Everything is top-level — no <code>main</code> needed (that's added for you).
+Build one of each flavor of <code>object</code>:</p>
+<ol>
+  <li>Make <code>Tally</code> an <strong>object declaration</strong> (a
+      singleton). Back it with a <code>private</code> <code>MutableList&lt;String&gt;</code>
+      and give it <code>add(item: String)</code>, <code>count(): Int</code>, and
+      <code>all(): List&lt;String&gt;</code> (return a copy with
+      <code>.toList()</code>). Because it is a singleton, state added through one
+      call is visible to the next.</li>
+  <li><code>User</code> has a <strong>private constructor</strong>. Fill in its
+      <strong>companion object</strong>: a constant
+      <code>const val SPECIES = "human"</code> and a factory
+      <code>fun parse(text: String): User</code> that splits
+      <code>"name:age"</code> on <code>":"</code> and builds the user
+      (<code>parts[1].toInt()</code> for the age).</li>
+  <li>Make <code>politeGreeter(): Greeter</code> return an
+      <strong>object expression</strong> — <code>object : Greeter { … }</code> —
+      whose <code>greet</code> returns <code>"Hello, &lt;name&gt;"</code>.</li>
+</ol>`,
+
+  starter: `// 1. Tally: a singleton that collects items (an object declaration)
+object Tally {
+    // TODO: back it with a private MutableList<String>
+    fun add(item: String) {
+        // TODO
+    }
+    fun count(): Int = 0            // TODO
+    fun all(): List<String> = emptyList()  // TODO: return a copy
+}
+
+// 2. Greeter interface (written for you)
+interface Greeter {
+    fun greet(name: String): String
+}
+
+// 3. User has a private constructor; fill in its companion object
+class User private constructor(val name: String, val age: Int) {
+    companion object {
+        const val SPECIES = "" // TODO: "human"
+
+        fun parse(text: String): User {
+            return User("", 0) // TODO: split "name:age" on ":"
+        }
+    }
+}
+
+// 4. politeGreeter returns an anonymous object implementing Greeter
+fun politeGreeter(): Greeter = object : Greeter {
+    override fun greet(name: String): String = "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\bobject\s+Tally\b/, message: "Declare Tally as an object (singleton) declaration" },
+    { pattern: /\bcompanion\s+object\b/, message: "Use a companion object for User's factory and constant" },
+    { pattern: /\bobject\s*:\s*Greeter\b/, message: "Return an object expression: object : Greeter { … }" },
+  ],
+
+  tests: [
+    { name: "Tally is a singleton: state persists across calls", code: "        val start = Tally.count()\n        Tally.add(\"apples\")\n        Tally.add(\"pears\")\n        expect_eq(Tally.count(), start + 2)\n        expect_true(Tally.all().contains(\"apples\"))\n        expect_true(Tally.all().contains(\"pears\"))" },
+    { name: "Tally.all() returns a copy, not the live list", code: "        val snapshot = Tally.all()\n        Tally.add(\"plums\")\n        expect_eq(snapshot.contains(\"plums\"), false)" },
+    { name: "companion factory parses a user", code: "        val u = User.parse(\"Ada:36\")\n        expect_eq(u.name, \"Ada\")\n        expect_eq(u.age, 36)" },
+    { name: "companion factory parses another user", code: "        expect_eq(User.parse(\"Rob:68\").age, 68)" },
+    { name: "companion constant is reachable on the class", code: "        expect_eq(User.SPECIES, \"human\")" },
+    { name: "object expression implements Greeter", code: "        expect_eq(politeGreeter().greet(\"Ada\"), \"Hello, Ada\")" },
+    { name: "object expression works for any name", code: "        expect_eq(politeGreeter().greet(\"Rob\"), \"Hello, Rob\")" },
+  ],
+
+  solution: `object Tally {
+    private val items = mutableListOf<String>()
+
+    fun add(item: String) {
+        items.add(item)
+    }
+
+    fun count(): Int = items.size
+
+    fun all(): List<String> = items.toList()
+}
+
+interface Greeter {
+    fun greet(name: String): String
+}
+
+class User private constructor(val name: String, val age: Int) {
+    companion object {
+        const val SPECIES = "human"
+
+        fun parse(text: String): User {
+            val parts = text.split(":")
+            return User(parts[0], parts[1].toInt())
+        }
+    }
+}
+
+fun politeGreeter(): Greeter = object : Greeter {
+    override fun greet(name: String): String = "Hello, $name"
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Kotlin</th></tr>
+  <tr><td>Singleton</td><td>Private ctor + static instance field</td><td><code>object Tally { … }</code></td></tr>
+  <tr><td>Class-level member</td><td><code>static Parse(…)</code></td><td><code>companion object { fun parse(…) }</code></td></tr>
+  <tr><td>Class-level constant</td><td><code>static readonly X</code></td><td><code>const val X</code> (in companion)</td></tr>
+  <tr><td>Private constructor</td><td><code>private C(…)</code></td><td><code>class C private constructor(…)</code></td></tr>
+  <tr><td>Anonymous instance</td><td>Anonymous class implementing an interface</td><td><code>object : Greeter { … }</code></td></tr>
+</table>
+<p>A companion object is <em>not</em> a bag of statics — it is a genuine
+singleton object attached to the class, reachable as
+<code>User.Companion</code>, and it can implement interfaces or hold state like
+any other object. You get the <code>User.parse(…)</code> call syntax for free
+because Kotlin lets you address companion members through the class name. A
+<code>private constructor</code> plus a companion factory is the standard way to
+force construction through a validated entry point — the same intent as C#'s
+private-constructor-plus-static-factory pattern, but Kotlin gives that factory
+its own dedicated singleton object instead of just a loose static method.</p>
+<p>One idiomatic wrinkle: Kotlin allows top-level functions, so you often do not
+need a singleton at all — a plain <code>fun</code> or a top-level
+<code>val</code> replaces many classes you would have written as a static
+utility class in C#. Reach for <code>object</code> when you specifically want a
+single named instance that carries state or implements an interface.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

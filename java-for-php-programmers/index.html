@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Java for PHP Programmers — Interactive Course</title>
+<link rel="stylesheet" href="../shared/css/style.css">
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <h1 id="course-title"></h1>
+    <p>
+      Twenty hands-on lessons that translate what you already know from PHP
+      into Java. Each lesson shows a familiar PHP idiom, gives you a small
+      problem to solve in Java, and checks your answer by compiling and running
+      it on Wandbox (internet connection required). Your progress is saved
+      locally, and a reference solution is one click away if you get stuck.
+    </p>
+  </header>
+  <ol class="lesson-grid" id="lesson-list"></ol>
+  <footer class="site-footer"><a href="../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a></footer>
+</div>
+<script src="js/course.js"></script>
+<script src="js/manifest.js"></script>
+<script>
+  document.getElementById("course-title").textContent = COURSE.title;
+  document.title = COURSE.title + " — Interactive Course";
+  const done = (function () {
+    try { return JSON.parse(localStorage.getItem(COURSE.storageKey)) || []; }
+    catch (e) { return []; }
+  })();
+  const list = document.getElementById("lesson-list");
+  MANIFEST.forEach(function (m) {
+    const li = document.createElement("li");
+    li.className = "lesson-card" + (done.includes(m.n) ? " done" : "");
+    li.innerHTML =
+      (done.includes(m.n) ? "<span class=\"check\">✓</span>" : "") +
+      "<a href=\"lessons/" + m.file + "\">" + m.n + ". " + m.title + "</a>" +
+      "<p class=\"blurb\">" + m.blurb + "</p>";
+    list.appendChild(li);
+  });
+</script>
+</body>
+</html>

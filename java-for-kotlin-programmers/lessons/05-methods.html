@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods",
+
+  intro: `
+<p>In Kotlin a function can live top-level, as an extension, or as a member of a
+class, and it can have default and named parameters. Java is stricter. Every
+method lives inside a type, and its <em>signature</em> — the name plus the
+parameter types — is part of how the compiler picks which method you meant.</p>
+<table>
+  <tr><th>Kotlin</th><th>Java</th></tr>
+  <tr><td>top-level <code>fun f() {}</code></td><td><code>static</code> method on a class</td></tr>
+  <tr><td>method on an instance</td><td>instance method (no <code>static</code>)</td></tr>
+  <tr><td>one <code>fun f</code>, default params</td><td>overloading: several <code>f</code> with different params</td></tr>
+  <tr><td><code>fun f(vararg xs: Int)</code></td><td><code>f(int... xs)</code> (varargs)</td></tr>
+  <tr><td><code>obj.method()</code></td><td><code>Class.method()</code> (static) vs <code>obj.method()</code> (instance)</td></tr>
+</table>
+<p>Two ideas do the work Kotlin spreads across default parameters and named
+arguments. <strong>Overloading</strong> lets you declare the same method name more
+than once as long as the parameter lists differ; the compiler resolves the call
+at compile time based on the argument types. <strong>Varargs</strong>
+(<code>int... xs</code>) accepts zero or more trailing arguments and hands them
+to you as an array — the same role as Kotlin's <code>vararg</code> parameter, but
+chosen by overload resolution just like any other signature.</p>
+<p>A <code>static</code> method belongs to the class and is called as
+<code>MathUtil.max(...)</code>. An instance method belongs to an object and reads
+the object's fields through <code>this</code>. This lesson is all static utility
+methods; instance methods get their own lesson.</p>`,
+
+  kotlin: `fun add(a: Int, b: Int): Int {
+    return a + b
+}
+
+// Kotlin fakes overloading with a default parameter:
+fun label(x: Int, unit: String = ""): String {
+    return if (unit.isNotEmpty()) "\${x}\${unit}" else x.toString()
+}
+
+// vararg == Java varargs
+fun sum(vararg xs: Int): Int {
+    return xs.sum()
+}`,
+
+  task: `
+<p>Write a class <code>MathUtil</code> full of <code>static</code> methods. You
+will practice all three method features at once:</p>
+<ol>
+  <li><code>add(int a, int b)</code> returns their sum.</li>
+  <li>Overload <code>label</code>: <code>label(int x)</code> returns the number
+      as a string (e.g. <code>"5"</code>), and <code>label(int x, String unit)</code>
+      returns the number with the unit appended (e.g. <code>"5kg"</code>). Same
+      name, different parameter lists.</li>
+  <li><code>sum(int... xs)</code> uses varargs: <code>sum()</code> is
+      <code>0</code>, <code>sum(1, 2, 3)</code> is <code>6</code>. Inside the
+      method <code>xs</code> is an <code>int[]</code>.</li>
+  <li><code>max(int... xs)</code> returns the largest value, or <code>0</code>
+      when called with no arguments.</li>
+</ol>
+<p>Have <code>label(int x)</code> call <code>label(x, "")</code> if you like —
+one overload delegating to another is idiomatic.</p>`,
+
+  starter: `class MathUtil {
+  static int add(int a, int b) {
+    return 0; // TODO
+  }
+
+  static String label(int x) {
+    return ""; // TODO
+  }
+
+  static String label(int x, String unit) {
+    return ""; // TODO
+  }
+
+  static int sum(int... xs) {
+    return 0; // TODO
+  }
+
+  static int max(int... xs) {
+    return 0; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+String\s+label\s*\(\s*int\s+\w+\s*\)[\s\S]*static\s+String\s+label\s*\(\s*int\s+\w+\s*,/,
+      message: "Declare two overloads of label: label(int) and label(int, String)" },
+    { pattern: /int\s*\.\.\.\s*\w+/, message: "Use varargs (int... xs) for sum and max" },
+  ],
+
+  tests: [
+    { name: "add(2, 3) is 5", code: "      expect_eq(MathUtil.add(2, 3), 5);" },
+    { name: 'label(5) is "5"', code: "      expect_eq(MathUtil.label(5), \"5\");" },
+    { name: 'label(5, "kg") is "5kg"', code: "      expect_eq(MathUtil.label(5, \"kg\"), \"5kg\");" },
+    { name: "sum() is 0", code: "      expect_eq(MathUtil.sum(), 0);" },
+    { name: "sum(1, 2, 3) is 6", code: "      expect_eq(MathUtil.sum(1, 2, 3), 6);" },
+    { name: "max(3, 9, 4) is 9", code: "      expect_eq(MathUtil.max(3, 9, 4), 9);" },
+    { name: "max() is 0", code: "      expect_eq(MathUtil.max(), 0);" },
+  ],
+
+  solution: `class MathUtil {
+  static int add(int a, int b) {
+    return a + b;
+  }
+
+  static String label(int x) {
+    return label(x, "");
+  }
+
+  static String label(int x, String unit) {
+    return x + unit;
+  }
+
+  static int sum(int... xs) {
+    int total = 0;
+    for (int x : xs) {
+      total += x;
+    }
+    return total;
+  }
+
+  static int max(int... xs) {
+    if (xs.length == 0) {
+      return 0;
+    }
+    int best = xs[0];
+    for (int x : xs) {
+      if (x > best) {
+        best = x;
+      }
+    }
+    return best;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+  <tr><td>Utility function</td><td><code>fun f() {}</code></td><td><code>static</code> method</td></tr>
+  <tr><td>Two shapes, one name</td><td>default parameter</td><td>two overloads: <code>f(int)</code>, <code>f(int, String)</code></td></tr>
+  <tr><td>Variadic</td><td><code>fun f(vararg xs: Int)</code></td><td><code>f(int... xs)</code></td></tr>
+  <tr><td>Params inside</td><td>real array (<code>IntArray</code>)</td><td><code>xs</code> is an <code>int[]</code></td></tr>
+  <tr><td>Delegation</td><td>default value</td><td>one overload calls another</td></tr>
+</table>
+<p>Overload resolution happens at compile time from the static argument types, so
+Java's overloads are unrelated to Kotlin's single function with a default
+parameter — each overload is its own method with its own body (or one delegates
+to another, as <code>label(int)</code> does here). Varargs must be the
+<em>last</em> parameter, and <code>f()</code> with no varargs arguments hands you
+an empty array, not <code>null</code> — which is why <code>sum()</code> safely
+returns <code>0</code>. One caveat: you can't overload on return type alone; the
+parameter lists must differ.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules",
+
+  intro: `
+<p>C++ has nothing that plays the same dual role as JavaScript's
+<code>export</code>/<code>import</code>. A C++ header holds declarations that
+exist purely for the compiler — a function prototype, a type alias, a forward
+declaration — and none of that survives into the compiled binary; only the
+matching definitions in a <code>.cpp</code> file turn into real code. There is
+also no runtime "module object" in C++: names are resolved once, at link
+time, and after that a <code>namespace</code> is just an organizing prefix,
+not a value you can hold or inspect. JavaScript collapses that split
+entirely — a module really is a live object at runtime, every exported name
+is a real property on it, and the "default" export is nothing more than a
+property named <code>default</code>.</p>
+<table>
+  <tr><th>C++</th><th>JavaScript (runtime)</th></tr>
+  <tr><td><code>inline constexpr double TAX = 0.1;</code></td><td><code>export const TAX = 0.1;</code></td></tr>
+  <tr><td><code>using Cart = std::vector&lt;int&gt;;</code></td><td>no equivalent — types don't exist at runtime</td></tr>
+  <tr><td><code>class Cart;</code> (forward declaration)</td><td>no equivalent — every import pulls in a real value</td></tr>
+  <tr><td><code>int total(const std::vector&lt;int&gt;&amp; items) { ... }</code></td><td><code>export default function total() {}</code></td></tr>
+</table>
+<p>The mental shift: a named export is a <em>value</em> you name, and the
+default export is just the one binding the module hands back when you import
+it without braces — a concept C++ has no room for, since every linked symbol
+needs its own explicit name. There is nothing at runtime that distinguishes a
+"type export" from a value export in JavaScript, because there is no type
+layer at all once the code runs — much the same way a C++ type alias or
+forward declaration never turns into a byte of machine code.</p>`,
+
+  cpp: `// pricing.h
+#pragma once
+#include <string>
+#include <vector>
+
+namespace pricing {
+    inline constexpr double TAX_RATE = 0.1;
+
+    int addTax(int cents);
+    std::string formatUSD(int cents);
+
+    // the module's "main" function — C++ has no default-export
+    // concept, just another named symbol in the namespace
+    int total(const std::vector<int>& items);
+}
+
+// pricing.cpp
+#include "pricing.h"
+#include <cmath>
+#include <sstream>
+#include <iomanip>
+
+int pricing::addTax(int cents) {
+    return static_cast<int>(std::round(cents * (1 + TAX_RATE)));
+}
+
+std::string pricing::formatUSD(int cents) {
+    std::ostringstream out;
+    out << "$" << std::fixed << std::setprecision(2) << (cents / 100.0);
+    return out.str();
+}
+
+int pricing::total(const std::vector<int>& items) {
+    int sum = 0;
+    for (int c : items) sum += c;
+    return sum;
+}`,
+
+  task: `
+<p>Build a tiny pricing module using plain-JavaScript exports — one file
+holds both the declaration and the implementation, unlike a C++
+header/<code>.cpp</code> pair. Export every symbol directly, and give the
+module one default export:</p>
+<ol>
+  <li><strong>Named const export</strong>: <code>TAX_RATE</code> = <code>0.1</code>.</li>
+  <li><strong>Named function export</strong>: <code>addTax(cents)</code> returns
+      the price with tax added, rounded to a whole number of cents
+      (<code>Math.round(cents * (1 + TAX_RATE))</code>).</li>
+  <li><strong>Named function export</strong>: <code>formatUSD(cents)</code>
+      returns a string like <code>"$12.34"</code> (dollars with two decimals).</li>
+  <li><strong>Default export</strong>: <code>total(items)</code>, a function that
+      sums an array of cent amounts and returns the total (<code>0</code> for an
+      empty array). Export it with <code>export default</code>.</li>
+</ol>`,
+
+  starter: `// 1. named const export
+export const TAX_RATE = 0.1;
+
+// 2. named function export: price with tax, rounded to whole cents
+export function addTax(cents) {
+  // TODO
+  return 0;
+}
+
+// 3. named function export: cents -> "$12.34"
+export function formatUSD(cents) {
+  // TODO
+  return "";
+}
+
+// 4. default export: sum an array of cent amounts
+export default function total(items) {
+  // TODO
+  return 0;
+}
+`,
+
+  exportNames: ["TAX_RATE", "addTax", "formatUSD", "total"],
+
+  requirements: [
+    { pattern: /export\s+const\s+TAX_RATE/, message: "Use a named const export for TAX_RATE" },
+    { pattern: /export\s+function\s+addTax/, message: "Use a named function export for addTax" },
+    { pattern: /export\s+default/, message: "Use export default for total" },
+  ],
+
+  tests: [
+    { name: "TAX_RATE is 0.1", run: (x) => expectEqual(x.TAX_RATE, 0.1) },
+    { name: "addTax(100) is 110", run: (x) => expectEqual(x.addTax(100), 110) },
+    { name: "addTax(199) rounds to 219", run: (x) => expectEqual(x.addTax(199), 219) },
+    { name: 'formatUSD(1234) is "$12.34"', run: (x) => expectEqual(x.formatUSD(1234), "$12.34") },
+    { name: 'formatUSD(500) is "$5.00"', run: (x) => expectEqual(x.formatUSD(500), "$5.00") },
+    { name: "default export total sums the array", run: (x) => expectEqual(x.total([100, 200, 300]), 600) },
+    { name: "default export total([]) is 0", run: (x) => expectEqual(x.total([]), 0) },
+  ],
+
+  solution: `export const TAX_RATE = 0.1;
+
+export function addTax(cents) {
+  return Math.round(cents * (1 + TAX_RATE));
+}
+
+export function formatUSD(cents) {
+  return "$" + (cents / 100).toFixed(2);
+}
+
+export default function total(items) {
+  return items.reduce((sum, cents) => sum + cents, 0);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>JavaScript (runtime)</th></tr>
+  <tr><td>Named export</td><td>declared in a header, defined in a <code>.cpp</code></td><td><code>export const x = 1;</code></td></tr>
+  <tr><td>Default export</td><td>no equivalent — every exported name is explicit</td><td>becomes the <code>default</code> binding</td></tr>
+  <tr><td>Type-only construct</td><td><code>using T = ...;</code> — compile-time only</td><td>no type layer — everything is a value</td></tr>
+  <tr><td>Forward declaration</td><td><code>class T;</code> — generates no code</td><td>every import pulls in a live value</td></tr>
+  <tr><td>Importing the "main" export</td><td><code>#include "m.h"</code>, then <code>m::fn()</code></td><td><code>import fn from "./m";</code></td></tr>
+</table>
+<p>A default export is not a special kind of value — it is exposed under the name
+<code>default</code>, which is exactly why <code>import Something from "./m"</code>
+(no braces) grabs it and lets you rename it freely, while named imports must
+match the exported name inside braces. C++ has nothing comparable: a
+namespace's members are just named symbols resolved by the linker, so "the
+module's main function" is only ever a convention, never a language feature.
+If you're used to a header/<code>.cpp</code> split, notice that JavaScript
+needs no separate declaration file at all — the exported function <em>is</em>
+its own signature, checked only by what you call on it at runtime. At
+runtime, a module is just an object of live value bindings — no more, no
+less.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Generics",
+
+  intro: `
+<p>Python type-checks generics only if you opt in — a plain function works
+with anything you hand it, and a hint like <code>list[T]</code> is enforced
+(if at all) by an external tool like mypy, never by the interpreter itself.
+Kotlin's generics look similar in spirit — a type parameter in angle brackets
+stands for "some type," resolved to a concrete type at each call site — but
+the compiler checks every one of them before the program ever runs.</p>
+<table>
+  <tr><th>Python</th><th>Kotlin</th></tr>
+  <tr><td><code>T = TypeVar("T")</code><br><code>def first(xs: list[T]) -&gt; T</code></td><td><code>fun &lt;T&gt; first(xs: List&lt;T&gt;): T</code></td></tr>
+  <tr><td><code>class Box(Generic[T]): ...</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td><code>TypeVar("T", bound=Comparable)</code></td><td><code>&lt;T : Comparable&lt;T&gt;&gt;</code></td></tr>
+  <tr><td>no read-only/mutable distinction</td><td><code>out</code> / <code>in</code> (declared)</td></tr>
+</table>
+<p>Two things differ. First, the type parameter on a Kotlin <em>function</em>
+goes before the function name — <code>fun &lt;T&gt; first(...)</code> — with
+no direct Python equivalent to place, since a Python type parameter lives on
+a separate <code>TypeVar</code> object, not inline in the signature. Second,
+a bound uses a colon in Kotlin (<code>T : Comparable&lt;T&gt;</code>) where
+Python passes <code>bound=Comparable</code> to <code>TypeVar</code>. Because
+Kotlin has no bare <code>&gt;</code> operator on arbitrary types, a
+constraint like <code>Comparable&lt;T&gt;</code> is what lets you write
+<code>a &gt; b</code> inside a generic function at all — in Python,
+<code>&gt;</code> just calls <code>__gt__</code> on whatever object you
+handed it, with nothing checked ahead of time.</p>`,
+
+  python: `from typing import Generic, TypeVar, Callable
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+class Box(Generic[T]):
+    def __init__(self, value: T) -> None:
+        self.value = value
+
+    def map(self, fn: Callable[[T], R]) -> "Box[R]":
+        return Box(fn(self.value))
+
+
+# T must support > so we can compare items
+def largest(items: list[T]) -> T:
+    best = items[0]
+    for item in items[1:]:
+        if item > best:
+            best = item
+    return best`,
+
+  task: `
+<p>Build a small generic toolkit. Everything is top-level — no
+<code>main</code> needed.</p>
+<ol>
+  <li>Define a generic container <code>class Box&lt;T&gt;(val value: T)</code>.
+      Give it <code>fun &lt;R&gt; map(transform: (T) -&gt; R): Box&lt;R&gt;</code>
+      that returns a new box holding the transformed value, and a
+      <code>toString()</code> that returns <code>"Box(&lt;value&gt;)"</code>.</li>
+  <li>Write <code>describe(box: Box&lt;out Any?&gt;): String</code> that returns
+      <code>box.toString()</code>. The <code>out</code> projection is use-site
+      variance — it lets a <code>Box&lt;Int&gt;</code> be passed where any
+      <code>Box</code> is accepted.</li>
+  <li>Write <code>largest</code> as a constrained generic
+      <code>fun &lt;T : Comparable&lt;T&gt;&gt; largest(items: List&lt;T&gt;): T</code>
+      that returns the biggest element of a non-empty list using
+      <code>&gt;</code>.</li>
+</ol>`,
+
+  starter: `// 1. Box<T> — a generic container holding one value of type T
+class Box<T>(val value: T) {
+    // map: turn a Box<T> into a Box<R> by transforming the value
+    fun <R> map(transform: (T) -> R): Box<R> = TODO()
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+// 2. describe — accept a Box of anything using use-site variance (out)
+fun describe(box: Box<out Any?>): String = TODO()
+
+// 3. largest — the largest element of a non-empty list, via a Comparable constraint
+fun <T : Comparable<T>> largest(items: List<T>): T = TODO()
+`,
+
+  requirements: [
+    { pattern: /class\s+Box\s*<\s*T\s*>/, message: "Define a generic container: class Box<T>" },
+    { pattern: /fun\s*<\s*T\s*:\s*Comparable\s*<\s*T\s*>\s*>/, message: "Write largest with a constraint: fun <T : Comparable<T>>" },
+    { pattern: /Box\s*<\s*out\b/, message: "Accept any Box with use-site variance: Box<out Any?>" },
+  ],
+
+  tests: [
+    { name: "Box holds its value", code: "        expect_eq(Box(42).value, 42)" },
+    { name: "map transforms Int -> Int", code: "        expect_eq(Box(3).map { it * 2 }.value, 6)" },
+    { name: "map can change the type (String -> Int)", code: "        expect_eq(Box(\"hi\").map { it.length }.value, 2)" },
+    { name: "describe accepts a Box<Int> via out", code: "        expect_eq(describe(Box(5)), \"Box(5)\")" },
+    { name: "largest of Ints", code: "        expect_eq(largest(listOf(3, 9, 2)), 9)" },
+    { name: "largest of Strings", code: "        expect_eq(largest(listOf(\"apple\", \"pear\", \"kiwi\")), \"pear\")" },
+  ],
+
+  solution: `class Box<T>(val value: T) {
+    fun <R> map(transform: (T) -> R): Box<R> = Box(transform(value))
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+fun describe(box: Box<out Any?>): String = box.toString()
+
+fun <T : Comparable<T>> largest(items: List<T>): T {
+    var result = items[0]
+    for (item in items) {
+        if (item > result) result = item
+    }
+    return result
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+  <tr><td>Generic function</td><td><code>T = TypeVar("T")</code><br><code>def f(x: T) -&gt; T</code></td><td><code>fun &lt;T&gt; f(x: T)</code></td></tr>
+  <tr><td>Generic class</td><td><code>class Box(Generic[T])</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td>Upper bound</td><td><code>TypeVar("T", bound=X)</code></td><td><code>&lt;T : X&gt;</code></td></tr>
+  <tr><td>Producer (covariant)</td><td><code>TypeVar("T", covariant=True)</code></td><td><code>class Src&lt;out T&gt;</code> / <code>Box&lt;out T&gt;</code></td></tr>
+  <tr><td>Consumer (contravariant)</td><td><code>TypeVar("T", contravariant=True)</code></td><td><code>class Sink&lt;in T&gt;</code></td></tr>
+</table>
+<p>Kotlin makes variance <em>explicit</em> and <em>compiler-checked</em>. An
+<code>out T</code> means the type only ever <em>produces</em> a <code>T</code>
+(like a read-only source), so <code>Box&lt;Int&gt;</code> can safely stand in
+for <code>Box&lt;Any?&gt;</code>. An <code>in T</code> means the type only
+<em>consumes</em> a <code>T</code>. You can declare it on the class
+(declaration-site) or, as in <code>Box&lt;out Any?&gt;</code> above, at the
+point of use (use-site projection) — a stricter cousin of Python's
+<code>covariant=True</code>/<code>contravariant=True</code> flags on a
+<code>TypeVar</code>, which document the same intent but, like every Python
+type hint, are never enforced when the code actually runs.</p>
+<p>The multiple upper bounds you'd need two independent checks for in Python —
+there's no single <code>TypeVar(bound=...)</code> that means "satisfies A and
+B"; you'd have to define a combined <code>Protocol</code> — become a plain
+<code>where</code> clause in Kotlin: <code>fun &lt;T&gt; f(x: T) where T : A,
+T : B</code>. And unlike a Python type hint, which simply vanishes at
+runtime, Kotlin can retain a type argument at runtime when a function is
+marked <code>inline</code> with a <code>reified</code> parameter — handy for
+<code>x is T</code> checks that would otherwise be impossible once a generic
+function is compiled.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

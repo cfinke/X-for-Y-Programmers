@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: equals, hashCode &amp; Comparable</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "equals, hashCode & Comparable",
+
+  intro: `
+<p>In Go, <code>==</code> on a struct already performs field-by-field value
+equality, as long as every field is itself comparable (no slices, maps, or
+funcs) — there's no manual helper to write, and it's the same operator a map
+uses to compare keys structurally. Sorting, though, is still explicit:
+<code>sort.Slice(s, func(i, j int) bool { return s[i].Cents &lt; s[j].Cents })</code>,
+or a reusable type implements <code>sort.Interface</code>'s <code>Less</code>
+method. Java bakes both of these into the object model instead. Every class
+inherits <code>equals(Object)</code> and <code>hashCode()</code> from
+<code>Object</code> — by default they mean reference identity — and you
+<em>override</em> them to give a class value semantics. For ordering, a class
+implements <code>Comparable&lt;T&gt;</code> and defines <code>compareTo</code>,
+which <code>Collections.sort</code> and <code>TreeSet</code> use
+automatically.</p>
+<table>
+  <tr><th>Go</th><th>Java</th></tr>
+  <tr><td><code>a == b</code> (value equality, if comparable)</td><td><code>a == b</code> (identity)</td></tr>
+  <tr><td>built into <code>==</code>, no helper needed</td><td>override <code>a.equals(b)</code></td></tr>
+  <tr><td>map keys compared structurally by <code>==</code></td><td>override <code>hashCode()</code> to match <code>equals</code></td></tr>
+  <tr><td><code>sort.Slice(s, func(i,j int) bool {...})</code></td><td><code>implements Comparable&lt;T&gt;</code> + <code>compareTo</code></td></tr>
+</table>
+<p>The load-bearing rule is <strong>the equals/hashCode contract</strong>: if
+<code>a.equals(b)</code> is true, then <code>a.hashCode() == b.hashCode()</code>
+must also be true. Break it and hash-based collections
+(<code>HashMap</code>, <code>HashSet</code>) silently misbehave — a key you
+inserted becomes unfindable. Override the two together, always, over the same
+fields. <code>Objects.equals</code> and <code>Objects.hash</code> make this a
+one-liner each.</p>`,
+
+  go: `type Money struct {
+	Cents    int
+	Currency string
+}
+
+// struct equality is built into Go for comparable fields
+func moneyEquals(a, b Money) bool {
+	return a == b
+}
+
+// sorting is a callback
+sort.Slice(wallet, func(i, j int) bool {
+	return wallet[i].Cents < wallet[j].Cents
+})`,
+
+  task: `
+<p>Build a small value class <code>Money</code> that has both value equality and a
+natural ordering.</p>
+<ol>
+  <li>Give it two fields: <code>int cents</code> and <code>String currency</code>,
+      set in the constructor. Make the class <code>implements Comparable&lt;Money&gt;</code>.</li>
+  <li>Override <code>equals(Object o)</code> so two <code>Money</code> values are
+      equal when both <code>cents</code> and <code>currency</code> match. Use the
+      <code>getClass()</code> check and a cast, then compare fields
+      (<code>Objects.equals</code> for the String).</li>
+  <li>Override <code>hashCode()</code> consistently with
+      <code>equals</code> — <code>return Objects.hash(cents, currency);</code></li>
+  <li>Implement <code>compareTo(Money other)</code> for natural ordering by
+      <code>cents</code> ascending. Use <code>Integer.compare(this.cents, other.cents)</code>
+      (never <code>this.cents - other.cents</code>, which can overflow).</li>
+</ol>
+<p>Once <code>compareTo</code> exists, <code>Collections.sort(list)</code> works
+with no comparator argument.</p>`,
+
+  starter: `class Money implements Comparable<Money> {
+  final int cents;
+  final String currency;
+
+  Money(int cents, String currency) {
+    this.cents = cents;
+    this.currency = currency;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return false; // TODO
+  }
+
+  @Override
+  public int hashCode() {
+    return 0; // TODO: must be consistent with equals
+  }
+
+  @Override
+  public int compareTo(Money other) {
+    return 0; // TODO: order by cents ascending
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /public\s+boolean\s+equals\s*\(\s*Object/, message: "Override equals(Object o)" },
+    { pattern: /public\s+int\s+hashCode\s*\(/, message: "Override hashCode()" },
+    { pattern: /implements\s+Comparable<Money>/, message: "Implement Comparable<Money>" },
+    { pattern: /public\s+int\s+compareTo\s*\(/, message: "Implement compareTo" },
+  ],
+
+  tests: [
+    { name: "equal values are equal", code: "      expect_true(new Money(500, \"USD\").equals(new Money(500, \"USD\")));" },
+    { name: "different cents are not equal", code: "      expect_true(!new Money(500, \"USD\").equals(new Money(750, \"USD\")));" },
+    { name: "different currency is not equal", code: "      expect_true(!new Money(500, \"USD\").equals(new Money(500, \"EUR\")));" },
+    { name: "hashCode matches for equal values", code: "      expect_eq(new Money(500, \"USD\").hashCode(), new Money(500, \"USD\").hashCode());" },
+    { name: "works as a HashSet element", code: "      Set<Money> set = new HashSet<>();\n      set.add(new Money(500, \"USD\"));\n      expect_true(set.contains(new Money(500, \"USD\")));" },
+    { name: "compareTo orders by cents", code: "      expect_true(new Money(300, \"USD\").compareTo(new Money(500, \"USD\")) < 0);\n      expect_true(new Money(500, \"USD\").compareTo(new Money(500, \"USD\")) == 0);" },
+    { name: "Collections.sort uses natural ordering", code: "      List<Money> list = new ArrayList<>(List.of(new Money(300, \"USD\"), new Money(100, \"USD\"), new Money(200, \"USD\")));\n      Collections.sort(list);\n      expect_eq(list.get(0).cents, 100);\n      expect_eq(list.get(2).cents, 300);" },
+  ],
+
+  solution: `class Money implements Comparable<Money> {
+  final int cents;
+  final String currency;
+
+  Money(int cents, String currency) {
+    this.cents = cents;
+    this.currency = currency;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Money other = (Money) o;
+    return cents == other.cents && Objects.equals(currency, other.currency);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(cents, currency);
+  }
+
+  @Override
+  public int compareTo(Money other) {
+    return Integer.compare(this.cents, other.cents);
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+  <tr><td>Identity check</td><td><code>a == b</code> (value equality)</td><td><code>a == b</code> (identity)</td></tr>
+  <tr><td>Value equality</td><td>built into <code>==</code> for comparable structs</td><td>override <code>equals(Object)</code></td></tr>
+  <tr><td>Hashing</td><td>map keys hashed structurally when comparable</td><td>override <code>hashCode()</code> to match equals</td></tr>
+  <tr><td>Combine fields into a hash</td><td>—</td><td><code>Objects.hash(a, b)</code></td></tr>
+  <tr><td>Natural ordering</td><td><code>sort.Interface</code>'s <code>Less</code></td><td><code>Comparable&lt;T&gt;.compareTo</code></td></tr>
+  <tr><td>One-off ordering</td><td><code>sort.Slice</code> callback</td><td><code>Comparator</code> passed to sort</td></tr>
+</table>
+<p>The contract is the whole point: <code>equals</code> and <code>hashCode</code>
+travel together and must be computed from the same fields, or
+<code>HashMap</code>/<code>HashSet</code> break. Go sidesteps half of this by
+making <code>==</code> already do value equality for comparable structs — but
+the analogous Go trap is a struct with a non-comparable field (a slice or a
+map), which makes <code>==</code> a compile error rather than a silent bug. In
+real Java code you'd usually reach for a <a><code>record</code></a>, which
+generates a correct <code>equals</code>/<code>hashCode</code> for you — but
+records still need a hand-written <code>compareTo</code> if you want ordering,
+and knowing the manual version explains what the record is doing under the
+hood.</p>
+<p><code>compareTo</code> returns a sign, not a boolean: negative means
+<code>this</code> sorts before <code>other</code>, zero means equal ordering,
+positive means after. That's a shift from Go's <code>sort.Slice</code>
+callback, whose <code>Less(i, j)</code> only ever answers "does <code>i</code>
+come before <code>j</code>?" with a bool — it never needs to express "equal."
+Prefer <code>Integer.compare</code> / <code>Comparator</code> chains over
+subtracting, since subtraction can overflow for large values.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

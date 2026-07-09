@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Union Types</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Union Types",
+
+  intro: `
+<p>"This parameter is an <code>Int</code> <em>or</em> a <code>String</code>."
+Kotlin has three answers, none of them great: write two overloads and duplicate
+the plumbing; take <code>Any</code> and give up type safety at the door;
+or build a sealed hierarchy — an interface and two data classes — just to
+say "or". TypeScript has a fourth answer that is just the sentence itself:
+<code>number | string</code>. The pipe builds an <em>ad-hoc union type</em>,
+on the spot, no declarations anywhere.</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Two overloads of <code>formatId</code></td><td>One <code>formatId(id: number | string)</code></td></tr>
+  <tr><td><code>Any</code> + <code>is</code> + smart cast</td><td><code>typeof id === "number"</code> — narrows, no cast</td></tr>
+  <tr><td><code>sealed interface Id</code> + two subclasses</td><td>The union is anonymous; nothing to declare</td></tr>
+  <tr><td>With <code>Any</code>, the <code>else</code> only knows "not Int"</td><td>Compiler <em>subtracts</em> handled cases from the union</td></tr>
+</table>
+<p>Inside the function, <code>typeof</code> does what Kotlin's <code>is</code>
+checks and smart casts do — but the union makes it complete. After
+<code>if (typeof id === "number")</code>, the compiler treats <code>id</code>
+as a plain <code>number</code> inside that branch — just like a Kotlin smart
+cast — and, because the parameter's type is a two-member union, as a plain
+<code>string</code> in the <code>else</code> branch, subtracting the case you
+have already handled. With Kotlin's <code>Any</code> the <code>else</code>
+branch only knows <code>id</code> is <em>not</em> an <code>Int</code>; a
+two-case union lets TypeScript know exactly what remains. This is called
+<em>narrowing</em>, and it is the engine behind most of TypeScript's
+ergonomics. (For primitives use <code>typeof</code>; for class instances
+<code>instanceof</code> works here too, and narrows just like Kotlin's
+<code>is</code>.)</p>`,
+
+  kotlin: `// Kotlin's three answers to "Int OR String":
+
+// 1. Overloads — two functions, duplicated plumbing:
+fun formatId(id: Int): String    = "ID-%05d".format(id)
+fun formatId(id: String): String = "ID-" + id.uppercase()
+
+// 2. Any + is — type safety abandoned at the door:
+fun formatId(id: Any): String = when (id) {
+    is Int    -> "ID-%05d".format(id)   // smart-cast to Int here
+    is String -> "ID-" + id.uppercase() // smart-cast to String here
+    else      -> throw IllegalArgumentException("Int or String only")
+}
+
+// 3. A sealed hierarchy — real ceremony for a two-case "or":
+sealed interface Id
+data class NumericId(val value: Int) : Id
+data class TextId(val value: String) : Id`,
+
+  task: `
+<p>Collapse the overload pair into one function:</p>
+<ol>
+  <li>Write <code>formatId(id: number | string): string</code> — the union
+      pipe goes right in the parameter's type annotation.</li>
+  <li>If <code>id</code> is a <strong>number</strong>, return
+      <code>"ID-"</code> followed by the number left-padded with zeros to 5
+      digits: <code>formatId(42)</code> is <code>"ID-00042"</code>.
+      (<code>String(id).padStart(5, "0")</code> is your
+      <code>"%05d".format(id)</code>.)</li>
+  <li>If <code>id</code> is a <strong>string</strong>, return
+      <code>"ID-"</code> plus the string uppercased:
+      <code>formatId("abc123")</code> is <code>"ID-ABC123"</code>.</li>
+  <li>Branch with <code>typeof id === "number"</code>. Notice there is no
+      cast in either branch — try calling <code>id.toUpperCase()</code>
+      inside the number branch and watch the compiler object.</li>
+</ol>`,
+
+  starter: `// One function, two accepted types. Put the union in the signature:
+//   number | string
+// then let typeof narrow each branch — no instanceof-and-cast, no overloads.
+function formatId(id: string): string {
+  // TODO: number -> "ID-" + String(id).padStart(5, "0")
+  //       string -> "ID-" + id.toUpperCase()
+  return "";
+}
+`,
+
+  exportNames: ["formatId"],
+
+  requirements: [
+    { pattern: /formatId\s*\(\s*id\s*:\s*number\s*\|\s*string\s*\)/, message: "Declare the parameter as a union: formatId(id: number | string) — one function instead of two overloads" },
+    { pattern: /typeof\s+id/, message: "Narrow with typeof id — the compiler knows the exact type inside each branch, no cast required" },
+  ],
+
+  tests: [
+    { name: 'formatId(42) returns "ID-00042"', run: (x) => expectEqual(x.formatId(42), "ID-00042") },
+    { name: 'formatId(7) returns "ID-00007"', run: (x) => expectEqual(x.formatId(7), "ID-00007") },
+    { name: 'formatId("abc123") returns "ID-ABC123"', run: (x) => expectEqual(x.formatId("abc123"), "ID-ABC123") },
+    { name: 'formatId("x9") returns "ID-X9"', run: (x) => expectEqual(x.formatId("x9"), "ID-X9") },
+  ],
+
+  solution: `function formatId(id: number | string): string {
+  if (typeof id === "number") {
+    // In this branch the compiler knows id is a number.
+    return "ID-" + String(id).padStart(5, "0");
+  }
+  // And here it knows id is a string — number was subtracted.
+  return "ID-" + id.toUpperCase();
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>"A or B" parameter</td><td>Overloads / <code>Any</code> / sealed hierarchy</td><td><code>a: A | B</code></td></tr>
+  <tr><td>Runtime type test (primitive)</td><td><code>is Int</code> (smart cast)</td><td><code>typeof x === "number"</code></td></tr>
+  <tr><td>Runtime type test (class)</td><td><code>x is Circle</code> (smart cast)</td><td><code>x instanceof Circle</code> (also narrows)</td></tr>
+  <tr><td>After the test</td><td>Smart cast — same variable</td><td>Same variable, automatically narrowed</td></tr>
+  <tr><td>The else branch</td><td>With <code>Any</code>, only knows "not Int"</td><td>Handled cases are subtracted from the union</td></tr>
+  <tr><td>Nullable as a union</td><td><code>String?</code> is a distinct type</td><td><code>string | null</code> is just another union</td></tr>
+</table>
+<p>Notice that lesson 6 was secretly this lesson: <code>User | null</code> is
+an ordinary union, and <code>if (user !== null)</code> is an ordinary
+narrowing — the same idea as Kotlin's <code>String?</code> and its smart casts.
+Kotlin overloads pick an implementation at <em>compile</em> time per call
+site; a union function branches at <em>runtime</em> — yet stays fully
+type-checked, because the compiler tracks which member of the union survives
+each branch. When a union's cases each carry different data, you will want
+discriminated unions — Kotlin's sealed-class-plus-<code>when</code> pattern —
+which get their own lesson later.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

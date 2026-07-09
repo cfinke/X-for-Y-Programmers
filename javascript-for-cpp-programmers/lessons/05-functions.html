@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>In C++ every function has a fixed signature — parameter types and a return
+type, checked and fixed at compile time, plus overloads if you want the same
+name to mean different things for different argument types. In JavaScript a
+function is just a value, and its "signature" is whatever it happens to do
+with whatever it happens to receive. This lesson is about the three ways to
+make a function, plus the two parameter forms you reach for most: defaults
+and rest.</p>
+<table>
+  <tr><th>C++</th><th>JavaScript</th></tr>
+  <tr><td><code>int add(int a, int b) {}</code></td><td><code>function add(a, b) {}</code></td></tr>
+  <tr><td><code>auto double_ = [](int n) { return n * 2; };</code></td><td><code>const double = (n) =&gt; n * 2;</code></td></tr>
+  <tr><td><code>std::string greet(std::string name = "friend") {}</code></td><td><code>function greet(name = "friend") {}</code></td></tr>
+  <tr><td><code>int sum(std::initializer_list&lt;int&gt; xs) {}</code></td><td><code>function sum(...xs) {}</code></td></tr>
+</table>
+<p>All three forms — declarations, function expressions, and arrow functions —
+produce a callable value you can pass around, return, and store. There is no
+overloading and no compile-time checking of any of it: declarations
+<em>hoist</em> (you can call them before their line), arrow functions have no
+<code>this</code> or <code>arguments</code> of their own, and a default only
+kicks in when the argument is <code>undefined</code> — never for
+<code>null</code>, never for <code>0</code> or <code>""</code>.</p>`,
+
+  cpp: `int add(int a, int b) {
+  return a + b;
+}
+
+auto double_ = [](int n) {
+  return n * 2;
+};
+
+std::string greet(std::string name = "friend") {
+  return "Hi, " + name;
+}
+
+int sum(std::initializer_list<int> xs) {
+  int total = 0;
+  for (int x : xs) total += x;
+  return total;
+}`,
+
+  task: `
+<p>Write the plain-JavaScript versions — no types, no overloads:</p>
+<ol>
+  <li>A function declaration <code>add(a, b)</code> that returns their sum.</li>
+  <li>An arrow function stored in a <code>const double</code> that returns
+      <code>n * 2</code>.</li>
+  <li><code>greet(name)</code> with a <em>default parameter</em> of
+      <code>"friend"</code>, returning a string like <code>"Hi, Ada"</code>.</li>
+  <li><code>sum(...xs)</code> using a <em>rest parameter</em> that returns the
+      total of every argument (<code>0</code> when called with none).</li>
+</ol>`,
+
+  starter: `// 1. declaration: add(a, b) -> a + b
+function add(a, b) {
+  // TODO
+  return 0;
+}
+
+// 2. arrow function: double(n) -> n * 2
+const double = (n) => {
+  // TODO
+  return 0;
+};
+
+// 3. default parameter: greet(name = "friend") -> "Hi, <name>"
+function greet(name) {
+  // TODO
+  return "";
+}
+
+// 4. rest parameter: sum(...xs) -> total of all arguments
+function sum() {
+  // TODO
+  return 0;
+}
+`,
+
+  exportNames: ["add", "double", "greet", "sum"],
+
+  requirements: [
+    { pattern: /const\s+double\s*=\s*\(?\s*n\s*\)?\s*=>/, message: "Define double as an arrow function" },
+    { pattern: /function\s+greet\s*\(\s*name\s*=\s*["']friend["']\s*\)/, message: "Give greet a default parameter of \"friend\"" },
+    { pattern: /function\s+sum\s*\(\s*\.\.\.[A-Za-z_$][\w$]*\s*\)/, message: "Use a rest parameter in sum" },
+  ],
+
+  tests: [
+    { name: "add(2, 3) is 5", run: (x) => expectEqual(x.add(2, 3), 5) },
+    { name: "double(21) is 42", run: (x) => expectEqual(x.double(21), 42) },
+    { name: 'greet("Ada") is "Hi, Ada"', run: (x) => expectEqual(x.greet("Ada"), "Hi, Ada") },
+    { name: 'greet() falls back to "Hi, friend"', run: (x) => expectEqual(x.greet(), "Hi, friend") },
+    { name: "sum() with no args is 0", run: (x) => expectEqual(x.sum(), 0) },
+    { name: "sum(1, 2, 3, 4) is 10", run: (x) => expectEqual(x.sum(1, 2, 3, 4), 10) },
+    { name: "double is a function value", run: (x) => expectEqual(typeof x.double, "function") },
+  ],
+
+  solution: `function add(a, b) {
+  return a + b;
+}
+
+const double = (n) => n * 2;
+
+function greet(name = "friend") {
+  return \`Hi, \${name}\`;
+}
+
+function sum(...xs) {
+  return xs.reduce((total, x) => total + x, 0);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>JavaScript</th></tr>
+  <tr><td>Declaration</td><td><code>int add(int a, int b)</code></td><td><code>function add(a, b)</code> (hoisted)</td></tr>
+  <tr><td>Arrow expression</td><td><code>auto f = [](int n) { return n * 2; };</code></td><td><code>const f = (n) =&gt; n * 2</code> (not hoisted)</td></tr>
+  <tr><td>Default param</td><td><code>std::string name = "friend"</code></td><td><code>name = "friend"</code></td></tr>
+  <tr><td>Rest param</td><td><code>std::initializer_list&lt;int&gt; xs</code></td><td><code>...xs</code> (a real array)</td></tr>
+  <tr><td>Overloading</td><td>multiple functions, same name, different types</td><td>not supported — one function per name</td></tr>
+</table>
+<p>Two runtime gotchas C++'s compile-time checks used to hide. First, defaults
+trigger only on <code>undefined</code>: <code>greet(null)</code> returns
+<code>"Hi, null"</code>, not <code>"Hi, friend"</code>. Second, a rest
+parameter is a genuine <code>Array</code> — you can call <code>.reduce</code>,
+<code>.map</code>, or <code>.length</code> on it directly, unlike a
+<code>std::initializer_list</code>, which only offers begin/end iterators. And
+because arrow functions capture no <code>this</code> of their own (much like
+a C++ lambda with an empty capture list still needs <code>[&]</code> or
+<code>[=]</code> to reach enclosing state), they are the idiomatic choice for
+the little callbacks you hand to array methods.</p>`,
+};
+</script>
+<script src="../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

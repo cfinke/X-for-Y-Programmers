@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Generics</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Generics",
+
+  intro: `
+<p>Generics will feel like a natural cousin of C++ templates:
+<code>template &lt;typename T&gt; class Box</code> and
+<code>template &lt;typename T&gt; T identity(T x)</code> express nearly the same
+idea as C#'s generic type parameters. The big difference is in the mechanism:
+C++ templates are <em>monomorphized</em> — the compiler stamps out a fresh
+definition of <code>Box</code> for every distinct <code>T</code> you
+instantiate it with, and there is no single <code>Box</code> type at runtime.
+C# generics are reified differently: there is one generic class, but the type
+argument survives to runtime, so <code>new T()</code> and
+<code>typeof(T)</code> actually work through real runtime type information.</p>
+<p>The other new idea is <strong>constraints</strong>. C++ has traditionally
+leaned on duck typing (and famously cryptic template error messages) to
+constrain what a <code>T</code> can be, with C++20 <code>concepts</code> as the
+modern, readable way to spell one out; C# spells it as a <code>where</code>
+clause after the signature. Either way, a constraint tells the compiler what a
+<code>T</code> can do — call <code>CompareTo</code> on it, or <code>new</code>
+it up — instead of treating it as an opaque blob.</p>
+<table>
+  <tr><th>C++</th><th>C#</th></tr>
+  <tr><td><code>template &lt;typename T&gt; class Box { ... };</code></td><td><code>class Box&lt;T&gt; {}</code></td></tr>
+  <tr><td><code>template &lt;typename T&gt; T id(T x)</code></td><td><code>T Id&lt;T&gt;(T x)</code></td></tr>
+  <tr><td><code>template &lt;typename T&gt; requires std::three_way_comparable&lt;T&gt;</code></td><td><code>where T : IComparable&lt;T&gt;</code></td></tr>
+  <tr><td><em>(no constraint declared — checked at instantiation)</em></td><td><code>where T : class, new()</code></td></tr>
+</table>
+<p>A concept like <code>requires std::three_way_comparable&lt;T&gt;</code>
+unlocks comparison operators on <code>T</code>. An unconstrained template
+already unlocks <code>T{}</code> or <code>new T()</code>, because C++ only
+checks a template body when it's instantiated with a concrete type — whereas
+C# must commit to <code>where T : new()</code> up front before
+<code>new T()</code> is allowed to compile. You can combine multiple concept
+requirements with <code>&amp;&amp;</code>, the same way C# combines
+<code>where</code> clauses with commas.</p>`,
+
+  cpp: `template <typename T>
+class Box {
+public:
+  explicit Box(T item) : item_(item) {}
+  T value() const { return item_; }
+  bool isEmpty() const { return item_ == T{}; }
+private:
+  T item_;
+};
+
+template <typename T>
+T identity(T x) {
+  return x;
+}
+
+// No constraint is declared; using >= just requires T to support it:
+template <typename T>
+T max_of(T a, T b) {
+  return a >= b ? a : b;
+}`,
+
+  task: `
+<p>Build a small generic toolkit. C# has no free functions, so the helper methods
+live on a <code>static class</code>.</p>
+<ol>
+  <li>A generic class <code>Box&lt;T&gt;</code> with a constructor taking a
+      <code>T</code>, a <code>Value</code> property (get/set), and a read-only
+      <code>IsEmpty</code> property that is <code>true</code> when the stored item
+      is <code>null</code>.</li>
+  <li>A class <code>Widget</code> with an <code>int Size</code> auto-property — you
+      will construct it generically.</li>
+  <li>A <code>static class Generics</code> with three methods:
+    <ul>
+      <li><code>Identity&lt;T&gt;(T x)</code> returns <code>x</code> unchanged.</li>
+      <li><code>Max&lt;T&gt;(T a, T b)</code> constrained
+          <code>where T : IComparable&lt;T&gt;</code>, returning the larger via
+          <code>CompareTo</code>.</li>
+      <li><code>Create&lt;T&gt;()</code> constrained
+          <code>where T : class, new()</code>, returning <code>new T()</code>.</li>
+    </ul>
+  </li>
+</ol>`,
+
+  starter: `public class Box<T> {
+  public Box(T item) {
+    // TODO: store item in a field
+  }
+
+  public T Value {
+    get { return default(T); } // TODO
+    set { /* TODO */ }
+  }
+
+  public bool IsEmpty {
+    get { return false; } // TODO
+  }
+}
+
+public class Widget {
+  public int Size { get; set; }
+}
+
+public static class Generics {
+  public static T Identity<T>(T x) {
+    return default(T); // TODO
+  }
+
+  public static T Max<T>(T a, T b) where T : IComparable<T> {
+    return default(T); // TODO
+  }
+
+  public static T Create<T>() where T : class, new() {
+    return null; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Box\s*<\s*T\s*>/, message: "Declare a generic class Box<T>" },
+    { pattern: /where\s+T\s*:\s*IComparable<T>/, message: "Constrain Max with where T : IComparable<T>" },
+    { pattern: /where\s+T\s*:\s*class\s*,\s*new\s*\(\s*\)/, message: "Constrain Create with where T : class, new()" },
+  ],
+
+  tests: [
+    { name: "Identity returns its argument (int)", code: "      expect_eq(Generics.Identity(42), 42);" },
+    { name: "Identity returns its argument (string)", code: "      expect_eq(Generics.Identity(\"hi\"), \"hi\");" },
+    { name: "Box<int> stores and returns a value", code: "      var b = new Box<int>(7);\n      expect_eq(b.Value, 7);\n      b.Value = 9;\n      expect_eq(b.Value, 9);" },
+    { name: "Box<string> IsEmpty reflects null", code: "      expect_true(new Box<string>(null).IsEmpty);\n      expect_true(!new Box<string>(\"x\").IsEmpty);" },
+    { name: "Max(3, 7) is 7", code: "      expect_eq(Generics.Max(3, 7), 7);" },
+    { name: "Max on strings compares lexically", code: "      expect_eq(Generics.Max(\"apple\", \"banana\"), \"banana\");" },
+    { name: "Create<Widget>() builds a fresh instance", code: "      var w = Generics.Create<Widget>();\n      expect_true(w != null);\n      expect_eq(w.Size, 0);" },
+  ],
+
+  solution: `public class Box<T> {
+  private T item;
+
+  public Box(T item) {
+    this.item = item;
+  }
+
+  public T Value {
+    get { return item; }
+    set { item = value; }
+  }
+
+  public bool IsEmpty {
+    get { return item == null; }
+  }
+}
+
+public class Widget {
+  public int Size { get; set; }
+}
+
+public static class Generics {
+  public static T Identity<T>(T x) {
+    return x;
+  }
+
+  public static T Max<T>(T a, T b) where T : IComparable<T> {
+    return a.CompareTo(b) >= 0 ? a : b;
+  }
+
+  public static T Create<T>() where T : class, new() {
+    return new T();
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>C#</th></tr>
+  <tr><td>Generic class</td><td><code>template &lt;typename T&gt; class Box { ... };</code></td><td><code>class Box&lt;T&gt; {}</code></td></tr>
+  <tr><td>Generic method</td><td><code>template &lt;typename T&gt; T id(T x)</code></td><td><code>T Id&lt;T&gt;(T x)</code></td></tr>
+  <tr><td>Bound / constraint</td><td><code>template &lt;typename T&gt; requires C&lt;T&gt;</code></td><td><code>where T : C</code></td></tr>
+  <tr><td>Construct a T</td><td><code>T{}</code> or <code>new T()</code> — legal by default, checked at instantiation</td><td><code>new T()</code> with <code>where T : new()</code></td></tr>
+  <tr><td>Reference-type only</td><td><em>n/a</em></td><td><code>where T : class</code></td></tr>
+  <tr><td>Value-type only</td><td><em>n/a</em></td><td><code>where T : struct</code></td></tr>
+</table>
+<p>Because C# generics are reified, <code>item == null</code> inside
+<code>Box&lt;T&gt;</code> is legal even without a <code>class</code> constraint —
+for a value type like <code>int</code> it simply evaluates to <code>false</code>.
+That's why <code>Box&lt;int&gt;(0).IsEmpty</code> is <code>false</code>, not a
+compile error.</p>
+<p>The <code>new()</code> constraint must come <em>last</em> in a
+<code>where</code> list, and it only permits a parameterless constructor —
+<code>new T(arg)</code> is never allowed generically. When you need to build a
+<code>T</code> with arguments, pass in a <code>Func&lt;..., T&gt;</code> factory
+instead.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>

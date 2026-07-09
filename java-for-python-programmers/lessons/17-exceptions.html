@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Exceptions</title>
+<link rel="stylesheet" href="../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Exceptions",
+
+  intro: `
+<p>In Python you <code>raise</code> anything and <code>except Exception as e</code>
+whatever shows up — nothing forces you to declare what a function might raise or
+to handle it. Java splits exceptions into two families. <strong>Unchecked</strong>
+exceptions (subclasses of <code>RuntimeException</code>) behave like Python's: raise
+them freely, catch them if you want. <strong>Checked</strong> exceptions
+(subclasses of <code>Exception</code> but not <code>RuntimeException</code>) are
+part of a method's signature — you must either <code>catch</code> them or
+declare <code>throws</code> to pass the buck, and the compiler enforces it.</p>
+<table>
+  <tr><th>Python</th><th>Java</th></tr>
+  <tr><td><code>raise ValueError("bad")</code></td><td><code>throw new RuntimeException("bad")</code></td></tr>
+  <tr><td><code>except Exception as e: ...</code></td><td><code>catch (RuntimeException e) { }</code></td></tr>
+  <tr><td><code>try: ... finally: ...</code></td><td><code>try { } finally { }</code></td></tr>
+  <tr><td>no checked exceptions</td><td><code>throws IOException</code> in the signature</td></tr>
+  <tr><td><code>class MyErr(Exception): pass</code></td><td><code>class MyErr extends RuntimeException</code></td></tr>
+</table>
+<p>The <code>catch</code> clause names a type, so you can have several catches
+for different exception types, most specific first. Modern idiomatic Java leans
+on unchecked exceptions for programming errors and validation, reserving checked
+exceptions for recoverable, expected conditions (I/O, parsing). A common pattern:
+a method validates its input and <code>throw</code>s a custom
+<code>RuntimeException</code>, and a defensive caller wraps the call in
+<code>try/catch</code> and returns a fallback instead of blowing up.</p>`,
+
+  python: `class ValidationError(Exception):
+    pass
+
+def parse_positive(input: str) -> int:
+    try:
+        n = int(input)
+    except ValueError:
+        raise ValidationError(f"not a number: {input}")
+    if n <= 0:
+        raise ValidationError(f"not positive: {n}")
+    return n
+
+def parse_or_default(input: str, fallback: int) -> int:
+    try:
+        return parse_positive(input)
+    except ValidationError:
+        return fallback`,
+
+  task: `
+<p>Build a small validator plus a safe caller, mirroring the Python above.</p>
+<ol>
+  <li>Define a custom exception <code>ValidationError</code> that
+      <code>extends RuntimeException</code>. Give it a constructor taking a
+      <code>String message</code> and calling <code>super(message)</code>.</li>
+  <li>In a class <code>Validators</code>, write a <code>static int
+      parsePositive(String input)</code> that parses <code>input</code> with
+      <code>Integer.parseInt</code> and returns it — but if the value is
+      <code>&lt;= 0</code> it must <code>throw new ValidationError(...)</code>.
+      Declare it with <code>throws ValidationError</code> in the signature so
+      the intent is explicit (this is legal for unchecked exceptions too).</li>
+  <li>Write a <code>static int parseOrDefault(String input, int fallback)</code>
+      that calls <code>parsePositive</code> inside a <code>try</code>, returns
+      the parsed value, and in a <code>catch</code> returns <code>fallback</code>.
+      Catch both <code>ValidationError</code> and the
+      <code>NumberFormatException</code> that <code>Integer.parseInt</code>
+      throws on bad text.</li>
+</ol>`,
+
+  starter: `class ValidationError extends RuntimeException {
+  ValidationError(String message) {
+    super(message);
+  }
+}
+
+class Validators {
+  static int parsePositive(String input) throws ValidationError {
+    return 0; // TODO: parse and validate, throwing ValidationError when <= 0
+  }
+
+  static int parseOrDefault(String input, int fallback) {
+    return 0; // TODO: try parsePositive, catch and return fallback
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+ValidationError\s+extends\s+RuntimeException/, message: "Define ValidationError extends RuntimeException" },
+    { pattern: /throw\s+new\s+ValidationError/, message: "parsePositive must throw new ValidationError" },
+    { pattern: /catch\s*\(/, message: "parseOrDefault must catch the exception" },
+  ],
+
+  tests: [
+    { name: "parsePositive(\"42\") returns 42", code: "      expect_eq(Validators.parsePositive(\"42\"), 42);" },
+    { name: "parseOrDefault(\"7\", -1) returns 7", code: "      expect_eq(Validators.parseOrDefault(\"7\", -1), 7);" },
+    { name: "parseOrDefault(\"-5\", 99) falls back to 99", code: "      expect_eq(Validators.parseOrDefault(\"-5\", 99), 99);" },
+    { name: "parseOrDefault(\"abc\", 0) falls back to 0", code: "      expect_eq(Validators.parseOrDefault(\"abc\", 0), 0);" },
+    { name: "parsePositive(\"0\") throws ValidationError", code: "      boolean threw = false;\n      try { Validators.parsePositive(\"0\"); } catch (ValidationError e) { threw = true; }\n      expect_true(threw);" },
+    { name: "the thrown exception carries a message", code: "      String msg = null;\n      try { Validators.parsePositive(\"-3\"); } catch (ValidationError e) { msg = e.getMessage(); }\n      expect_true(msg != null && msg.length() > 0);" },
+  ],
+
+  solution: `class ValidationError extends RuntimeException {
+  ValidationError(String message) {
+    super(message);
+  }
+}
+
+class Validators {
+  static int parsePositive(String input) throws ValidationError {
+    int n = Integer.parseInt(input);
+    if (n <= 0) {
+      throw new ValidationError("not positive: " + n);
+    }
+    return n;
+  }
+
+  static int parseOrDefault(String input, int fallback) {
+    try {
+      return parsePositive(input);
+    } catch (ValidationError | NumberFormatException e) {
+      return fallback;
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Java</th></tr>
+  <tr><td>Throw</td><td><code>raise ValueError("x")</code></td><td><code>throw new RuntimeException("x")</code></td></tr>
+  <tr><td>Typed catch</td><td><code>except IOError as e: ...</code></td><td><code>catch (IOException e) { }</code></td></tr>
+  <tr><td>Multi-catch</td><td><code>except (A, B) as e: ...</code></td><td><code>catch (A | B e) { }</code></td></tr>
+  <tr><td>Declared throws</td><td>—</td><td><code>void f() throws IOException</code></td></tr>
+  <tr><td>Custom error</td><td><code>class MyErr(Exception)</code></td><td><code>extends RuntimeException</code></td></tr>
+  <tr><td>Cleanup</td><td><code>finally:</code> / <code>with</code> statement</td><td><code>finally { }</code> / try-with-resources</td></tr>
+</table>
+<p>The big mental shift is <strong>checked exceptions</strong>. If a method
+declares <code>throws IOException</code> and that is a checked type, callers
+cannot ignore it — the compiler rejects the code until you catch it or re-declare
+it. Extending <code>RuntimeException</code> (as we did) opts out of that
+enforcement, which is why declaring <code>throws ValidationError</code> above is
+optional documentation rather than a compiler-imposed contract.</p>
+<p>Two more niceties: multi-catch (<code>catch (A | B e)</code>) handles several
+types in one block, and <code>finally</code> runs whether or not an exception
+was thrown — though for closing files, sockets, and other resources, prefer
+<em>try-with-resources</em> (<code>try (var f = ...) { }</code>), which
+auto-closes anything implementing <code>AutoCloseable</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../shared/js/harness.js"></script>
+</body>
+</html>
