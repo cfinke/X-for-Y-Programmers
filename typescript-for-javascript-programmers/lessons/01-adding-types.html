@@ -57,7 +57,7 @@ describeUser(userName, userAge); // "Ada is thirty-six years old"
 const ageNextYear = userAge + 1; // "thirty-six1"`,
 
   task: `
-<p>Write the typed version of the code on the left:</p>
+<p>Write the typed version of the code:</p>
 <ol>
   <li>Declare a constant <code>userName</code> with an explicit
       <code>: string</code> annotation and the value <code>"Ada"</code>,
@@ -71,7 +71,7 @@ const ageNextYear = userAge + 1; // "thirty-six1"`,
 </ol>
 <p>With those annotations in place, <code>userAge = "thirty-six"</code> and
 <code>describeUser(36, "Ada")</code> are both compile errors — the silent bug
-on the left can no longer be written.</p>`,
+can no longer be written.</p>`,
 
   starter: `// 1. Declare userName and userAge with explicit type annotations.
 //    JS:  let userName = "Ada";  ->  TS:  const userName: string = "Ada";

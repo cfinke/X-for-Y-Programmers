@@ -68,7 +68,7 @@ var pairs = new[] { 1, 2, 3, 4, 5 }.Chunk(2).ToList();`,
       <code>(1..Float::INFINITY)</code>, add <code>.lazy</code>, then
       <code>select</code> the numbers divisible by <code>k</code> and take
       <code>first(count)</code>.</li>
-  <li><code>fibonacci(count)</code> — the C# iterator on the left, translated:
+  <li><code>fibonacci(count)</code> — the C# iterator, translated:
       <code>Enumerator.new</code> with <code>a, b = 0, 1</code>, then
       <code>loop do</code> ... <code>y &lt;&lt; a</code> and
       <code>a, b = b, a + b</code>. Return its <code>first(count)</code>.</li>

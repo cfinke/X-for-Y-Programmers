@@ -64,7 +64,7 @@ AddItem(ref list, "coffee");    // ref visible at the call site
 Console.WriteLine(Total(new List<int> { 1, 2, 3 }));   // 6`,
 
   task: `
-<p>Rewrite the C# on the left with borrows instead of moves:</p>
+<p>Rewrite the C# with borrows instead of moves:</p>
 <ol>
   <li><code>total</code>: takes <code>numbers: &amp;[i32]</code> (a shared
       slice — the <code>in</code> parameter of Rust) and returns

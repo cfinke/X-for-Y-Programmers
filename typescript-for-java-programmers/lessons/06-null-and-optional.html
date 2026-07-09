@@ -73,7 +73,7 @@ the types, not hidden behind getters:</p>
       and any other id returns <code>null</code>.</li>
   <li>Write <code>getCity(user: User | null): string</code> returning the
       user's city, or <code>"Unknown"</code> if the user or the address is
-      absent. The entire Optional chain from the left panel is one
+      absent. The entire Optional chain is one
       expression: <code>user?.address?.city ?? "Unknown"</code>.</li>
 </ol>
 <p>Try removing the <code>?.</code> and hovering the error: the compiler

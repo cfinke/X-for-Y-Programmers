@@ -71,7 +71,7 @@ public class Inventory {
       <code>"Inventory: 1 item"</code>, singular, for exactly one). Do the
       singular/plural choice in a <em>private</em> helper function inside the
       module — a plain <code>fn</code> with no <code>pub</code>, invisible from
-      outside, like the package-private <code>unit</code> on the left.</li>
+      outside, like the package-private <code>unit</code>.</li>
 </ol>
 <p>The tests live outside the module, so they can only reach what you marked
 <code>pub</code>, calling <code>inventory::item_count(...)</code> and

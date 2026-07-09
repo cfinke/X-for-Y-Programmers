@@ -52,7 +52,7 @@ static string CheapestName(List<Product> products) =>
   task: `
 <p>The products are symbol-keyed hashes like
 <code>{ name: "Widget", price_cents: 250, in_stock: true }</code>. Rewrite the
-LINQ pipeline on the left:</p>
+LINQ pipeline:</p>
 <ol>
   <li><code>in_stock_names(products)</code> — filter with
       <code>.select { |p| p[:in_stock] }</code>, then transform with

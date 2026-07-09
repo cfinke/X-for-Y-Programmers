@@ -62,13 +62,13 @@ function countItems(inv) {
 }`,
 
   task: `
-<p>Give the code on the left its shapes:</p>
+<p>Give the code its shapes:</p>
 <ol>
   <li>Define a type alias <code>User</code> for the shape
       <code>{ name: string; age: number; contact: { email: string; city: string } }</code>
       — note the nested <code>contact</code> shape.</li>
   <li>Declare the constant <code>ada</code> annotated as <code>: User</code>,
-      with the same values as on the left.</li>
+      with the same values.</li>
   <li>Write <code>formatUser(user: User): string</code> returning
       <code>"Ada (36) from London"</code> — name, age in parentheses,
       then <code>from</code> and the contact city. (Fix the typo: with the

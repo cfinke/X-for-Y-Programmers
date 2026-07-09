@@ -63,7 +63,7 @@ std::optional<char> first_char(const std::string& s) {
 // The bug optional can't stop: *name without has_value() is still UB.`,
 
   task: `
-<p>Port the lookup code on the left to Rust:</p>
+<p>Port the lookup code to Rust:</p>
 <ol>
   <li><code>find_user(id: u32) -&gt; Option&lt;String&gt;</code> — return
       <code>Some(String::from("Ada"))</code> for id <code>1</code>,

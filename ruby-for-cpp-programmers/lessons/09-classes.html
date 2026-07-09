@@ -70,7 +70,7 @@ private:
       starts <code>@balance</code> at <code>0</code>.</li>
   <li><code>attr_reader :owner, :balance</code> — two generated getters,
       zero hand-written ones. (No setters: reader only, like the
-      <code>const</code> getters on the left.)</li>
+      <code>const</code> getters.)</li>
   <li><code>deposit(amount)</code> — add to <code>@balance</code>.</li>
   <li><code>withdraw(amount)</code> — if <code>amount</code> exceeds the
       balance, return <code>false</code> and change nothing; otherwise deduct
