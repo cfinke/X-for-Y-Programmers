@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Typing Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Typing Functions",
+
+  intro: `
+<p>Function boundaries are where untyped JavaScript hurts most: a caller three
+files away passes the wrong thing, and the error detonates inside your
+function. TypeScript moves the check to the call site. Each parameter gets a
+type, and the return type goes after the parameter list:
+<code>function greet(name: string): string</code>. A function that returns
+nothing is annotated <code>: void</code> — and the compiler will then stop
+anyone from using its (nonexistent) result.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>function greet(name) { }</code></td><td><code>function greet(name: string): string { }</code></td></tr>
+  <tr><td><code>function log(msg) { }</code></td><td><code>function log(msg: string): void { }</code></td></tr>
+  <tr><td><code>function f(x, maybe) { }</code></td><td><code>function f(x: number, maybe?: string) { }</code></td></tr>
+  <tr><td><code>function f(x, y = 2) { }</code></td><td><code>function f(x: number, y: number = 2) { }</code></td></tr>
+  <tr><td><code>const dbl = (n) =&gt; n * 2;</code></td><td><code>const dbl = (n: number): number =&gt; n * 2;</code></td></tr>
+</table>
+<p>Optional and default parameters both fix the classic
+"<code>undefined</code> leaked into my string" bug, but differently. A
+parameter marked <code>?</code> may be omitted, and inside the function its
+type includes <code>undefined</code> — the compiler forces you to handle
+that. A parameter with a default (<code>punctuation: string = "!"</code>)
+may also be omitted, but inside the function it is always a plain
+<code>string</code>. Crucially, every parameter <em>without</em> a
+<code>?</code> or default is now required: calling <code>greet()</code> with
+too few arguments is a compile error, not a runtime surprise.</p>
+<p>Arrow functions annotate the same way. In practice you will often omit
+their return type and let inference fill it in, but writing it out is a cheap
+assertion: if the body stops returning what you promised, the error points at
+the function — not at some caller far away.</p>`,
+
+  javascript: `function greet(name, punctuation) {
+  return "Hello, " + name + punctuation;
+}
+
+greet("Ada", "!"); // "Hello, Ada!"
+greet("Ada");      // "Hello, Adaundefined" — classic
+
+const toCelsius = (f) => ((f - 32) * 5) / 9;
+
+toCelsius(212);    // 100
+toCelsius("212");  // 100, but only by coercion luck
+toCelsius("cold"); // NaN — no warning, ever
+
+function announce(message) {
+  console.log(">> " + message);
+}
+
+const x = announce("hi") + "!"; // "undefined!" — used a void result`,
+
+  task: `
+<p>Type all three functions from the left:</p>
+<ol>
+  <li><code>greet</code> takes <code>name: string</code> and a second
+      parameter <code>punctuation: string = "!"</code> (a typed default —
+      this kills the <code>"Adaundefined"</code> bug), and returns a
+      <code>string</code>: <code>"Hello, Ada!"</code>. Annotate the
+      <code>: string</code> return type explicitly.</li>
+  <li><code>toCelsius</code> is an <em>arrow function</em> taking
+      <code>f: number</code> and returning a <code>number</code>, using the
+      formula <code>(f - 32) * 5 / 9</code>.</li>
+  <li><code>announce</code> takes <code>message: string</code>, logs
+      <code>"&gt;&gt; " + message</code> to the console, and returns nothing —
+      annotate the return type as <code>void</code>.</li>
+</ol>
+<p>Once typed, <code>greet()</code>, <code>toCelsius("cold")</code>, and
+using <code>announce(...)</code> as a value are all compile errors.</p>`,
+
+  starter: `// 1. Type greet: name is a string, punctuation is a string
+//    defaulting to "!". Annotate the : string return type.
+function greet(name, punctuation) {
+  return "Hello, " + name + punctuation;
+}
+
+// 2. Type the arrow function: f is a number, it returns a number.
+const toCelsius = (f) => ((f - 32) * 5) / 9;
+
+// 3. announce takes a string and returns nothing: annotate : void.
+function announce(message) {
+  console.log(">> " + message);
+}
+`,
+
+  exportNames: ["greet", "toCelsius", "announce"],
+
+  requirements: [
+    { pattern: /punctuation\s*:\s*string\s*=\s*["']!["']/, message: 'Give punctuation the type string and the default value "!"' },
+    { pattern: /greet\s*\([^)]*\)\s*:\s*string/, message: "Annotate greet's return type as : string" },
+    { pattern: /\(\s*f\s*:\s*number\s*\)\s*:\s*number\s*=>/, message: "Type the arrow function: (f: number): number =>" },
+    { pattern: /announce\s*\(\s*message\s*:\s*string\s*\)\s*:\s*void/, message: "Type announce with message: string and a : void return type" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"', run: (x) => expectEqual(x.greet("Ada"), "Hello, Ada!") },
+    { name: 'greet("Ada", "?") returns "Hello, Ada?"', run: (x) => expectEqual(x.greet("Ada", "?"), "Hello, Ada?") },
+    { name: "toCelsius(212) returns 100", run: (x) => expectEqual(x.toCelsius(212), 100) },
+    { name: "toCelsius(32) returns 0", run: (x) => expectEqual(x.toCelsius(32), 0) },
+    { name: "announce returns undefined (void)", run: (x) => expectEqual(x.announce("test"), undefined) },
+  ],
+
+  solution: `function greet(name: string, punctuation: string = "!"): string {
+  return "Hello, " + name + punctuation;
+}
+
+const toCelsius = (f: number): number => ((f - 32) * 5) / 9;
+
+function announce(message: string): void {
+  console.log(">> " + message);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Parameter type</td><td><code>function f(x)</code></td><td><code>function f(x: number)</code></td></tr>
+  <tr><td>Return type</td><td>implicit, whatever comes back</td><td><code>function f(): string</code></td></tr>
+  <tr><td>No return value</td><td>returns <code>undefined</code></td><td><code>: void</code> — result unusable by design</td></tr>
+  <tr><td>Optional param</td><td>just call with fewer args</td><td><code>maybe?: string</code> (type includes <code>undefined</code> inside)</td></tr>
+  <tr><td>Default param</td><td><code>y = 2</code></td><td><code>y: number = 2</code> (plain <code>number</code> inside)</td></tr>
+  <tr><td>Arity checking</td><td>none — extra/missing args allowed</td><td>wrong argument count is a compile error</td></tr>
+  <tr><td>Typed arrow</td><td><code>(n) =&gt; n * 2</code></td><td><code>(n: number): number =&gt; n * 2</code></td></tr>
+</table>
+<p>The insight worth keeping: a typed signature is a contract enforced in
+both directions. Callers can no longer pass garbage in, and the
+implementation can no longer sneak the wrong thing out — change either side
+and the compiler immediately lists every place that disagrees. That is what
+makes refactoring typed code feel so different from refactoring plain
+JavaScript.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

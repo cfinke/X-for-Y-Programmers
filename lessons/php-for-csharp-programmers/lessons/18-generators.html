@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Generators &amp; Iterables</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Generators & Iterables",
+
+  intro: `
+<p>You have written <code>IEnumerable&lt;T&gt;</code> methods with
+<code>yield return</code> for years; PHP has the same machine with less
+ceremony. Any function whose body contains <code>yield</code> <em>is</em> a
+generator — no interface to declare, no <code>&lt;T&gt;</code>. Calling it
+runs no body code; it returns a <code>Generator</code> object that produces
+values lazily as a <code>foreach</code> pulls them, exactly like a C#
+iterator method. Declare the return type as <code>Generator</code> to make
+the intent explicit.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>IEnumerable&lt;int&gt; Evens() { yield return i; }</code></td><td><code>function evens(): Generator { yield $i; }</code></td></tr>
+  <tr><td><code>yield break;</code></td><td><code>return;</code></td></tr>
+  <tr><td><code>foreach (var x in Evens())</code></td><td><code>foreach (evens() as $x)</code></td></tr>
+  <tr><td><code>.ToList()</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td><code>IEnumerable</code> parameter type</td><td><code>iterable</code> — accepts arrays <em>and</em> generators</td></tr>
+</table>
+<p>When a function should <em>accept</em> any sequence, the parameter type is
+<code>iterable</code> — it matches both plain arrays and generators, playing
+the role <code>IEnumerable&lt;T&gt;</code> plays for arrays and iterator
+methods alike. There's no LINQ over generators, though: no
+<code>.Take()</code>, no <code>.Where()</code>. You get <code>foreach</code>,
+<code>break</code>, and <code>iterator_to_array</code> to land back in
+array-function country — and laziness means a generator over two billion
+numbers costs nothing until somebody pulls from it.</p>`,
+
+  csharp: `static IEnumerable<int> EvensUpTo(int max)
+{
+    for (int i = 0; i <= max; i += 2)
+        yield return i;                 // lazy: runs as items are pulled
+}
+
+static IEnumerable<int> Squares(int[] nums)
+{
+    foreach (var n in nums)
+        yield return n * n;
+}
+
+// Take(5) pulls only five items -- the 2-billion range is never realized.
+var firstFive = EvensUpTo(2_000_000_000).Take(5).ToList();
+Console.WriteLine(string.Join(",", firstFive));      // 0,2,4,6,8
+Console.WriteLine(Squares(new[] { 1, 2, 3 }).ToList().Count);  // 3`,
+
+  task: `
+<p>Port the iterator methods, then hand-roll <code>Take</code>:</p>
+<ol>
+  <li><code>evens_up_to(int $max): Generator</code> — a
+      <code>for</code> loop from 0 to <code>$max</code> in steps of 2,
+      <code>yield</code>ing each value. The <code>yield</code> keyword alone
+      makes it a generator.</li>
+  <li><code>squares(array $nums): Generator</code> —
+      <code>foreach</code> over the array, yielding each square.</li>
+  <li><code>take(iterable $items, int $n): array</code> — your own
+      <code>.Take(n).ToList()</code>: type the parameter
+      <code>iterable</code> so it accepts arrays <em>and</em> generators,
+      collect items into a result array, and <code>break</code> once you have
+      <code>$n</code>. No slicing shortcuts here — a generator has no length
+      to slice by, so count as you go.</li>
+</ol>
+<p>One test calls <code>take(evens_up_to(2000000000), 5)</code>. If your
+generator is truly lazy — and <code>take</code> stops pulling at 5 — it
+finishes instantly. An eager version would try to build a billion-element
+array.</p>`,
+
+  starter: `<?php
+
+// 1. A function containing yield IS a generator - nothing else to declare.
+function evens_up_to(int $max): Generator {
+    throw new Exception("TODO: implement evens_up_to");
+}
+
+// 2. foreach over $nums, yield each square.
+function squares(array $nums): Generator {
+    throw new Exception("TODO: implement squares");
+}
+
+// 3. Hand-rolled .Take(n).ToList(): counter + break.
+//    iterable accepts both arrays and generators.
+function take(iterable $items, int $n): array {
+    throw new Exception("TODO: implement take");
+}
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Use yield (PHP's yield return) to produce values lazily" },
+    { pattern: /:\s*Generator/, message: "Declare a : Generator return type on the generator functions" },
+    { pattern: /iterable/, message: "Type take's first parameter as iterable (the IEnumerable role)" },
+  ],
+
+  tests: [
+    { name: "evens_up_to(8) yields 0, 2, 4, 6, 8",
+      code: "expect_eq(iterator_to_array(evens_up_to(8)), [0, 2, 4, 6, 8]);" },
+    { name: "evens_up_to returns a Generator object (lazy, not an array)",
+      code: "expect_true(evens_up_to(4) instanceof Generator);" },
+    { name: "squares([1, 2, 3]) yields 1, 4, 9",
+      code: "expect_eq(iterator_to_array(squares([1, 2, 3])), [1, 4, 9]);\nexpect_eq(iterator_to_array(squares([])), []);" },
+    { name: "take works on a plain array (iterable accepts both)",
+      code: "expect_eq(take([10, 20, 30, 40], 2), [10, 20]);\nexpect_eq(take([1, 2], 5), [1, 2]);\nexpect_eq(take([1, 2, 3], 0), []);" },
+    { name: "take(evens_up_to(2000000000), 5) is instant - laziness proven",
+      code: "expect_eq(take(evens_up_to(2000000000), 5), [0, 2, 4, 6, 8]);" },
+  ],
+
+  solution: `<?php
+
+function evens_up_to(int $max): Generator {
+    for ($i = 0; $i <= $max; $i += 2) {
+        yield $i;
+    }
+}
+
+function squares(array $nums): Generator {
+    foreach ($nums as $n) {
+        yield $n * $n;
+    }
+}
+
+function take(iterable $items, int $n): array {
+    $out = [];
+    $count = 0;
+    foreach ($items as $item) {
+        if ($count >= $n) {
+            break;
+        }
+        $out[] = $item;
+        $count += 1;
+    }
+    return $out;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Produce a value</td><td><code>yield return x;</code></td><td><code>yield $x;</code></td></tr>
+  <tr><td>What makes it a generator</td><td><code>IEnumerable&lt;T&gt;</code> return type + yield</td><td>the <code>yield</code> keyword alone</td></tr>
+  <tr><td>Return type to declare</td><td><code>IEnumerable&lt;T&gt;</code></td><td><code>Generator</code></td></tr>
+  <tr><td>Stop early</td><td><code>yield break;</code></td><td><code>return;</code></td></tr>
+  <tr><td>Realize eagerly</td><td><code>.ToList()</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td>Accept any sequence</td><td><code>IEnumerable&lt;T&gt;</code> parameter</td><td><code>iterable</code> parameter</td></tr>
+  <tr><td>Delegate to another one</td><td>loop + <code>yield return</code></td><td><code>yield from $other;</code></td></tr>
+</table>
+<p>The sharp edge to remember: a <code>Generator</code> is forward-only and
+single-use, like an <code>IEnumerator</code> you can't reset — a second
+<code>foreach</code> over the same generator object throws an
+<code>Exception</code> rather than silently re-running the body the way
+re-enumerating an <code>IEnumerable</code> does. If you need two passes,
+either call the generator function again for a fresh one or realize it with
+<code>iterator_to_array</code> first. Also note lesson 13's array functions
+(<code>array_map</code> and friends) want real arrays, not iterables —
+convert first, or stay in <code>foreach</code> land.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

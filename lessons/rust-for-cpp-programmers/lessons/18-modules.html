@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules & Visibility</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules & Visibility",
+
+  intro: `
+<p>Think of everything a C++ "module boundary" actually costs you: a header
+and a <code>.cpp</code> to keep in sync, include guards, ODR landmines if a
+definition sneaks into a header twice, and an anonymous namespace to keep
+helpers from leaking into the link. Rust's <code>mod</code> replaces the
+whole apparatus. A module is just a named scope in the source — no textual
+inclusion, no declaration/definition split, no separate declaration to
+drift out of date, no link-time surprises.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>namespace inventory { ... }</code> + header/impl split</td><td><code>mod inventory { ... }</code> — one place</td></tr>
+  <tr><td><code>#pragma once</code> / include guards</td><td>Not a thing — nothing is textually included</td></tr>
+  <tr><td>Anonymous namespace for private helpers</td><td>Private is the <em>default</em>; <code>pub</code> opts in</td></tr>
+  <tr><td><code>using inventory::describe;</code> (+ ADL puzzles)</td><td><code>use inventory::describe;</code> (no ADL)</td></tr>
+  <tr><td><code>inventory::item_count(v)</code></td><td><code>inventory::item_count(&amp;v)</code> — same <code>::</code></td></tr>
+</table>
+<p>The visibility rule is the anonymous-namespace discipline, enforced:
+every item in a <code>mod</code> is private to that module unless marked
+<code>pub</code>. Your helpers can't leak, your internal types can't be
+named from outside, and "what's the public API of this module?" is
+answered by grepping for <code>pub</code> rather than by comparing a header
+against its <code>.cpp</code>. Paths use the <code>::</code> you already
+know, and <code>use</code> works like a using-declaration — minus argument-
+dependent lookup deciding to be clever.</p>`,
+
+  cpp: `// inventory.h
+#pragma once
+#include <string>
+#include <vector>
+
+namespace inventory {
+    std::size_t item_count(const std::vector<std::string>& items);
+    std::string describe(const std::vector<std::string>& items);
+}
+
+// inventory.cpp — keep in sync with the header, or else
+#include "inventory.h"
+
+namespace {  // anonymous: don't leak the helper into the link
+    std::string join_names(const std::vector<std::string>& items);
+}
+
+std::size_t inventory::item_count(const std::vector<std::string>& items) {
+    return items.size();
+}
+
+std::string inventory::describe(const std::vector<std::string>& items) {
+    return std::to_string(items.size()) + " items: " + join_names(items);
+}`,
+
+  task: `
+<p>Collapse the header/impl pair into one <code>mod</code>:</p>
+<ol>
+  <li>Define <code>mod inventory</code> containing everything below.</li>
+  <li><code>pub fn item_count(items: &amp;Vec&lt;String&gt;) -&gt; usize</code>
+      — the item count (<code>.len()</code>). <code>pub</code> is the
+      "put it in the header" of Rust.</li>
+  <li><code>pub fn describe(items: &amp;Vec&lt;String&gt;) -&gt; String</code>
+      — returns e.g. <code>"3 items: bolt, nut, washer"</code>. Build the
+      comma-separated part in a <em>private</em> helper function inside the
+      module (no <code>pub</code> — the anonymous namespace, as a default);
+      <code>items.join(", ")</code> does the joining.</li>
+</ol>
+<p>The tests call <code>inventory::item_count(...)</code> and
+<code>inventory::describe(...)</code> from outside the module. Don't write
+<code>fn main</code> — the lesson's tests call your functions directly.</p>`,
+
+  starter: `mod inventory {
+    // pub = in the header. No pub = anonymous namespace. That's the model.
+
+    pub fn item_count(items: &Vec<String>) -> usize {
+        todo!()
+    }
+
+    // describe returns "N items: a, b, c" — delegate the joining to
+    // the private helper below.
+    pub fn describe(items: &Vec<String>) -> String {
+        todo!()
+    }
+
+    // Private helper: visible in this module only. items.join(", ")
+    fn join_names(items: &Vec<String>) -> String {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /mod\s+inventory/, message: "Define a module named inventory" },
+    { pattern: /pub\s+fn/, message: "Mark the public API with pub fn (everything else stays private)" },
+  ],
+
+  tests: [
+    { name: "inventory::item_count(&vec![]) returns 0",
+      code: 'assert_eq!(inventory::item_count(&vec![]), 0);' },
+    { name: "inventory::item_count counts three items",
+      code: 'let items = vec![String::from("bolt"), String::from("nut"), String::from("washer")];\nassert_eq!(inventory::item_count(&items), 3);' },
+    { name: 'describe lists three items: "3 items: bolt, nut, washer"',
+      code: 'let items = vec![String::from("bolt"), String::from("nut"), String::from("washer")];\nassert_eq!(inventory::describe(&items), "3 items: bolt, nut, washer");' },
+    { name: "describe preserves the order of the vector",
+      code: 'let items = vec![String::from("washer"), String::from("bolt")];\nassert_eq!(inventory::describe(&items), "2 items: washer, bolt");' },
+  ],
+
+  solution: `mod inventory {
+    pub fn item_count(items: &Vec<String>) -> usize {
+        items.len()
+    }
+
+    pub fn describe(items: &Vec<String>) -> String {
+        format!("{} items: {}", item_count(items), join_names(items))
+    }
+
+    // Private: callable here, invisible outside the module.
+    fn join_names(items: &Vec<String>) -> String {
+        items.join(", ")
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Named scope</td><td><code>namespace inventory</code></td><td><code>mod inventory</code></td></tr>
+  <tr><td>Public API</td><td>Whatever's in the header</td><td><code>pub</code> items</td></tr>
+  <tr><td>Private helper</td><td>Anonymous namespace / <code>static</code></td><td>The default — write nothing</td></tr>
+  <tr><td>Declaration vs definition</td><td>Header + <code>.cpp</code>, kept in sync by hand</td><td>One definition, no split</td></tr>
+  <tr><td>Include guards / ODR</td><td><code>#pragma once</code>, linker errors</td><td>Nonexistent — no textual inclusion</td></tr>
+  <tr><td>Bring a name in</td><td><code>using inventory::describe;</code> + ADL</td><td><code>use inventory::describe;</code>, no ADL</td></tr>
+</table>
+<p>The inversion to internalize: C++ modules leak by default and you work to
+hide things (anonymous namespaces, <code>static</code>, careful headers);
+Rust modules hide by default and you work — one keyword — to expose things.
+Calling a private function from outside the module isn't a style violation
+someone catches in review; it's a compile error with a note telling you
+exactly which <code>fn</code> to mark <code>pub</code> if you really meant
+it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

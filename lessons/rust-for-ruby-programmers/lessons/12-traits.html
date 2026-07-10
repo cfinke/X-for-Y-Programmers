@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>Ruby's answer to "what can this object do?" is duck typing: if it responds
+to <code>#name</code>, it's name-able, and you find out whether it actually
+does when the method call lands (or explodes with <code>NoMethodError</code>).
+When you want to <em>share</em> behavior across unrelated classes, you write a
+module — think <code>Comparable</code>: define <code>&lt;=&gt;</code> yourself
+and the module hands you <code>&lt;</code>, <code>&gt;</code>,
+<code>between?</code>, and friends for free.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>duck typing: "responds to <code>#name</code>"</td><td><code>trait Describe { fn name(&amp;self) -&gt; String; }</code></td></tr>
+  <tr><td><code>module Describe ... include Describe</code></td><td><code>impl Describe for Dog { ... }</code></td></tr>
+  <tr><td>module methods built on ones you define</td><td>default trait methods built on required ones</td></tr>
+  <tr><td>missing method → <code>NoMethodError</code> at runtime</td><td>missing method → compile error at the <code>impl</code></td></tr>
+</table>
+<p>A Rust <code>trait</code> is the duck contract <em>written down</em>. It
+declares required methods (just a signature — the type must supply the body)
+and can provide <strong>default methods</strong> with full bodies that call
+the required ones — exactly the <code>Comparable</code> deal: you write
+<code>name()</code>, the trait's default <code>describe()</code> comes free.
+The difference is <em>when</em> you find out about a mismatch: write
+<code>impl Describe for Dog</code> and forget <code>name()</code>, and the
+compiler rejects it on the spot. The duck is checked before anything quacks.</p>`,
+
+  ruby: `module Describe
+  # Built on #name, which the including class must define.
+  def describe
+    "This is #{name}"
+  end
+end
+
+class Dog
+  include Describe
+  attr_reader :name
+  def initialize(name) = @name = name
+end
+
+class Robot
+  include Describe
+  def initialize(id) = @id = id
+  def name = "Unit-#{@id}"
+end
+
+Dog.new("Rex").describe   # => "This is Rex"
+Robot.new(7).describe     # => "This is Unit-7"
+# Forget to define #name? NoMethodError — at RUNTIME.`,
+
+  task: `
+<p>Write the duck contract down as a trait, then implement it for two
+unrelated types:</p>
+<ol>
+  <li>Define <code>trait Describe</code> with a <em>required</em> method
+      <code>name(&amp;self) -&gt; String</code> (signature only, ends in
+      <code>;</code>) and a <em>default</em> method
+      <code>describe(&amp;self) -&gt; String</code> whose body returns
+      <code>"This is {name}"</code> — build it with
+      <code>format!("This is {}", self.name())</code>.</li>
+  <li>Implement it for <code>Dog</code> (already defined in the starter with a
+      <code>name: String</code> field): <code>name()</code> returns a clone of
+      the field (<code>self.name.clone()</code>).</li>
+  <li>Implement it for <code>Robot</code> (already defined with an
+      <code>id: u32</code> field): <code>name()</code> returns
+      <code>"Unit-{id}"</code>, e.g. <code>"Unit-7"</code>.</li>
+  <li>Implement <code>describe()</code> in <em>neither</em> impl block — let
+      both types inherit the default, Comparable-style.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your methods
+directly.</p>`,
+
+  starter: `// Two unrelated types — no shared superclass, and none needed.
+// The tests construct these directly; keep the definitions as-is.
+struct Dog {
+    name: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+// 1. The duck contract, written down:
+//    - required:  fn name(&self) -> String;          (signature only)
+//    - default:   fn describe(&self) -> String { ... uses self.name() ... }
+trait Describe {
+    fn name(&self) -> String;
+
+    fn describe(&self) -> String {
+        format!("This is {}", self.name())
+    }
+}
+
+// 2. Like \`include Describe\` in Dog — but checked at compile time.
+impl Describe for Dog {
+    fn name(&self) -> String {
+        todo!()
+    }
+}
+
+// 3. Same trait, totally unrelated type. name() should be "Unit-<id>".
+impl Describe for Robot {
+    fn name(&self) -> String {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describe/, message: "Define trait Describe" },
+    { pattern: /impl\s+Describe\s+for\s+/, message: "Implement the trait with impl Describe for ..." },
+  ],
+
+  tests: [
+    { name: 'Dog { name: "Rex" }.name() returns "Rex"',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.name(), "Rex");' },
+    { name: 'Dog { name: "Rex" }.describe() returns "This is Rex" (via the default method)',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.describe(), "This is Rex");' },
+    { name: 'Robot { id: 7 }.name() returns "Unit-7"',
+      code: "let r = Robot { id: 7 };\nassert_eq!(r.name(), \"Unit-7\");" },
+    { name: 'Robot { id: 42 }.describe() returns "This is Unit-42" (same default, different type)',
+      code: "let r = Robot { id: 42 };\nassert_eq!(r.describe(), \"This is Unit-42\");" },
+  ],
+
+  solution: `struct Dog {
+    name: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+trait Describe {
+    fn name(&self) -> String;
+
+    fn describe(&self) -> String {
+        format!("This is {}", self.name())
+    }
+}
+
+impl Describe for Dog {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        format!("Unit-{}", self.id)
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Behavior contract</td><td>duck typing (implicit)</td><td><code>trait Describe { ... }</code> (explicit)</td></tr>
+  <tr><td>Adopt the behavior</td><td><code>include Describe</code></td><td><code>impl Describe for Dog { ... }</code></td></tr>
+  <tr><td>Required method</td><td>documented convention (<code>&lt;=&gt;</code> for Comparable)</td><td>signature with no body: <code>fn name(&amp;self) -&gt; String;</code></td></tr>
+  <tr><td>Free methods built on it</td><td>module methods (<code>between?</code>, <code>clamp</code>…)</td><td>default methods (<code>describe</code> here)</td></tr>
+  <tr><td>Contract violated</td><td><code>NoMethodError</code> at runtime</td><td>compile error at the <code>impl</code> block</td></tr>
+</table>
+<p>Traits are how the whole standard library is organized: <code>PartialOrd</code>
+is literally Rust's <code>Comparable</code>, <code>Display</code> is
+<code>#to_s</code>, <code>Iterator</code> asks only for <code>next()</code>
+and hands back the entire Enumerable-sized toolbox of default methods
+(<code>map</code>, <code>filter</code>, <code>sum</code>…). A type can
+override a default method if it wants a smarter implementation — same as a
+class overriding a mixin's method. Next lesson, traits become
+<em>constraints</em>: "any T, as long as it implements Describe."</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

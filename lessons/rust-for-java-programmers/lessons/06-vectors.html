@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Vectors</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Vectors",
+
+  intro: `
+<p><code>Vec&lt;i32&gt;</code> is <code>ArrayList&lt;Integer&gt;</code> without the
+apologies. No boxing — a <code>Vec&lt;i32&gt;</code> holds real 32-bit integers
+packed in contiguous memory, not pointers to <code>Integer</code> objects.
+No <code>List.of</code> vs <code>new ArrayList&lt;&gt;()</code> split either:
+there is one type, and it's mutable exactly when you said <code>mut</code>
+at the binding. The <code>vec![10, 20, 30]</code> macro gives you the literal
+syntax Java only got for immutable lists.</p>
+<table>
+  <tr><th>Java</th><th>Rust</th></tr>
+  <tr><td><code>List&lt;Integer&gt; v = new ArrayList&lt;&gt;();</code></td><td><code>let mut v: Vec&lt;i32&gt; = Vec::new();</code></td></tr>
+  <tr><td><code>List.of(10, 20, 30)</code> (immutable)</td><td><code>vec![10, 20, 30]</code> (mutable if bound with <code>mut</code>)</td></tr>
+  <tr><td><code>v.add(x)</code></td><td><code>v.push(x)</code></td></tr>
+  <tr><td><code>v.size()</code></td><td><code>v.len()</code></td></tr>
+  <tr><td><code>v.get(i)</code> throws <code>IndexOutOfBoundsException</code></td><td><code>v.get(i)</code> returns <code>Option&lt;&amp;i32&gt;</code></td></tr>
+  <tr><td><code>for (int x : v)</code></td><td><code>for x in &amp;v</code></td></tr>
+</table>
+<p>The method renames are mechanical (<code>.add</code> → <code>.push</code>,
+<code>.size()</code> → <code>.len()</code>), but two changes are philosophical.
+First, <code>v.get(i)</code> can't throw — an out-of-range index gives you
+<code>None</code>, and the type system makes you deal with it (indexing with
+<code>v[i]</code> still panics, like Java's <code>get</code>). Second,
+functions that only <em>read</em> a list conventionally take
+<code>&amp;[i32]</code> — a borrowed slice — rather than
+<code>&amp;Vec&lt;i32&gt;</code>. Think of it as programming to the
+<code>List</code> interface instead of demanding an <code>ArrayList</code>:
+a <code>&amp;Vec&lt;i32&gt;</code> coerces to <code>&amp;[i32]</code>
+automatically at the call site.</p>`,
+
+  java: `List<Integer> scores = new ArrayList<>();
+scores.add(10);
+scores.add(20);
+scores.add(30);
+
+int size = scores.size();
+Integer first = scores.get(0);   // boxed Integer, not int
+// scores.get(99);               // IndexOutOfBoundsException at runtime
+
+int total = 0;
+for (int x : scores) {           // unboxes on every iteration
+    total += x;
+}
+
+List<Integer> fixed = List.of(10, 20, 30);  // a different, immutable kind of List
+// fixed.add(40);                // UnsupportedOperationException at runtime`,
+
+  task: `
+<p>Rewrite the Java as Rust:</p>
+<ol>
+  <li>Write <code>make_scores()</code> returning <code>Vec&lt;i32&gt;</code> —
+      the list <code>[10, 20, 30]</code>, built with the <code>vec!</code>
+      macro.</li>
+  <li>Write <code>append(v: &amp;mut Vec&lt;i32&gt;, x: i32)</code> that adds
+      <code>x</code> to the end of the vector with <code>.push</code> —
+      Java's <code>v.add(x)</code>.</li>
+  <li>Write <code>total(v: &amp;[i32]) -&gt; i32</code> that sums the slice
+      using <code>.iter().sum()</code> — no manual accumulator loop
+      needed.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. make_scores: return vec![10, 20, 30].
+fn make_scores() -> Vec<i32> {
+    todo!()
+}
+
+// 2. append: Java's v.add(x) is v.push(x). Note the &mut —
+//    the signature admits it changes the vector.
+fn append(v: &mut Vec<i32>, x: i32) {
+    todo!()
+}
+
+// 3. total: sum a borrowed slice with .iter().sum().
+//    &[i32] accepts a borrowed Vec — like taking List instead of ArrayList.
+fn total(v: &[i32]) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /vec!\s*\[/, message: "Build the list with the vec! macro" },
+    { pattern: /\.push\(/, message: "Use .push to append (Java's .add)" },
+    { pattern: /Vec<i32>/, message: "Use the Vec<i32> type — real i32s, no boxing" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [10, 20, 30]",
+      code: 'assert_eq!(make_scores(), vec![10, 20, 30]);' },
+    { name: "append adds to the end of the vector",
+      code: 'let mut v = make_scores();\nappend(&mut v, 40);\nassert_eq!(v, vec![10, 20, 30, 40]);' },
+    { name: "total(&make_scores()) is 60 (a &Vec coerces to &[i32])",
+      code: 'assert_eq!(total(&make_scores()), 60);' },
+    { name: "total works on any slice: total(&[1, 2, 3]) is 6",
+      code: 'assert_eq!(total(&[1, 2, 3]), 6);' },
+    { name: "total of an empty slice is 0",
+      code: 'assert_eq!(total(&[]), 0);' },
+  ],
+
+  solution: `fn make_scores() -> Vec<i32> {
+    vec![10, 20, 30]
+}
+
+fn append(v: &mut Vec<i32>, x: i32) {
+    v.push(x);
+}
+
+fn total(v: &[i32]) -> i32 {
+    v.iter().sum()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Rust</th></tr>
+  <tr><td>Growable list</td><td><code>ArrayList&lt;Integer&gt;</code> (boxed)</td><td><code>Vec&lt;i32&gt;</code> (packed, no boxing)</td></tr>
+  <tr><td>Literal</td><td><code>List.of(10, 20, 30)</code> (immutable only)</td><td><code>vec![10, 20, 30]</code></td></tr>
+  <tr><td>Append</td><td><code>v.add(x)</code></td><td><code>v.push(x)</code> (needs <code>mut</code>)</td></tr>
+  <tr><td>Length</td><td><code>v.size()</code></td><td><code>v.len()</code></td></tr>
+  <tr><td>Safe index</td><td><code>v.get(i)</code> throws</td><td><code>v.get(i)</code> returns <code>Option&lt;&amp;i32&gt;</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (int x : v)</code></td><td><code>for x in &amp;v</code></td></tr>
+  <tr><td>Read-only parameter</td><td><code>List&lt;Integer&gt;</code> interface</td><td><code>&amp;[i32]</code> slice</td></tr>
+</table>
+<p>The deepest difference isn't any method name — it's that mutability moved
+from the type to the binding. Java splits the world into
+<code>ArrayList</code> (mutable) and <code>List.of</code> (throws if you
+touch it, discovered at runtime). Rust has one <code>Vec</code>, and whether
+you can <code>.push</code> is decided by <code>let</code> vs
+<code>let mut</code> — checked at compile time, and declared in the
+signature (<code>&amp;mut Vec&lt;i32&gt;</code>) when a function needs it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

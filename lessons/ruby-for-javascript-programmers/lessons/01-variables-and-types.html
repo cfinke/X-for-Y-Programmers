@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Good news: Ruby is a dynamic language like JavaScript, so your instincts
+about values and variables mostly transfer. The first difference is that Ruby
+has even <em>less</em> ceremony — there is no <code>let</code>, no
+<code>const</code>, no <code>var</code>. A variable exists the moment you
+assign to it: <code>name = "Ada"</code>. No hoisting drama, no
+temporal-dead-zone trivia, no block-scope puzzles to memorize.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>const name = "Ada";</code></td><td><code>name = "Ada"</code></td></tr>
+  <tr><td><code>let age = 36;</code></td><td><code>age = 36</code></td></tr>
+  <tr><td><code>number</code> (one type, 64-bit float)</td><td><code>Integer</code> and <code>Float</code> (two classes)</td></tr>
+  <tr><td><code>2n ** 100n</code> (BigInt required)</td><td><code>2 ** 100</code> just works</td></tr>
+  <tr><td><code>typeof x === "string"</code></td><td><code>x.class</code> / <code>x.is_a?(String)</code></td></tr>
+  <tr><td><code>\`\${name} is \${age}\`</code></td><td><code>"#{name} is #{age}"</code></td></tr>
+</table>
+<p>Numbers are nicer, too: instead of JavaScript's single <code>number</code>
+type, Ruby has <code>Integer</code> — with <strong>arbitrary precision</strong>,
+so <code>2 ** 100</code> is just a big integer, no <code>BigInt</code> and no
+<code>n</code> suffix — and <code>Float</code> for decimals. To ask what
+something is, you ask the value itself: <code>x.class</code> or
+<code>x.is_a?(String)</code> instead of <code>typeof x</code>. And the habit
+to build first: a method's <strong>last expression is its return value</strong>
+— like an arrow function's implicit return, but for every method. Idiomatic
+Ruby rarely writes <code>return</code>. Also gone: semicolons and camelCase —
+Ruby is <code>snake_case</code>, <code>def ... end</code>, no braces.</p>`,
+
+  javascript: `const name = "Ada";
+let age = 36;
+
+// Dynamic, like Ruby — but JS makes you pick let vs const,
+// and big integers need a whole separate type:
+// 2 ** 100          -> 1.2676506002282294e+30 (precision lost)
+// 2n ** 100n        -> BigInt to the rescue
+
+function describeUser(name, age) {
+  return \`\${name} is \${age} years old\`;
+}
+
+function birthday(age) {
+  let next = age;
+  next += 1;
+  return next;
+}
+
+console.log(describeUser(name, age));`,
+
+  task: `
+<p>Rewrite the JavaScript as Ruby:</p>
+<ol>
+  <li>Write a method <code>describe_user(name, age)</code> (snake_case!) that
+      produces <code>"Ada is 36 years old"</code>-style text.
+      <code>"#{name} is #{age} years old"</code> is your template literal —
+      <code>#{}</code> in double quotes instead of <code>\${}</code> in
+      backticks. Make that string the method's <em>last expression</em>; do
+      not write <code>return</code> anywhere in your solution.</li>
+  <li>Write a method <code>birthday(age)</code> that copies <code>age</code>
+      into a local variable, bumps it with <code>+=</code>, and lets the
+      result fall out as the last expression — again, no <code>return</code>
+      keyword.</li>
+</ol>
+<p>Notice what you are <em>not</em> writing: <code>let</code>,
+<code>const</code>, semicolons, or braces — <code>def ... end</code> is the
+whole method.</p>`,
+
+  starter: `# 1. describe_user: interpolate with #{} — the last expression is returned.
+#    JS: "\${name} is \${age} years old" in backticks
+#    Ruby: "#{name} is #{age} years old" in double quotes
+def describe_user(name, age)
+  raise NotImplementedError, "TODO: implement describe_user"
+end
+
+# 2. birthday: bump a local with += and let it be the last expression.
+def birthday(age)
+  raise NotImplementedError, "TODO: implement birthday"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+describe_user\s*\(\s*name\s*,\s*age\s*\)/, message: "Define describe_user(name, age) with def" },
+    { pattern: /#\{\s*name\s*\}/, message: "Build the string with #{} interpolation" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: '  expect_eq(describe_user("Ada", 36), "Ada is 36 years old")' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: '  expect_eq(describe_user("Grace", 52), "Grace is 52 years old")' },
+    { name: "birthday(36) returns 37",
+      code: "  expect_eq(birthday(36), 37)" },
+    { name: "birthday(0) returns 1",
+      code: "  expect_eq(birthday(0), 1)" },
+  ],
+
+  solution: `def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Declare a variable</td><td><code>let x = 1;</code></td><td><code>x = 1</code> (assignment is declaration)</td></tr>
+  <tr><td>Constant</td><td><code>const x = 1;</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+  <tr><td>Numbers</td><td><code>number</code> + <code>BigInt</code></td><td><code>Integer</code> (arbitrary precision) and <code>Float</code></td></tr>
+  <tr><td>Interpolation</td><td><code>\`\${name}!\`</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+  <tr><td>Check a type</td><td><code>typeof x === "string"</code></td><td><code>x.is_a?(String)</code>, or <code>x.class</code></td></tr>
+  <tr><td>Return</td><td><code>return</code> (except arrow shorthand)</td><td>last expression; <code>return</code> only for early exit</td></tr>
+  <tr><td>Naming</td><td><code>describeUser</code></td><td><code>describe_user</code></td></tr>
+</table>
+<p>The philosophical shift starts here: in JavaScript you inspect values with
+operators (<code>typeof</code>, <code>instanceof</code>); in Ruby you send the
+value a message — <code>x.class</code>, <code>x.is_a?(Integer)</code>,
+<code>x.respond_to?(:upcase)</code>. Everything is an object, so everything
+answers questions about itself. And because every method returns its last
+expression, Ruby code reads like a series of expressions rather than
+statements plus a <code>return</code> bolted on the end.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

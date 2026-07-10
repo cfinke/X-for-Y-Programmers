@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: array_map, array_filter &amp; Friends</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "array_map, array_filter & Friends",
+
+  intro: `
+<p>Java gave you the Stream API; PHP gives you the stream operations
+<em>without the stream</em>. <code>array_map</code>, <code>array_filter</code>,
+and <code>array_reduce</code> are plain functions taking and returning arrays —
+eager, not lazy, and <strong>nested rather than chained</strong>. The fluent
+pipeline <code>list.stream().filter(...).map(...).collect(toList())</code>
+reads left-to-right; its PHP translation reads inside-out:
+<code>array_values(array_map($fn, array_filter($arr, $keep)))</code>.</p>
+<table>
+  <tr><th>Java streams</th><th>PHP arrays</th></tr>
+  <tr><td><code>.map(f)</code></td><td><code>array_map($f, $arr)</code> — <strong>callback first</strong></td></tr>
+  <tr><td><code>.filter(p)</code></td><td><code>array_filter($arr, $p)</code> — <strong>array first!</strong></td></tr>
+  <tr><td><code>.reduce(0, (a, b) -&gt; ...)</code></td><td><code>array_reduce($arr, $f, 0)</code> (initial value last)</td></tr>
+  <tr><td><code>.mapToInt(f).sum()</code></td><td><code>array_sum(array_map($f, $arr))</code></td></tr>
+  <tr><td><code>.collect(toList())</code> (fresh indices)</td><td><code>array_values(...)</code> — reindex after filtering</td></tr>
+</table>
+<p>Two traps for stream veterans. First, the argument orders disagree with
+each other: <code>array_map</code> takes the callback <em>first</em>,
+<code>array_filter</code> takes the array first. Second — the big one —
+<code>array_filter</code> <strong>preserves keys</strong>: filtering
+<code>[10, 15, 20]</code> for evens yields <code>[0 =&gt; 10, 2 =&gt; 20]</code>
+with a hole at index 1. That gap-riddled array is not <code>===</code> to
+<code>[10, 20]</code> and json_encodes as an object, so
+<code>array_values()</code> is your <code>collect(toList())</code>: it throws
+the old keys away and reindexes from 0.</p>`,
+
+  java: `record Product(String name, int priceCents, boolean inStock) {}
+
+List<String> inStockNames = products.stream()
+    .filter(Product::inStock)
+    .map(Product::name)
+    .collect(Collectors.toList());
+
+int totalValue = products.stream()
+    .mapToInt(Product::priceCents)
+    .sum();
+
+List<Integer> evensDoubled = nums.stream()
+    .filter(n -> n % 2 == 0)
+    .map(n -> n * 2)
+    .collect(Collectors.toList());`,
+
+  task: `
+<p>Products here are associative arrays shaped like
+<code>['name' =&gt; 'Keyboard', 'price_cents' =&gt; 4500, 'in_stock' =&gt; true]</code>.
+Rebuild the three pipelines:</p>
+<ol>
+  <li><code>in_stock_names(array $products): array</code> — the names of the
+      in-stock products, as a cleanly reindexed list. Filter, then map, then
+      <code>array_values()</code> (filtering first leaves key gaps).</li>
+  <li><code>total_value(array $products): int</code> — the sum of every
+      product's <code>price_cents</code>. Map to the prices, then
+      <code>array_sum()</code> (or fold it with <code>array_reduce()</code>).</li>
+  <li><code>evens_doubled(array $nums): array</code> — keep the even numbers,
+      double each, and return a reindexed list: <code>[1, 2, 3, 4]</code>
+      becomes <code>[4, 8]</code>, indexed from 0.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. filter -> map -> collect(toList()) becomes, inside-out:
+//    array_values(array_map($fn, array_filter($products, $keep)))
+//    Mind the flip: map takes the callback FIRST, filter takes the array first.
+function in_stock_names(array $products): array {
+    throw new Exception("TODO: implement in_stock_names");
+}
+
+// 2. mapToInt(...).sum() -> array_sum(array_map(...)) or array_reduce.
+function total_value(array $products): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// 3. Filter for evens, double them, and reindex with array_values —
+//    array_filter keeps the original keys, holes and all.
+function evens_doubled(array $nums): array {
+    throw new Exception("TODO: implement evens_doubled");
+}
+`,
+
+  requirements: [
+    { pattern: /array_map/, message: "Use array_map for the mapping steps" },
+    { pattern: /array_filter/, message: "Use array_filter for the filtering steps" },
+    { pattern: /array_values/, message: "Reindex filtered results with array_values" },
+    { pattern: /array_reduce|array_sum/, message: "Total the prices with array_sum or array_reduce" },
+  ],
+
+  tests: [
+    { name: "in_stock_names picks the in-stock names, reindexed from 0",
+      code: "$products = [\n  ['name' => 'Keyboard', 'price_cents' => 4500, 'in_stock' => true],\n  ['name' => 'Mouse', 'price_cents' => 2500, 'in_stock' => false],\n  ['name' => 'Monitor', 'price_cents' => 22000, 'in_stock' => true],\n];\nexpect_eq(in_stock_names($products), ['Keyboard', 'Monitor']);" },
+    { name: "in_stock_names returns [] when nothing is in stock",
+      code: "$products = [['name' => 'Cable', 'price_cents' => 900, 'in_stock' => false]];\nexpect_eq(in_stock_names($products), []);" },
+    { name: "total_value sums every price_cents",
+      code: "$products = [\n  ['name' => 'Keyboard', 'price_cents' => 4500, 'in_stock' => true],\n  ['name' => 'Mouse', 'price_cents' => 2500, 'in_stock' => false],\n  ['name' => 'Monitor', 'price_cents' => 22000, 'in_stock' => true],\n];\nexpect_eq(total_value($products), 29000);" },
+    { name: "total_value of no products is 0",
+      code: "expect_eq(total_value([]), 0);" },
+    { name: "evens_doubled([1, 2, 3, 4, 5]) returns [4, 8] with fresh indices",
+      code: "expect_eq(evens_doubled([1, 2, 3, 4, 5]), [4, 8]);" },
+    { name: "evens_doubled([7, 9]) returns []",
+      code: "expect_eq(evens_doubled([7, 9]), []);" },
+  ],
+
+  solution: `<?php
+
+function in_stock_names(array $products): array {
+    return array_values(array_map(
+        fn(array $p) => $p['name'],
+        array_filter($products, fn(array $p) => $p['in_stock'])
+    ));
+}
+
+function total_value(array $products): int {
+    return array_sum(array_map(fn(array $p) => $p['price_cents'], $products));
+}
+
+function evens_doubled(array $nums): array {
+    return array_values(array_map(
+        fn(int $n) => $n * 2,
+        array_filter($nums, fn(int $n) => $n % 2 === 0)
+    ));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Stream operation</th><th>Java</th><th>PHP</th></tr>
+  <tr><td>map</td><td><code>.map(f)</code></td><td><code>array_map($f, $arr)</code> — callback, then array</td></tr>
+  <tr><td>filter</td><td><code>.filter(p)</code></td><td><code>array_filter($arr, $p)</code> — array, then callback</td></tr>
+  <tr><td>reduce / fold</td><td><code>.reduce(init, op)</code></td><td><code>array_reduce($arr, $op, $init)</code></td></tr>
+  <tr><td>sum</td><td><code>.mapToInt(f).sum()</code></td><td><code>array_sum(array_map($f, $arr))</code></td></tr>
+  <tr><td>reindex</td><td><code>.collect(toList())</code></td><td><code>array_values($arr)</code></td></tr>
+  <tr><td>sort</td><td><code>.sorted(comparator)</code></td><td><code>usort($arr, $cmp)</code> — mutates in place!</td></tr>
+  <tr><td>laziness</td><td>Lazy until the terminal op</td><td>None — every call builds a full array</td></tr>
+</table>
+<p>The <code>array_filter</code> key-preservation rule is the bug factory to
+internalize: PHP arrays are ordered maps, and filtering removes entries
+without renumbering, so downstream code expecting <code>[0, 1, 2, ...]</code>
+keys (or JSON expecting a <code>[...]</code> list) silently breaks. Habit to
+build now: any time an <code>array_filter</code> result should be a
+<em>list</em>, wrap it in <code>array_values()</code> — it is the
+<code>collect(toList())</code> your stream muscle memory keeps reaching
+for.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

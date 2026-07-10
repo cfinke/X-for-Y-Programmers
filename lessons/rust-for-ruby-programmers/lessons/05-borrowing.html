@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Borrowing & References</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Borrowing & References",
+
+  intro: `
+<p>Last lesson's rule — passing a value moves it — would make Rust unbearable
+if it were the whole story. It isn't: instead of giving a value away, you can
+<em>lend</em> it. <code>&amp;T</code> is a shared, read-only borrow: any number
+can exist at once, and none of them can mutate. <code>&amp;mut T</code> is an
+exclusive, writable borrow: exactly one, and while it lives there are no other
+borrows at all — not even readers. The owner keeps the value; the borrower
+gives it back automatically.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>every method call shares the object</td><td><code>f(&amp;v)</code> — lend read-only, keep ownership</td></tr>
+  <tr><td>any holder may mutate, anytime</td><td><code>f(&amp;mut v)</code> — lend writably, exclusively</td></tr>
+  <tr><td>readers and writers mix freely</td><td>many readers <em>or</em> one writer — never both</td></tr>
+  <tr><td><code>def total(numbers)</code> (hope it's an array)</td><td><code>fn total(numbers: &amp;[i32]) -&gt; i32</code></td></tr>
+</table>
+<p>Read those two rules again, because together they delete the bug class from
+lesson 4. In Ruby, "who mutated my array?!" happens because sharing and
+mutating are both invisible and unrestricted. In Rust, while anyone is reading
+a value, the compiler guarantees nobody can write it — the surprise mutation
+is a compile error before your program ever runs. One vocabulary note:
+functions that read a list take <code>&amp;[i32]</code> (a <em>slice</em> —
+a read-only view into any vector or array) rather than
+<code>&amp;Vec&lt;i32&gt;</code>; it's the same idea as taking
+<code>&amp;str</code> instead of <code>&amp;String</code>.</p>`,
+
+  ruby: `def total(numbers)
+  numbers.sum
+end
+
+def add_item(items, item)
+  items << item      # mutates the caller's array — silently!
+end
+
+def longer(a, b)
+  [a.length, b.length].max
+end
+
+cart = ["apple"]
+add_item(cart, "bread")
+p cart               # ["apple", "bread"]
+                     # In Ruby, NOTHING in add_item's signature
+                     # warned you it would mutate cart.
+                     # In Rust you must pass &mut cart, and the
+                     # mutation is visible at the call site.
+
+puts total([1, 2, 3])       # 6
+puts longer("hi", "hello")  # 5`,
+
+  task: `
+<p>Rewrite the Ruby as Rust, borrowing instead of moving:</p>
+<ol>
+  <li><code>total</code> takes <code>numbers: &amp;[i32]</code> (a read-only
+      slice) and returns <code>i32</code>: the sum. Try
+      <code>numbers.iter().sum()</code> — Ruby's <code>.sum</code>, with an
+      explicit <code>.iter()</code> in front.</li>
+  <li><code>add_item</code> takes <code>items: &amp;mut Vec&lt;String&gt;</code>
+      and <code>item: String</code>, returns nothing (no <code>-&gt;</code>
+      needed). Push the item onto the vector. This is Ruby's
+      <code>items &lt;&lt; item</code> — but here the <code>&amp;mut</code>
+      announces the mutation in the signature <em>and</em> at every call
+      site.</li>
+  <li><code>longer</code> takes <code>a: &amp;str</code> and
+      <code>b: &amp;str</code> and returns <code>usize</code> (the type
+      <code>.len()</code> gives you): the byte length of the longer string.
+      Two read-only borrows, zero copies.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. total: borrow a slice read-only, sum it.
+//    Ruby's numbers.sum  ->  numbers.iter().sum()
+fn total(numbers: &[i32]) -> i32 {
+    todo!()
+}
+
+// 2. add_item: an exclusive, writable borrow of the caller's Vec.
+//    Ruby's items << item  ->  items.push(item)
+fn add_item(items: &mut Vec<String>, item: String) {
+    todo!()
+}
+
+// 3. longer: two shared borrows; return the bigger .len().
+//    Hint: a.len().max(b.len())
+fn longer(a: &str, b: &str) -> usize {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&mut\s/, message: "add_item must take a &mut (exclusive, writable) borrow" },
+    { pattern: /&\[i32\]/, message: "total must take a read-only slice: &[i32]" },
+  ],
+
+  tests: [
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total(&[]) returns 0 and total(&[-5, 5, 10]) returns 10",
+      code: "assert_eq!(total(&[]), 0);\nassert_eq!(total(&[-5, 5, 10]), 10);" },
+    { name: 'add_item pushes onto the caller\'s vector through &mut',
+      code: 'let mut cart = vec![String::from("apple")];\nadd_item(&mut cart, String::from("bread"));\nassert_eq!(cart, vec!["apple", "bread"]);' },
+    { name: "add_item works on an empty vector",
+      code: 'let mut items: Vec<String> = Vec::new();\nadd_item(&mut items, String::from("first"));\nassert_eq!(items, vec!["first"]);' },
+    { name: 'longer("hi", "hello") returns 5',
+      code: 'assert_eq!(longer("hi", "hello"), 5);' },
+    { name: 'longer("abcd", "xy") returns 4 and longer("", "") returns 0',
+      code: 'assert_eq!(longer("abcd", "xy"), 4);\nassert_eq!(longer("", ""), 0);' },
+  ],
+
+  solution: `fn total(numbers: &[i32]) -> i32 {
+    numbers.iter().sum()
+}
+
+fn add_item(items: &mut Vec<String>, item: String) {
+    items.push(item);
+}
+
+fn longer(a: &str, b: &str) -> usize {
+    a.len().max(b.len())
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Lend read-only</td><td>(everything is shared)</td><td><code>&amp;value</code> → parameter <code>x: &amp;T</code></td></tr>
+  <tr><td>Lend writably</td><td>(everything is writable)</td><td><code>&amp;mut value</code> → parameter <code>x: &amp;mut T</code></td></tr>
+  <tr><td>How many at once</td><td>unlimited readers <em>and</em> writers</td><td>many <code>&amp;T</code>, or one <code>&amp;mut T</code> — never both</td></tr>
+  <tr><td>List parameter</td><td><code>def total(numbers)</code></td><td><code>numbers: &amp;[i32]</code> (slice — like <code>&amp;str</code> for vectors)</td></tr>
+  <tr><td>Mutating a caller's array</td><td><code>items &lt;&lt; item</code>, invisibly</td><td><code>items.push(item)</code>, behind a visible <code>&amp;mut</code></td></tr>
+  <tr><td>Sum a list</td><td><code>numbers.sum</code></td><td><code>numbers.iter().sum()</code></td></tr>
+</table>
+<p>Look at the Ruby panel one more time: at <code>add_item(cart, "bread")</code>
+the call site is indistinguishable from a read-only call. The Rust version is
+<code>add_item(&amp;mut cart, item)</code> — the mutation is declared in the
+signature and repeated at the call site, and the compiler rejects the program
+if anyone else is borrowing <code>cart</code> at that moment. "Many readers or
+one writer" is the same rule as a good database lock or Ruby's frozen-vs-dup
+discipline — except here it's checked on every line of every build, for free,
+at compile time.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

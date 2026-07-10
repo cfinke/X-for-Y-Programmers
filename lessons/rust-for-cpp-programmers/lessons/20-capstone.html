@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Last lesson: no new concepts, just the ones you've collected, working
+together on a small inventory system. It's the shape of half the C++ you've
+ever written — a value struct, a vector of them, lookups that can fail,
+in-place updates, and a filtered projection. The Rust version is the same
+program with the conventions promoted to types: <code>const&amp;</code>
+becomes <code>&amp;[Item]</code>, "may return null" becomes
+<code>Option&lt;&amp;Item&gt;</code>, "takes non-const ref and mutates"
+becomes <code>&amp;mut Vec&lt;Item&gt;</code>, and the raw loops become
+iterator chains.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>const std::vector&lt;Item&gt;&amp;</code></td><td><code>&amp;[Item]</code> (a slice — spans, but checked)</td></tr>
+  <tr><td><code>const Item*</code> (null = not found)</td><td><code>Option&lt;&amp;Item&gt;</code> — absence in the type</td></tr>
+  <tr><td><code>std::vector&lt;Item&gt;&amp;</code> (mutates — read the docs)</td><td><code>&amp;mut Vec&lt;Item&gt;</code> — mutation in the signature</td></tr>
+  <tr><td><code>find_if</code>, <code>accumulate</code>, copy_if + transform</td><td><code>.iter().find(...)</code>, <code>.map(...).sum()</code>, <code>.filter(...).collect()</code></td></tr>
+</table>
+<p>Notice how much review-time knowledge moves into the signatures. In the
+C++ version you must remember that <code>find_item</code>'s pointer dangles
+if the vector reallocates, that a nullptr return needs checking, and that
+<code>restock</code> mutates its argument. In the Rust version the borrow
+checker enforces the first, <code>Option</code> forces the second, and
+<code>&amp;mut</code> declares the third at every call site.</p>`,
+
+  cpp: `#include <algorithm>
+#include <string>
+#include <vector>
+
+struct Item {
+    std::string name;
+    unsigned price_cents;
+    unsigned count;
+};
+
+unsigned total_value(const std::vector<Item>& items) {
+    unsigned total = 0;
+    for (const auto& i : items) total += i.price_cents * i.count;
+    return total;
+}
+
+const Item* find_item(const std::vector<Item>& items, std::string_view name) {
+    auto it = std::find_if(items.begin(), items.end(),
+                           [&](const Item& i) { return i.name == name; });
+    return it == items.end() ? nullptr : &*it;
+    // Caller must remember: check for nullptr; pointer dies on realloc.
+}`,
+
+  task: `
+<p><code>Item</code> is already defined. Implement the four functions:</p>
+<ol>
+  <li><code>total_value(items: &amp;[Item]) -&gt; u32</code> — the sum of
+      <code>price_cents * count</code> over all items:
+      <code>.iter().map(...).sum()</code>.</li>
+  <li><code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt; Option&lt;&amp;'a Item&gt;</code>
+      — the first item whose <code>name</code> matches, or <code>None</code>.
+      <code>.iter().find(...)</code> returns exactly this type. The
+      <code>'a</code> says the result borrows from the slice, not from
+      <code>name</code>.</li>
+  <li><code>restock(items: &amp;mut Vec&lt;Item&gt;, name: &amp;str, amount: u32) -&gt; bool</code>
+      — add <code>amount</code> to the matching item's <code>count</code> and
+      return <code>true</code>; return <code>false</code> if no item matches.
+      Use <code>.iter_mut().find(...)</code> to get a mutable borrow.</li>
+  <li><code>names_in_stock(items: &amp;[Item]) -&gt; Vec&lt;String&gt;</code>
+      — the names of items with <code>count &gt; 0</code>, in order:
+      <code>.iter().filter(...).map(...).collect()</code> (clone the names —
+      the return type owns them).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+// 1. Sum of price_cents * count: .iter().map(...).sum()
+fn total_value(items: &[Item]) -> u32 {
+    todo!()
+}
+
+// 2. First item with a matching name — .iter().find(...) hands you
+//    an Option<&Item> directly. 'a: the result borrows from the slice.
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    todo!()
+}
+
+// 3. Bump the matching item's count by amount; true if found.
+//    .iter_mut().find(...) gives Option<&mut Item> to update in place.
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    todo!()
+}
+
+// 4. Names of items with count > 0, in order — filter, map (clone the
+//    name), collect.
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option<&/, message: "find_item returns Option<&Item> — a lookup that can't be forgotten-null" },
+    { pattern: /\.iter\(\)/, message: "Use iterator chains (.iter()) instead of index loops" },
+    { pattern: /&mut\s+Vec<Item>/, message: "restock takes &mut Vec<Item> — mutation declared in the signature" },
+  ],
+
+  tests: [
+    { name: "total_value multiplies price by count and sums",
+      code: 'let items = vec![\n    Item { name: String::from("bolt"), price_cents: 25, count: 100 },\n    Item { name: String::from("nut"), price_cents: 10, count: 0 },\n    Item { name: String::from("washer"), price_cents: 5, count: 40 },\n];\nassert_eq!(total_value(&items), 2700);' },
+    { name: "total_value of an empty slice is 0",
+      code: 'assert_eq!(total_value(&[]), 0);' },
+    { name: 'find_item returns Some for "bolt" with the right fields',
+      code: 'let items = vec![\n    Item { name: String::from("bolt"), price_cents: 25, count: 100 },\n    Item { name: String::from("nut"), price_cents: 10, count: 0 },\n];\nlet found = find_item(&items, "bolt");\nassert!(found.is_some());\nassert_eq!(found.unwrap().price_cents, 25);' },
+    { name: "find_item returns None for an unknown name",
+      code: 'let items = vec![\n    Item { name: String::from("bolt"), price_cents: 25, count: 100 },\n];\nassert!(find_item(&items, "gear").is_none());' },
+    { name: "restock updates the matching item and reports misses with false",
+      code: 'let mut items = vec![\n    Item { name: String::from("bolt"), price_cents: 25, count: 100 },\n    Item { name: String::from("nut"), price_cents: 10, count: 0 },\n];\nassert!(restock(&mut items, "nut", 5));\nassert_eq!(items[1].count, 5);\nassert!(!restock(&mut items, "gear", 5));\nassert_eq!(items[0].count, 100);' },
+    { name: "names_in_stock keeps only count > 0, in order",
+      code: 'let items = vec![\n    Item { name: String::from("bolt"), price_cents: 25, count: 100 },\n    Item { name: String::from("nut"), price_cents: 10, count: 0 },\n    Item { name: String::from("washer"), price_cents: 5, count: 40 },\n];\nassert_eq!(names_in_stock(&items), vec!["bolt", "washer"]);\nassert_eq!(names_in_stock(&[]), Vec::<String>::new());' },
+  ],
+
+  solution: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+fn total_value(items: &[Item]) -> u32 {
+    items.iter().map(|i| i.price_cents * i.count).sum()
+}
+
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    items.iter().find(|i| i.name == name)
+}
+
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    match items.iter_mut().find(|i| i.name == name) {
+        Some(item) => {
+            item.count += amount;
+            true
+        }
+        None => false,
+    }
+}
+
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    items
+        .iter()
+        .filter(|i| i.count > 0)
+        .map(|i| i.name.clone())
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Read-only sequence param</td><td><code>const vector&lt;Item&gt;&amp;</code> / <code>span&lt;const Item&gt;</code></td><td><code>&amp;[Item]</code></td></tr>
+  <tr><td>Fallible lookup</td><td><code>const Item*</code>, nullptr by convention</td><td><code>Option&lt;&amp;Item&gt;</code>, checked by the compiler</td></tr>
+  <tr><td>Mutating param</td><td><code>vector&lt;Item&gt;&amp;</code> — invisible at the call site</td><td><code>&amp;mut Vec&lt;Item&gt;</code> — visible at both ends</td></tr>
+  <tr><td>Find</td><td><code>std::find_if(begin, end, pred)</code></td><td><code>.iter().find(pred)</code></td></tr>
+  <tr><td>Find &amp; mutate</td><td>Same, then write through the iterator</td><td><code>.iter_mut().find(pred)</code></td></tr>
+  <tr><td>Reduce</td><td><code>std::accumulate</code></td><td><code>.map(...).sum()</code></td></tr>
+  <tr><td>Filter + project</td><td><code>copy_if</code> + <code>transform</code> (or ranges)</td><td><code>.filter(...).map(...).collect()</code></td></tr>
+</table>
+<p>Twenty lessons in, the pattern should feel familiar: nothing here was a
+new <em>idea</em>. Const-correctness, "check the pointer", "don't hold
+iterators across a realloc", RAII, explicit ownership transfer — you
+already believed in all of it. Rust's contribution is that every one of
+those items moved from your code-review checklist into the compiler's,
+which frees your reviews for the questions a compiler can't answer. That's
+the trade: a stricter conversation up front, and whole categories of 3 a.m.
+pages gone.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

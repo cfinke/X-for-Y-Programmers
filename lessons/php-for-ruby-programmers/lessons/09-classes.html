@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes &amp; Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>PHP classes are Ruby classes with the implicit parts written out.
+<code>initialize</code> becomes <code>__construct</code>, and instance
+variables trade the <code>@</code> sigil for <code>$this-></code>:
+<code>@balance</code> is <code>$this->balance</code>. The deeper difference
+is that properties are <em>declared</em> — <code>private int $balance = 0;</code>
+lives in the class body with a type and a default. They don't spring into
+being on first assignment the way <code>@ivars</code> do; a typo'd property
+name is an error, not a silent new variable.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>def initialize(owner)</code></td><td><code>public function __construct(private string $owner) {}</code></td></tr>
+  <tr><td><code>@balance = 0</code> (appears on assignment)</td><td><code>private int $balance = 0;</code> (declared up front)</td></tr>
+  <tr><td><code>@balance</code> inside methods</td><td><code>$this->balance</code></td></tr>
+  <tr><td><code>attr_accessor :owner</code></td><td><code>public string $owner</code> promoted in the constructor</td></tr>
+  <tr><td><code>private</code> (bypassable with <code>send</code>)</td><td><code>private</code> (actually enforced)</td></tr>
+  <tr><td><code>acct.deposit(100)</code></td><td><code>$acct->deposit(100)</code></td></tr>
+</table>
+<p>Two conveniences deserve a call-out. <em>Constructor property
+promotion</em> is PHP's <code>attr_accessor</code>-plus-<code>initialize</code>
+in one stroke: writing <code>public function __construct(private string
+$owner) {}</code> declares the property, types it, and assigns the argument
+— the whole <code>@owner = owner</code> dance, gone. And visibility is
+real: Ruby's <code>private</code> is a polite convention you can bypass
+with <code>send</code>; PHP's <code>private</code> throws an
+<code>Error</code> on outside access, full stop.</p>`,
+
+  ruby: `class BankAccount
+  attr_reader :owner, :balance
+
+  def initialize(owner)
+    @owner = owner
+    @balance = 0 # springs into being right here
+  end
+
+  def deposit(amount)
+    @balance += amount
+  end
+
+  def withdraw(amount)
+    return false if amount > @balance
+    @balance -= amount
+    true
+  end
+end
+
+acct = BankAccount.new("Ada")
+acct.deposit(100)
+acct.withdraw(30)  # true
+acct.withdraw(500) # false — balance untouched
+acct.balance       # 70`,
+
+  task: `
+<p>Port <code>BankAccount</code> to PHP:</p>
+<ol>
+  <li>The starter declares <code>private int $balance = 0;</code> and
+      promotes <code>private string $owner</code> in the constructor —
+      study that line: it replaces <code>attr_reader</code> +
+      <code>initialize</code> + <code>@owner = owner</code>.</li>
+  <li><code>owner(): string</code> and <code>balance(): int</code> — reader
+      methods returning <code>$this->owner</code> and
+      <code>$this->balance</code> (the properties are private, so the
+      outside world goes through these).</li>
+  <li><code>deposit(int $amount): void</code> — add to
+      <code>$this->balance</code>. A <code>void</code> return type is the
+      explicit spelling of "called for its side effect".</li>
+  <li><code>withdraw(int $amount): bool</code> — return <code>false</code>
+      (leaving the balance untouched) when <code>$amount</code> exceeds the
+      balance; otherwise subtract and return <code>true</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+class BankAccount {
+    // Declared property: type + default, no springing into being.
+    private int $balance = 0;
+
+    // Promoted property: declares AND assigns private string $owner.
+    public function __construct(private string $owner) {}
+
+    public function owner(): string {
+        throw new Exception("TODO: implement owner");
+    }
+
+    public function deposit(int $amount): void {
+        throw new Exception("TODO: implement deposit");
+    }
+
+    public function withdraw(int $amount): bool {
+        throw new Exception("TODO: implement withdraw");
+    }
+
+    public function balance(): int {
+        throw new Exception("TODO: implement balance");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /__construct\s*\(\s*(private|public)/, message: "Use constructor property promotion" },
+    { pattern: /private/, message: "Keep the properties private" },
+    { pattern: /->/, message: "Access members with -> ($this->balance, $acct->deposit(...))" },
+  ],
+
+  tests: [
+    { name: "owner() returns the promoted constructor argument",
+      code: "$acct = new BankAccount('Ada');\nexpect_eq($acct->owner(), 'Ada');" },
+    { name: "a new account starts at balance 0",
+      code: "expect_eq((new BankAccount('Ada'))->balance(), 0);" },
+    { name: "deposit adds to the balance",
+      code: "$acct = new BankAccount('Ada');\n$acct->deposit(100);\n$acct->deposit(25);\nexpect_eq($acct->balance(), 125);" },
+    { name: "withdraw returns true and subtracts when funds suffice",
+      code: "$acct = new BankAccount('Ada');\n$acct->deposit(100);\nexpect_true($acct->withdraw(30));\nexpect_eq($acct->balance(), 70);" },
+    { name: "a failed withdraw returns false and leaves the balance unchanged",
+      code: "$acct = new BankAccount('Ada');\n$acct->deposit(50);\nexpect_eq($acct->withdraw(100), false);\nexpect_eq($acct->balance(), 50);" },
+  ],
+
+  solution: `<?php
+
+class BankAccount {
+    private int $balance = 0;
+
+    public function __construct(private string $owner) {}
+
+    public function owner(): string {
+        return $this->owner;
+    }
+
+    public function deposit(int $amount): void {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): bool {
+        if ($amount > $this->balance) {
+            return false;
+        }
+        $this->balance -= $amount;
+        return true;
+    }
+
+    public function balance(): int {
+        return $this->balance;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Constructor</td><td><code>def initialize(x)</code></td><td><code>public function __construct($x)</code></td></tr>
+  <tr><td>Instantiate</td><td><code>BankAccount.new("Ada")</code></td><td><code>new BankAccount("Ada")</code></td></tr>
+  <tr><td>Instance state</td><td><code>@balance</code></td><td><code>$this->balance</code>, declared in the class body</td></tr>
+  <tr><td>Accessors</td><td><code>attr_reader / attr_accessor</code></td><td>promoted <code>public</code> properties, or reader methods</td></tr>
+  <tr><td>Call a method</td><td><code>acct.deposit(100)</code></td><td><code>$acct->deposit(100)</code></td></tr>
+  <tr><td>Self-reference</td><td><code>self</code> (usually implicit)</td><td><code>$this</code> (always explicit)</td></tr>
+  <tr><td><code>private</code></td><td>convention — <code>send</code> bypasses it</td><td>enforced — outside access throws <code>Error</code></td></tr>
+</table>
+<p>Note that <code>$this-></code> is never optional: where Ruby lets a bare
+<code>balance</code> inside a method find the reader or the ivar, PHP makes
+you write <code>$this->balance</code> every time — a bare
+<code>$balance</code> is a fresh local variable, which is the closest thing
+this lesson has to a trap. In exchange, declared properties mean the class
+body reads as a complete inventory of the object's state, types included —
+nothing springs into existence three methods deep.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

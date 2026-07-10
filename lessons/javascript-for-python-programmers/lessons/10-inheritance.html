@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance",
+
+  intro: `
+<p>Python classes translate to JavaScript almost feature-for-feature:
+<code>class Dog(Animal):</code> becomes <code>class Dog extends Animal {}</code>,
+and method overriding and runtime type checks both carry straight over. What
+differs is the ceremony around the constructor. Python's <code>__init__</code>
+takes an explicit <code>self</code> and calls <code>super().__init__(name)</code>
+as a method lookup; JavaScript's <code>constructor</code> gets an implicit
+<code>this</code> and calls <code>super(name)</code> as a bare function call —
+and unlike Python, JavaScript actually enforces the order.</p>
+<table>
+  <tr><th>Python</th><th>JavaScript</th></tr>
+  <tr><td><code>class Dog(Animal):</code></td><td><code>class Dog extends Animal {}</code></td></tr>
+  <tr><td><code>def __init__(self, breed): self.breed = breed</code></td><td>you assign <code>this.breed</code> yourself</td></tr>
+  <tr><td><code>self._name</code> (convention only)</td><td>just a normal public property</td></tr>
+  <tr><td><code>abc.ABC</code> / <code>@abstractmethod</code></td><td>no such thing — plain class</td></tr>
+  <tr><td>nothing enforces calling <code>super().__init__()</code> first</td><td>runtime throws if you touch <code>this</code> before <code>super(...)</code></td></tr>
+</table>
+<p>Two runtime rules matter in JavaScript that Python does not have. First, in
+a subclass constructor you must call <code>super(...)</code> before you read or
+write <code>this</code> — the engine throws a <code>ReferenceError</code>
+otherwise, whereas Python's <code>super().__init__()</code> is just a regular
+call you can place (or accidentally skip) wherever you like. Second,
+<code>instanceof</code> walks the prototype chain the same way Python's
+<code>isinstance()</code> walks the method resolution order, so a
+<code>Dog</code> is genuinely an <code>Animal</code> at run time in both
+languages.</p>`,
+
+  python: `class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return f"{self.name} makes a sound"
+
+    def describe(self):
+        return f"{self.name} is an animal"
+
+
+class Dog(Animal):
+    def __init__(self, name, breed):
+        super().__init__(name)
+        self.breed = breed
+
+    def speak(self):
+        return f"{self.name} barks"
+
+    def describe(self):
+        return f"{super().describe()}, specifically a {self.breed}"`,
+
+  task: `
+<p>Build the same class hierarchy in JavaScript — no <code>self</code>
+parameter, no <code>__init__</code>, no automatic attribute assignment (assign
+fields onto <code>this</code> yourself):</p>
+<ol>
+  <li>A base class <code>Animal</code> whose constructor takes <code>name</code>
+      and stores it on <code>this.name</code>. Give it <code>speak()</code>
+      returning <code>"&lt;name&gt; makes a sound"</code> and
+      <code>describe()</code> returning <code>"&lt;name&gt; is an animal"</code>.</li>
+  <li>A subclass <code>Dog</code> that <code>extends Animal</code>. Its
+      constructor takes <code>name</code> and <code>breed</code>, calls
+      <code>super(name)</code>, then stores <code>this.breed</code>. Override
+      <code>speak()</code> to return <code>"&lt;name&gt; barks"</code>, and
+      override <code>describe()</code> to call <code>super.describe()</code> and
+      append <code>", specifically a &lt;breed&gt;"</code>.</li>
+  <li>A function <code>identify(x)</code> that returns <code>"dog"</code> if
+      <code>x</code> is a <code>Dog</code>, <code>"animal"</code> if it is any
+      other <code>Animal</code>, and <code>"unknown"</code> otherwise — using
+      <code>instanceof</code>.</li>
+</ol>`,
+
+  starter: `// 1. Base class
+class Animal {
+  constructor(name) {
+    // TODO: store name
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO
+    return "";
+  }
+}
+
+// 2. Subclass that overrides and calls super
+class Dog extends Animal {
+  constructor(name, breed) {
+    // TODO: call super, then store breed
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO: reuse super.describe()
+    return "";
+  }
+}
+
+// 3. identify(x) using instanceof
+function identify(x) {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["Animal", "Dog", "identify"],
+
+  requirements: [
+    { pattern: /class\s+Dog\s+extends\s+Animal/, message: "Dog must extend Animal" },
+    { pattern: /super\s*\(/, message: "Call super(...) in the Dog constructor" },
+    { pattern: /super\.describe\s*\(/, message: "Dog.describe() must call super.describe()" },
+    { pattern: /instanceof/, message: "Use instanceof inside identify" },
+  ],
+
+  tests: [
+    { name: 'Animal.speak() uses the base behavior', run: (x) => expectEqual(new x.Animal("Rex").speak(), "Rex makes a sound") },
+    { name: 'Dog overrides speak()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").speak(), "Rex barks") },
+    { name: 'super(name) sets the inherited field', run: (x) => expectEqual(new x.Dog("Rex", "Lab").name, "Rex") },
+    { name: 'Dog.describe() calls super.describe()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").describe(), "Rex is an animal, specifically a Lab") },
+    { name: 'a Dog is an Animal (prototype chain)', run: (x) => expectTruthy(new x.Dog("Rex", "Lab") instanceof x.Animal) },
+    { name: 'identify distinguishes Dog, Animal, and other', run: (x) => {
+        expectEqual(x.identify(new x.Dog("Rex", "Lab")), "dog");
+        expectEqual(x.identify(new x.Animal("Generic")), "animal");
+        expectEqual(x.identify(42), "unknown");
+    } },
+  ],
+
+  solution: `class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return \`\${this.name} makes a sound\`;
+  }
+  describe() {
+    return \`\${this.name} is an animal\`;
+  }
+}
+
+class Dog extends Animal {
+  constructor(name, breed) {
+    super(name);
+    this.breed = breed;
+  }
+  speak() {
+    return \`\${this.name} barks\`;
+  }
+  describe() {
+    return \`\${super.describe()}, specifically a \${this.breed}\`;
+  }
+}
+
+function identify(x) {
+  if (x instanceof Dog) return "dog";
+  if (x instanceof Animal) return "animal";
+  return "unknown";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>JavaScript</th></tr>
+  <tr><td>Subclass</td><td><code>class Dog(Animal):</code></td><td><code>class Dog extends Animal {}</code></td></tr>
+  <tr><td>Base constructor</td><td><code>super().__init__(name)</code></td><td><code>super(name)</code> (required before <code>this</code>)</td></tr>
+  <tr><td>Field from a param</td><td><code>self.breed = breed</code> (or <code>@dataclass</code> to auto-generate it)</td><td><code>this.breed = breed;</code> (always manual)</td></tr>
+  <tr><td>Call base method</td><td><code>super().describe()</code></td><td><code>super.describe()</code> (no parens after <code>super</code>)</td></tr>
+  <tr><td>Runtime type test</td><td><code>isinstance(x, Animal)</code></td><td><code>x instanceof Animal</code></td></tr>
+</table>
+<p>Order matters in <code>identify</code>: check <code>instanceof Dog</code> before
+<code>instanceof Animal</code>, because a <code>Dog</code> passes both — that is
+what inheritance means at runtime, exactly like <code>isinstance(x, Animal)</code>
+would also be true for a <code>Dog</code> instance in Python. <code>instanceof</code>
+checks whether <code>Animal.prototype</code> appears anywhere on <code>x</code>'s
+prototype chain — the rough equivalent of Python walking a class's
+<code>__mro__</code>.</p>
+<p>One behavior that differs from Python: forgetting <code>super().__init__()</code>
+in Python just means those fields never get set, and you often don't notice
+until something reads them later. Forget <code>super(name)</code> in a
+JavaScript subclass constructor and the engine throws
+<code>ReferenceError: must call super constructor</code> the moment you touch
+<code>this</code> — fail fast instead of fail silent. And because there are no
+<code>private</code>/<code>protected</code> keywords at runtime — just like
+Python's <code>_name</code> convention has no real enforcement — every field
+you set is publicly reachable; naming conventions or <code>#private</code>
+fields are your only real fences.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>Rust makes failure a <em>value</em>: <code>Result&lt;T, E&gt;</code> in the
+signature, <code>?</code> to propagate, and the compiler refuses to let you
+forget the <code>Err</code> arm. Ruby uses exceptions — and here is the honest
+trade: a <code>raise</code> propagates <strong>invisibly</strong> up the call
+stack until something rescues it. It is the panic model as the normal path.
+No error types in signatures, no compiler-forced handling; in exchange, the
+happy path reads clean and propagation is free — you write nothing at all
+where Rust writes <code>?</code>.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>Result&lt;u32, ParseIntError&gt;</code> in the signature</td><td>nothing — failure is not in the signature</td></tr>
+  <tr><td><code>return Err(MyError)</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+  <tr><td><code>?</code> propagates upward</td><td>automatic — an unrescued raise keeps climbing</td></tr>
+  <tr><td><code>match</code> on the error variant</td><td><code>rescue ArgumentError =&gt; e</code> (matches by class)</td></tr>
+  <tr><td>custom error enum/struct</td><td><code>class ParseError &lt; StandardError</code></td></tr>
+</table>
+<p>You handle failure with <code>begin</code>/<code>rescue</code>/<code>ensure</code>
+(<code>ensure</code> is your <code>Drop</code>-like always-runs block). A typed
+rescue — <code>rescue ArgumentError =&gt; e</code> — is how you match a
+specific error variant. And when a whole method body is the
+<code>begin</code> block, Ruby lets you drop the <code>begin</code>: a
+<strong>def-level rescue</strong> gives you the <code>?</code> operator's
+ergonomics, but for <em>handling</em> instead of propagating.</p>`,
+
+  rust: `#[derive(Debug)]
+struct EmptyCartError;
+
+fn parse_age(s: &str) -> Result<u32, std::num::ParseIntError> {
+    s.trim().parse::<u32>() // Err is right there in the signature
+}
+
+fn safe_parse_age(s: &str, default: u32) -> u32 {
+    parse_age(s).unwrap_or(default)
+}
+
+fn checkout(items: &[u32]) -> Result<u32, EmptyCartError> {
+    if items.is_empty() {
+        return Err(EmptyCartError);
+    }
+    Ok(items.iter().sum())
+}`,
+
+  task: `
+<p>Rebuild the Rust with exceptions:</p>
+<ol>
+  <li><code>parse_age(s)</code> — <code>raise ArgumentError, "not a number"</code>
+      unless <code>s.strip.match?(/\\A\\d+\\z/)</code>; otherwise return
+      <code>s.to_i</code>. The failure case is a raise, not an
+      <code>Err</code> — callers cannot see it coming.</li>
+  <li><code>safe_parse_age(s, default)</code> — call <code>parse_age(s)</code>
+      and use a <strong>def-level rescue</strong>
+      (<code>rescue ArgumentError</code> directly inside the <code>def</code>,
+      no <code>begin</code>) to return <code>default</code> on failure. This is
+      <code>unwrap_or</code>, reconstructed.</li>
+  <li>Define <code>class EmptyCartError &lt; StandardError</code>, then
+      <code>checkout(items)</code> — raise <code>EmptyCartError</code> when
+      <code>items</code> is empty, otherwise return <code>items.sum</code>.</li>
+</ol>`,
+
+  starter: `# 1. parse_age: Rust returned Result<u32, _>. Ruby raises instead —
+#    the signature is silent about failure.
+def parse_age(s)
+  raise NotImplementedError, "TODO: raise ArgumentError unless all digits, else s.to_i"
+end
+
+# 2. safe_parse_age: unwrap_or, rebuilt with a def-level rescue —
+#    no begin needed when the whole method body is the guarded region.
+def safe_parse_age(s, default)
+  raise NotImplementedError, "TODO: parse_age(s), rescue ArgumentError, return default"
+end
+
+# 3. A custom error is just a subclass. StandardError is the base
+#    that a bare rescue catches.
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise NotImplementedError, "TODO: raise EmptyCartError if empty, else items.sum"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+\w*Error/, message: "Use a typed rescue (rescue ArgumentError) to match the error class" },
+    { pattern: /raise\s+/, message: "Raise an exception with raise" },
+    { pattern: /<\s*StandardError/, message: "Define a custom error subclassing StandardError" },
+    { pattern: /match\?|to_i/, message: "Validate with match? and convert with to_i" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42',
+      code: '  expect_eq(parse_age("42"), 42)' },
+    { name: 'parse_age("  7  ") strips whitespace and returns 7',
+      code: '  expect_eq(parse_age("  7  "), 7)' },
+    { name: 'parse_age("abc") raises ArgumentError',
+      code: `  begin
+    parse_age("abc")
+    raise "did not raise"
+  rescue ArgumentError
+  end` },
+    { name: 'safe_parse_age("abc", 18) falls back to 18',
+      code: '  expect_eq(safe_parse_age("abc", 18), 18)' },
+    { name: 'safe_parse_age("30", 0) returns 30',
+      code: '  expect_eq(safe_parse_age("30", 0), 30)' },
+    { name: "checkout sums a cart and raises EmptyCartError on an empty one",
+      code: `  expect_eq(checkout([100, 250]), 350)
+  begin
+    checkout([])
+    raise "did not raise"
+  rescue EmptyCartError
+  end` },
+  ],
+
+  solution: `def parse_age(s)
+  raise ArgumentError, "not a number: #{s.inspect}" unless s.strip.match?(/\\A\\d+\\z/)
+  s.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise EmptyCartError, "cart is empty" if items.empty?
+  items.sum
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>Signal failure</td><td><code>Err(e)</code> / <code>return Err(e)</code></td><td><code>raise SomeError, "msg"</code></td></tr>
+  <tr><td>Propagate</td><td><code>?</code></td><td>do nothing — raises climb until rescued</td></tr>
+  <tr><td>Handle a variant</td><td><code>match</code> / <code>if let Err(e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td>Fallback value</td><td><code>.unwrap_or(default)</code></td><td>def-level <code>rescue</code> returning the default</td></tr>
+  <tr><td>Custom error</td><td><code>enum</code>/<code>struct</code> + <code>impl Error</code></td><td><code>class FooError &lt; StandardError; end</code></td></tr>
+  <tr><td>Always-runs cleanup</td><td><code>Drop</code></td><td><code>ensure</code> block</td></tr>
+</table>
+<p>Rescue from <code>StandardError</code> down, never from <code>Exception</code> —
+a bare <code>rescue</code> already means <code>StandardError</code>, and
+rescuing <code>Exception</code> swallows interrupts and typos alike
+(<code>NoMethodError</code> included). The discipline Rust's compiler enforced
+is now yours to keep: raise specific classes, rescue the narrowest one that
+makes sense, and let everything else propagate.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

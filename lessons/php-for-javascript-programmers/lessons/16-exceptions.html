@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions &amp; Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>PHP's <code>try</code>/<code>catch</code>/<code>finally</code> is the
+JavaScript shape, keyword for keyword. The upgrade is in the
+<code>catch</code>: it's <strong>typed</strong>. Where a JS <code>catch (e)</code>
+grabs everything and you do the <code>instanceof</code> dance to sort out
+what you actually caught, PHP's <code>catch (InvalidArgumentException $e)</code>
+catches <em>only</em> that type (and its subclasses) — anything else sails
+past to the next handler up the stack. Stack multiple <code>catch</code>
+blocks, or catch two types at once with <code>catch (TypeError | ValueError $e)</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>throw new RangeError("bad")</code></td><td><code>throw new InvalidArgumentException("bad")</code></td></tr>
+  <tr><td><code>catch (e)</code> — catches everything</td><td><code>catch (InvalidArgumentException $e)</code> — only that type</td></tr>
+  <tr><td><code>if (e instanceof RangeError) ... else throw e</code></td><td>just don't catch it — it propagates on its own</td></tr>
+  <tr><td><code>class MyError extends Error</code></td><td><code>class MyError extends Exception</code></td></tr>
+  <tr><td><code>finally { ... }</code></td><td><code>finally { ... }</code> — identical</td></tr>
+</table>
+<p>Everything throwable implements the <code>Throwable</code> interface, which
+splits into two families: <code>Exception</code> (your errors — bad input,
+missing files) and <code>Error</code> (the engine's errors — type violations,
+calling a missing method). Custom exceptions are just
+<code>class TooYoungException extends Exception {}</code> — an empty body is
+enough, the type <em>is</em> the information. And since PHP 8,
+<code>throw</code> is an expression, so <code>$x = $input ?? throw new
+InvalidArgumentException("required");</code> is legal and idiomatic.</p>`,
+
+  javascript: `function parseAge(s) {
+  if (!/^\\d+$/.test(s.trim())) {
+    // RangeError is as specific as built-ins get
+    throw new RangeError(\`not a valid age: \${s}\`);
+  }
+  return Number(s.trim());
+}
+
+function safeParseAge(s, fallback) {
+  try {
+    return parseAge(s);
+  } catch (e) {
+    // The instanceof dance: catch caught EVERYTHING,
+    // so we must check what we got and rethrow the rest.
+    if (e instanceof RangeError) return fallback;
+    throw e;
+  }
+}`,
+
+  task: `
+<p>Port the age parser, letting typed catches do the sorting:</p>
+<ol>
+  <li><code>parse_age(string $s): int</code> — if
+      <code>ctype_digit(trim($s))</code> is false, <code>throw new
+      InvalidArgumentException(...)</code> with any message you like.
+      Otherwise return the trimmed string cast to int with
+      <code>(int)</code>. (<code>ctype_digit</code> is true only for a
+      non-empty, all-digits string — it rejects <code>""</code>,
+      <code>"4.5"</code>, and <code>"abc"</code> in one shot.)</li>
+  <li><code>safe_parse_age(string $s, int $default): int</code> — call
+      <code>parse_age($s)</code> inside <code>try</code>, and
+      <code>catch (InvalidArgumentException $e)</code> to return
+      <code>$default</code> instead. No <code>instanceof</code>, no rethrow —
+      the catch clause itself is the filter.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. parse_age: reject anything that isn't all digits (after trim)
+//    by throwing InvalidArgumentException; otherwise cast and return.
+function parse_age(string $s): int {
+    throw new Exception("TODO: implement parse_age");
+}
+
+// 2. safe_parse_age: try { parse_age } catch (InvalidArgumentException $e).
+//    The typed catch replaces JS's instanceof-and-rethrow dance.
+function safe_parse_age(string $s, int $default): int {
+    throw new Exception("TODO: implement safe_parse_age");
+}
+`,
+
+  requirements: [
+    { pattern: /InvalidArgumentException/, message: "Throw (and catch) InvalidArgumentException, not a bare Exception" },
+    { pattern: /try\s*\{/, message: "Use a try block in safe_parse_age" },
+    { pattern: /catch\s*\(/, message: "Catch the exception with a catch (...) clause" },
+    { pattern: /throw\s+new/, message: "Throw a new exception object for bad input" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns int 42, and whitespace is trimmed',
+      code: `expect_eq(parse_age("42"), 42);
+expect_eq(parse_age("  7 "), 7);` },
+    { name: 'parse_age("abc") throws InvalidArgumentException',
+      code: `try { parse_age("abc"); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}` },
+    { name: 'parse_age("") and parse_age("4.5") throw too — ctype_digit rejects both',
+      code: `try { parse_age(""); throw new Exception("did not throw on empty"); } catch (InvalidArgumentException $e) {}
+try { parse_age("4.5"); throw new Exception("did not throw on 4.5"); } catch (InvalidArgumentException $e) {}` },
+    { name: 'safe_parse_age("30", 18) returns 30 — no exception, no default',
+      code: `expect_eq(safe_parse_age("30", 18), 30);` },
+    { name: 'safe_parse_age("thirty", 18) returns the default 18',
+      code: `expect_eq(safe_parse_age("thirty", 18), 18);
+expect_eq(safe_parse_age("", 21), 21);` },
+  ],
+
+  solution: `<?php
+
+function parse_age(string $s): int {
+    $trimmed = trim($s);
+    if (!ctype_digit($trimmed)) {
+        throw new InvalidArgumentException("not a valid age: $s");
+    }
+    return (int) $trimmed;
+}
+
+function safe_parse_age(string $s, int $default): int {
+    try {
+        return parse_age($s);
+    } catch (InvalidArgumentException $e) {
+        return $default;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Catch everything</td><td><code>catch (e)</code></td><td><code>catch (Throwable $e)</code> (explicit, rarely right)</td></tr>
+  <tr><td>Catch one type</td><td><code>catch</code> + <code>instanceof</code> + rethrow</td><td><code>catch (InvalidArgumentException $e)</code></td></tr>
+  <tr><td>Catch several types</td><td>more <code>instanceof</code> branches</td><td><code>catch (TypeError | ValueError $e)</code>, or stacked catches</td></tr>
+  <tr><td>Base class</td><td><code>Error</code></td><td><code>Throwable</code> → <code>Exception</code> / <code>Error</code></td></tr>
+  <tr><td>Custom type</td><td><code>class X extends Error</code></td><td><code>class X extends Exception {}</code></td></tr>
+  <tr><td>Message</td><td><code>e.message</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+  <tr><td>Throw in an expression</td><td><code>??</code> can't throw</td><td><code>$x ?? throw new ...</code> (PHP 8)</td></tr>
+</table>
+<p>The deep insight: because <code>catch</code> is a type filter, an uncaught
+type isn't an oversight — it's a statement. <code>safe_parse_age</code>
+catches <code>InvalidArgumentException</code> and <em>nothing else</em>; a
+<code>TypeError</code> from deeper in the stack passes straight through,
+untouched, exactly as the rethrow branch of the JS version intended but had
+to write by hand. Choose narrow exception types when you throw
+(<code>InvalidArgumentException</code>, not <code>Exception</code>) and your
+callers get that precision for free.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

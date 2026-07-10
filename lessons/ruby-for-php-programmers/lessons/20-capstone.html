@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>No new syntax this time — just the toolkit you have built, applied to a tiny
+inventory. You will combine a class with <code>attr_reader</code>, the
+Enumerable methods (<code>sum</code>, <code>find</code>, <code>select</code>,
+<code>map</code>), and blocks. Everything here appeared in earlier lessons; the
+goal is to reach for the idiomatic method instead of a loop.</p>
+<p>One gotcha deserves your full attention, because it is exactly where PHP
+habits bite. In PHP an array is a <em>value</em>: assign it or pass it to a
+function and you get a copy, so mutating it leaves the caller's array
+untouched. Ruby arrays and objects are <em>references</em>, like PHP objects
+but now for arrays too. If you push into or mutate the array you were handed,
+the caller sees the change. So the restock step must build and return a
+<strong>new</strong> array containing a <strong>new</strong> <code>Item</code>
+for the match — never mutate the original.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>array passed by value (copied)</td><td>array passed by reference</td></tr>
+  <tr><td><code>array_sum(array_map(...))</code></td><td><code>items.sum { |i| ... }</code></td></tr>
+  <tr><td><code>foreach</code> + early <code>return</code></td><td><code>items.find { |i| ... }</code> (nil on miss)</td></tr>
+  <tr><td><code>array_map</code> to rebuild</td><td><code>items.map { |i| ... }</code></td></tr>
+  <tr><td><code>array_values(array_filter(...))</code></td><td><code>items.select { }.map(&amp;:name)</code></td></tr>
+</table>
+<p>Because Ruby won't copy the array for you, immutability is a choice you make
+by <em>building new values</em> rather than editing in place. <code>map</code>,
+<code>select</code>, and friends already return fresh arrays — lean on them and
+you get PHP's old value-semantics safety back, on purpose.</p>`,
+
+  php: `<?php
+final class Item {
+    public function __construct(
+        public readonly string $name,
+        public readonly int $priceCents,
+        public readonly int $count,
+    ) {}
+}
+
+function totalValue(array $items): int {
+    return array_sum(array_map(fn($i) => $i->priceCents * $i->count, $items));
+}
+
+function findItem(array $items, string $name): ?Item {
+    foreach ($items as $i) {
+        if ($i->name === $name) return $i;
+    }
+    return null;
+}
+
+function restock(array $items, string $name, int $amount): array {
+    return array_map(
+        fn($i) => $i->name === $name
+            ? new Item($i->name, $i->priceCents, $i->count + $amount)
+            : $i,
+        $items
+    );
+}`,
+
+  task: `
+<p>The <code>Item</code> class is written for you. Implement four functions:</p>
+<ol>
+  <li><code>total_value(items)</code> — <code>items.sum { |i| i.price_cents *
+      i.count }</code>.</li>
+  <li><code>find_item(items, name)</code> — <code>items.find { |i| i.name ==
+      name }</code>. Returns <code>nil</code> automatically when nothing
+      matches.</li>
+  <li><code>restock(items, name, amount)</code> — return a <strong>new</strong>
+      array (via <code>map</code>) where the matching item is replaced by
+      <code>Item.new(i.name, i.price_cents, i.count + amount)</code> and every
+      other item passes through unchanged. Do <em>not</em> mutate the originals
+      — Ruby arrays and objects are references, so mutation would leak back to
+      the caller.</li>
+  <li><code>names_in_stock(items)</code> — <code>select</code> the items with
+      <code>count &gt; 0</code>, then <code>map(&amp;:name)</code>.</li>
+</ol>`,
+
+  starter: `# The Item class is complete — do not change it.
+class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+# 1. total_value: sum price_cents * count across all items.
+def total_value(items)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 2. find_item: return the item whose name matches, or nil.
+def find_item(items, name)
+  raise NotImplementedError, "TODO: implement find_item"
+end
+
+# 3. restock: return a NEW array with a NEW Item for the match. Never mutate.
+def restock(items, name, amount)
+  raise NotImplementedError, "TODO: implement restock"
+end
+
+# 4. names_in_stock: names of items with count > 0.
+def names_in_stock(items)
+  raise NotImplementedError, "TODO: implement names_in_stock"
+end
+`,
+
+  requirements: [
+    { pattern: /\.find\b/, message: "Look up items with find (nil on miss)" },
+    { pattern: /\.select/, message: "Filter in-stock items with select" },
+    { pattern: /\.sum/, message: "Total up with sum { ... }" },
+    { pattern: /Item\.new/, message: "restock must build a NEW Item, not mutate" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count",
+      code: '  items = [Item.new("apple", 100, 3), Item.new("banana", 50, 5)]\n  expect_eq(total_value(items), 100 * 3 + 50 * 5)' },
+    { name: "find_item returns the matching item",
+      code: '  items = [Item.new("apple", 100, 3), Item.new("banana", 50, 5)]\n  expect_eq(find_item(items, "banana").price_cents, 50)' },
+    { name: "find_item returns nil when nothing matches",
+      code: '  items = [Item.new("apple", 100, 3)]\n  expect_eq(find_item(items, "kiwi"), nil)' },
+    { name: "restock bumps the matching item's count in the new array",
+      code: '  items = [Item.new("apple", 100, 3), Item.new("banana", 50, 5)]\n  restocked = restock(items, "apple", 10)\n  expect_eq(find_item(restocked, "apple").count, 13)\n  expect_eq(find_item(restocked, "banana").count, 5)' },
+    { name: "restock does NOT mutate the original items (references!)",
+      code: '  items = [Item.new("apple", 100, 3)]\n  restock(items, "apple", 10)\n  expect_eq(items.first.count, 3)' },
+    { name: "names_in_stock keeps only count > 0",
+      code: '  items = [Item.new("apple", 100, 3), Item.new("banana", 50, 0), Item.new("cherry", 20, 2)]\n  expect_eq(names_in_stock(items), ["apple", "cherry"])' },
+  ],
+
+  solution: `class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+def total_value(items)
+  items.sum { |i| i.price_cents * i.count }
+end
+
+def find_item(items, name)
+  items.find { |i| i.name == name }
+end
+
+def restock(items, name, amount)
+  items.map do |i|
+    if i.name == name
+      Item.new(i.name, i.price_cents, i.count + amount)
+    else
+      i
+    end
+  end
+end
+
+def names_in_stock(items)
+  items.select { |i| i.count > 0 }.map(&:name)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Task</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Value object</td><td>promoted-ctor class</td><td><code>attr_reader</code> + <code>initialize</code></td></tr>
+  <tr><td>Total</td><td><code>array_sum(array_map(...))</code></td><td><code>items.sum { }</code></td></tr>
+  <tr><td>Lookup</td><td><code>foreach</code> + <code>return</code></td><td><code>items.find { }</code></td></tr>
+  <tr><td>Rebuild</td><td><code>array_map(...)</code></td><td><code>items.map { }</code></td></tr>
+  <tr><td>Filter + project</td><td><code>array_filter</code> + <code>array_map</code></td><td><code>select { }.map(&amp;:name)</code></td></tr>
+  <tr><td>Array copy</td><td>free (value semantics)</td><td>build a new one on purpose</td></tr>
+</table>
+<p>The one idea to carry out of the whole course: Ruby hands you references, so
+"leave the input alone" is a discipline you enforce by <em>producing new
+values</em>. The Enumerable methods make that easy — <code>map</code> and
+<code>select</code> never touch the source array, they return a fresh one — so
+idiomatic Ruby is functional almost by accident. Reach for those over
+<code>each</code>-and-mutate and you get the safety of PHP's copy-on-assign
+without the copies, plus code that reads as a description of the result rather
+than a recipe for building it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

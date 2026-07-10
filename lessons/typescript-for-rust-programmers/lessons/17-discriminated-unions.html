@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Discriminated Unions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Discriminated Unions",
+
+  intro: `
+<p>This is the payoff lesson. The thing you miss most from Rust — data-carrying
+enums plus exhaustive <code>match</code> — exists in TypeScript, just spelled
+differently. <code>enum Shape { Circle { radius: f64 }, Rect { w: f64, h: f64 } }</code>
+<em>is</em> a discriminated union; TypeScript writes it as separate object types
+that share a literal <code>kind</code> field, joined with <code>|</code>. The
+variant name Rust stores in the enum's hidden tag becomes an explicit string
+you put in the data yourself.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>enum Shape { Circle { radius: f64 }, … }</code></td><td><code>type Shape = Circle | Rectangle | …</code>, each with a literal <code>kind</code></td></tr>
+  <tr><td>the enum's tag (invisible, managed for you)</td><td><code>kind: "circle"</code> — a field you write and ship in the object</td></tr>
+  <tr><td><code>match shape { Shape::Circle { radius } =&gt; … }</code></td><td><code>switch (shape.kind) { case "circle": /* shape: Circle */ }</code></td></tr>
+  <tr><td>exhaustiveness checked by <code>match</code> itself</td><td>a <code>default</code> branch that assigns to <code>never</code></td></tr>
+</table>
+<p><code>switch (shape.kind)</code> narrows exactly like match arms: inside
+<code>case "circle":</code> the compiler knows <code>shape</code> is a
+<code>Circle</code>, so <code>shape.radius</code> type-checks and
+<code>shape.width</code> doesn't. The one thing <code>switch</code> won't do for
+free is exhaustiveness — so you recreate it: in the <code>default</code> branch,
+assign <code>shape</code> to a variable of type <code>never</code>. If every
+variant is handled, <code>shape</code> has type <code>never</code> there and it
+compiles. Add a <code>Pentagon</code> variant later and forget a case, and the
+assignment fails to type-check — the same "non-exhaustive patterns" error Rust
+gives you, rebuilt by hand.</p>`,
+
+  rust: `enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+    Triangle { base: f64, height: f64 },
+}
+
+fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
+        Shape::Rectangle { width, height } => width * height,
+        Shape::Triangle { base, height } => base * height / 2.0,
+        // No default arm: the compiler proves this match exhaustive.
+        // Add a variant later and this fn stops compiling — exactly
+        // the safety net we rebuild in TypeScript with \`never\`.
+    }
+}`,
+
+  task: `
+<p>Rebuild the enum as a discriminated union:</p>
+<ol>
+  <li>Define three interfaces — <code>Circle</code> with
+      <code>kind: "circle"</code> and <code>radius: number</code>;
+      <code>Rectangle</code> with <code>kind: "rectangle"</code>,
+      <code>width</code> and <code>height</code>; <code>Triangle</code> with
+      <code>kind: "triangle"</code>, <code>base</code> and <code>height</code>.
+      Note the <code>kind</code> types are the string <em>literals</em>, not
+      <code>string</code>.</li>
+  <li>Define <code>type Shape = Circle | Rectangle | Triangle;</code></li>
+  <li>Write <code>area(shape: Shape): number</code> using
+      <code>switch (shape.kind)</code>: circle → <code>Math.PI * r²</code>,
+      rectangle → <code>width * height</code>, triangle →
+      <code>base * height / 2</code>.</li>
+  <li>In the <code>default</code> branch, assign <code>shape</code> to a
+      variable typed <code>never</code> (then throw). This is your exhaustiveness
+      check — try commenting out a <code>case</code> and watch the type error.</li>
+</ol>`,
+
+  starter: `// 1. The three variants. Each gets a literal \`kind\` tag — the enum
+//    discriminant, made explicit. (Note: kind: "circle", not kind: string.)
+interface Circle {
+  kind: "circle";
+  radius: number;
+}
+// TODO: interface Rectangle (kind: "rectangle", width, height)
+// TODO: interface Triangle  (kind: "triangle", base, height)
+
+// 2. The union — Rust's \`enum Shape\`, spelled with |.
+type Shape = Circle; // TODO: | Rectangle | Triangle
+
+// 3. match shape { ... }  ->  switch (shape.kind) { ... }
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    // TODO: case "rectangle"
+    // TODO: case "triangle"
+    default: {
+      // TODO: assign \`shape\` to a variable of type \`never\`, then throw.
+      // If all cases are handled, shape IS never here and this compiles.
+      throw new Error("unhandled shape");
+    }
+  }
+}`,
+
+  exportNames: ["area"],
+
+  requirements: [
+    { pattern: /kind\s*:\s*"/, message: 'Tag each variant with a literal kind field (kind: "circle", …)' },
+    { pattern: /switch\s*\(\s*shape\.kind\s*\)/, message: "Narrow with switch (shape.kind) — the match statement" },
+    { pattern: /never/, message: "Recreate exhaustiveness: a default branch assigning shape to a never-typed variable" },
+  ],
+
+  tests: [
+    { name: 'area({ kind: "circle", radius: 2 }) is 4π', run: (x) => expectEqual(x.area({ kind: "circle", radius: 2 }), Math.PI * 4) },
+    { name: 'area({ kind: "rectangle", width: 3, height: 4 }) is 12', run: (x) => expectEqual(x.area({ kind: "rectangle", width: 3, height: 4 }), 12) },
+    { name: 'area({ kind: "triangle", base: 6, height: 4 }) is 12', run: (x) => expectEqual(x.area({ kind: "triangle", base: 6, height: 4 }), 12) },
+    { name: "area of a unit circle is π", run: (x) => expectEqual(x.area({ kind: "circle", radius: 1 }), Math.PI) },
+  ],
+
+  solution: `interface Circle {
+  kind: "circle";
+  radius: number;
+}
+interface Rectangle {
+  kind: "rectangle";
+  width: number;
+  height: number;
+}
+interface Triangle {
+  kind: "triangle";
+  base: number;
+  height: number;
+}
+
+type Shape = Circle | Rectangle | Triangle;
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    case "rectangle":
+      return shape.width * shape.height;
+    case "triangle":
+      return (shape.base * shape.height) / 2;
+    default: {
+      // Exhaustiveness check: if a case above is missing, \`shape\` is not
+      // never here and this assignment is a compile error — Rust's
+      // "non-exhaustive patterns", rebuilt.
+      const unreachable: never = shape;
+      throw new Error("unhandled shape: " + JSON.stringify(unreachable));
+    }
+  }
+}`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Data-carrying enum</td><td><code>enum Shape { Circle { radius: f64 }, … }</code></td><td>object types with literal <code>kind</code> tags, joined by <code>|</code></td></tr>
+  <tr><td>Discriminant</td><td>hidden tag, sized by the compiler</td><td><code>kind: "circle"</code> — a real runtime field</td></tr>
+  <tr><td>Pattern match</td><td><code>match shape { Shape::Circle { radius } =&gt; … }</code></td><td><code>switch (shape.kind) { case "circle": shape.radius }</code></td></tr>
+  <tr><td>Binding the payload</td><td>destructured in the arm</td><td>no destructuring needed — <code>shape</code> itself narrows</td></tr>
+  <tr><td>Exhaustiveness</td><td>built into <code>match</code></td><td><code>default: const x: never = shape;</code></td></tr>
+  <tr><td>Adding a variant</td><td>every non-exhaustive <code>match</code> errors</td><td>every <code>never</code>-guarded <code>switch</code> errors</td></tr>
+</table>
+<p>The insight: Rust's enum tag is invisible and managed by the compiler;
+TypeScript's is an ordinary field you ship in the data — which is exactly why
+this pattern survives JSON serialization for free. A <code>Shape</code> that
+crosses the network is still a <code>Shape</code> when it lands, no serde
+attributes required. The <code>never</code> default is opt-in, though: forget
+it and a missing case silently falls through, so make it a habit.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

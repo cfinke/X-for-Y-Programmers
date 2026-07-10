@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Basic Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Basic Types",
+
+  intro: `
+<p>Good news: your Kotlin instincts transfer almost directly. TypeScript is a
+statically typed language checked at compile time, just like Kotlin — you will
+not have to relearn what a type error feels like. Even the syntax lines up:
+Kotlin puts the type <em>after</em> the name, separated by a colon
+(<code>val age: Int = 36</code>), and so does TypeScript
+(<code>let age: number = 36;</code>). And because you already lean on Kotlin's
+type inference, you will feel at home: inference is the default in TypeScript
+too, and annotations are the exception.</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td><code>val name: String = "Ada"</code></td><td><code>const name: string = "Ada";</code></td></tr>
+  <tr><td><code>val age: Int = 36</code></td><td><code>let age: number = 36;</code></td></tr>
+  <tr><td><code>val price: Double = 9.99</code></td><td><code>let price: number = 9.99;</code> (same type!)</td></tr>
+  <tr><td><code>val views: Long = 1_000_000L</code></td><td><code>let views: number = 1_000_000;</code> (still same)</td></tr>
+  <tr><td><code>val active: Boolean = true</code></td><td><code>let active: boolean = true;</code></td></tr>
+  <tr><td><code>val city = "London"</code></td><td><code>let city = "London";</code> (inferred string)</td></tr>
+</table>
+<p>The biggest simplification: Kotlin's whole numeric menagerie —
+<code>Int</code>, <code>Long</code>, <code>Short</code>, <code>Byte</code>,
+<code>Float</code>, <code>Double</code> — collapses into a single
+<code>number</code> type (an IEEE-754 double, i.e. exactly a Kotlin
+<code>Double</code>). The <code>val</code> vs. <code>var</code> distinction
+you already know maps cleanly: TypeScript's <code>const</code> is your
+<code>val</code> (never reassigned — your default) and <code>let</code> is
+your <code>var</code> (reassigned later). Booleans are lowercase
+<code>true</code>/<code>false</code>, same as Kotlin — one thing you do not
+have to change.</p>`,
+
+  kotlin: `fun main() {
+    val name: String = "Ada"       // val: never reassigned
+    val age: Int = 36              // Int, Long, Double, Float...
+    val price: Double = 9.99       // ...are all separate types
+    val active: Boolean = true     // lowercase literals, like TS
+    val city = "London"            // inferred as String
+
+    println(describeUser(name, age))
+}
+
+fun describeUser(name: String, age: Int): String {
+    return "\$name is \$age years old"
+}`,
+
+  task: `
+<p>Rewrite the Kotlin as TypeScript (the shapes are nearly identical —
+top-level code is fine, and camelCase is already the Kotlin convention, so
+nothing to rename):</p>
+<ol>
+  <li>Declare a constant <code>userName</code> of type <code>string</code>
+      with the value <code>"Ada"</code> — Kotlin's <code>val name: String</code>
+      becomes <code>const ...: string</code>. Then declare a variable
+      <code>userAge</code> with <code>let</code> and an explicit
+      <code>: number</code> annotation, value <code>36</code> —
+      the <code>var</code> to TypeScript's <code>let</code>.
+      Remember: the type goes <em>after</em> the name, just like Kotlin.</li>
+  <li>Write a function <code>describeUser</code> that takes
+      <code>name: string</code> and <code>age: number</code> and returns a
+      <code>string</code> like <code>"Ada is 36 years old"</code>.
+      As in Kotlin, the return type goes after the parameter list:
+      <code>function describeUser(...): string</code>.</li>
+</ol>
+<p>Reassigning <code>userAge = "thirty-six"</code> is a compile error here,
+exactly as it would be in Kotlin — same safety net, familiar syntax.</p>`,
+
+  starter: `// 1. Declare userName (string) and userAge (number) with explicit types.
+//    Java: final String name = "Ada";  ->  TS: const ...: string = "Ada";
+//    Java: int age = 36;               ->  TS: let ...: number = 36;
+
+
+// 2. Write describeUser with typed parameters and a typed return value.
+//    Java: static String describeUser(String name, int age) { ... }
+//    TS flips it: types come after the names, return type after the ).
+function describeUser(name, age) {
+  // TODO: return "<name> is <age> years old"
+  return "";
+}
+`,
+
+  exportNames: ["userName", "userAge", "describeUser"],
+
+  requirements: [
+    { pattern: /const\s+userName\s*:\s*string/, message: "Declare userName as a const with an explicit : string annotation" },
+    { pattern: /let\s+userAge\s*:\s*number/, message: "Declare userAge with let and an explicit : number annotation" },
+    { pattern: /describeUser\s*\(\s*name\s*:\s*string\s*,\s*age\s*:\s*number\s*\)\s*:\s*string/, message: "Give describeUser typed parameters (name: string, age: number) and a : string return type" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', run: (x) => expectEqual(x.userName, "Ada") },
+    { name: "userAge is 36", run: (x) => expectEqual(x.userAge, 36) },
+    { name: 'describeUser("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.describeUser("Ada", 36), "Ada is 36 years old") },
+    { name: 'describeUser("James", 70) returns "James is 70 years old"', run: (x) => expectEqual(x.describeUser("James", 70), "James is 70 years old") },
+  ],
+
+  solution: `const userName: string = "Ada";
+let userAge: number = 36;
+
+function describeUser(name: string, age: number): string {
+  return name + " is " + age + " years old";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Typed variable</td><td><code>var x: Int = 1</code></td><td><code>let x: number = 1;</code> (type after name)</td></tr>
+  <tr><td>Constant</td><td><code>val x = 1</code></td><td><code>const x = 1;</code></td></tr>
+  <tr><td>Inference</td><td><code>val x = "hi"</code> (works everywhere)</td><td><code>let x = "hi";</code> (works everywhere)</td></tr>
+  <tr><td>Numeric types</td><td><code>Int</code>, <code>Long</code>, <code>Float</code>, <code>Double</code></td><td><code>number</code> — one type, a 64-bit double</td></tr>
+  <tr><td>Strings</td><td><code>String</code> (capital S)</td><td><code>string</code> (lowercase, primitive)</td></tr>
+  <tr><td>Return type</td><td><code>fun f(): String { }</code></td><td><code>function f(): string { }</code></td></tr>
+  <tr><td>Free functions</td><td>Yes — top-level functions are normal</td><td>Yes — top-level functions are normal</td></tr>
+</table>
+<p>One instinct to recalibrate: because every Kotlin <code>Int</code>,
+<code>Long</code>, and <code>Double</code> becomes <code>number</code>,
+integer semantics are gone — <code>7 / 2</code> is <code>3.5</code>, not
+<code>3</code>, and there is no overflow at 2³¹. Integers stay exact up to
+2⁵³ (like a double's mantissa, which is exactly what they are). When you
+genuinely need int division, that's <code>Math.trunc(a / b)</code>.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

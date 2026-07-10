@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance",
+
+  intro: `
+<p>Ruby's <code>class</code> syntax and JavaScript's <code>class</code> syntax
+look similar on the surface, but they aren't the same machinery underneath.
+Ruby has <code>&lt;</code> for subclassing, <code>super</code>, method
+overriding, and <code>is_a?</code>; JavaScript has <code>extends</code>,
+<code>super</code>, method overriding, and <code>instanceof</code>. What
+disappears crossing over is everything Ruby does implicitly:
+<code>attr_accessor</code>-style field declarations, <code>initialize</code>
+as the constructor name, and <code>super</code> with no parentheses forwarding
+all arguments automatically.</p>
+<table>
+  <tr><th>Ruby</th><th>JavaScript</th></tr>
+  <tr><td><code>class Dog &lt; Animal; end</code></td><td><code>class Dog extends Animal {}</code></td></tr>
+  <tr><td><code>def initialize(breed)</code></td><td><code>constructor(breed)</code></td></tr>
+  <tr><td><code>@breed = breed</code></td><td><code>this.breed = breed;</code></td></tr>
+  <tr><td><code>super</code> (bare, forwards args) or <code>super(name)</code></td><td><code>super(name)</code> (args always explicit)</td></tr>
+  <tr><td>no compiler; runtime just works</td><td>runtime throws if you touch <code>this</code> before <code>super()</code></td></tr>
+</table>
+<p>Two runtime rules matter. First, in a subclass constructor you must call
+<code>super(...)</code> before you read or write <code>this</code> — the engine
+throws a <code>ReferenceError</code> otherwise, unlike Ruby where
+<code>initialize</code> has no such restriction. Second, <code>instanceof</code>
+walks the prototype chain, so a <code>Dog</code> is genuinely an
+<code>Animal</code> at run time, the same way Ruby's <code>is_a?</code> walks
+the ancestor chain.</p>`,
+
+  ruby: `class Animal
+  def initialize(name)
+    @name = name
+  end
+
+  def speak
+    "#{@name} makes a sound"
+  end
+
+  def describe
+    "#{@name} is an animal"
+  end
+end
+
+class Dog < Animal
+  attr_reader :breed
+
+  def initialize(name, breed)
+    super(name)
+    @breed = breed
+  end
+
+  def speak
+    "#{@name} barks"
+  end
+
+  def describe
+    "#{super()}, specifically a #{@breed}"
+  end
+end`,
+
+  task: `
+<p>Build the same class hierarchy in plain JavaScript — no attr helpers, no
+implicit argument forwarding, no bare <code>super</code> (assign fields
+yourself and always pass arguments explicitly):</p>
+<ol>
+  <li>A base class <code>Animal</code> whose constructor takes <code>name</code>
+      and stores it on <code>this.name</code>. Give it <code>speak()</code>
+      returning <code>"&lt;name&gt; makes a sound"</code> and
+      <code>describe()</code> returning <code>"&lt;name&gt; is an animal"</code>.</li>
+  <li>A subclass <code>Dog</code> that <code>extends Animal</code>. Its
+      constructor takes <code>name</code> and <code>breed</code>, calls
+      <code>super(name)</code>, then stores <code>this.breed</code>. Override
+      <code>speak()</code> to return <code>"&lt;name&gt; barks"</code>, and
+      override <code>describe()</code> to call <code>super.describe()</code> and
+      append <code>", specifically a &lt;breed&gt;"</code>.</li>
+  <li>A function <code>identify(x)</code> that returns <code>"dog"</code> if
+      <code>x</code> is a <code>Dog</code>, <code>"animal"</code> if it is any
+      other <code>Animal</code>, and <code>"unknown"</code> otherwise — using
+      <code>instanceof</code>.</li>
+</ol>`,
+
+  starter: `// 1. Base class
+class Animal {
+  constructor(name) {
+    // TODO: store name
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO
+    return "";
+  }
+}
+
+// 2. Subclass that overrides and calls super
+class Dog extends Animal {
+  constructor(name, breed) {
+    // TODO: call super, then store breed
+  }
+  speak() {
+    // TODO
+    return "";
+  }
+  describe() {
+    // TODO: reuse super.describe()
+    return "";
+  }
+}
+
+// 3. identify(x) using instanceof
+function identify(x) {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["Animal", "Dog", "identify"],
+
+  requirements: [
+    { pattern: /class\s+Dog\s+extends\s+Animal/, message: "Dog must extend Animal" },
+    { pattern: /super\s*\(/, message: "Call super(...) in the Dog constructor" },
+    { pattern: /super\.describe\s*\(/, message: "Dog.describe() must call super.describe()" },
+    { pattern: /instanceof/, message: "Use instanceof inside identify" },
+  ],
+
+  tests: [
+    { name: 'Animal.speak() uses the base behavior', run: (x) => expectEqual(new x.Animal("Rex").speak(), "Rex makes a sound") },
+    { name: 'Dog overrides speak()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").speak(), "Rex barks") },
+    { name: 'super(name) sets the inherited field', run: (x) => expectEqual(new x.Dog("Rex", "Lab").name, "Rex") },
+    { name: 'Dog.describe() calls super.describe()', run: (x) => expectEqual(new x.Dog("Rex", "Lab").describe(), "Rex is an animal, specifically a Lab") },
+    { name: 'a Dog is an Animal (prototype chain)', run: (x) => expectTruthy(new x.Dog("Rex", "Lab") instanceof x.Animal) },
+    { name: 'identify distinguishes Dog, Animal, and other', run: (x) => {
+        expectEqual(x.identify(new x.Dog("Rex", "Lab")), "dog");
+        expectEqual(x.identify(new x.Animal("Generic")), "animal");
+        expectEqual(x.identify(42), "unknown");
+    } },
+  ],
+
+  solution: `class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return \`\${this.name} makes a sound\`;
+  }
+  describe() {
+    return \`\${this.name} is an animal\`;
+  }
+}
+
+class Dog extends Animal {
+  constructor(name, breed) {
+    super(name);
+    this.breed = breed;
+  }
+  speak() {
+    return \`\${this.name} barks\`;
+  }
+  describe() {
+    return \`\${super.describe()}, specifically a \${this.breed}\`;
+  }
+}
+
+function identify(x) {
+  if (x instanceof Dog) return "dog";
+  if (x instanceof Animal) return "animal";
+  return "unknown";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>JavaScript</th></tr>
+  <tr><td>Subclass</td><td><code>class Dog &lt; Animal</code></td><td><code>class Dog extends Animal</code></td></tr>
+  <tr><td>Base constructor</td><td><code>super(name)</code> or bare <code>super</code></td><td><code>super(name)</code> (args always explicit, required before <code>this</code>)</td></tr>
+  <tr><td>Field from a param</td><td><code>@breed = breed</code></td><td><code>this.breed = breed;</code></td></tr>
+  <tr><td>Call base method</td><td><code>super()</code> (parens needed to avoid forwarding args)</td><td><code>super.describe()</code></td></tr>
+  <tr><td>Runtime type test</td><td><code>x.is_a?(Animal)</code></td><td><code>x instanceof Animal</code></td></tr>
+</table>
+<p>Order matters in <code>identify</code>: check <code>instanceof Dog</code> before
+<code>instanceof Animal</code>, because a <code>Dog</code> passes both — that is
+what inheritance means at runtime, the same way a Ruby <code>Dog</code> instance
+answers true to both <code>is_a?(Dog)</code> and <code>is_a?(Animal)</code>.
+<code>instanceof</code> is checking whether <code>Animal.prototype</code>
+appears anywhere on <code>x</code>'s prototype chain, much like Ruby walking
+the ancestor chain built by <code>&lt;</code>.</p>
+<p>One gotcha for a Ruby programmer: forget <code>super(name)</code> and the
+program does not silently misbehave — the engine throws
+<code>ReferenceError: must call super constructor</code> the moment you touch
+<code>this</code>. Ruby's <code>initialize</code> has no such requirement, and
+a bare <code>super</code> (no parens) in Ruby forwards the current method's
+arguments automatically; JavaScript has no equivalent shorthand — every
+argument to <code>super(...)</code> must be listed explicitly.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

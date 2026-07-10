@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Strings: String & &str</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Strings: String & &str",
+
+  intro: `
+<p>TypeScript has one <code>string</code> type and you never think about it.
+Rust has two, and the split maps onto an idea you already know:
+<code>String</code> is an owned, growable buffer — a string you can mutate
+because it's yours — while <code>&amp;str</code> is a borrowed <em>view</em>
+into string data someone else owns, like a <code>readonly</code> slice you
+were handed but don't get to keep or modify. A string literal like
+<code>"Ada"</code> is a <code>&amp;str</code>; calling
+<code>.to_string()</code> or <code>String::from("Ada")</code> copies it into
+a <code>String</code> you own.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>string</code> (the only one)</td><td><code>String</code> (owned) and <code>&amp;str</code> (borrowed view)</td></tr>
+  <tr><td><code>\`Hello, \${name}!\`</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+  <tr><td><code>s.toUpperCase()</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td><code>s.includes(sub)</code></td><td><code>s.contains(sub)</code></td></tr>
+  <tr><td><code>s.length</code> (UTF-16 units)</td><td><code>s.len()</code> (<em>bytes</em>, not characters)</td></tr>
+</table>
+<p>The rule of thumb that resolves 90% of "which one do I write?" moments:
+<strong>take <code>&amp;str</code> as parameters, return <code>String</code></strong>.
+A <code>&amp;str</code> parameter accepts both literals and <code>String</code>s
+(a <code>&amp;String</code> coerces automatically), and returning
+<code>String</code> hands the caller something they own. For building strings,
+<code>format!</code> is your template literal — <code>{}</code> slots instead
+of <code>\${}</code>. One trap to file away now: <code>.len()</code> counts
+<em>bytes</em>, so <code>"héllo".len()</code> is 6, not 5.</p>`,
+
+  typescript: `// TypeScript: one string type, used everywhere.
+function shout(s: string): string {
+  return s.toUpperCase();
+}
+
+function greet(name: string): string {
+  return \`Hello, \${name}!\`;          // template literal
+}
+
+function containsWord(haystack: string, needle: string): boolean {
+  return haystack.includes(needle);
+}
+
+const name = "Ada";
+console.log(shout(name), greet(name));
+console.log(containsWord("the quick brown fox", "quick"));
+console.log(name.length);              // UTF-16 code units`,
+
+  task: `
+<p>Rewrite the TypeScript using the Rust rule of thumb —
+borrow parameters as <code>&amp;str</code>, return owned <code>String</code>s:</p>
+<ol>
+  <li><code>shout(s: &amp;str) -> String</code> — the uppercased text
+      (<code>.to_uppercase()</code> already returns a <code>String</code>).</li>
+  <li><code>greet(name: &amp;str) -> String</code> — <code>"Hello, {name}!"</code>,
+      built with <code>format!</code>, e.g. <code>greet("Ada")</code> gives
+      <code>"Hello, Ada!"</code>.</li>
+  <li><code>contains_word(haystack: &amp;str, needle: &amp;str) -> bool</code> —
+      whether <code>haystack</code> contains <code>needle</code>
+      (<code>.contains()</code> is Rust's <code>.includes()</code>).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. shout: borrow a &str, hand back an owned String.
+fn shout(s: &str) -> String {
+    todo!()
+}
+
+// 2. greet: format! is Rust's template literal — {} instead of \${}.
+fn greet(name: &str) -> String {
+    todo!()
+}
+
+// 3. contains_word: .contains() is Rust's .includes().
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&str/, message: "Take parameters as &str (a borrowed string view)" },
+    { pattern: /->\s*String/, message: "Return an owned String" },
+    { pattern: /format!\s*\(/, message: "Build the greeting with the format! macro" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: 'assert_eq!(shout("hello"), "HELLO");' },
+    { name: 'shout works on a String too (coerced to &str)',
+      code: 'let owned = String::from("rust");\nassert_eq!(shout(&owned), "RUST");' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: 'assert_eq!(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Grace") returns "Hello, Grace!"',
+      code: 'assert_eq!(greet("Grace"), "Hello, Grace!");' },
+    { name: 'contains_word finds a present word',
+      code: 'assert!(contains_word("the quick brown fox", "quick"));' },
+    { name: 'contains_word rejects a missing word',
+      code: 'assert!(!contains_word("the quick brown fox", "slow"));' },
+  ],
+
+  solution: `fn shout(s: &str) -> String {
+    s.to_uppercase()
+}
+
+fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    haystack.contains(needle)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>The string type(s)</td><td><code>string</code></td><td><code>String</code> (owned) / <code>&amp;str</code> (borrowed)</td></tr>
+  <tr><td>Literal</td><td><code>"Ada"</code> is a <code>string</code></td><td><code>"Ada"</code> is a <code>&amp;str</code>; <code>.to_string()</code> to own it</td></tr>
+  <tr><td>Interpolation</td><td><code>\`Hello, \${name}!\`</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+  <tr><td>Uppercase / search</td><td><code>.toUpperCase()</code>, <code>.includes()</code></td><td><code>.to_uppercase()</code>, <code>.contains()</code></td></tr>
+  <tr><td>Length</td><td><code>.length</code> (UTF-16 units)</td><td><code>.len()</code> (bytes!) — <code>.chars().count()</code> for characters</td></tr>
+  <tr><td>Parameter / return rule</td><td>n/a — just <code>string</code></td><td>take <code>&amp;str</code>, return <code>String</code></td></tr>
+</table>
+<p>Why two types at all? It's the same distinction the next two lessons make
+for every value: owning versus borrowing. A <code>&amp;str</code> parameter
+says "I only need to look at your text", which is why it happily accepts
+literals, <code>String</code>s, and slices of either — the most flexible
+signature is also the idiomatic one.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

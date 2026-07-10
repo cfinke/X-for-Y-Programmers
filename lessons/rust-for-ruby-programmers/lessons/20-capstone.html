@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put the course together. This capstone is a small inventory
+system — the kind of thing you'd knock out in Ruby with a
+<code>Struct</code> and a handful of Enumerable calls — written the Rust
+way: a <code>struct</code> for the data, iterator chains for the queries,
+<code>Option</code> where Ruby would return <code>nil</code>, and an
+explicit <code>&amp;mut</code> for the one function that changes
+anything.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>Item = Struct.new(:name, :price_cents, :count)</code></td><td><code>struct Item { name: String, price_cents: u32, count: u32 }</code></td></tr>
+  <tr><td><code>items.sum { |i| ... }</code></td><td><code>items.iter().map(|i| ...).sum()</code></td></tr>
+  <tr><td><code>items.find { ... }</code> → item or <code>nil</code></td><td><code>items.iter().find(|i| ...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+  <tr><td>mutate freely, anywhere</td><td>only through <code>&amp;mut Vec&lt;Item&gt;</code>, visible in the signature</td></tr>
+  <tr><td><code>items.select { ... }.map(&amp;:name)</code></td><td><code>items.iter().filter(...).map(...).collect()</code></td></tr>
+</table>
+<p>Every signature tells the story of this course. <code>&amp;[Item]</code>
+says "I only read the inventory." <code>&amp;mut Vec&lt;Item&gt;</code>
+says "I change it" — no other function can. And
+<code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt;
+Option&lt;&amp;'a Item&gt;</code> combines borrowing, lifetimes, and
+<code>Option</code> in one line: it hands back a reference <em>into</em> the
+caller's vector (no copying), tied by <code>'a</code> to that vector's
+lifetime — and it needs the annotation precisely because two references
+come in and the compiler can't guess which one the result borrows from.
+In Ruby the same method returns the item or <code>nil</code> and hopes
+you remember to check.</p>`,
+
+  ruby: `Item = Struct.new(:name, :price_cents, :count)
+
+def total_value(items)
+  items.sum { |i| i.price_cents * i.count }
+end
+
+def find_item(items, name)
+  items.find { |i| i.name == name }  # item or nil
+end
+
+def restock(items, name, amount)
+  item = find_item(items, name)
+  return false unless item
+  item.count += amount
+  true
+end
+
+def names_in_stock(items)
+  items.select { |i| i.count > 0 }.map(&:name)
+end`,
+
+  task: `
+<p>The <code>Item</code> struct is defined for you. Implement four
+functions:</p>
+<ol>
+  <li><code>total_value(items: &amp;[Item]) -&gt; u32</code> — the sum of
+      <code>price_cents * count</code> over every item
+      (<code>.iter().map(...).sum()</code>).</li>
+  <li><code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt;
+      Option&lt;&amp;'a Item&gt;</code> — the first item whose
+      <code>name</code> matches, as a borrowed reference;
+      <code>None</code> where Ruby says <code>nil</code>. Hint:
+      <code>.iter().find(|i| i.name == name)</code> returns exactly this
+      type.</li>
+  <li><code>restock(items: &amp;mut Vec&lt;Item&gt;, name: &amp;str, amount:
+      u32) -&gt; bool</code> — add <code>amount</code> to the matching
+      item's <code>count</code> and return <code>true</code>; return
+      <code>false</code> if no item matches. Loop with
+      <code>.iter_mut()</code>, the <code>&amp;mut</code> flavor of
+      iteration.</li>
+  <li><code>names_in_stock(items: &amp;[Item]) -&gt; Vec&lt;String&gt;</code>
+      — the names of items with <code>count &gt; 0</code>, in order
+      (<code>.filter(...)</code>, <code>.map(|i| i.name.clone())</code>,
+      <code>.collect()</code>).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The data — complete, no changes needed.
+struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+// 1. Sum of price_cents * count across all items.
+fn total_value(items: &[Item]) -> u32 {
+    todo!()
+}
+
+// 2. Borrow the first item with this name — Ruby's "item or nil",
+//    as Option<&Item> tied to the input slice's lifetime.
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    todo!()
+}
+
+// 3. The only function that mutates — and the signature says so.
+//    Add amount to the matching item's count; false if not found.
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    todo!()
+}
+
+// 4. Names of items with count > 0, in order.
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option<&/, message: "find_item returns Option<&Item> — a borrowed maybe-result" },
+    { pattern: /\.iter\(\)/, message: "Use .iter() chains for the read-only queries" },
+    { pattern: /&mut\s+Vec<Item>/, message: "restock takes &mut Vec<Item> — mutation is visible in the signature" },
+  ],
+
+  tests: [
+    { name: "total_value: 3 apples at 100 + 2 pens at 250 = 800",
+      code: 'let items = vec![\n    Item { name: String::from("apple"), price_cents: 100, count: 3 },\n    Item { name: String::from("pen"), price_cents: 250, count: 2 },\n];\nassert_eq!(total_value(&items), 800);' },
+    { name: "names_in_stock lists only items with count > 0, in order",
+      code: 'let items = vec![\n    Item { name: String::from("apple"), price_cents: 100, count: 3 },\n    Item { name: String::from("pen"), price_cents: 250, count: 0 },\n    Item { name: String::from("saw"), price_cents: 900, count: 1 },\n];\nassert_eq!(names_in_stock(&items), vec![String::from("apple"), String::from("saw")]);' },
+    { name: 'find_item finds "pen" and borrows it',
+      code: 'let items = vec![\n    Item { name: String::from("apple"), price_cents: 100, count: 3 },\n    Item { name: String::from("pen"), price_cents: 250, count: 2 },\n];\nlet found = find_item(&items, "pen");\nassert_eq!(found.unwrap().price_cents, 250);' },
+    { name: "find_item returns None for a missing name",
+      code: 'let items = vec![Item { name: String::from("apple"), price_cents: 100, count: 3 }];\nassert!(find_item(&items, "grape").is_none());' },
+    { name: "restock adds to the count and returns true",
+      code: 'let mut items = vec![Item { name: String::from("pen"), price_cents: 250, count: 2 }];\nassert!(restock(&mut items, "pen", 5));\nassert_eq!(items[0].count, 7);' },
+    { name: "restock returns false (and changes nothing) for a missing name",
+      code: 'let mut items = vec![Item { name: String::from("pen"), price_cents: 250, count: 2 }];\nassert!(!restock(&mut items, "grape", 5));\nassert_eq!(items[0].count, 2);' },
+  ],
+
+  solution: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+fn total_value(items: &[Item]) -> u32 {
+    items.iter().map(|i| i.price_cents * i.count).sum()
+}
+
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    items.iter().find(|i| i.name == name)
+}
+
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    for item in items.iter_mut() {
+        if item.name == name {
+            item.count += amount;
+            return true;
+        }
+    }
+    false
+}
+
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    items
+        .iter()
+        .filter(|i| i.count > 0)
+        .map(|i| i.name.clone())
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Record type</td><td><code>Struct.new(:name, :price_cents, :count)</code></td><td><code>struct Item { ... }</code> + <code>#[derive]</code> as needed</td></tr>
+  <tr><td>Aggregate</td><td><code>items.sum { |i| ... }</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+  <tr><td>Maybe-find</td><td><code>find</code> → item or <code>nil</code></td><td><code>.iter().find(...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+  <tr><td>Filter + project</td><td><code>select { ... }.map(&amp;:name)</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+  <tr><td>Read-only vs mutating</td><td>convention (<code>!</code> methods, docs)</td><td><code>&amp;[Item]</code> vs <code>&amp;mut Vec&lt;Item&gt;</code> — enforced</td></tr>
+  <tr><td>Iterate mutably</td><td>just mutate inside <code>each</code></td><td><code>.iter_mut()</code> — an explicitly different iterator</td></tr>
+</table>
+<p>Step back and compare the two panels: the Rust is barely longer than the
+Ruby, and every extra character is information. The types document what each
+function reads, what it changes, what might be absent, and whose memory the
+result points into — and the compiler holds every caller to it. That's the
+trade this whole course has been about: Ruby optimizes for the writing;
+Rust spends a little more at the keyboard to make the <em>reading</em> —
+and the refactoring, and the 3am debugging — cheap. You now know the core
+of the language: ownership, borrowing, <code>Option</code>/<code>Result</code>,
+structs and enums, traits, iterators, modules, and threads. From here, the
+Rust Book and real projects are well within reach.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

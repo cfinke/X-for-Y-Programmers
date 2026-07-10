@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Ownership & Moves</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Ownership & Moves",
+
+  intro: `
+<p>This is the one concept with no TypeScript counterpart at all. In TS,
+assigning an object or passing it to a function copies a <em>reference</em>;
+ten variables can point at the same array and any of them can mutate it. Rust
+rejects that model: <strong>every value has exactly one owner</strong>, and
+assigning it — or passing it to a function by value — <em>moves</em> it. The
+source variable doesn't become a second alias; it becomes <em>unusable</em>.
+Imagine a linter that errors on every use of an object after you've passed it
+into a function. That's not a lint in Rust — it's the type system.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>const b = a;</code> — two references, one object</td><td><code>let b = a;</code> — <em>move</em>: <code>a</code> is now unusable</td></tr>
+  <tr><td><code>f(obj)</code> — obj still usable after</td><td><code>f(v)</code> — v moved in; using it after is a compile error</td></tr>
+  <tr><td><code>const copy = [...v];</code> (shallow, implicit habit)</td><td><code>let copy = v.clone();</code> (deep, explicit, visibly priced)</td></tr>
+  <tr><td>Numbers copied, objects shared</td><td><code>Copy</code> types (numbers, <code>bool</code>, <code>char</code>) copied; the rest move</td></tr>
+</table>
+<p>When you genuinely want two independent values, say so:
+<code>.clone()</code> is an explicit deep copy — your spread-to-copy habit,
+made visible and given a price tag you can see in the code. And the exemption
+you'd hope for exists: simple <code>Copy</code> types like <code>i32</code>
+are duplicated automatically, which is why lessons 1–2 never tripped over any
+of this. Moves start to bite exactly when heap-owning types like
+<code>String</code> and <code>Vec</code> show up — which is now.</p>`,
+
+  typescript: `function consumeAndShout(s: string): string {
+  return s.toUpperCase();
+}
+
+function keepBoth(v: number[]): [number[], number[]] {
+  const copy = [...v];       // the spread-to-copy habit: implicit, shallow
+  copy.push(0);
+  return [v, copy];
+}
+
+const word = "hello";
+console.log(consumeAndShout(word));
+console.log(word);           // TS: word is still usable, of course
+
+const nums = [1, 2, 3];
+const [original, extended] = keepBoth(nums);
+console.log(original, extended);   // nums, original, extended all alive`,
+
+  task: `
+<p>Feel the move happen — both functions take their argument <em>by value</em>
+(no <code>&amp;</code>), so they own it:</p>
+<ol>
+  <li><code>consume_and_shout(s: String) -> String</code> — takes ownership
+      of the <code>String</code> and gives back its uppercased form. The
+      caller's original is gone after the call; the returned value is the
+      replacement.</li>
+  <li><code>keep_both(v: Vec&lt;i32&gt;) -> (Vec&lt;i32&gt;, Vec&lt;i32&gt;)</code> —
+      make a <code>.clone()</code> of the vector, <code>.push(0)</code> onto
+      the <em>clone</em> (it needs to be <code>let mut</code>), and give back
+      the tuple <code>(original, clone)</code>. E.g.
+      <code>keep_both(vec![1, 2])</code> gives
+      <code>(vec![1, 2], vec![1, 2, 0])</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. consume_and_shout: s arrives by value — this function OWNS it now.
+//    Transform it and hand the result back out.
+fn consume_and_shout(s: String) -> String {
+    todo!()
+}
+
+// 2. keep_both: clone the vector, push 0 onto the mutable clone,
+//    and give back (original, clone) as a tuple.
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s+consume_and_shout\s*\(\s*s\s*:\s*String\b/, message: "consume_and_shout must take s: String by value (no &) — it takes ownership" },
+    { pattern: /\.clone\(\)/, message: "Use .clone() to make an explicit deep copy of the vector" },
+    { pattern: /\.push\(/, message: "Use .push() to append 0 to the clone" },
+  ],
+
+  tests: [
+    { name: 'consume_and_shout(String::from("hello")) returns "HELLO"',
+      code: 'assert_eq!(consume_and_shout(String::from("hello")), "HELLO");' },
+    { name: 'consume_and_shout handles mixed case',
+      code: 'assert_eq!(consume_and_shout(String::from("Rust Moves")), "RUST MOVES");' },
+    { name: "keep_both(vec![1, 2, 3]) returns the original untouched",
+      code: "let (original, _extended) = keep_both(vec![1, 2, 3]);\nassert_eq!(original, vec![1, 2, 3]);" },
+    { name: "keep_both(vec![1, 2, 3]) returns a clone with 0 pushed",
+      code: "let (_original, extended) = keep_both(vec![1, 2, 3]);\nassert_eq!(extended, vec![1, 2, 3, 0]);" },
+    { name: "keep_both(vec![]) works on an empty vector",
+      code: "let (original, extended) = keep_both(vec![]);\nassert_eq!(original, Vec::<i32>::new());\nassert_eq!(extended, vec![0]);" },
+  ],
+
+  solution: `fn consume_and_shout(s: String) -> String {
+    s.to_uppercase()
+}
+
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    let mut copy = v.clone();
+    copy.push(0);
+    (v, copy)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Assignment of a heap value</td><td>copies a reference (aliases)</td><td><em>moves</em> — the source is dead afterwards</td></tr>
+  <tr><td>Passing to a function</td><td>callee shares the object</td><td>callee <em>owns</em> it; caller can't use it again</td></tr>
+  <tr><td>Explicit copy</td><td><code>[...v]</code> / <code>{...obj}</code> (shallow)</td><td><code>v.clone()</code> (deep, explicit)</td></tr>
+  <tr><td>Exempt types</td><td>primitives copied by value</td><td><code>Copy</code> types: <code>i32</code>, <code>f64</code>, <code>bool</code>, <code>char</code>…</td></tr>
+  <tr><td>Getting a value back out</td><td>n/a — you never lost it</td><td>the function can move it back via its return value</td></tr>
+</table>
+<p>Why would a language do this? Because "exactly one owner" is what lets Rust
+free memory at exactly the right moment with no garbage collector, and rule
+out whole bug families (use-after-free, iterator invalidation, data races) at
+compile time. The move error is annoying for about a week — then you learn the
+escape hatch that makes most moves unnecessary: <em>borrowing</em>, next
+lesson.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

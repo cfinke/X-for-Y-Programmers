@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Strings: String & &str</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Strings: String & &str",
+
+  intro: `
+<p>Python has one string type, <code>str</code>, and you never think about
+who owns the memory behind it — the refcounter does. Rust makes that question
+explicit, so it has two: <code>String</code> is an owned, growable buffer
+(yours to keep and modify), and <code>&amp;str</code> is a borrowed view into
+string data that belongs to someone else. String literals like
+<code>"hello"</code> are <code>&amp;str</code>. The rule of thumb that covers
+almost every function you'll write: <strong>take <code>&amp;str</code>,
+return <code>String</code></strong> — accept a view of the caller's text,
+hand back fresh text you built.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>str</code> (one type)</td><td><code>String</code> (owned) / <code>&amp;str</code> (borrowed)</td></tr>
+  <tr><td><code>f"Hello, {name}!"</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+  <tr><td><code>s.upper()</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td><code>"x" in s</code></td><td><code>s.contains("x")</code></td></tr>
+  <tr><td><code>len(s)</code> — code points</td><td><code>s.len()</code> — <em>bytes</em></td></tr>
+</table>
+<p>The method names translate almost mechanically, with one trap:
+<code>len</code>. Python's <code>len("héllo")</code> is 5 because Python
+counts code points; Rust's <code>"héllo".len()</code> is 6 because
+<code>.len()</code> counts UTF-8 <em>bytes</em>, and <code>é</code> takes
+two. (When you genuinely need characters, that's
+<code>s.chars().count()</code>.) For ASCII text they agree, but don't let
+that lull you.</p>`,
+
+  python: `def shout(s: str) -> str:
+    return s.upper()
+
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+def contains_word(haystack: str, needle: str) -> bool:
+    return needle in haystack
+
+print(shout("hello"))                 # "HELLO"
+print(greet("Ada"))                   # "Hello, Ada!"
+print(contains_word("rustaceans", "ace"))  # True
+
+s = "héllo"
+print(len(s))   # 5 — Python counts code points
+                # Rust's s.len() would say 6 (bytes!)`,
+
+  task: `
+<p>Translate the three Python functions, following the rule: take
+<code>&amp;str</code>, return <code>String</code>.</p>
+<ol>
+  <li><code>shout</code> takes <code>s: &amp;str</code> and returns a
+      <code>String</code> — the input uppercased, via
+      <code>.to_uppercase()</code> (which conveniently already returns an
+      owned <code>String</code>).</li>
+  <li><code>greet</code> takes <code>name: &amp;str</code> and returns a
+      <code>String</code> like <code>"Hello, Ada!"</code> — use
+      <code>format!</code> where Python used the f-string.</li>
+  <li><code>contains_word</code> takes <code>haystack: &amp;str</code> and
+      <code>needle: &amp;str</code> and returns <code>bool</code> —
+      Python's <code>needle in haystack</code> flips around to
+      <code>haystack.contains(needle)</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. shout: Python's s.upper() is Rust's s.to_uppercase().
+fn shout(s: &str) -> String {
+    todo!()
+}
+
+// 2. greet: f"Hello, {name}!" becomes format!("Hello, {}!", ...).
+fn greet(name: &str) -> String {
+    todo!()
+}
+
+// 3. contains_word: \`needle in haystack\` flips to haystack.contains(needle).
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&str/, message: "Take borrowed &str parameters" },
+    { pattern: /->\s*String/, message: "Return an owned String" },
+    { pattern: /format!\s*\(/, message: "Use format! to build the greeting" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: 'assert_eq!(shout("hello"), "HELLO");' },
+    { name: 'shout("Rust 1.0") returns "RUST 1.0"',
+      code: 'assert_eq!(shout("Rust 1.0"), "RUST 1.0");' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: 'assert_eq!(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Guido") returns "Hello, Guido!"',
+      code: 'assert_eq!(greet("Guido"), "Hello, Guido!");' },
+    { name: 'contains_word("rustaceans", "ace") returns true',
+      code: 'assert!(contains_word("rustaceans", "ace"));' },
+    { name: 'contains_word("rustaceans", "python") returns false',
+      code: 'assert!(!contains_word("rustaceans", "python"));' },
+  ],
+
+  solution: `fn shout(s: &str) -> String {
+    s.to_uppercase()
+}
+
+fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    haystack.contains(needle)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>String type</td><td><code>str</code></td><td><code>String</code> (owned), <code>&amp;str</code> (borrowed view)</td></tr>
+  <tr><td>Literal</td><td><code>"hi"</code> is a <code>str</code></td><td><code>"hi"</code> is a <code>&amp;str</code></td></tr>
+  <tr><td>Interpolation</td><td><code>f"Hi, {name}!"</code></td><td><code>format!("Hi, {}!", name)</code></td></tr>
+  <tr><td>Uppercase</td><td><code>s.upper()</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td>Substring test</td><td><code>"x" in s</code></td><td><code>s.contains("x")</code></td></tr>
+  <tr><td>Length</td><td><code>len(s)</code> — code points</td><td><code>s.len()</code> — bytes; <code>s.chars().count()</code> for chars</td></tr>
+  <tr><td>str → String</td><td>—</td><td><code>"hi".to_string()</code> or <code>String::from("hi")</code></td></tr>
+</table>
+<p>Why two types? <code>&amp;str</code> parameters are the generous choice:
+callers can pass a literal, a <code>String</code> (as <code>&amp;s</code>),
+or a slice of either, all without copying. Returning <code>String</code>
+hands the caller full ownership of text you created. When a signature
+deviates from this rule, it's saying something deliberate about ownership —
+which is exactly what the next lesson is about.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

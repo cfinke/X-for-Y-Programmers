@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Everything Is an Object</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Everything Is an Object",
+
+  intro: `
+<p>JavaScript has primitives that get temporarily wrapped in objects, plus a
+<code>Math</code> namespace of free-floating functions you apply <em>to</em>
+numbers. Ruby has none of that. There are no primitives — every value,
+including integers, floats, <code>true</code>, and even <code>nil</code>, is
+a full object that receives messages. You don't call <code>Math.abs(x)</code>
+on a number; you ask the number itself: <code>x.abs</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>Math.abs(n)</code></td><td><code>n.abs</code></td></tr>
+  <tr><td><code>n % 2 === 0</code></td><td><code>n.even?</code></td></tr>
+  <tr><td><code>Math.round(f * 100) / 100</code></td><td><code>f.round(2)</code></td></tr>
+  <tr><td><code>s.split("")</code></td><td><code>s.chars</code></td></tr>
+  <tr><td><code>for (let i = 0; i &lt; 5; i++)</code></td><td><code>5.times { ... }</code></td></tr>
+</table>
+<p>Even loops become messages: <code>5.times</code> asks the integer 5 to run
+a block five times. <code>nil.to_s</code> returns <code>""</code>,
+<code>1.class</code> returns <code>Integer</code>, <code>-3.abs</code>
+returns <code>3</code>. Once everything answers methods, <strong>chaining
+becomes the core style</strong> —
+<code>"hello".chars.first.upcase</code> reads left to right as a pipeline,
+where the JavaScript equivalent zig-zags between methods, operators, and
+namespace functions.</p>`,
+
+  javascript: `const n = -5;
+
+Math.abs(n);                 // function in a namespace,
+                             // applied TO the number
+
+n % 2 === 0;                 // "is even" as operator soup
+
+const evens = [1, 2, 3, 4].filter((x) => x % 2 === 0);
+
+Math.round(3.14159 * 100) / 100;  // round to 2 digits: DIY
+
+"ruby".split("");            // string -> array of chars
+
+for (let i = 0; i < 5; i++) {     // loops are syntax,
+  console.log("hi");              // not messages
+}`,
+
+  task: `
+<p>Rewrite each JavaScript idiom as a message to the object itself:</p>
+<ol>
+  <li><code>absolute(n)</code> — return the absolute value using
+      <code>n.abs</code>. No <code>Math</code> namespace exists.</li>
+  <li><code>even_numbers(nums)</code> — return only the even numbers, using
+      the <code>even?</code> predicate: <code>nums.select(&amp;:even?)</code>
+      (or <code>nums.select { |n| n.even? }</code> — same thing, spelled
+      long).</li>
+  <li><code>rounded(f, digits)</code> — round a float to <code>digits</code>
+      places with <code>f.round(digits)</code>. No multiply-round-divide
+      dance.</li>
+  <li><code>char_list(s)</code> — the string's characters as an array, via
+      <code>s.chars</code>.</li>
+</ol>`,
+
+  starter: `# 1. Math.abs(n) -> n.abs. The number answers for itself.
+def absolute(n)
+  raise NotImplementedError, "TODO: implement absolute"
+end
+
+# 2. n % 2 === 0 -> n.even?  (select keeps elements where the block is truthy)
+def even_numbers(nums)
+  raise NotImplementedError, "TODO: implement even_numbers"
+end
+
+# 3. f.round(digits) -- rounding is a method on the float.
+def rounded(f, digits)
+  raise NotImplementedError, "TODO: implement rounded"
+end
+
+# 4. s.chars -- no split("") needed.
+def char_list(s)
+  raise NotImplementedError, "TODO: implement char_list"
+end
+`,
+
+  requirements: [
+    { pattern: /\.abs/, message: "Call .abs on the number (no Math namespace)" },
+    { pattern: /[.:]even\?/, message: "Use the even? predicate (n.even? or select(&:even?))" },
+    { pattern: /\.round\(/, message: "Round with .round(digits)" },
+    { pattern: /\.chars/, message: "Use .chars to split the string into characters" },
+  ],
+
+  tests: [
+    { name: "absolute(-5) returns 5; absolute(3) returns 3",
+      code: "  expect_eq(absolute(-5), 5)\n  expect_eq(absolute(3), 3)" },
+    { name: "even_numbers([1, 2, 3, 4, 5, 6]) returns [2, 4, 6]",
+      code: "  expect_eq(even_numbers([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "even_numbers([1, 3, 5]) returns []",
+      code: "  expect_eq(even_numbers([1, 3, 5]), [])" },
+    { name: "rounded(3.14159, 2) returns 3.14",
+      code: "  expect_eq(rounded(3.14159, 2), 3.14)" },
+    { name: "rounded(2.71828, 3) returns 2.718",
+      code: "  expect_eq(rounded(2.71828, 3), 2.718)" },
+    { name: 'char_list("ruby") returns ["r", "u", "b", "y"]',
+      code: '  expect_eq(char_list("ruby"), ["r", "u", "b", "y"])' },
+  ],
+
+  solution: `def absolute(n)
+  n.abs
+end
+
+def even_numbers(nums)
+  nums.select(&:even?)
+end
+
+def rounded(f, digits)
+  f.round(digits)
+end
+
+def char_list(s)
+  s.chars
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Absolute value</td><td><code>Math.abs(n)</code></td><td><code>n.abs</code></td></tr>
+  <tr><td>Even / odd</td><td><code>n % 2 === 0</code></td><td><code>n.even?</code> / <code>n.odd?</code></td></tr>
+  <tr><td>Round to digits</td><td><code>Math.round(f * 100) / 100</code></td><td><code>f.round(2)</code></td></tr>
+  <tr><td>Characters</td><td><code>s.split("")</code></td><td><code>s.chars</code></td></tr>
+  <tr><td>Repeat n times</td><td><code>for (let i = 0; i &lt; n; i++)</code></td><td><code>n.times { |i| ... }</code></td></tr>
+  <tr><td>Zero check</td><td><code>n === 0</code></td><td><code>n.zero?</code></td></tr>
+  <tr><td>What is this?</td><td><code>typeof n</code></td><td><code>n.class</code> (a method, of course)</td></tr>
+</table>
+<p>The <code>&amp;:even?</code> in the solution is shorthand for "pass the
+<code>even?</code> method as the block" — lesson 11 unpacks it. The deeper
+shift: there is no layer of syntax-only operations sitting outside the
+object system. If you can do it to a value, it's a method on that value,
+which is why idiomatic Ruby chains left-to-right —
+<code>nums.select(&amp;:even?).map(&amp;:abs).sum</code> — instead of nesting
+calls inside-out.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>Most of what you know about Ruby strings mostly carries over, with one
+important exception: Ruby strings are mutable — <code>upcase!</code> and its
+bang-method siblings modify a string in place — while every Python string
+method always returns a brand-new string, since Python strings can't be
+mutated at all. Both languages are zero-indexed, and the vocabulary mostly
+rhymes: Ruby spells interpolation with <code>#{...}</code> inside
+double-quoted strings, and Python uses an <em>f-string</em> instead; slicing
+replaces Ruby's <code>slice(start, length)</code> with the compact
+<code>s[a:b]</code> start/stop syntax.</p>
+<table>
+  <tr><th>Ruby</th><th>Python</th></tr>
+  <tr><td><code>"Hi #{name}"</code></td><td><code>f"Hi {name}"</code></td></tr>
+  <tr><td><code>s.upcase</code></td><td><code>s.upper()</code></td></tr>
+  <tr><td><code>s.strip</code></td><td><code>s.strip()</code></td></tr>
+  <tr><td><code>s.gsub("a", "b")</code></td><td><code>s.replace("a", "b")</code></td></tr>
+  <tr><td><code>s.split(",")</code></td><td><code>s.split(",")</code></td></tr>
+  <tr><td><code>arr.join("-")</code></td><td><code>"-".join(arr)</code></td></tr>
+  <tr><td><code>s[0, 3]</code></td><td><code>s[0:3]</code></td></tr>
+  <tr><td><code>s.to_i</code> / <code>n.to_s</code></td><td><code>int(s)</code> / <code>str(n)</code></td></tr>
+</table>
+<p>Two things to unlearn. First, Python's <code>str.replace</code> already
+replaces <em>every</em> occurrence, the way Ruby's <code>gsub</code> does —
+there is no separate single-match version built in; pass a third argument if
+you want to cap the count, the way Ruby's <code>sub</code> stops after one.
+Second, unlike Ruby's <code>arr.join(sep)</code>, Python's <code>join</code>
+is a method on the <em>separator</em> string, not on the list: you write
+<code>", ".join(parts)</code>, and every element must already be a string.
+And <code>find</code> returns <code>-1</code> when the substring is absent,
+where Ruby's <code>index</code> would return <code>nil</code>.</p>`,
+
+  ruby: `def initials(full_name)
+  parts = full_name.strip.split(" ")
+  parts.map { |p| p[0].upcase }.join(".")
+end
+
+slug = "  Hello World  ".strip.downcase.sub(" ", "-")`,
+
+  task: `
+<p>Write these small pure string functions:</p>
+<ol>
+  <li><code>shout(text)</code> — strip surrounding whitespace and return the
+      result in UPPERCASE, e.g. <code>"  hi "</code> becomes <code>"HI"</code>.</li>
+  <li><code>slugify(title)</code> — lowercase the title, strip its ends, and
+      replace every space with <code>"-"</code>. Use an f-string nowhere here;
+      just chain the methods.</li>
+  <li><code>initials(full_name)</code> — split on spaces and return the first
+      letter of each part, uppercased and joined with <code>"."</code>, e.g.
+      <code>"ada lovelace"</code> becomes <code>"A.L"</code>.</li>
+  <li><code>label(name, score)</code> — return an f-string like
+      <code>"ada: 42"</code> where <code>score</code> is an int.</li>
+  <li><code>parse_total(a, b)</code> — the arguments are numeric strings;
+      convert them with <code>int()</code>, add them, and return the sum as a
+      string, e.g. <code>("2", "3")</code> gives <code>"5"</code>.</li>
+</ol>`,
+
+  starter: `# 1. shout(text) -> stripped, uppercased
+def shout(text):
+    return ""  # TODO
+
+
+# 2. slugify(title) -> lowercased, stripped, spaces -> "-"
+def slugify(title):
+    return ""  # TODO
+
+
+# 3. initials(full_name) -> "A.L"
+def initials(full_name):
+    return ""  # TODO
+
+
+# 4. label(name, score) -> "ada: 42" (use an f-string)
+def label(name, score):
+    return ""  # TODO
+
+
+# 5. parse_total(a, b) -> str(int(a) + int(b))
+def parse_total(a, b):
+    return ""  # TODO
+`,
+
+  requirements: [
+    { pattern: /f["']/, message: "Build the label string with an f-string" },
+    { pattern: /\.join\s*\(/, message: "Use str.join to combine the initials" },
+    { pattern: /\bint\s*\(/, message: "Use int() to convert the numeric strings" },
+  ],
+
+  tests: [
+    { name: 'shout("  hi ") is "HI"', code: "    expect_eq(shout(\"  hi \"), \"HI\")" },
+    { name: 'shout("Loud") is "LOUD"', code: "    expect_eq(shout(\"Loud\"), \"LOUD\")" },
+    { name: 'slugify("  Hello World  ") is "hello-world"', code: "    expect_eq(slugify(\"  Hello World  \"), \"hello-world\")" },
+    { name: 'initials("ada lovelace") is "A.L"', code: "    expect_eq(initials(\"ada lovelace\"), \"A.L\")" },
+    { name: 'initials("grace brewster hopper") is "G.B.H"', code: "    expect_eq(initials(\"grace brewster hopper\"), \"G.B.H\")" },
+    { name: 'label("ada", 42) is "ada: 42"', code: "    expect_eq(label(\"ada\", 42), \"ada: 42\")" },
+    { name: 'parse_total("2", "3") is "5"', code: "    expect_eq(parse_total(\"2\", \"3\"), \"5\")" },
+  ],
+
+  solution: `def shout(text):
+    return text.strip().upper()
+
+
+def slugify(title):
+    return title.strip().lower().replace(" ", "-")
+
+
+def initials(full_name):
+    parts = full_name.split(" ")
+    return ".".join(p[0].upper() for p in parts)
+
+
+def label(name, score):
+    return f"{name}: {score}"
+
+
+def parse_total(a, b):
+    return str(int(a) + int(b))
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Python</th></tr>
+  <tr><td>Interpolation</td><td><code>"#{x}"</code></td><td><code>f"{x}"</code></td></tr>
+  <tr><td>Substring</td><td><code>s[1...4]</code></td><td><code>s[1:4]</code></td></tr>
+  <tr><td>Last char</td><td><code>s[-1]</code></td><td><code>s[-1]</code></td></tr>
+  <tr><td>Contains</td><td><code>s.include?("x")</code></td><td><code>"x" in s</code></td></tr>
+  <tr><td>Index of</td><td><code>s.index("x")</code> (nil if absent)</td><td><code>s.find("x")</code> (-1 if absent)</td></tr>
+  <tr><td>Prefix / suffix</td><td><code>s.start_with? / end_with?</code></td><td><code>s.startswith / endswith</code></td></tr>
+  <tr><td>Repeat</td><td><code>"ab" * 3</code></td><td><code>"ab" * 3</code></td></tr>
+</table>
+<p>Slices never raise on out-of-range bounds: <code>s[0:99]</code> just returns
+the whole string, and a negative index counts from the end, so <code>s[-3:]</code>
+is the last three characters — same idea as Ruby's <code>s[-3..]</code>. Because
+strings are immutable in Python (unlike Ruby, where <code>upcase!</code> and
+its bang-method siblings mutate in place) you can happily chain
+<code>.strip().lower().replace(...)</code> — each call hands back a fresh
+string. If you need case-insensitive membership, lowercase both sides first
+(<code>"x" in s.lower()</code>); there is no case-insensitive flag on
+<code>include?</code> either.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

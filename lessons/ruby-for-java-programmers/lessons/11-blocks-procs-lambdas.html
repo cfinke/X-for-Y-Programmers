@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Blocks, Procs & Lambdas</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Blocks, Procs & Lambdas",
+
+  intro: `
+<p>In Java, passing behavior means passing an object: a lambda that implements
+<code>Function&lt;T, R&gt;</code>, a <code>Consumer</code>, a
+<code>Supplier</code> — always a value that travels <em>inside</em> the
+parentheses. Ruby's most common callback, the <strong>block</strong>, rides
+<em>outside</em> them: <code>list.forEach(x -&gt; ...)</code> becomes
+<code>arr.each { |x| ... }</code>. The braces after the call <em>are</em> the
+callback, and the method receives it invisibly — no
+<code>Function&lt;T, R&gt;</code> parameter to declare. Inside the method you
+invoke it with <code>yield</code>, and <code>block_given?</code> tells you
+whether the caller attached one at all.</p>
+<table>
+  <tr><th>Java</th><th>Ruby</th></tr>
+  <tr><td><code>list.forEach(x -&gt; System.out.println(x));</code></td><td><code>arr.each { |x| puts x }</code></td></tr>
+  <tr><td><code>static int f(int x, Function&lt;Integer,Integer&gt; g)</code></td><td><code>def f(x)</code> — the block arrives invisibly</td></tr>
+  <tr><td><code>g.apply(x)</code></td><td><code>yield(x)</code></td></tr>
+  <tr><td><code>Function&lt;Integer,Integer&gt; dbl = x -&gt; x * 2;</code></td><td><code>dbl = -&gt;(x) { x * 2 }</code></td></tr>
+  <tr><td><code>dbl.apply(3)</code></td><td><code>dbl.call(3)</code></td></tr>
+  <tr><td><code>.map(String::toUpperCase)</code></td><td><code>.map(&amp;:upcase)</code></td></tr>
+</table>
+<p>When you do want the callback as a first-class value — something to store in
+a variable and hand around like Java's <code>Function</code> — Ruby has the
+<strong>lambda literal</strong>: <code>-&gt;(x) { x * 2 }</code>, invoked with
+<code>.call</code>. And where Java writes the method reference
+<code>String::toUpperCase</code>, Ruby writes <code>&amp;:upcase</code> — the
+<code>&amp;:symbol</code> shorthand turns a method name into a block on the
+spot.</p>`,
+
+  java: `import java.util.List;
+import java.util.function.Function;
+
+public class Blocks {
+    static int applyTwice(int x, Function<Integer, Integer> f) {
+        return f.apply(f.apply(x));   // the callback is a declared parameter
+    }
+
+    static Function<Integer, Integer> makeMultiplier(int n) {
+        return x -> x * n;            // captures n: a closure
+    }
+
+    public static void main(String[] args) {
+        System.out.println(applyTwice(3, x -> x * 2));    // 12
+        System.out.println(makeMultiplier(5).apply(4));   // 20
+
+        List<String> shouted = List.of("hello", "world").stream()
+                .map(String::toUpperCase)
+                .toList();
+    }
+}`,
+
+  task: `
+<p>Rewrite the Java in Ruby's four callback styles:</p>
+<ol>
+  <li><code>apply_twice(x)</code> — no callback parameter at all! The block
+      arrives invisibly; apply it twice with <code>yield(yield(x))</code>.</li>
+  <li><code>maybe_yield(x)</code> — call the block on <code>x</code> if the
+      caller attached one, otherwise return <code>x</code> unchanged:
+      <code>block_given? ? yield(x) : x</code>.</li>
+  <li><code>make_multiplier(n)</code> — return a first-class lambda
+      <code>-&gt;(x) { x * n }</code> that closes over <code>n</code>, just
+      like Java's <code>x -&gt; x * n</code>. Callers invoke it with
+      <code>.call</code>.</li>
+  <li><code>shout_all(words)</code> — upcase every word with
+      <code>map(&amp;:upcase)</code>, Ruby's
+      <code>map(String::toUpperCase)</code>.</li>
+</ol>`,
+
+  starter: `# 1. apply_twice: no Function parameter — the block arrives invisibly.
+#    Invoke it with yield, twice: yield(yield(x))
+def apply_twice(x)
+  raise NotImplementedError, "TODO: implement apply_twice"
+end
+
+# 2. maybe_yield: block_given? tells you whether the caller attached a block.
+def maybe_yield(x)
+  raise NotImplementedError, "TODO: implement maybe_yield"
+end
+
+# 3. make_multiplier: return a lambda ->(x) { ... } that captures n.
+def make_multiplier(n)
+  raise NotImplementedError, "TODO: implement make_multiplier"
+end
+
+# 4. shout_all: map(&:upcase) is Ruby's map(String::toUpperCase).
+def shout_all(words)
+  raise NotImplementedError, "TODO: implement shout_all"
+end
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Invoke the invisible block with yield" },
+    { pattern: /block_given\?/, message: "Guard maybe_yield with block_given?" },
+    { pattern: /->\s*\(/, message: "Build the multiplier with a ->(x) { ... } lambda literal" },
+    { pattern: /&:/, message: "Use the &:symbol shorthand in shout_all" },
+  ],
+
+  tests: [
+    { name: "apply_twice(3) { |v| v * 2 } returns 12",
+      code: "  expect_eq(apply_twice(3) { |v| v * 2 }, 12)" },
+    { name: 'apply_twice("a") { |s| s + "!" } returns "a!!"',
+      code: '  expect_eq(apply_twice("a") { |s| s + "!" }, "a!!")' },
+    { name: "maybe_yield(5) { |v| v + 1 } returns 6",
+      code: "  expect_eq(maybe_yield(5) { |v| v + 1 }, 6)" },
+    { name: "maybe_yield(5) without a block returns 5",
+      code: "  expect_eq(maybe_yield(5), 5)" },
+    { name: "make_multiplier(5).call(4) returns 20",
+      code: "  expect_eq(make_multiplier(5).call(4), 20)" },
+    { name: 'shout_all(["hello", "world"]) returns ["HELLO", "WORLD"]',
+      code: '  expect_eq(shout_all(["hello", "world"]), ["HELLO", "WORLD"])' },
+  ],
+
+  solution: `def apply_twice(x)
+  yield(yield(x))
+end
+
+def maybe_yield(x)
+  block_given? ? yield(x) : x
+end
+
+def make_multiplier(n)
+  ->(x) { x * n }
+end
+
+def shout_all(words)
+  words.map(&:upcase)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Ruby</th></tr>
+  <tr><td>Inline callback</td><td><code>forEach(x -&gt; ...)</code> — inside the parens</td><td><code>each { |x| ... }</code> — outside the parens</td></tr>
+  <tr><td>Receiving one</td><td><code>Function&lt;T, R&gt; f</code> parameter</td><td>nothing to declare — every method can take a block</td></tr>
+  <tr><td>Invoking it</td><td><code>f.apply(x)</code></td><td><code>yield(x)</code></td></tr>
+  <tr><td>Was one passed?</td><td><code>f != null</code> (an overload, usually)</td><td><code>block_given?</code></td></tr>
+  <tr><td>First-class function</td><td><code>Function&lt;Integer,Integer&gt; f = x -&gt; x * 2;</code></td><td><code>f = -&gt;(x) { x * 2 }</code></td></tr>
+  <tr><td>Calling it</td><td><code>f.apply(3)</code></td><td><code>f.call(3)</code></td></tr>
+  <tr><td>Method reference</td><td><code>map(String::toUpperCase)</code></td><td><code>map(&amp;:upcase)</code></td></tr>
+</table>
+<p>The deep difference is that a block is not a value the method sees in its
+parameter list — it is an implicit companion to the call, and
+<code>yield</code> reaches out to it. That is why Ruby APIs feel so light:
+<code>3.times { ... }</code>, <code>File.open(path) { |f| ... }</code> — no
+functional interface was declared anywhere. When you genuinely need the
+callback as data (store it, return it, pass several), you promote it to a
+lambda with <code>-&gt;</code> — which is exactly the Java
+<code>Function</code> object you already know, spelled shorter.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

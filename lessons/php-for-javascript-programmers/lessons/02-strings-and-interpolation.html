@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>PHP had template literals before JavaScript did — they're just called
+double-quoted strings. <code>"Hello, $name!"</code> interpolates exactly like
+<code>\`Hello, \${name}!\`</code>; for anything fancier than a plain variable,
+wrap it in braces: <code>"total: {$items[0]}"</code>. Single-quoted strings
+are <em>literal</em> — <code>'Hello, $name!'</code> prints the actual text
+<code>$name</code>, closer to how JS treats every non-backtick string.</p>
+<p>Now the gotcha that bites every JavaScript developer on day one:
+<strong><code>+</code> is only arithmetic in PHP</strong>. <code>"a" + "b"</code>
+doesn't concatenate — it's a <code>TypeError</code>. Concatenation has its own
+operator, the dot: <code>"a" . "b"</code> (and <code>.=</code> for
+<code>+=</code>-style appending). PHP strings also aren't objects with
+methods; the toolbox is free functions, mostly prefixed <code>str</code>:</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>\`Hi, \${name}\`</code></td><td><code>"Hi, $name"</code></td></tr>
+  <tr><td><code>"a" + "b"</code></td><td><code>"a" . "b"</code> (<code>+</code> is numbers-only!)</td></tr>
+  <tr><td><code>s.toUpperCase()</code></td><td><code>strtoupper($s)</code></td></tr>
+  <tr><td><code>s.includes(x)</code></td><td><code>str_contains($s, $x)</code></td></tr>
+  <tr><td><code>s.length</code></td><td><code>strlen($s)</code></td></tr>
+  <tr><td><code>arr.join(", ")</code></td><td><code>implode(", ", $arr)</code></td></tr>
+</table>`,
+
+  javascript: `function shout(s) {
+  return s.toUpperCase();
+}
+
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+
+function containsWord(haystack, word) {
+  return haystack.includes(word);
+}
+
+function joinWords(words) {
+  return words.join(", ");
+}
+
+// In JS, + happily concatenates. In PHP it does NOT.
+console.log(greet("Ada") + " " + shout("welcome"));
+console.log(joinWords(["one", "two", "three"]));`,
+
+  task: `
+<p>Port the four helpers to PHP, swapping methods for the <code>str_*</code>
+function toolbox:</p>
+<ol>
+  <li><code>shout(string $s): string</code> — uppercase the string with
+      <code>strtoupper</code>.</li>
+  <li><code>greet(string $name): string</code> — return
+      <code>"Hello, Ada!"</code>-style text using double-quote interpolation.
+      Use the braced form, <code>"Hello, {$name}!"</code> — it works anywhere
+      plain <code>$name</code> does and never bleeds into surrounding
+      text.</li>
+  <li><code>contains_word(string $haystack, string $word): bool</code> —
+      wrap <code>str_contains</code>. Note the argument order: haystack first,
+      then needle.</li>
+  <li><code>join_words(array $words): string</code> — join with
+      <code>", "</code> using <code>implode</code>. Careful: the glue comes
+      <em>first</em>, the array second — the mirror image of
+      <code>arr.join(", ")</code>.</li>
+</ol>
+<p>If you reach for <code>+</code> to glue strings anywhere, remember: the
+concatenation operator is <code>.</code></p>`,
+
+  starter: `<?php
+
+// 1. s.toUpperCase()  ->  strtoupper($s)
+function shout(string $s): string {
+    throw new Exception("TODO: implement shout");
+}
+
+// 2. \`Hello, \${name}!\`  ->  "Hello, {$name}!"  (braces delimit the variable)
+function greet(string $name): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 3. haystack.includes(word)  ->  str_contains($haystack, $word)
+function contains_word(string $haystack, string $word): bool {
+    throw new Exception("TODO: implement contains_word");
+}
+
+// 4. words.join(", ")  ->  implode(", ", $words)   (glue first!)
+function join_words(array $words): string {
+    throw new Exception("TODO: implement join_words");
+}
+`,
+
+  requirements: [
+    { pattern: /"\$\w+|\{\$\w+/, message: "Use double-quote interpolation ({$name}) in greet" },
+    { pattern: /strtoupper/, message: "Use strtoupper in shout" },
+    { pattern: /str_contains/, message: "Use str_contains in contains_word" },
+    { pattern: /implode/, message: "Use implode in join_words" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: 'expect_eq(shout("hello"), "HELLO");' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'contains_word("the quick brown fox", "quick") is true',
+      code: 'expect_true(contains_word("the quick brown fox", "quick"));' },
+    { name: 'contains_word("the quick brown fox", "slow") is false',
+      code: 'expect_eq(contains_word("the quick brown fox", "slow"), false);' },
+    { name: 'join_words(["one", "two", "three"]) returns "one, two, three"',
+      code: 'expect_eq(join_words(["one", "two", "three"]), "one, two, three");' },
+  ],
+
+  solution: `<?php
+
+function shout(string $s): string {
+    return strtoupper($s);
+}
+
+function greet(string $name): string {
+    return "Hello, {$name}!";
+}
+
+function contains_word(string $haystack, string $word): bool {
+    return str_contains($haystack, $word);
+}
+
+function join_words(array $words): string {
+    return implode(", ", $words);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Interpolation</td><td><code>\`Hi, \${name}\`</code></td><td><code>"Hi, $name"</code> or <code>"Hi, {$user['name']}"</code></td></tr>
+  <tr><td>Literal string</td><td><code>'no magic'</code> / <code>"no magic"</code></td><td><code>'no magic, $name stays $name'</code></td></tr>
+  <tr><td>Concatenate</td><td><code>a + b</code></td><td><code>$a . $b</code> (and <code>.=</code> to append)</td></tr>
+  <tr><td>Uppercase / lowercase</td><td><code>s.toUpperCase()</code></td><td><code>strtoupper($s)</code> / <code>strtolower($s)</code></td></tr>
+  <tr><td>Contains</td><td><code>s.includes(x)</code></td><td><code>str_contains($s, $x)</code></td></tr>
+  <tr><td>Starts / ends with</td><td><code>s.startsWith(x)</code></td><td><code>str_starts_with($s, $x)</code> / <code>str_ends_with</code></td></tr>
+  <tr><td>Length</td><td><code>s.length</code></td><td><code>strlen($s)</code> (bytes) / <code>mb_strlen</code> (characters)</td></tr>
+  <tr><td>Join an array</td><td><code>arr.join(", ")</code></td><td><code>implode(", ", $arr)</code> — glue first</td></tr>
+</table>
+<p>The mental shift is from <em>methods on string objects</em> to <em>a
+toolbox of free functions</em> that take the string as an argument. And burn
+this in now: <code>+</code> never touches strings in PHP. <code>"1" + "2"</code>
+is the integer <code>3</code> (numeric strings get converted), while
+<code>"a" + "b"</code> throws — the dot operator <code>.</code> is the only
+way to glue text.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Interfaces, Inheritance &amp; Abstracts</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Interfaces, Inheritance & Abstracts",
+
+  intro: `
+<p>Your C++ polymorphism toolkit maps over almost symbol-for-symbol. A pure
+virtual function (<code>virtual double area() const = 0;</code>) becomes an
+<code>abstract</code> method inside an <code>abstract class</code> — a class
+that, like one with pure virtuals, cannot be instantiated. The
+pure-abstract-base-class pattern you build by hand in C++ (all pure virtuals,
+no state) is formalized as <code>interface</code>: a class may
+<code>implements</code> many interfaces but <code>extends</code> exactly one
+parent — so no multiple inheritance of implementation, no diamonds, no
+virtual base classes to reason about.</p>
+<table>
+  <tr><th>C++</th><th>PHP</th></tr>
+  <tr><td><code>virtual double area() const = 0;</code></td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td>pure-abstract base class (by convention)</td><td><code>interface</code> (by keyword; implement many)</td></tr>
+  <tr><td><code>class Circle : public Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td><code>virtual</code> + <code>override</code>, vtables</td><td>every method is virtual; dispatch is always dynamic</td></tr>
+  <tr><td><code>Shape::Shape(...)</code> in the init list</td><td><code>parent::__construct(...)</code> in the body</td></tr>
+</table>
+<p>Two simplifications to enjoy: every PHP method is virtual — dynamic
+dispatch always happens, with no <code>virtual</code> keyword, no vtable
+management, and no virtual-destructor footgun when deleting through a base
+handle (there's no <code>delete</code> at all). And calling the base-class
+constructor is an ordinary statement, <code>parent::__construct(...)</code>,
+rather than initializer-list syntax. The template method pattern — a concrete
+base method calling an abstract one via <code>$this-&gt;area()</code> — works
+exactly as you'd expect.</p>`,
+
+  cpp: `#include <cmath>
+#include <string>
+
+class Shape {
+public:
+    virtual ~Shape() = default;          // the virtual-dtor ritual
+    virtual double area() const = 0;     // pure virtual
+    std::string describe() const {       // template method
+        return "Shape with area " + std::to_string(area());
+    }
+};
+
+class Circle : public Shape {
+    double radius_;
+public:
+    explicit Circle(double r) : radius_(r) {}
+    double area() const override { return M_PI * radius_ * radius_; }
+};
+
+class Rectangle : public Shape {
+    double w_, h_;
+public:
+    Rectangle(double w, double h) : w_(w), h_(h) {}
+    double area() const override { return w_ * h_; }
+};`,
+
+  task: `
+<p>Port the shape hierarchy:</p>
+<ol>
+  <li><code>abstract class Shape</code> with
+      <code>abstract public function area(): float;</code> (the pure virtual —
+      note: no body, just a semicolon) and a <em>concrete</em>
+      <code>describe(): string</code> returning
+      <code>"Shape with area "</code> followed by
+      <code>round($this-&gt;area(), 2)</code> — a template method dispatching
+      to whichever subclass override is live.</li>
+  <li><code>class Circle extends Shape</code> — promoted
+      <code>private float $radius</code>; <code>area()</code> returns
+      <code>M_PI * $this-&gt;radius * $this-&gt;radius</code> (PHP ships the
+      <code>M_PI</code> constant, no header needed).</li>
+  <li><code>class Rectangle extends Shape</code> — promoted width and height;
+      <code>area()</code> multiplies them.</li>
+</ol>
+<p>The tests construct <code>new Circle(1)</code> and
+<code>new Rectangle(2, 3)</code>.</p>`,
+
+  starter: `<?php
+
+// Cannot be instantiated, like a class with pure virtuals.
+abstract class Shape {
+    // The pure virtual: signature only, ends in a semicolon.
+    abstract public function area(): float;
+
+    // Template method: concrete here, dispatches to the subclass
+    // override via $this->area() — every method is virtual.
+    public function describe(): string {
+        throw new Exception("TODO: implement describe");
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        throw new Exception("TODO: implement Circle::area");
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        throw new Exception("TODO: implement Rectangle::area");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class" },
+    { pattern: /extends\s+Shape/, message: "Circle and Rectangle must extend Shape" },
+    { pattern: /abstract\s+(public\s+)?function\s+area/, message: "Declare area() as an abstract method (the pure virtual)" },
+  ],
+
+  tests: [
+    { name: "a unit circle's area rounds to 3.14",
+      code: "$c = new Circle(1);\nexpect_eq(round($c->area(), 2), 3.14);" },
+    { name: "a 2x3 rectangle has area exactly 6.0",
+      code: "$r = new Rectangle(2, 3);\nexpect_eq($r->area(), 6.0);" },
+    { name: "describe() on a Rectangle dispatches to Rectangle::area",
+      code: '$r = new Rectangle(2, 3);\nexpect_eq($r->describe(), "Shape with area 6");' },
+    { name: "describe() on a Circle dispatches to Circle::area",
+      code: '$c = new Circle(1);\nexpect_eq($c->describe(), "Shape with area 3.14");' },
+    { name: "both concrete classes are Shapes (usable through a base handle)",
+      code: "expect_true(new Circle(1) instanceof Shape);\nexpect_true(new Rectangle(2, 3) instanceof Shape);" },
+  ],
+
+  solution: `<?php
+
+abstract class Shape {
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "Shape with area " . round($this->area(), 2);
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        return M_PI * $this->radius * $this->radius;
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        return $this->width * $this->height;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>PHP</th></tr>
+  <tr><td>Pure virtual</td><td><code>virtual T f() = 0;</code></td><td><code>abstract public function f(): T;</code></td></tr>
+  <tr><td>Abstract base</td><td>any class with a pure virtual</td><td><code>abstract class</code> (explicit keyword)</td></tr>
+  <tr><td>Interface</td><td>pure-abstract class, by convention</td><td><code>interface</code> + <code>implements A, B</code></td></tr>
+  <tr><td>Inheritance</td><td><code>: public Base</code> (can be multiple)</td><td><code>extends Base</code> (exactly one)</td></tr>
+  <tr><td>Dispatch</td><td><code>virtual</code>/<code>override</code>, vtables</td><td>always dynamic, no keywords</td></tr>
+  <tr><td>Base ctor</td><td><code>: Base(args)</code> init list</td><td><code>parent::__construct(args);</code></td></tr>
+  <tr><td>Runtime type test</td><td><code>dynamic_cast</code></td><td><code>$x instanceof Shape</code></td></tr>
+</table>
+<p>The design consequence of "one parent, many interfaces": where C++ APIs
+sometimes multiply-inherit small mixin classes, PHP splits the roles —
+<code>extends</code> for shared implementation, <code>implements</code> for
+shared contracts (interfaces carry method signatures and constants, never
+state). Since dispatch is always virtual, the template method here needs no
+annotations: <code>describe()</code> in the abstract base calls
+<code>$this-&gt;area()</code> and lands in <code>Circle</code> or
+<code>Rectangle</code> automatically. You lose the ability to devirtualize
+for speed; you also lose an entire category of slicing and
+static-vs-dynamic-dispatch bugs.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

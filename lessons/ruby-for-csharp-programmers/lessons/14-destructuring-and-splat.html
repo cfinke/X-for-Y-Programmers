@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring &amp; Splat</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>C# gave you <code>var (a, b) = pair;</code> — but only for tuples and types
+that implement <code>Deconstruct</code>. Ruby's multiple assignment,
+<code>a, b = pair</code>, works on plain <strong>arrays</strong>, no
+<code>Deconstruct</code> method, no tuple type, no parentheses. The classic
+swap is <code>a, b = b, a</code>. And the splat <code>*</code> soaks up the
+remainder anywhere in the pattern: <code>first, *rest = list</code> — or even
+<code>*init, last = list</code>, capturing from the <em>front</em>, which C#
+ranges only approximate.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>var (a, b) = pair;</code> (tuples/Deconstruct only)</td><td><code>a, b = pair</code> (any array)</td></tr>
+  <tr><td><code>(a, b) = (b, a);</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td><code>var first = xs[0]; var rest = xs[1..];</code></td><td><code>first, *rest = xs</code> (and <code>*init, last = xs</code>!)</td></tr>
+  <tr><td><code>int Sum(params int[] nums)</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td><code>DoWork(x, options...)</code> named args</td><td><code>def config(**opts)</code> keyword splat</td></tr>
+  <tr><td><code>list1.Concat(list2)</code></td><td><code>[*a, *b]</code> spreads into a literal</td></tr>
+</table>
+<p>The same star does double duty in signatures: <code>def sum(*nums)</code> is
+<code>params int[]</code>, and <code>**opts</code> gathers keyword arguments
+into a hash. In expressions, <code>[*a, *b]</code> spreads arrays into a new
+literal. For merging hashes — your options-defaults pattern — Ruby ships
+<code>defaults.merge(overrides)</code>: a new hash where the overrides win.</p>`,
+
+  csharp: `var pair = (1, 2);
+var (a, b) = pair;                 // needs a tuple or Deconstruct
+(a, b) = (b, a);                   // swap
+
+int[] list = { 1, 2, 3, 4 };
+int first  = list[0];
+int[] rest = list[1..];            // ranges, not deconstruction
+
+static int Sum(params int[] nums) => nums.Sum();
+
+static Dictionary<string, object> MergeSettings(
+    Dictionary<string, object> defaults,
+    Dictionary<string, object> overrides)
+{
+    var merged = new Dictionary<string, object>(defaults);
+    foreach (var (k, v) in overrides) merged[k] = v;
+    return merged;
+}`,
+
+  task: `
+<p>Rewrite the C# with multiple assignment and splats:</p>
+<ol>
+  <li><code>swap(pair)</code> — destructure with <code>a, b = pair</code>,
+      swap with <code>a, b = b, a</code>, and return <code>[a, b]</code>.</li>
+  <li><code>head_tail(list)</code> — one line of destructuring,
+      <code>first, *rest = list</code>, then return
+      <code>[first, rest]</code>. No index arithmetic, no ranges.</li>
+  <li><code>sum(*nums)</code> — <code>params int[]</code> becomes a splat
+      parameter; callers write <code>sum(1, 2, 3)</code>. Total them with
+      <code>nums.sum</code>.</li>
+  <li><code>merge_settings(defaults, overrides)</code> — the entire C# method
+      body is <code>defaults.merge(overrides)</code>.</li>
+</ol>`,
+
+  starter: `# 1. swap: a, b = pair to unpack; a, b = b, a to swap; [a, b] back.
+def swap(pair)
+  raise NotImplementedError, "TODO: implement swap"
+end
+
+# 2. head_tail: first, *rest = list — the splat soaks up the remainder.
+def head_tail(list)
+  raise NotImplementedError, "TODO: implement head_tail"
+end
+
+# 3. sum: *nums is params int[] — gather any number of arguments.
+def sum(*nums)
+  raise NotImplementedError, "TODO: implement sum"
+end
+
+# 4. merge_settings: Hash#merge returns a new hash; overrides win.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: implement merge_settings"
+end
+`,
+
+  requirements: [
+    { pattern: /\*\w+/, message: "Use a splat (*name) somewhere" },
+    { pattern: /,\s*\*/, message: "Destructure with a rest pattern like first, *rest" },
+    { pattern: /\.merge/, message: "Merge the settings hashes with .merge" },
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Define sum with a splat parameter: def sum(*nums)" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: '  expect_eq(swap([1, 2]), [2, 1])\n  expect_eq(swap(["left", "right"]), ["right", "left"])' },
+    { name: "head_tail([1, 2, 3, 4]) returns [1, [2, 3, 4]]",
+      code: "  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])" },
+    { name: "head_tail([42]) returns [42, []]",
+      code: "  expect_eq(head_tail([42]), [42, []])" },
+    { name: "sum(1, 2, 3) returns 6",
+      code: "  expect_eq(sum(1, 2, 3), 6)" },
+    { name: "sum() with no arguments returns 0",
+      code: "  expect_eq(sum(), 0)" },
+    { name: "merge_settings: overrides win, defaults survive",
+      code: `  merged = merge_settings({ theme: "dark", font_size: 10 }, { font_size: 14 })
+  expect_eq(merged, { theme: "dark", font_size: 14 })
+  expect_eq(merge_settings({ theme: "dark" }, {}), { theme: "dark" })` },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  a, b = b, a
+  [a, b]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Destructure</td><td><code>var (a, b) = pair;</code> (Deconstruct required)</td><td><code>a, b = pair</code> (any array)</td></tr>
+  <tr><td>Swap</td><td><code>(a, b) = (b, a);</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Head + rest</td><td><code>xs[0]</code> and <code>xs[1..]</code></td><td><code>first, *rest = xs</code></td></tr>
+  <tr><td>Init + last</td><td>—</td><td><code>*init, last = xs</code></td></tr>
+  <tr><td>Variadic method</td><td><code>params int[] nums</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td>Keyword bag</td><td>optional/named parameters</td><td><code>def config(**opts)</code></td></tr>
+  <tr><td>Spread</td><td><code>a.Concat(b).ToArray()</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td>Merge dictionaries</td><td>copy + loop</td><td><code>defaults.merge(overrides)</code></td></tr>
+</table>
+<p>Multiple assignment also quietly powers method returns: a Ruby method that
+returns <code>[quotient, remainder]</code> gives callers
+<code>q, r = divmod_ish(a, b)</code> — the out-parameter and the
+<code>(int q, int r)</code> tuple return, without declaring either. Unpacking
+too few elements yields <code>nil</code>, never an exception, so keep the
+shapes honest.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

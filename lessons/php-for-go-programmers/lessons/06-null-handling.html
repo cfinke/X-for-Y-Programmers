@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null, ?? & ?-></title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null, ?? & ?->",
+
+  intro: `
+<p>Go's <code>nil</code> is typed and moody: a nil pointer dereferences to a
+panic, a nil map reads fine but panics on write, a nil slice appends happily,
+and value types can't be nil at all — they get zero values instead. PHP
+collapses all of that into one <code>null</code>, and any variable or typed
+property can hold it (a <code>?Address</code> type is Go's
+<code>*Address</code>: "an Address or nothing"). What PHP adds is operators
+that make the absent case a one-liner instead of a three-line
+<code>if</code>.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>v, ok := m[k]; if !ok { v = def }</code></td><td><code>$v = $m[$k] ?? $def;</code></td></tr>
+  <tr><td><code>if u != nil &amp;&amp; u.Addr != nil { c = u.Addr.City }</code></td><td><code>$c = $u?->address?->city;</code></td></tr>
+  <tr><td>nil pointer dereference → <em>panic</em></td><td>null in a <code>?-></code> chain → the chain yields <code>null</code></td></tr>
+  <tr><td><code>*Address</code> (nilable pointer)</td><td><code>?Address</code> (nullable type)</td></tr>
+  <tr><td><code>u == nil</code></td><td><code>$u === null</code></td></tr>
+  <tr><td>"is it usable?" (varies by kind)</td><td><code>isset($x)</code> — declared <em>and</em> not null</td></tr>
+</table>
+<p><code>??</code> is the comma-ok default dance as an expression:
+<code>$m[$k] ?? $default</code> yields the value if the key exists and isn't
+null, otherwise the default — no notice, no panic. <code>?-></code> is the
+nullsafe arrow: if anything on the left is <code>null</code>, the whole chain
+short-circuits to <code>null</code> instead of blowing up the way a nil
+pointer chain does in Go. And <code>isset()</code> answers one precise
+question — "is this declared and not null?" — which covers most of what Go's
+per-kind nil rules make you reason about case by case.</p>`,
+
+  go: `type Address struct {
+    City string
+}
+
+type User struct {
+    Address *Address // nil means "no address"
+}
+
+func getCity(u *User) string {
+    // Every hop needs its own nil check, or: panic.
+    if u != nil && u.Address != nil {
+        return u.Address.City
+    }
+    return "Unknown"
+}
+
+func pick(data map[string]string, key, def string) string {
+    if v, ok := data[key]; ok {
+        return v
+    }
+    return def
+}`,
+
+  task: `
+<p>The starter already defines <code>Address</code> and <code>User</code>
+(classes are lesson 9; today just use them). Port the two Go functions:</p>
+<ol>
+  <li><code>get_city(?User $user): string</code> — replace the nil-check
+      ladder with one expression: walk <code>$user?->address?->city</code>
+      with the nullsafe operator, then coalesce the possible <code>null</code>
+      into <code>"Unknown"</code> with <code>??</code>.</li>
+  <li><code>pick(array $data, string $key, string $default): string</code> —
+      the comma-ok dance in a single expression:
+      <code>$data[$key] ?? $default</code>. Missing key <em>or</em> a stored
+      <code>null</code> both fall back to the default.</li>
+</ol>
+<p>Note the <code>?User</code> parameter type: like passing a
+<code>*User</code>, the caller may hand you nothing at all — and your one
+expression must survive it.</p>`,
+
+  starter: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+// 1. get_city: the whole nil-check ladder becomes one expression.
+//    Go: if u != nil && u.Address != nil { ... }
+//    PHP: $user?->address?->city, with ?? for the fallback.
+function get_city(?User $user): string {
+    throw new Exception("TODO: implement get_city");
+}
+
+// 2. pick: comma-ok with a default, as one expression.
+function pick(array $data, string $key, string $default): string {
+    throw new Exception("TODO: implement pick");
+}
+`,
+
+  requirements: [
+    { pattern: /\?\?/, message: "Use the null coalescing operator ??" },
+    { pattern: /\?->/, message: "Use the nullsafe operator ?-> to walk the chain" },
+    { pattern: /\?User|\?Address/, message: "Keep the nullable type declarations (?User / ?Address)" },
+  ],
+
+  tests: [
+    { name: 'get_city with a full chain returns the city',
+      code: 'expect_eq(get_city(new User(new Address("Oslo"))), "Oslo");' },
+    { name: 'get_city with a user but no address returns "Unknown"',
+      code: 'expect_eq(get_city(new User()), "Unknown");' },
+    { name: 'get_city(null) returns "Unknown" — no panic, no error',
+      code: 'expect_eq(get_city(null), "Unknown");' },
+    { name: 'pick finds an existing key',
+      code: 'expect_eq(pick(["region" => "eu-west"], "region", "us-east"), "eu-west");' },
+    { name: 'pick falls back on a missing key or a stored null',
+      code: 'expect_eq(pick([], "region", "us-east"), "us-east");\nexpect_eq(pick(["region" => null], "region", "us-east"), "us-east");' },
+  ],
+
+  solution: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+function get_city(?User $user): string {
+    return $user?->address?->city ?? "Unknown";
+}
+
+function pick(array $data, string $key, string $default): string {
+    return $data[$key] ?? $default;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>The absent value</td><td><code>nil</code> (behavior varies by kind) + zero values</td><td><code>null</code>, one value for everything</td></tr>
+  <tr><td>Nilable type</td><td><code>*Address</code></td><td><code>?Address</code></td></tr>
+  <tr><td>Map lookup with default</td><td><code>v, ok := m[k]</code> + <code>if</code></td><td><code>$m[$k] ?? $def</code></td></tr>
+  <tr><td>Deep access</td><td>nil check per hop, or panic</td><td><code>$u?->address?->city</code> — null anywhere → null</td></tr>
+  <tr><td>Null check</td><td><code>u == nil</code></td><td><code>$u === null</code>; <code>isset($x)</code> = declared and not null</td></tr>
+  <tr><td>Assign-if-absent</td><td><code>if _, ok := m[k]; !ok { m[k] = d }</code></td><td><code>$m[$k] ??= $d;</code></td></tr>
+</table>
+<p>The philosophical trade: Go makes absence loud — forget a nil check and
+production panics. PHP makes absence quiet — <code>??</code> and
+<code>?-></code> swallow it into a default. That's wonderful for optional
+config and lousy for typos: <code>$user?->adress?->city ?? "Unknown"</code>
+returns "Unknown" forever if a middle property is misspelled (an undefined
+property is just a runtime warning that evaluates to <code>null</code> — no
+compiler to catch it). Reach for <code>??</code>
+when null is a legitimate state, not to mute errors you should fix.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

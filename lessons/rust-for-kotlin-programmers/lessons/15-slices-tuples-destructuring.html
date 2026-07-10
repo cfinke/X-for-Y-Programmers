@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Slices, Tuples &amp; Destructuring</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Slices, Tuples & Destructuring",
+
+  intro: `
+<p>Kotlin does give you tuples — but only two of them:
+<code>Pair&lt;A, B&gt;</code> and <code>Triple&lt;A, B, C&gt;</code>. Need four
+values, or want to avoid a boxed generic wrapper on a hot path, and you're
+back to declaring a <code>data class</code>. Rust has anonymous tuples of any
+arity built in: <code>(f64, f64)</code> is a pair of doubles, made with
+<code>(3.0, 4.0)</code>, read with <code>.0</code> and <code>.1</code>, no
+type declaration anywhere.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>Pair&lt;Double, Double&gt;</code> (caps out at <code>Triple</code>)</td><td><code>(f64, f64)</code> — anonymous, any arity</td></tr>
+  <tr><td><code>pair.first</code>, <code>pair.second</code></td><td><code>p.0</code>, <code>p.1</code></td></tr>
+  <tr><td><code>val (x, y) = p</code> (via <code>componentN()</code>)</td><td><code>let (x, y) = p;</code> — works on every tuple, everywhere</td></tr>
+  <tr><td><code>a = b.also { b = a }</code></td><td><code>(a, b) = (b, a);</code></td></tr>
+</table>
+<p>Destructuring will feel familiar — it's Kotlin's destructuring declarations,
+generalized: <code>let (x, y) = point;</code> unpacks any tuple into locals.
+Kotlin's version leans on positional <code>componentN()</code> operators, which
+is why it works on <code>Pair</code>, <code>Triple</code>, and
+<code>data class</code>es but not much else; Rust's works on any tuple, struct,
+or enum variant. The other half of this lesson you've already been using:
+<code>&amp;[i32]</code> is a <em>slice</em>, a read-only view into a
+<code>Vec</code> or array. Think of returning a <code>List&lt;Int&gt;</code>
+read-only interface — except in Kotlin the backing <code>MutableList</code> can
+still change under you, whereas a slice is free (no copy) and the borrow checker
+genuinely guarantees nobody mutates it out from under you.</p>`,
+
+  kotlin: `// Kotlin has Pair and Triple, but no arbitrary tuples.
+data class Point(val x: Double, val y: Double)
+
+fun swap(pair: Pair<Int, Int>): Pair<Int, Int> =
+    pair.second to pair.first
+
+fun distance(p: Point, q: Point): Double {
+    // Destructuring declarations unpack data classes and Pairs:
+    val (x1, y1) = p
+    val (x2, y2) = q
+    return Math.sqrt(Math.pow(x2 - x1, 2.0) + Math.pow(y2 - y1, 2.0))
+}
+
+fun ends(v: List<Int>): Pair<Int, Int> =
+    v.first() to v.last()`,
+
+  task: `
+<p>Port all three — no data class required:</p>
+<ol>
+  <li><code>swap(pair: (i32, i32)) -&gt; (i32, i32)</code> — return the pair
+      with its elements exchanged. Destructure with
+      <code>let (a, b) = pair;</code> and build the new tuple.</li>
+  <li><code>distance(p: (f64, f64), q: (f64, f64)) -&gt; f64</code> — the
+      Euclidean distance between two points. Destructure each point with a
+      <code>let (x, y)</code> pattern, then
+      <code>((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt()</code>.</li>
+  <li><code>ends(v: &amp;[i32]) -&gt; (i32, i32)</code> — a tuple of the first
+      and last elements of the slice (assume it's non-empty; for a one-element
+      slice both are the same value).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. swap: destructure with let (a, b) = pair; then return (b, a).
+//    No IntPair record needed — the tuple type is anonymous.
+fn swap(pair: (i32, i32)) -> (i32, i32) {
+    todo!()
+}
+
+// 2. distance: let (x1, y1) = p; let (x2, y2) = q;
+//    then ((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt()
+fn distance(p: (f64, f64), q: (f64, f64)) -> f64 {
+    todo!()
+}
+
+// 3. ends: first and last of the slice — v[0] and v[v.len() - 1].
+fn ends(v: &[i32]) -> (i32, i32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\(\s*f64\s*,\s*f64\s*\)/, message: "Use the anonymous tuple type (f64, f64) in distance's signature" },
+    { pattern: /let\s*\(/, message: "Destructure a tuple with a let (…) pattern" },
+    { pattern: /&\[i32\]/, message: "ends should take a slice: &[i32]" },
+  ],
+
+  tests: [
+    { name: "swap((1, 2)) returns (2, 1)",
+      code: "assert_eq!(swap((1, 2)), (2, 1));" },
+    { name: "swap((-5, 0)) returns (0, -5)",
+      code: "assert_eq!(swap((-5, 0)), (0, -5));" },
+    { name: "distance of the 3-4-5 triangle is exactly 5.0",
+      code: "assert_eq!(distance((0.0, 0.0), (3.0, 4.0)), 5.0);" },
+    { name: "distance from a point to itself is 0.0",
+      code: "assert_eq!(distance((2.5, -1.0), (2.5, -1.0)), 0.0);" },
+    { name: "ends(&[10, 20, 30]) returns (10, 30)",
+      code: "assert_eq!(ends(&[10, 20, 30]), (10, 30));" },
+    { name: "ends(&[7]) returns (7, 7)",
+      code: "assert_eq!(ends(&[7]), (7, 7));" },
+  ],
+
+  solution: `fn swap(pair: (i32, i32)) -> (i32, i32) {
+    let (a, b) = pair;
+    (b, a)
+}
+
+fn distance(p: (f64, f64), q: (f64, f64)) -> f64 {
+    let (x1, y1) = p;
+    let (x2, y2) = q;
+    ((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt()
+}
+
+fn ends(v: &[i32]) -> (i32, i32) {
+    (v[0], v[v.len() - 1])
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Pair of values</td><td><code>Pair&lt;Int, Int&gt;</code> / <code>Triple</code></td><td><code>(i32, i32)</code> — anonymous, any arity</td></tr>
+  <tr><td>Field access</td><td><code>pair.first</code></td><td><code>pair.0</code>, <code>pair.1</code></td></tr>
+  <tr><td>Destructuring</td><td><code>val (x, y) = p</code> via <code>componentN()</code></td><td><code>let (x, y) = p;</code> — any tuple, any time</td></tr>
+  <tr><td>Swap two variables</td><td><code>a = b.also { b = a }</code></td><td><code>(a, b) = (b, a);</code></td></tr>
+  <tr><td>Read-only list view</td><td><code>List&lt;Int&gt;</code> (backing store can still change)</td><td><code>&amp;[i32]</code> — a free, checked borrow</td></tr>
+</table>
+<p>When should a tuple become a struct? The same instinct you have about
+data classes applies: <code>(f64, f64)</code> is fine across a couple of lines,
+but once a pair travels through your API, name it — a tuple struct like
+<code>struct Point(f64, f64);</code> is the middle ground, keeping
+<code>.0</code>/<code>.1</code> access while giving the type a name the
+compiler can tell apart from every other pair of doubles.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

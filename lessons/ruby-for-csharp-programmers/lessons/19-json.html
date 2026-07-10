@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>In C#, JSON means <code>System.Text.Json</code>: a
+<code>JsonSerializer</code>, usually a DTO record to deserialize into, and
+<code>JsonSerializerOptions</code> to configure the trip. Ruby needs one
+<code>require "json"</code> and then gets out of your way: serializing is a
+<em>method on the data itself</em> — <code>data.to_json</code> — no
+serializer class, no options object. Parsing is <code>JSON.parse(s)</code>,
+and since there are no DTOs to declare, you get plain Hashes and Arrays
+back.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>JsonSerializer.Serialize(user)</code></td><td><code>user.to_json</code></td></tr>
+  <tr><td><code>JsonSerializer.Deserialize&lt;User&gt;(json)</code></td><td><code>JSON.parse(json, symbolize_names: true)</code></td></tr>
+  <tr><td>DTO record per shape</td><td>plain Hashes — no types to declare</td></tr>
+  <tr><td><code>root.GetProperty("a").GetProperty("b")</code></td><td><code>data.dig(:a, :b)</code></td></tr>
+  <tr><td><code>catch (JsonException)</code></td><td><code>rescue JSON::ParserError</code></td></tr>
+</table>
+<p>Two habits keep the Hashes pleasant. <code>JSON.parse</code> returns
+<em>string</em>-keyed hashes by default (<code>data["name"]</code>); pass
+<code>symbolize_names: true</code> to get the idiomatic
+<code>data[:name]</code>. And for nested paths, <code>.dig(:a, :b)</code>
+walks the structure and returns <code>nil</code> if any step is missing — no
+<code>GetProperty</code> chains, no <code>TryGetProperty</code> dance. Bad
+input raises <code>JSON::ParserError</code>, which you now know how to
+rescue at the def level.</p>`,
+
+  csharp: `using System.Text.Json;
+
+record User(string Name, int Age);
+
+var user = new User("Ada", 36);
+string json = JsonSerializer.Serialize(user);
+
+var parsed = JsonSerializer.Deserialize<User>(json)!;
+
+// No DTO handy? Welcome to JsonElement land:
+using var doc = JsonDocument.Parse(json);
+var name = doc.RootElement.GetProperty("Name").GetString();
+
+try
+{
+    JsonSerializer.Deserialize<User>("not json");
+}
+catch (JsonException e)
+{
+    Console.WriteLine(e.Message);
+}`,
+
+  task: `
+<p>Do the same round trips in Ruby (the starter already has
+<code>require "json"</code>):</p>
+<ol>
+  <li><code>to_json_string(data)</code> — serialize any data with
+      <code>data.to_json</code>.</li>
+  <li><code>parse_user(json)</code> — <code>JSON.parse</code> with
+      <code>symbolize_names: true</code>, then build
+      <code>{ name: ..., age: ... }</code> using <code>fetch</code> defaults:
+      <code>"unknown"</code> for a missing name, <code>0</code> for a missing
+      age.</li>
+  <li><code>pluck_names(json)</code> — parse a JSON array of users and return
+      just their <code>:name</code> values.</li>
+  <li><code>safe_parse(json)</code> — parse with symbol keys, but return
+      <code>{}</code> on <code>JSON::ParserError</code> (def-level
+      rescue).</li>
+</ol>`,
+
+  starter: `require "json"
+
+# 1. to_json_string: serialization is a method on the data itself.
+def to_json_string(data)
+  raise NotImplementedError, "TODO: implement to_json_string"
+end
+
+# 2. parse_user: JSON.parse(json, symbolize_names: true), then
+#    fetch(:name, "unknown") and fetch(:age, 0).
+def parse_user(json)
+  raise NotImplementedError, "TODO: implement parse_user"
+end
+
+# 3. pluck_names: parse the array, map out each user's :name.
+def pluck_names(json)
+  raise NotImplementedError, "TODO: implement pluck_names"
+end
+
+# 4. safe_parse: def-level rescue JSON::ParserError -> {}.
+def safe_parse(json)
+  raise NotImplementedError, "TODO: implement safe_parse"
+end
+`,
+
+  requirements: [
+    { pattern: /require\s+["']json["']/, message: 'Keep require "json" at the top' },
+    { pattern: /to_json/, message: "Serialize with to_json" },
+    { pattern: /symbolize_names:\s*true/, message: "Parse with symbolize_names: true" },
+    { pattern: /JSON::ParserError|rescue/, message: "Rescue JSON::ParserError in safe_parse" },
+  ],
+
+  tests: [
+    { name: 'to_json_string({ name: "Ada", age: 36 }) serializes the hash',
+      code: `  expect_eq(to_json_string({ name: "Ada", age: 36 }), '{"name":"Ada","age":36}')` },
+    { name: "parse_user returns a symbol-keyed hash",
+      code: `  expect_eq(parse_user('{"name":"Grace","age":52}'), { name: "Grace", age: 52 })` },
+    { name: 'parse_user("{}") applies the fetch defaults',
+      code: `  expect_eq(parse_user('{}'), { name: "unknown", age: 0 })` },
+    { name: "pluck_names extracts every :name",
+      code: `  expect_eq(pluck_names('[{"name":"Ada"},{"name":"Grace"}]'), ["Ada", "Grace"])` },
+    { name: "safe_parse returns {} on bad input, data on good input",
+      code: `  expect_eq(safe_parse("this is not json"), {})
+  expect_eq(safe_parse('{"ok":true}'), { ok: true })` },
+  ],
+
+  solution: `require "json"
+
+def to_json_string(data)
+  data.to_json
+end
+
+def parse_user(json)
+  user = JSON.parse(json, symbolize_names: true)
+  { name: user.fetch(:name, "unknown"), age: user.fetch(:age, 0) }
+end
+
+def pluck_names(json)
+  users = JSON.parse(json, symbolize_names: true)
+  users.map { |user| user[:name] }
+end
+
+def safe_parse(json)
+  JSON.parse(json, symbolize_names: true)
+rescue JSON::ParserError
+  {}
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Setup</td><td><code>using System.Text.Json;</code></td><td><code>require "json"</code></td></tr>
+  <tr><td>Serialize</td><td><code>JsonSerializer.Serialize(x)</code></td><td><code>x.to_json</code> (a method on the object)</td></tr>
+  <tr><td>Deserialize</td><td><code>Deserialize&lt;T&gt;(json)</code> into a DTO</td><td><code>JSON.parse(json)</code> into Hashes/Arrays</td></tr>
+  <tr><td>Symbol keys</td><td>n/a (property names)</td><td><code>symbolize_names: true</code></td></tr>
+  <tr><td>Nested access</td><td><code>GetProperty("a").GetProperty("b")</code></td><td><code>data.dig(:a, :b)</code> — nil if any step missing</td></tr>
+  <tr><td>Missing key + default</td><td><code>TryGetProperty</code> + fallback</td><td><code>hash.fetch(:key, default)</code></td></tr>
+  <tr><td>Bad input</td><td><code>JsonException</code></td><td><code>JSON::ParserError</code></td></tr>
+  <tr><td>Pretty print</td><td><code>WriteIndented = true</code> option</td><td><code>JSON.pretty_generate(data)</code></td></tr>
+</table>
+<p>The trade is the course's theme in miniature.
+<code>Deserialize&lt;User&gt;</code> hands you a typed object and fails fast
+when the shape is wrong; <code>JSON.parse</code> hands you whatever arrived,
+and the shape errors surface later, wherever the data is used. That's why the
+defensive idioms matter more in Ruby: <code>fetch</code> with a default and
+<code>dig</code> for deep paths are how you put the guarantees back —
+precisely at the boundary, without declaring a DTO for every payload.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

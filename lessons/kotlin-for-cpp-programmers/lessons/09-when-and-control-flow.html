@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: when & Control Flow</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "when & Control Flow",
+
+  intro: `
+<p>In C++, <code>switch</code> is a statement: it falls through, needs
+<code>break</code>, and can't produce a value. Kotlin replaces it with
+<code>when</code>, which is an <em>expression</em> — each branch is a value, there
+is no fall-through, and you can assign the whole thing or <code>return</code> it.
+Even <code>if</code> is an expression in Kotlin, so it doubles as the ternary you
+reach for in C++.</p>
+<table>
+  <tr><th>C++</th><th>Kotlin</th></tr>
+  <tr><td><code>switch (x) { case 1: ... }</code></td><td><code>when (x) { 1 -> ... }</code></td></tr>
+  <tr><td><code>case 1: case 2:</code></td><td><code>1, 2 -> ...</code></td></tr>
+  <tr><td><code>default:</code></td><td><code>else -> ...</code></td></tr>
+  <tr><td><code>a > b ? a : b</code></td><td><code>if (a > b) a else b</code></td></tr>
+  <tr><td><code>for (int i = 1; i &lt;= 10; i++)</code></td><td><code>for (i in 1..10)</code></td></tr>
+</table>
+<p>A <code>when</code> branch can match a literal, a comma-separated list of
+labels, or a range with <code>in</code> (<code>in 90..100</code>). When a
+<code>when</code> is used as an expression it must be exhaustive, so an
+<code>else</code> is usually required. Ranges are real values:
+<code>1..10</code> counts up, <code>10 downTo 1</code> counts down, and
+<code>step 2</code> changes the stride — all drivable by a <code>for</code>
+loop, which in Kotlin only ever iterates over something, never a C-style
+counter.</p>`,
+
+  cpp: `std::string grade(int score) {
+  switch (true) {
+    case score >= 90: return "A";
+    case score >= 80: return "B";
+    default: return "F";
+  }
+}
+
+int bigger = a > b ? a : b;
+
+for (int i = 10; i >= 1; i--) { /* count down */ }`,
+
+  task: `
+<p>Write these top-level functions. No class or <code>main</code> needed:</p>
+<ol>
+  <li><code>dayType(day: String): String</code> — use a <code>when</code> with
+      multiple labels: <code>"Sat"</code>/<code>"Sun"</code> return
+      <code>"weekend"</code>, the five weekday names return <code>"weekday"</code>,
+      and <code>else</code> returns <code>"unknown"</code>.</li>
+  <li><code>grade(score: Int): String</code> — a <code>when</code> matching
+      ranges with <code>in</code>: <code>90..100</code>-&gt;<code>"A"</code>,
+      <code>80..89</code>-&gt;<code>"B"</code>, <code>70..79</code>-&gt;<code>"C"</code>,
+      <code>60..69</code>-&gt;<code>"D"</code>, <code>else</code>-&gt;<code>"F"</code>.</li>
+  <li><code>max(a: Int, b: Int): Int</code> — use <code>if</code> as an
+      <em>expression</em> (no <code>return</code> ternary needed).</li>
+  <li><code>countdown(from: Int): List&lt;Int&gt;</code> — a <code>for</code>
+      loop over <code>from downTo 1</code>, collecting each number.</li>
+  <li><code>evens(n: Int): List&lt;Int&gt;</code> — a <code>for</code> loop over
+      <code>2..n step 2</code>, collecting each number.</li>
+</ol>`,
+
+  starter: `// 1. weekend / weekday / unknown  (when with multiple labels)
+fun dayType(day: String): String {
+    return "" // TODO
+}
+
+// 2. letter grade from a score  (when with 'in' ranges)
+fun grade(score: Int): String {
+    return "" // TODO
+}
+
+// 3. the larger of two Ints  (if as an expression)
+fun max(a: Int, b: Int): Int {
+    return 0 // TODO
+}
+
+// 4. [from, from-1, ..., 1]  (for over downTo)
+fun countdown(from: Int): List<Int> {
+    return listOf() // TODO
+}
+
+// 5. even numbers from 2 up to n  (for over a range with step)
+fun evens(n: Int): List<Int> {
+    return listOf() // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /when\s*\(/, message: "Use a when expression" },
+    { pattern: /in\s+\d+\.\.\d+/, message: "Match a range with `in 90..100`" },
+    { pattern: /downTo/, message: "Count down with `downTo` in a for loop" },
+  ],
+
+  tests: [
+    { name: 'dayType("Sat") is "weekend"', code: '        expect_eq(dayType("Sat"), "weekend")' },
+    { name: 'dayType("Sun") is "weekend"', code: '        expect_eq(dayType("Sun"), "weekend")' },
+    { name: 'dayType("Wed") is "weekday"', code: '        expect_eq(dayType("Wed"), "weekday")' },
+    { name: 'dayType("nope") is "unknown"', code: '        expect_eq(dayType("nope"), "unknown")' },
+    { name: 'grade(95) is "A"', code: '        expect_eq(grade(95), "A")' },
+    { name: 'grade(80) is "B"', code: '        expect_eq(grade(80), "B")' },
+    { name: 'grade(72) is "C"', code: '        expect_eq(grade(72), "C")' },
+    { name: 'grade(60) is "D"', code: '        expect_eq(grade(60), "D")' },
+    { name: 'grade(41) is "F"', code: '        expect_eq(grade(41), "F")' },
+    { name: "max(3, 7) is 7", code: "        expect_eq(max(3, 7), 7)" },
+    { name: "max(9, 2) is 9", code: "        expect_eq(max(9, 2), 9)" },
+    { name: "countdown(3) is [3, 2, 1]", code: "        expect_eq(countdown(3), listOf(3, 2, 1))" },
+    { name: "countdown(1) is [1]", code: "        expect_eq(countdown(1), listOf(1))" },
+    { name: "evens(10) is [2, 4, 6, 8, 10]", code: "        expect_eq(evens(10), listOf(2, 4, 6, 8, 10))" },
+    { name: "evens(5) is [2, 4]", code: "        expect_eq(evens(5), listOf(2, 4))" },
+  ],
+
+  solution: `fun dayType(day: String): String = when (day) {
+    "Sat", "Sun" -> "weekend"
+    "Mon", "Tue", "Wed", "Thu", "Fri" -> "weekday"
+    else -> "unknown"
+}
+
+fun grade(score: Int): String = when (score) {
+    in 90..100 -> "A"
+    in 80..89 -> "B"
+    in 70..79 -> "C"
+    in 60..69 -> "D"
+    else -> "F"
+}
+
+fun max(a: Int, b: Int): Int = if (a >= b) a else b
+
+fun countdown(from: Int): List<Int> {
+    val result = mutableListOf<Int>()
+    for (i in from downTo 1) {
+        result.add(i)
+    }
+    return result
+}
+
+fun evens(n: Int): List<Int> {
+    val result = mutableListOf<Int>()
+    for (i in 2..n step 2) {
+        result.add(i)
+    }
+    return result
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Kotlin</th></tr>
+  <tr><td>Multi-way branch</td><td><code>switch</code> (needs <code>break</code>)</td><td><code>when</code> (no fall-through)</td></tr>
+  <tr><td>Branch as a value</td><td>not possible</td><td><code>val g = when (...) { ... }</code></td></tr>
+  <tr><td>Grouped cases</td><td><code>case 1: case 2:</code></td><td><code>1, 2 -&gt;</code></td></tr>
+  <tr><td>Range test</td><td><code>x &gt;= 1 &amp;&amp; x &lt;= 10</code></td><td><code>x in 1..10</code></td></tr>
+  <tr><td>Ternary</td><td><code>a &gt; b ? a : b</code></td><td><code>if (a &gt; b) a else b</code></td></tr>
+  <tr><td>Count down</td><td><code>for (int i = n; i &gt;= 1; i--)</code></td><td><code>for (i in n downTo 1)</code></td></tr>
+</table>
+<p><code>when</code> can also drop its subject and take boolean branches
+(<code>when { score &gt; 90 -&gt; ... }</code>), acting like an if/else-if chain.
+Note that a range with <code>..</code> is inclusive on both ends, so
+<code>1..10</code> contains <code>10</code>; use <code>until</code>
+(<code>1 until 10</code>) for the exclusive upper bound that a C-style
+<code>&lt; 10</code> loop gives you. Because <code>when</code> and <code>if</code>
+are expressions, the idiomatic body is often a single <code>=</code> with no
+braces, as in <code>grade</code> and <code>max</code> above.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

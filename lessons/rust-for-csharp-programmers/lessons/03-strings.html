@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Strings: String & &str</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Strings: String & &str",
+
+  intro: `
+<p>C# gives you one immutable <code>string</code> plus
+<code>StringBuilder</code> when you need to construct text efficiently. Rust
+splits the same territory differently: <code>&amp;str</code> is a borrowed,
+read-only <em>view</em> of string data (what parameters usually take), and
+<code>String</code> is the owned, growable buffer — it plays the
+<code>StringBuilder</code> role <em>and</em> the "string I own" role at once.
+String literals like <code>"hello"</code> are <code>&amp;str</code>.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>string</code> (immutable)</td><td><code>&amp;str</code> — borrowed, read-only view</td></tr>
+  <tr><td><code>StringBuilder</code></td><td><code>String</code> — owned and growable</td></tr>
+  <tr><td><code>a == b</code> (compares content)</td><td><code>a == b</code> (compares content)</td></tr>
+  <tr><td><code>$"Hello, {name}!"</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+  <tr><td><code>s.ToUpper()</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td><code>s.Contains(w)</code></td><td><code>s.contains(w)</code></td></tr>
+  <tr><td><code>s.Length</code> (UTF-16 code units)</td><td><code>s.len()</code> (UTF-8 <strong>bytes</strong>)</td></tr>
+</table>
+<p>The rule of thumb that gets you through most code: <strong>take
+<code>&amp;str</code>, return <code>String</code></strong>. A
+<code>&amp;str</code> parameter accepts both literals and owned
+<code>String</code>s (via <code>&amp;s</code>), so it's the flexible choice —
+much like preferring <code>IEnumerable&lt;T&gt;</code> parameters over
+<code>List&lt;T&gt;</code>. Comparison is comfortable: <code>==</code> checks
+content in both languages, no <code>.Equals()</code> vs <code>==</code>
+subtleties. The one trap: <code>.len()</code> counts UTF-8 bytes, not
+characters — <code>"café".len()</code> is 5, where C#'s
+<code>"café".Length</code> is 4 UTF-16 code units. Neither is "the number of
+characters a human would count", but Rust makes you notice sooner.</p>`,
+
+  csharp: `string Shout(string s) => s.ToUpper() + "!";
+
+string Greet(string name) => $"Hello, {name}!";
+
+bool ContainsWord(string haystack, string needle) =>
+    haystack.Contains(needle);
+
+// C# strings are immutable; efficient construction
+// means reaching for StringBuilder:
+var sb = new StringBuilder();
+sb.Append("Hello");
+sb.Append(", world");
+Console.WriteLine(sb.ToString());
+
+Console.WriteLine("café".Length);   // 4 (UTF-16 code units)
+Console.WriteLine(Shout("hello") == "HELLO!");  // True`,
+
+  task: `
+<p>Rewrite the C# as Rust, following the rule: take
+<code>&amp;str</code>, return <code>String</code>.</p>
+<ol>
+  <li><code>shout</code>: takes <code>s: &amp;str</code>, returns a
+      <code>String</code> of the input uppercased with <code>"!"</code>
+      appended — <code>shout("hello")</code> is <code>"HELLO!"</code>.
+      Use <code>.to_uppercase()</code> (it already returns an owned
+      <code>String</code>).</li>
+  <li><code>greet</code>: takes <code>name: &amp;str</code>, returns
+      <code>String</code> — <code>"Hello, Ada!"</code> for
+      <code>"Ada"</code>. Use <code>format!</code> with positional
+      <code>{}</code> placeholders.</li>
+  <li><code>contains_word</code>: takes <code>haystack: &amp;str</code> and
+      <code>needle: &amp;str</code>, returns <code>bool</code> — whether the
+      haystack contains the needle. Use <code>.contains()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. shout: uppercase the input and append "!".
+//    .to_uppercase() gives you an owned String; format! can
+//    combine it with the "!" suffix.
+fn shout(s: &str) -> String {
+    todo!()
+}
+
+// 2. greet: C#'s $"Hello, {name}!" becomes format!.
+fn greet(name: &str) -> String {
+    todo!()
+}
+
+// 3. contains_word: .Contains -> .contains
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&str/, message: "Take string parameters as &str (the borrowed view)" },
+    { pattern: /->\s*String/, message: "Return an owned String from shout and greet" },
+    { pattern: /format!\s*\(/, message: "Use format! to build the greeting" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO!"',
+      code: 'assert_eq!(shout("hello"), "HELLO!");' },
+    { name: 'shout("Rust") returns "RUST!"',
+      code: 'assert_eq!(shout("Rust"), "RUST!");' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: 'assert_eq!(greet("Ada"), "Hello, Ada!");' },
+    { name: "contains_word finds a word that is present",
+      code: 'assert!(contains_word("the quick brown fox", "quick"));' },
+    { name: "contains_word rejects a word that is absent",
+      code: 'assert!(!contains_word("the quick brown fox", "slow"));' },
+  ],
+
+  solution: `fn shout(s: &str) -> String {
+    format!("{}!", s.to_uppercase())
+}
+
+fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    haystack.contains(needle)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Borrowed text</td><td><code>string</code> (reference type)</td><td><code>&amp;str</code></td></tr>
+  <tr><td>Owned / growable</td><td><code>StringBuilder</code></td><td><code>String</code></td></tr>
+  <tr><td>Interpolation</td><td><code>$"Hello, {name}!"</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+  <tr><td>Uppercase</td><td><code>s.ToUpper()</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td>Substring check</td><td><code>s.Contains(w)</code></td><td><code>s.contains(w)</code></td></tr>
+  <tr><td>Length</td><td><code>s.Length</code> — UTF-16 units</td><td><code>s.len()</code> — UTF-8 bytes</td></tr>
+  <tr><td>Equality</td><td><code>==</code> compares content</td><td><code>==</code> compares content</td></tr>
+</table>
+<p>Why two types at all? It's ownership showing through (next lesson):
+<code>String</code> owns heap data and is responsible for freeing it;
+<code>&amp;str</code> just looks at someone else's. The payoff of "take
+<code>&amp;str</code>, return <code>String</code>" is that your functions
+never force callers to copy — passing a <code>String</code> to a
+<code>&amp;str</code> parameter is just <code>&amp;my_string</code>, no
+allocation, the same way an <code>in</code> parameter avoids a copy in C#.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

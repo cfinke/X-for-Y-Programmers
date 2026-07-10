@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Option: The End of Null</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Option: The End of Null",
+
+  intro: `
+<p>TypeScript's <code>strictNullChecks</code> was your first taste of this
+idea: make absence part of the type, and the compiler catches the forgotten
+check. Rust commits fully. There is no <code>null</code> and no
+<code>undefined</code> — a value that might be missing is an
+<code>Option&lt;T&gt;</code>, which is either <code>Some(value)</code> or
+<code>None</code>. And because <code>Option&lt;String&gt;</code> is a
+different type from <code>String</code>, you <em>cannot</em> use the value
+without going through the wrapper first. It's <code>strictNullChecks</code>
+with no <code>!</code>, no <code>as</code>, no escape hatch.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>string | null</code></td><td><code>Option&lt;String&gt;</code></td></tr>
+  <tr><td><code>return "Ada";</code> / <code>return null;</code></td><td><code>Some("Ada".to_string())</code> / <code>None</code></td></tr>
+  <tr><td><code>name ?? "Guest"</code></td><td><code>name.unwrap_or("Guest".to_string())</code></td></tr>
+  <tr><td><code>user?.name</code></td><td><code>user.map(|u| u.name)</code></td></tr>
+  <tr><td><code>if (name !== null) { … } else { … }</code></td><td><code>match name { Some(n) =&gt; …, None =&gt; … }</code></td></tr>
+</table>
+<p>Your <code>?? / ?.</code> muscle memory maps directly:
+<code>.unwrap_or(default)</code> is <code>??</code>, and <code>.map(...)</code>
+chains through <code>Some</code> the way <code>?.</code> chains past
+<code>null</code> — if it's <code>None</code>, the closure never runs and
+<code>None</code> flows on. When you need full control over both arms,
+<code>match</code> is the exhaustive <code>if/else</code> the compiler
+verifies for you.</p>`,
+
+  typescript: `function findUser(id: number): string | null {
+  if (id === 1) return "Ada";
+  if (id === 2) return "Grace";
+  return null;
+}
+
+function displayName(name: string | null): string {
+  return name ?? "Guest";
+}
+
+function firstChar(s: string): string | undefined {
+  return s[0];              // undefined for "" — easy to forget
+}
+
+// ?. and ?? chain past the null case:
+console.log(findUser(99)?.toUpperCase() ?? "no such user");`,
+
+  task: `
+<p>Port the maybe-missing values to <code>Option</code>:</p>
+<ol>
+  <li><code>find_user(id: u32) -&gt; Option&lt;String&gt;</code> — return
+      <code>Some("Ada".to_string())</code> for id <code>1</code>,
+      <code>Some("Grace".to_string())</code> for id <code>2</code>, and
+      <code>None</code> otherwise.</li>
+  <li><code>display_name(name: Option&lt;String&gt;) -&gt; String</code> —
+      the <code>?? "Guest"</code> port: use
+      <code>.unwrap_or("Guest".to_string())</code>.</li>
+  <li><code>first_char(s: &amp;str) -&gt; Option&lt;char&gt;</code> — return
+      the first character via <code>s.chars().next()</code>. Notice it
+      already <em>is</em> an <code>Option&lt;char&gt;</code>: the standard
+      library never hands you an undefined.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. find_user: Some("Ada") for 1, Some("Grace") for 2, None otherwise.
+//    (String values, so .to_string() the literals.)
+fn find_user(id: u32) -> Option<String> {
+    todo!()
+}
+
+// 2. display_name: the ?? "Guest" idiom is .unwrap_or(...).
+fn display_name(name: Option<String>) -> String {
+    todo!()
+}
+
+// 3. first_char: s.chars().next() already returns Option<char>.
+fn first_char(s: &str) -> Option<char> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option</, message: "Keep the Option<...> return types in the signatures" },
+    { pattern: /Some\(/, message: "Return the present case with Some(...)" },
+    { pattern: /None/, message: "Return None for the missing case" },
+    { pattern: /unwrap_or/, message: "Use .unwrap_or(...) for the ?? default in display_name" },
+  ],
+
+  tests: [
+    { name: 'find_user(1) is Some("Ada"), find_user(2) is Some("Grace")',
+      code: 'assert_eq!(find_user(1), Some("Ada".to_string()));\nassert_eq!(find_user(2), Some("Grace".to_string()));' },
+    { name: "find_user of any other id is None",
+      code: "assert_eq!(find_user(0), None);\nassert_eq!(find_user(99), None);" },
+    { name: 'display_name(Some("Ada")) is "Ada"',
+      code: 'assert_eq!(display_name(Some("Ada".to_string())), "Ada");' },
+    { name: 'display_name(None) is "Guest"',
+      code: 'assert_eq!(display_name(None), "Guest");' },
+    { name: "first_char works on Some and None cases",
+      code: "assert_eq!(first_char(\"rust\"), Some('r'));\nassert_eq!(first_char(\"\"), None);" },
+  ],
+
+  solution: `fn find_user(id: u32) -> Option<String> {
+    match id {
+        1 => Some("Ada".to_string()),
+        2 => Some("Grace".to_string()),
+        _ => None,
+    }
+}
+
+fn display_name(name: Option<String>) -> String {
+    name.unwrap_or("Guest".to_string())
+}
+
+fn first_char(s: &str) -> Option<char> {
+    s.chars().next()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Maybe-missing type</td><td><code>string | null</code> / <code>string | undefined</code></td><td><code>Option&lt;String&gt;</code></td></tr>
+  <tr><td>Present / absent</td><td><code>"Ada"</code> / <code>null</code></td><td><code>Some("Ada".to_string())</code> / <code>None</code></td></tr>
+  <tr><td>Default</td><td><code>name ?? "Guest"</code></td><td><code>name.unwrap_or("Guest".to_string())</code></td></tr>
+  <tr><td>Chain through</td><td><code>user?.name</code></td><td><code>user.map(|u| u.name)</code></td></tr>
+  <tr><td>Branch on both</td><td><code>if (x !== null)</code> + narrowing</td><td><code>match x { Some(v) =&gt; …, None =&gt; … }</code></td></tr>
+  <tr><td>Assert present</td><td><code>x!</code> (silent lie if wrong)</td><td><code>x.unwrap()</code> (loud panic if wrong)</td></tr>
+</table>
+<p>The philosophical difference is small but total: TypeScript added null
+tracking to a language where <code>null</code> already leaked everywhere, so
+it kept escape hatches like <code>!</code>. Rust never had null, so
+<code>Option</code> has no back door — the closest thing,
+<code>.unwrap()</code>, at least fails immediately and loudly at the call
+site instead of three functions later as a mystery
+<code>undefined is not a function</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

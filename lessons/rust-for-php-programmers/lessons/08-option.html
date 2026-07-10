@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Option: The End of Null</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Option: The End of Null",
+
+  intro: `
+<p>A lifetime of PHP trains reflexes around absence: <code>isset()</code>
+before reading, <code>?? ''</code> before using, <code>?-&gt;</code> before
+calling — and the ever-lurking <em>"Call to a member function on null"</em>
+when one reflex misfires. The problem is that <code>?string</code> is a
+whisper: nothing <em>forces</em> the caller to handle the null case. Rust has
+no null. Absence is a real type: <code>Option&lt;T&gt;</code> is either
+<code>Some(value)</code> or <code>None</code>, and because an
+<code>Option&lt;String&gt;</code> is not a <code>String</code>, the compiler
+physically stops you from using it before you've said what happens when it's
+empty.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>?string</code> return type</td><td><code>Option&lt;String&gt;</code></td></tr>
+  <tr><td><code>return null;</code></td><td><code>None</code></td></tr>
+  <tr><td><code>return $name;</code></td><td><code>Some(name)</code></td></tr>
+  <tr><td><code>$name ?? 'Anonymous'</code></td><td><code>name.unwrap_or(String::from("Anonymous"))</code></td></tr>
+  <tr><td><code>$user?-&gt;getName()</code></td><td><code>user.map(|u| u.get_name())</code></td></tr>
+  <tr><td><code>if ($name !== null) { ... } else { ... }</code></td><td><code>match name { Some(n) =&gt; ..., None =&gt; ... }</code></td></tr>
+</table>
+<p>You've already met <code>Option</code> twice without ceremony —
+<code>v.get(i)</code> and <code>map.get(k)</code> both return one. The
+everyday tools: <code>.unwrap_or(default)</code> is <code>??</code>;
+<code>.map(...)</code> transforms the inside value if there is one, like
+<code>?-&gt;</code> chains that skip when null; and <code>match</code> handles
+both arms explicitly when you need different logic for each — with the
+compiler checking that you didn't forget one.</p>`,
+
+  php: `function findUser(int $id): ?string {
+    $users = [1 => 'Ada', 2 => 'Grace'];
+    return $users[$id] ?? null;   // "?string" — maybe a string, maybe null
+}
+
+$name = findUser(3);
+
+// Every nullable forces a ritual at the call site — and nothing
+// checks that you remembered it:
+echo $name ?? 'Anonymous';        // the ?? guard
+$initial = $name ? $name[0] : null;
+
+// Forget the guard once, and at runtime:
+// TypeError: strlen(): Argument #1 must be of type string, null given
+$len = strlen($name);`,
+
+  task: `
+<p>Rewrite the lookup so the "maybe" lives in the type system:</p>
+<ol>
+  <li><code>find_user(id: u32) -&gt; Option&lt;String&gt;</code> — return
+      <code>Some(String::from("Ada"))</code> for id 1,
+      <code>Some(String::from("Grace"))</code> for id 2, and
+      <code>None</code> for anything else. A <code>match</code> on
+      <code>id</code> reads nicely.</li>
+  <li><code>display_name(name: Option&lt;String&gt;) -&gt; String</code> —
+      return the name inside, or <code>"Anonymous"</code> if it's
+      <code>None</code>. This is <code>$name ?? 'Anonymous'</code>:
+      use <code>.unwrap_or(...)</code>.</li>
+  <li><code>first_char(s: &amp;str) -&gt; Option&lt;char&gt;</code> — return
+      the first character, or <code>None</code> for an empty string.
+      <code>s.chars().next()</code> already returns exactly this — no
+      <code>if</code> needed.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. find_user: Some("Ada") for 1, Some("Grace") for 2, None otherwise.
+//    PHP: return $users[$id] ?? null;
+fn find_user(id: u32) -> Option<String> {
+    todo!()
+}
+
+// 2. display_name: the name, or "Anonymous" if None.
+//    PHP: return $name ?? 'Anonymous';
+fn display_name(name: Option<String>) -> String {
+    todo!()
+}
+
+// 3. first_char: the first char, or None if s is empty.
+//    Hint: s.chars().next() is already an Option<char>.
+fn first_char(s: &str) -> Option<char> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option</, message: "Use Option<...> in your signatures" },
+    { pattern: /Some\(/, message: "Return Some(...) for the found cases" },
+    { pattern: /None/, message: "Return None for the not-found case" },
+    { pattern: /unwrap_or/, message: "Use .unwrap_or(...) — Rust's ?? — in display_name" },
+  ],
+
+  tests: [
+    { name: 'find_user(1) returns Some("Ada")',
+      code: 'assert_eq!(find_user(1), Some(String::from("Ada")));' },
+    { name: 'find_user(2) returns Some("Grace")',
+      code: 'assert_eq!(find_user(2), Some(String::from("Grace")));' },
+    { name: "find_user(99) returns None",
+      code: "assert_eq!(find_user(99), None);" },
+    { name: 'display_name(Some("Ada")) returns "Ada"',
+      code: 'assert_eq!(display_name(Some(String::from("Ada"))), "Ada");' },
+    { name: 'display_name(None) returns "Anonymous"',
+      code: 'assert_eq!(display_name(None), "Anonymous");' },
+    { name: "first_char: Some('p') for \"php\", None for \"\"",
+      code: "assert_eq!(first_char(\"php\"), Some('p'));\nassert_eq!(first_char(\"\"), None);" },
+  ],
+
+  solution: `fn find_user(id: u32) -> Option<String> {
+    match id {
+        1 => Some(String::from("Ada")),
+        2 => Some(String::from("Grace")),
+        _ => None,
+    }
+}
+
+fn display_name(name: Option<String>) -> String {
+    name.unwrap_or(String::from("Anonymous"))
+}
+
+fn first_char(s: &str) -> Option<char> {
+    s.chars().next()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Maybe-a-string</td><td><code>?string</code></td><td><code>Option&lt;String&gt;</code></td></tr>
+  <tr><td>Nothing</td><td><code>null</code></td><td><code>None</code></td></tr>
+  <tr><td>Something</td><td>the bare value</td><td><code>Some(value)</code> — wrapped, must be unwrapped</td></tr>
+  <tr><td>Default</td><td><code>$x ?? $default</code></td><td><code>x.unwrap_or(default)</code></td></tr>
+  <tr><td>Null-safe chain</td><td><code>$x?-&gt;method()</code></td><td><code>x.map(|v| v.method())</code></td></tr>
+  <tr><td>Check</td><td><code>isset($x)</code>, <code>!== null</code></td><td><code>x.is_some()</code>, or better: <code>match</code></td></tr>
+  <tr><td>Forgot to check</td><td>runtime TypeError / fatal</td><td>compile error</td></tr>
+</table>
+<p>The shift worth savoring: in PHP, null-safety is a <em>discipline</em> —
+<code>??</code> and <code>?-&gt;</code> exist, but nothing makes you use them,
+so the missing guard is found by a user at runtime. In Rust it's a
+<em>guarantee</em>: <code>Some("Ada")</code> is not a string, so code that
+forgets the <code>None</code> case doesn't compile. The reflexes you already
+have don't disappear — <code>unwrap_or</code> <em>is</em> <code>??</code>,
+<code>map</code> <em>is</em> <code>?-&gt;</code> — they just become
+mandatory, and therefore checked.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

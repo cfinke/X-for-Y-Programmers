@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put it together. This capstone is a tiny in-memory <em>task store</em>
+that leans on almost everything this course has covered: a <strong>class</strong>
+to hold state and behavior, <strong>array-iteration methods</strong>
+(<code>find</code>, <code>filter</code>, <code>reduce</code>) to query and
+aggregate, and <strong>custom errors</strong> to refuse bad input. Nothing here
+is unfamiliar — you have built stores like this in PHP with a class, an array
+property, and <code>throw</code>. The point is to feel how the same shape behaves
+in JavaScript, where arrays and objects blur together and array-iteration methods
+stand in for the loops you might reach for in PHP.</p>
+<table>
+  <tr><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td>an associative array or a typed class property</td><td>a plain object shaped however you build it</td></tr>
+  <tr><td><code>private array $tasks = []</code></td><td><code>this.tasks = []</code> — holds anything you push</td></tr>
+  <tr><td>a type hint rejects <code>add(42)</code> at the call boundary</td><td>you must <code>throw</code> to reject it yourself</td></tr>
+  <tr><td><code>array_filter</code>/<code>array_reduce</code> over the store</td><td><code>filter</code>/<code>reduce</code> as methods on the array</td></tr>
+</table>
+<p>In PHP, a typed parameter or return type gives you a boundary the engine
+enforces for you — pass the wrong shape and you get a <code>TypeError</code>
+before your code even runs. JavaScript's <code>find</code> just hands back a
+task or <code>undefined</code>, and if you forget to check, the very next
+property access throws its own <code>TypeError</code> — just later, and with a
+less specific message. The runtime discipline is the same instinct PHP's type
+system automates: <em>make the miss explicit</em> — detect it and throw a
+meaningful error instead of letting a cryptic one leak out later.</p>`,
+
+  php: `<?php
+class NotFoundError extends Exception {}
+class ValidationError extends Exception {}
+
+class Task {
+    public int $id;
+    public string $title;
+    public int $priority;
+    public bool $done = false;
+
+    public function __construct(int $id, string $title, int $priority) {
+        $this->id = $id;
+        $this->title = $title;
+        $this->priority = $priority;
+    }
+}
+
+class TaskStore {
+    private array $tasks = [];
+    private int $nextId = 1;
+
+    public function add(string $title, int $priority = 1): Task {
+        if (trim($title) === "") {
+            throw new ValidationError("title required");
+        }
+        $task = new Task($this->nextId++, $title, $priority);
+        $this->tasks[] = $task;
+        return $task;
+    }
+
+    public function get(int $id): Task {
+        foreach ($this->tasks as $t) {
+            if ($t->id === $id) {
+                return $t;
+            }
+        }
+        throw new NotFoundError("no task $id");
+    }
+
+    public function complete(int $id): Task {
+        $task = $this->get($id);
+        $task->done = true;
+        return $task;
+    }
+
+    public function pending(): array {
+        return array_values(array_filter($this->tasks, fn($t) => !$t->done));
+    }
+
+    public function summary(): array {
+        return array_reduce(
+            $this->tasks,
+            function (array $acc, Task $t): array {
+                $acc["total"]++;
+                $t->done ? $acc["done"]++ : $acc["pending"]++;
+                return $acc;
+            },
+            ["total" => 0, "done" => 0, "pending" => 0]
+        );
+    }
+}`,
+
+  task: `
+<p>Build the plain-JavaScript version of the same store. Define two error
+classes and one <code>TaskStore</code> class.</p>
+<ol>
+  <li>Define <code>ValidationError</code> and <code>NotFoundError</code>, each a
+      subclass of <code>Error</code> whose constructor calls
+      <code>super(message)</code> and sets <code>this.name</code> to its own
+      class name.</li>
+  <li><code>TaskStore</code>'s constructor sets <code>this.tasks = []</code> and
+      <code>this.nextId = 1</code>.</li>
+  <li><code>add(title, priority = 1)</code>: if <code>title</code> is not a
+      string or is empty/whitespace, throw a <code>ValidationError</code>.
+      Otherwise create <code>{ id, title, priority, done: false }</code> using
+      the next id (which then increments), push it, and return it.</li>
+  <li><code>get(id)</code>: use <code>find</code> to locate the task; if there is
+      none, throw a <code>NotFoundError</code>. Otherwise return it.</li>
+  <li><code>complete(id)</code>: look the task up with <code>get</code>, set
+      <code>done</code> to <code>true</code>, and return it.</li>
+  <li><code>pending()</code>: return a <code>filter</code>ed array of the
+      not-done tasks.</li>
+  <li><code>summary()</code>: use <code>reduce</code> to return
+      <code>{ total, done, pending }</code> counts.</li>
+</ol>`,
+
+  starter: `// 1. Two custom error subclasses
+class ValidationError extends Error {
+  constructor(message) {
+    // TODO: super(message) and set this.name
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message) {
+    // TODO: super(message) and set this.name
+  }
+}
+
+// 2-7. The in-memory store
+class TaskStore {
+  constructor() {
+    // TODO: this.tasks and this.nextId
+  }
+
+  add(title, priority = 1) {
+    // TODO: validate, build the task, push it, return it
+  }
+
+  get(id) {
+    // TODO: find by id or throw NotFoundError
+  }
+
+  complete(id) {
+    // TODO: get the task, mark done, return it
+  }
+
+  pending() {
+    // TODO: filter to not-done tasks
+    return [];
+  }
+
+  summary() {
+    // TODO: reduce to { total, done, pending }
+    return { total: 0, done: 0, pending: 0 };
+  }
+}
+`,
+
+  exportNames: ["TaskStore", "ValidationError", "NotFoundError"],
+
+  requirements: [
+    { pattern: /class\s+TaskStore/, message: "Define a TaskStore class" },
+    { pattern: /class\s+\w*Error\s+extends\s+Error/, message: "Define a custom Error subclass" },
+    { pattern: /\.(find|filter|reduce)\s*\(/, message: "Use array-iteration methods (find/filter/reduce)" },
+    { pattern: /throw\s+new/, message: "Throw a custom error on bad input or a missing task" },
+  ],
+
+  tests: [
+    { name: "add returns a task with id 1, not done", run: (x) => {
+        const store = new x.TaskStore();
+        expectDeepEqual(store.add("Write", 2), { id: 1, title: "Write", priority: 2, done: false });
+      } },
+    { name: "ids auto-increment across adds", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        expectEqual(store.add("b").id, 2);
+      } },
+    { name: "add with an empty title throws ValidationError", run: (x) => {
+        const store = new x.TaskStore();
+        try { store.add("   "); } catch (e) { expectTruthy(e instanceof x.ValidationError); return; }
+        throw new Error("expected add('   ') to throw");
+      } },
+    { name: "get throws NotFoundError for a missing id", run: (x) => {
+        const store = new x.TaskStore();
+        try { store.get(99); } catch (e) { expectTruthy(e instanceof x.NotFoundError); return; }
+        throw new Error("expected get(99) to throw");
+      } },
+    { name: "complete marks a task done", run: (x) => {
+        const store = new x.TaskStore();
+        const t = store.add("ship");
+        expectEqual(store.complete(t.id).done, true);
+      } },
+    { name: "pending excludes completed tasks", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        const b = store.add("b");
+        store.complete(b.id);
+        expectDeepEqual(store.pending().map((t) => t.title), ["a"]);
+      } },
+    { name: "summary counts total/done/pending", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        store.add("b");
+        store.complete(store.add("c").id);
+        expectDeepEqual(store.summary(), { total: 3, done: 1, pending: 2 });
+      } },
+    { name: "custom errors carry a name, message, and stack", run: (x) => {
+        const err = new x.NotFoundError("nope");
+        expectTruthy(err instanceof x.NotFoundError);
+        expectEqual(err.name, "NotFoundError");
+        expectEqual(err.message, "nope");
+        expectTruthy(typeof err.stack === "string");
+      } },
+  ],
+
+  solution: `class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
+class TaskStore {
+  constructor() {
+    this.tasks = [];
+    this.nextId = 1;
+  }
+
+  add(title, priority = 1) {
+    if (typeof title !== "string" || title.trim() === "") {
+      throw new ValidationError("title must be a non-empty string");
+    }
+    const task = { id: this.nextId++, title, priority, done: false };
+    this.tasks.push(task);
+    return task;
+  }
+
+  get(id) {
+    const task = this.tasks.find((t) => t.id === id);
+    if (!task) {
+      throw new NotFoundError("no task with id " + id);
+    }
+    return task;
+  }
+
+  complete(id) {
+    const task = this.get(id);
+    task.done = true;
+    return task;
+  }
+
+  pending() {
+    return this.tasks.filter((t) => !t.done);
+  }
+
+  summary() {
+    return this.tasks.reduce(
+      (acc, t) => {
+        acc.total += 1;
+        if (t.done) acc.done += 1;
+        else acc.pending += 1;
+        return acc;
+      },
+      { total: 0, done: 0, pending: 0 }
+    );
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td>Task shape</td><td>a typed <code>class Task</code> property</td><td>whatever object you construct</td></tr>
+  <tr><td>Bad input</td><td>rejected by a type hint at the call boundary</td><td>rejected only if you <code>throw</code></td></tr>
+  <tr><td>Missing lookup</td><td>a return type forces you to return or throw</td><td><code>find</code> returns <code>undefined</code> silently</td></tr>
+  <tr><td>Aggregate</td><td><code>array_reduce</code> with a seed array</td><td><code>reduce</code> with a seed object</td></tr>
+</table>
+<p>The lesson of the whole course lives in one line: <code>this.tasks.find(...)</code>
+returns a task <em>or</em> <code>undefined</code>, and the runtime will not stop
+you from reading <code>.done</code> off <code>undefined</code>. The
+<code>if (!task) throw</code> guard is you doing, by hand, the check that a PHP
+return-type declaration or a null check on a nullable return would force you to
+do at the language level. Every place PHP's type system would stop you, runtime
+JavaScript code has to earn the same safety by hand.</p>
+<p>Two other habits carried through here. Custom <code>Error</code> subclasses
+let callers tell <em>why</em> something failed with <code>instanceof</code>
+instead of string-matching messages — the same pattern as extending PHP's
+<code>Exception</code> and catching a specific subclass — but only because each
+constructor sets <code>this.name</code>. And the array methods (<code>find</code>,
+<code>filter</code>, <code>reduce</code>) stayed the workhorses: they read like
+PHP's <code>array_filter</code> and <code>array_reduce</code>, just called as
+methods on the array itself, and they no longer promise anything about what the
+elements are. That promise is now your job.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Classes & Properties</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Classes & Properties",
+
+  intro: `
+<p>Kotlin classes will feel familiar, but the syntax is dramatically tighter than
+TypeScript's. The star of the show is the <em>primary constructor</em>: you
+declare a class's parameters right after its name, and prefixing one with
+<code>val</code> or <code>var</code> turns it into a property in the same breath.
+No <code>this.x = x</code> boilerplate, no separate field declarations.</p>
+<table>
+  <tr><th>TypeScript</th><th>Kotlin</th></tr>
+  <tr><td><code>class P { constructor(public name: string) {} }</code></td><td><code>class P(val name: String)</code></td></tr>
+  <tr><td><code>readonly</code> field</td><td><code>val</code> property</td></tr>
+  <tr><td>mutable field</td><td><code>var</code> property</td></tr>
+  <tr><td><code>new P("Ada")</code></td><td><code>P("Ada")</code> (no <code>new</code>)</td></tr>
+  <tr><td><code>get x() { … }</code></td><td><code>val x get() = …</code></td></tr>
+</table>
+<p>A <code>val</code> constructor parameter is a read-only property (like
+TypeScript's <code>readonly</code>); a <code>var</code> parameter is mutable. Any
+setup logic that a primary constructor can't express inline goes in an
+<code>init { }</code> block, which runs as part of construction. Computed
+properties use <code>get()</code>, and a mutable property can intercept writes
+with <code>set(value)</code> using the magic <code>field</code> backing
+identifier.</p>`,
+
+  typescript: `class BankAccount {
+  balance: number;
+  private _note = "";
+
+  constructor(readonly owner: string, startingBalance: number) {
+    if (startingBalance < 0) throw new Error("negative");
+    this.balance = startingBalance;
+  }
+
+  get summary(): string {
+    return \`\${this.owner} has \${this.balance}\`;
+  }
+
+  set note(value: string) { this._note = value.trim(); }
+  get note(): string { return this._note; }
+
+  deposit(amount: number): void { this.balance += amount; }
+  withdraw(amount: number): boolean {
+    if (amount > this.balance) return false;
+    this.balance -= amount;
+    return true;
+  }
+}`,
+
+  task: `
+<p>Build a <code>BankAccount</code> class. No <code>class</code>-less top-level
+tricks here — this lesson is about classes:</p>
+<ol>
+  <li>Give it a primary constructor <code>(val owner: String, startingBalance:
+      Int)</code>. <code>owner</code> is a read-only property; use
+      <code>startingBalance</code> to initialize a <code>var balance</code>.</li>
+  <li>Add an <code>init { }</code> block that calls
+      <code>require(startingBalance &gt;= 0)</code> so negative balances throw.</li>
+  <li>Add a computed <code>val summary: String</code> with a custom
+      <code>get()</code> returning <code>"&lt;owner&gt; has &lt;balance&gt;"</code>.</li>
+  <li>Add a <code>var note: String = ""</code> whose custom <code>set(value)</code>
+      stores <code>value.trim()</code> into <code>field</code>.</li>
+  <li>Add <code>deposit(amount)</code> (adds to <code>balance</code>) and
+      <code>withdraw(amount): Boolean</code> (returns <code>false</code> if
+      <code>amount &gt; balance</code>, otherwise subtracts and returns
+      <code>true</code>).</li>
+</ol>`,
+
+  starter: `class BankAccount(val owner: String, startingBalance: Int) {
+    // A mutable property initialized from a constructor parameter.
+    var balance: Int = 0 // TODO: start from startingBalance
+
+    // A property with a custom setter that trims the incoming value.
+    var note: String = ""
+
+    // TODO: an init { } block that require()s startingBalance >= 0
+
+    // A computed, read-only property.
+    val summary: String
+        get() = "" // TODO: "<owner> has <balance>"
+
+    fun deposit(amount: Int) {
+        // TODO
+    }
+
+    fun withdraw(amount: Int): Boolean {
+        return false // TODO
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+BankAccount\s*\(\s*val\s+owner/, message: "Declare owner as a val in the primary constructor" },
+    { pattern: /\binit\s*\{/, message: "Use an init { } block to validate the starting balance" },
+    { pattern: /\bget\(\)\s*=/, message: "Give summary a computed custom getter with get()" },
+    { pattern: /\bset\(\s*\w+\s*\)/, message: "Give note a custom setter with set(value)" },
+  ],
+
+  tests: [
+    { name: "owner is a read-only property", code: "        val a = BankAccount(\"Ada\", 100)\n        expect_eq(a.owner, \"Ada\")" },
+    { name: "balance starts from the constructor argument", code: "        val a = BankAccount(\"Ada\", 100)\n        expect_eq(a.balance, 100)" },
+    { name: "deposit adds to the balance", code: "        val a = BankAccount(\"Ada\", 100)\n        a.deposit(50)\n        expect_eq(a.balance, 150)" },
+    { name: "withdraw subtracts and returns true", code: "        val a = BankAccount(\"Ada\", 100)\n        val ok = a.withdraw(40)\n        expect_true(ok)\n        expect_eq(a.balance, 60)" },
+    { name: "withdraw fails when funds are insufficient", code: "        val a = BankAccount(\"Bo\", 20)\n        expect_true(!a.withdraw(100))\n        expect_eq(a.balance, 20)" },
+    { name: "summary is a computed property", code: "        expect_eq(BankAccount(\"Ada\", 100).summary, \"Ada has 100\")" },
+    { name: "note setter trims the value", code: "        val a = BankAccount(\"Cy\", 0)\n        a.note = \"  hello  \"\n        expect_eq(a.note, \"hello\")" },
+  ],
+
+  solution: `class BankAccount(val owner: String, startingBalance: Int) {
+    var balance: Int = startingBalance
+        private set
+
+    var note: String = ""
+        set(value) {
+            field = value.trim()
+        }
+
+    init {
+        require(startingBalance >= 0) { "starting balance cannot be negative" }
+    }
+
+    val summary: String
+        get() = "$owner has $balance"
+
+    fun deposit(amount: Int) {
+        balance += amount
+    }
+
+    fun withdraw(amount: Int): Boolean {
+        if (amount > balance) return false
+        balance -= amount
+        return true
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Kotlin</th></tr>
+  <tr><td>Property in constructor</td><td><code>constructor(public name)</code></td><td><code>class C(val name: String)</code></td></tr>
+  <tr><td>Read-only property</td><td><code>readonly</code></td><td><code>val</code></td></tr>
+  <tr><td>Mutable property</td><td>plain field</td><td><code>var</code></td></tr>
+  <tr><td>Construction-time setup</td><td>constructor body</td><td><code>init { }</code></td></tr>
+  <tr><td>Computed property</td><td><code>get x() {}</code></td><td><code>val x get() = …</code></td></tr>
+  <tr><td>Write interceptor</td><td><code>set x(v) {}</code></td><td><code>set(value) { field = … }</code></td></tr>
+  <tr><td>Read-only from outside</td><td><code>private set</code>? no</td><td><code>var x = 0; private set</code></td></tr>
+</table>
+<p>The <code>field</code> identifier inside a custom setter (or getter) is
+Kotlin's <em>backing field</em> — it's the storage behind the property, and you
+must use it instead of <code>this.note</code> to avoid infinite recursion (a
+TypeScript setter that assigns <code>this.note</code> recurses too; that's why
+you kept a separate <code>_note</code>). A <code>private set</code> gives you a
+property that anyone can read but only the class can write — Kotlin's clean
+answer to a public getter with a private field. Note there is no <code>new</code>
+keyword: <code>BankAccount("Ada", 100)</code> constructs an instance directly.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

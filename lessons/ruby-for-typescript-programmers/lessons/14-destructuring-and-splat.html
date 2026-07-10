@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring &amp; Splat</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>TypeScript's <code>const [a, b] = pair</code> becomes even lighter in Ruby:
+<code>a, b = pair</code> — no brackets needed on the left. Multiple assignment
+is built into the assignment operator itself, which is why the classic swap is
+just <code>a, b = b, a</code>. The rest operator <code>...</code> becomes the
+<strong>splat</strong> <code>*</code>, and unlike TS it isn't confined to the
+last position: <code>first, *rest = list</code> works, and so does
+<code>*init, last = list</code> — grabbing everything <em>up to</em> the last
+element, which TS simply can't express in a destructuring pattern.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>const [a, b] = pair;</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td><code>[a, b] = [b, a];</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td><code>const [first, ...rest] = list;</code></td><td><code>first, *rest = list</code></td></tr>
+  <tr><td>(no leading-rest pattern)</td><td><code>*init, last = list</code></td></tr>
+  <tr><td><code>function sum(...nums: number[])</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td><code>[...a, ...b]</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td><code>{ ...defaults, ...overrides }</code></td><td><code>defaults.merge(overrides)</code></td></tr>
+</table>
+<p>The same splat collects variadic method arguments —
+<code>def sum(*nums)</code> gives you <code>nums</code> as an array — and a
+<strong>double splat</strong> <code>**opts</code> scoops up loose keyword
+arguments into a hash, Ruby's answer to an options object. For merging hashes
+there's no spread-into-braces trick; the explicit method is
+<code>defaults.merge(overrides)</code>, with the right-hand side winning ties,
+exactly like the later spread in TS.</p>`,
+
+  typescript: `const pair: [number, number] = [1, 2];
+let [a, b] = pair;
+[a, b] = [b, a];                       // swap
+
+const [first, ...rest] = [1, 2, 3, 4]; // 1, [2, 3, 4]
+
+function sum(...nums: number[]): number {
+  return nums.reduce((t, n) => t + n, 0);
+}
+sum(1, 2, 3, 4);                       // 10
+
+type Settings = { theme: string; size: number };
+const defaults: Settings = { theme: "light", size: 10 };
+const merged = { ...defaults, ...{ theme: "dark" } };
+// { theme: "dark", size: 10 }`,
+
+  task: `
+<p>Translate each destructuring idiom:</p>
+<ol>
+  <li><code>swap(pair)</code> — destructure with <code>a, b = pair</code>
+      (no brackets!), then return <code>[b, a]</code>.</li>
+  <li><code>head_tail(list)</code> — split with <code>first, *rest = list</code>
+      and return the two-element array <code>[first, rest]</code>, where
+      <code>rest</code> is itself an array.</li>
+  <li><code>sum(*nums)</code> — a variadic method: the splat parameter
+      collects the arguments into an array; return <code>nums.sum</code>.</li>
+  <li><code>merge_settings(defaults, overrides)</code> — merge two hashes with
+      <code>defaults.merge(overrides)</code>; overrides win, defaults survive.</li>
+</ol>`,
+
+  starter: `# 1. swap: a, b = pair — then [b, a] is the last expression.
+def swap(pair)
+  raise NotImplementedError, "TODO: destructure, return the pair reversed"
+end
+
+# 2. head_tail: first, *rest = list — the splat soaks up the remainder.
+def head_tail(list)
+  raise NotImplementedError, "TODO: return [first, rest]"
+end
+
+# 3. sum: the splat in the SIGNATURE collects arguments into an array.
+def sum(*nums)
+  raise NotImplementedError, "TODO: nums.sum"
+end
+
+# 4. merge_settings: no spread syntax for hashes — .merge is the tool.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: defaults.merge(overrides)"
+end
+`,
+
+  requirements: [
+    { pattern: /\*\w+/, message: "Use a splat (*name) somewhere" },
+    { pattern: /,\s*\*/, message: "Destructure with a rest position: first, *rest = list" },
+    { pattern: /\.merge/, message: "Combine the hashes with .merge" },
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Give sum a splat parameter: def sum(*nums)" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "  expect_eq(swap([1, 2]), [2, 1])" },
+    { name: 'swap(["left", "right"]) returns ["right", "left"]',
+      code: '  expect_eq(swap(["left", "right"]), ["right", "left"])' },
+    { name: "head_tail([1, 2, 3, 4]) returns [1, [2, 3, 4]]",
+      code: "  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])" },
+    { name: "head_tail([9]) returns [9, []]",
+      code: "  expect_eq(head_tail([9]), [9, []])" },
+    { name: "sum(1, 2, 3, 4) returns 10 and sum() returns 0",
+      code: "  expect_eq(sum(1, 2, 3, 4), 10)\n  expect_eq(sum(), 0)" },
+    { name: "merge_settings: overrides win, defaults survive",
+      code: '  expect_eq(merge_settings({ theme: "light", size: 10 }, { theme: "dark" }), { theme: "dark", size: 10 })' },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  [b, a]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Array destructuring</td><td><code>const [a, b] = pair;</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td>Swap</td><td><code>[a, b] = [b, a];</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Rest (trailing)</td><td><code>const [x, ...rest] = list;</code></td><td><code>x, *rest = list</code></td></tr>
+  <tr><td>Rest (leading)</td><td>not expressible</td><td><code>*init, last = list</code></td></tr>
+  <tr><td>Variadic params</td><td><code>fn(...nums: number[])</code></td><td><code>def fn(*nums)</code></td></tr>
+  <tr><td>Keyword soup</td><td><code>opts: Options</code> object</td><td><code>def fn(**opts)</code></td></tr>
+  <tr><td>Array spread</td><td><code>[...a, ...b]</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td>Object/hash merge</td><td><code>{ ...d, ...o }</code></td><td><code>d.merge(o)</code></td></tr>
+</table>
+<p>One habit to unlearn: Ruby has no hash destructuring in plain assignment —
+<code>const { theme } = settings</code> has no direct twin; you write
+<code>theme = settings[:theme]</code> or use keyword arguments in a method
+signature. And note that multiple assignment is forgiving, not strict: extra
+values are silently dropped and missing ones become <code>nil</code>, so
+<code>a, b = [1, 2, 3]</code> runs happily where TS would at least let you
+see the tuple type disagree.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

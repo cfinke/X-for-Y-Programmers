@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: List Assignment &amp; Spread</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "List Assignment & Spread",
+
+  intro: `
+<p>Ruby's multiple assignment — <code>a, b = pair</code> — exists in PHP with
+one syntactic demand: brackets around the targets.
+<code>[$a, $b] = $pair;</code> unpacks a two-element array, and the classic
+swap <code>a, b = b, a</code> becomes <code>[$a, $b] = [$b, $a];</code>.
+Because PHP arrays are also hashes, destructuring goes further than Ruby's:
+<code>['name' =&gt; $n] = $user;</code> pulls values out by key — roughly
+what Ruby 3's rightward pattern matching gives you via
+<code>deconstruct_keys</code>, but built in and unceremonious.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>a, b = pair</code></td><td><code>[$a, $b] = $pair;</code> (brackets required)</td></tr>
+  <tr><td><code>a, b = b, a</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td><code>n = user[:name]</code> (or pattern matching)</td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+  <tr><td><code>def sum(*nums)</code></td><td><code>function sum(int ...$nums)</code></td></tr>
+  <tr><td><code>f(*args)</code></td><td><code>f(...$args)</code></td></tr>
+  <tr><td><code>[*a, *b]</code></td><td><code>[...$a, ...$b]</code></td></tr>
+</table>
+<p>The splat family swaps its sigil: Ruby's <code>*</code> is PHP's
+<code>...</code>, in all three positions. A variadic parameter is
+<code>int ...$nums</code> (with a type, even — every collected element is
+checked), unpacking at a call site is <code>f(...$args)</code>, and array
+literals spread with <code>[...$a, ...$b]</code>. Spread even covers
+string keys (PHP 8.1+): later keys overwrite earlier ones, which makes
+<code>[...$defaults, ...$overrides]</code> the array-spelling of
+<code>defaults.merge(overrides)</code>.</p>`,
+
+  ruby: `def swap(pair)
+  a, b = pair
+  [b, a]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+
+a, b = b, a               # the classic swap, no temp variable
+first, *rest = [1, 2, 3]  # splat on the left
+swap([1, 2])              # [2, 1]
+sum(1, 2, 3)              # 6
+sum(*[4, 5, 6])           # splat at the call site
+merge_settings({ theme: "light" }, { theme: "dark" })
+# => { theme: "dark" }`,
+
+  task: `
+<p>Port the Ruby to PHP:</p>
+<ol>
+  <li><code>swap(array $pair): array</code> — unpack with
+      <code>[$a, $b] = $pair;</code> and return <code>[$b, $a]</code>.
+      (Yes, <code>return [$pair[1], $pair[0]];</code> would work — use list
+      assignment anyway; a requirement checks for it.)</li>
+  <li><code>sum(int ...$nums): int</code> — <code>*nums</code> becomes the
+      typed variadic <code>int ...$nums</code>; inside the function
+      <code>$nums</code> is a plain array, so <code>array_sum</code>
+      finishes the job. <code>sum()</code> with no arguments must return
+      <code>0</code>.</li>
+  <li><code>merge_settings(array $defaults, array $overrides): array</code> —
+      <code>Hash#merge</code> for string-keyed arrays:
+      <code>return [...$defaults, ...$overrides];</code>. Keys in
+      <code>$overrides</code> win.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. a, b = pair  ->  [$a, $b] = $pair;  (brackets required)
+function swap(array $pair): array {
+    throw new Exception("TODO: implement swap");
+}
+
+// 2. def sum(*nums)  ->  int ...$nums — $nums is an ordinary array inside.
+function sum(int ...$nums): int {
+    throw new Exception("TODO: implement sum");
+}
+
+// 3. defaults.merge(overrides)  ->  [...$defaults, ...$overrides]
+function merge_settings(array $defaults, array $overrides): array {
+    throw new Exception("TODO: implement merge_settings");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\s*\$\w+\s*,\s*\$\w+\s*\]\s*=/, message: "Unpack with list assignment: [$a, $b] = ..." },
+    { pattern: /\.\.\.\$/, message: "Use the ... splat (variadic parameter and/or spread)" },
+    { pattern: /\[\s*\.\.\./, message: "Merge by spreading into an array literal: [...$defaults, ...]" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "expect_eq(swap([1, 2]), [2, 1]);" },
+    { name: "swap(['low', 'high']) returns ['high', 'low']",
+      code: "expect_eq(swap(['low', 'high']), ['high', 'low']);" },
+    { name: "sum(1, 2, 3) returns 6, and sum() returns 0",
+      code: "expect_eq(sum(1, 2, 3), 6);\nexpect_eq(sum(), 0);" },
+    { name: "sum(...[4, 5, 6]) — spreading at the call site — returns 15",
+      code: "expect_eq(sum(...[4, 5, 6]), 15);" },
+    { name: "merge_settings: overrides win, other defaults survive",
+      code: "$merged = merge_settings(\n  ['theme' => 'light', 'font_size' => 14],\n  ['theme' => 'dark', 'lang' => 'en']\n);\nexpect_eq($merged, ['theme' => 'dark', 'font_size' => 14, 'lang' => 'en']);" },
+    { name: "merge_settings with empty overrides returns the defaults",
+      code: "expect_eq(merge_settings(['theme' => 'light'], []), ['theme' => 'light']);" },
+  ],
+
+  solution: `<?php
+
+function swap(array $pair): array {
+    [$a, $b] = $pair;
+    return [$b, $a];
+}
+
+function sum(int ...$nums): int {
+    return array_sum($nums);
+}
+
+function merge_settings(array $defaults, array $overrides): array {
+    return [...$defaults, ...$overrides];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Multiple assignment</td><td><code>a, b = pair</code></td><td><code>[$a, $b] = $pair;</code></td></tr>
+  <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td>Keyed destructuring</td><td><code>deconstruct_keys</code> / pattern match</td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+  <tr><td>Skip an element</td><td><code>_, b = pair</code></td><td><code>[, $b] = $pair;</code></td></tr>
+  <tr><td>Variadic param</td><td><code>def f(*args)</code></td><td><code>function f(int ...$args)</code> — typed!</td></tr>
+  <tr><td>Unpack a call</td><td><code>f(*args)</code></td><td><code>f(...$args)</code></td></tr>
+  <tr><td>Spread literal</td><td><code>[*a, *b]</code></td><td><code>[...$a, ...$b]</code></td></tr>
+  <tr><td>Merge hashes</td><td><code>defaults.merge(overrides)</code></td><td><code>[...$defaults, ...$overrides]</code> (string keys, 8.1+)</td></tr>
+</table>
+<p>One asymmetry to note: PHP has no splat on the <em>left</em> of an
+assignment — Ruby's <code>first, *rest = arr</code> has no direct
+equivalent (reach for <code>array_shift</code> or <code>array_slice</code>).
+And when spreading, integer keys are renumbered while string keys are
+preserved-and-overwritten — so the merge idiom is for string-keyed settings
+arrays, exactly like the ones here.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

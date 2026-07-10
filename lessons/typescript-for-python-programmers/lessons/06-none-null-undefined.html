@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: None, Null &amp; Undefined</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "None, Null & Undefined",
+
+  intro: `
+<p>Python has exactly one "nothing" value: <code>None</code>. TypeScript
+splits it in two. <code>undefined</code> is what the language gives you
+when something simply is not there — a missing object key, an omitted
+optional parameter, an out-of-range array index. <code>null</code> is what
+you assign deliberately to say "no value here", the way you would return
+<code>None</code> from a lookup that failed. Union types read just like
+modern Python: <code>str | None</code> becomes
+<code>string | null</code>.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>None</code></td><td><code>null</code> (deliberate) / <code>undefined</code> (missing)</td></tr>
+  <tr><td><code>str | None</code>, <code>Optional[str]</code></td><td><code>string | null</code></td></tr>
+  <tr><td><code>d.get("k")</code> → <code>None</code></td><td><code>d["k"]</code> → <code>undefined</code></td></tr>
+  <tr><td><code>u.addr.city if u and u.addr else None</code></td><td><code>u?.addr?.city</code></td></tr>
+  <tr><td><code>x if x is not None else "d"</code></td><td><code>x ?? "d"</code></td></tr>
+</table>
+<p>Two operators do the heavy lifting. Optional chaining <code>?.</code>
+collapses Python's nested <code>if x is not None</code> checks: if anything
+along <code>user?.address?.city</code> is null or undefined, the whole
+expression is <code>undefined</code> instead of crashing. Nullish
+coalescing <code>??</code> supplies a fallback — like Python's
+<code>or</code>, but stricter: Python's <code>name or "default"</code> also
+swallows <code>""</code>, <code>0</code>, and <code>[]</code>, while
+<code>??</code> falls back <em>only</em> on <code>null</code> and
+<code>undefined</code>. An empty string or a zero passes through
+<code>??</code> untouched — usually exactly what you wanted.</p>`,
+
+  python: `emails: dict[str, str] = {
+    "ada": "ada@example.com",
+    "grace": "grace@example.com",
+}
+
+def find_email(name: str) -> str | None:
+    return emails.get(name)  # .get returns None when missing
+
+def get_city(user: dict | None) -> str:
+    if user is not None:
+        address = user.get("address")
+        if address is not None:
+            return address.get("city", "Unknown")
+    return "Unknown"
+
+def with_default(value: str | None, fallback: str) -> str:
+    return value if value is not None else fallback
+    # NOT "value or fallback" — that would swallow "" too!`,
+
+  task: `
+<p>Rewrite the Python lookups as TypeScript, using <code>?.</code> and
+<code>??</code> instead of <code>is not None</code> pyramids:</p>
+<ol>
+  <li><code>findEmail(name: string): string | null</code> — look
+      <code>name</code> up in a lookup table containing
+      <code>ada: "ada@example.com"</code> and
+      <code>grace: "grace@example.com"</code>. Return the email, or
+      <code>null</code> for a miss (a missing key reads as
+      <code>undefined</code> — convert it with <code>?? null</code>).</li>
+  <li><code>getCity(user: { address?: { city?: string } } | null |
+      undefined): string</code> — return
+      <code>user.address.city</code> if the whole chain exists, else
+      <code>"Unknown"</code>. One line: optional chaining
+      <code>?.</code> plus <code>??</code>.</li>
+  <li><code>withDefault(value: string | null | undefined, fallback:
+      string): string</code> — return <code>value ?? fallback</code>.
+      Unlike Python's <code>or</code>, this must return <code>""</code>
+      unchanged when given an empty string — there is a test for it.</li>
+</ol>`,
+
+  starter: `// The lookup table. A missing key reads as undefined (no KeyError).
+const emails: Record<string, string> = {
+  ada: "ada@example.com",
+  grace: "grace@example.com",
+};
+
+// 1. Python: emails.get(name)  (returns None on a miss)
+//    TODO: return the email, converting undefined to null with ?? null.
+function findEmail(name: string): string | null {
+  return null;
+}
+
+// 2. Python: nested "if x is not None" checks.
+//    TODO: one line with optional chaining ?. and a ?? fallback.
+function getCity(user: { address?: { city?: string } } | null | undefined): string {
+  return "Unknown";
+}
+
+// 3. Python: value if value is not None else fallback
+//    TODO: use ?? — and note it must let "" through, unlike Python's "or".
+function withDefault(value: string | null | undefined, fallback: string): string {
+  return fallback;
+}
+`,
+
+  exportNames: ["findEmail", "getCity", "withDefault"],
+
+  requirements: [
+    { pattern: /\|\s*null/, message: "Use a union with null (string | null) — the TS spelling of str | None" },
+    { pattern: /\?\./, message: "Use optional chaining ?. instead of nested 'is not None' checks" },
+    { pattern: /\?\?/, message: "Use nullish coalescing ?? to supply the fallback" },
+  ],
+
+  tests: [
+    { name: 'findEmail("ada") returns "ada@example.com"', run: (x) => expectEqual(x.findEmail("ada"), "ada@example.com") },
+    { name: 'findEmail("bob") returns null (not undefined)', run: (x) => expectEqual(x.findEmail("bob"), null) },
+    { name: 'getCity({ address: { city: "London" } }) returns "London"', run: (x) => expectEqual(x.getCity({ address: { city: "London" } }), "London") },
+    { name: 'getCity(null) and getCity({}) both return "Unknown"', run: (x) => {
+        expectEqual(x.getCity(null), "Unknown");
+        expectEqual(x.getCity({}), "Unknown");
+      } },
+    { name: 'withDefault(null, "N/A") returns "N/A"', run: (x) => expectEqual(x.withDefault(null, "N/A"), "N/A") },
+    { name: '?? preserves falsy-but-present values: withDefault("", "N/A") returns ""', run: (x) => expectEqual(x.withDefault("", "N/A"), "") },
+  ],
+
+  solution: `const emails: Record<string, string> = {
+  ada: "ada@example.com",
+  grace: "grace@example.com",
+};
+
+function findEmail(name: string): string | null {
+  return emails[name] ?? null;
+}
+
+function getCity(user: { address?: { city?: string } } | null | undefined): string {
+  return user?.address?.city ?? "Unknown";
+}
+
+function withDefault(value: string | null | undefined, fallback: string): string {
+  return value ?? fallback;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Deliberate "no value"</td><td><code>None</code></td><td><code>null</code></td></tr>
+  <tr><td>"Was never set"</td><td>also <code>None</code></td><td><code>undefined</code> (missing keys, omitted params)</td></tr>
+  <tr><td>Optional type</td><td><code>str | None</code> / <code>Optional[str]</code></td><td><code>string | null</code></td></tr>
+  <tr><td>Safe navigation</td><td><code>if u is not None: ...</code></td><td><code>u?.address?.city</code></td></tr>
+  <tr><td>Default on missing</td><td><code>x if x is not None else d</code></td><td><code>x ?? d</code></td></tr>
+  <tr><td>Truthiness default</td><td><code>x or d</code> (swallows <code>""</code>, <code>0</code>)</td><td><code>x || d</code> — usually you want <code>??</code></td></tr>
+  <tr><td>Equality check</td><td><code>x is None</code></td><td><code>x === null</code>, <code>x === undefined</code></td></tr>
+</table>
+<p>Rule of thumb: your own APIs should <em>return</em> <code>null</code>
+when they mean "looked, found nothing" (like <code>find_email</code>
+returning <code>None</code>), while <code>undefined</code> is what the
+language hands you for things that were never there. On the reading side,
+<code>?.</code> and <code>??</code> handle both, so most code never needs
+to distinguish them — but reach for <code>??</code> rather than
+<code>||</code> whenever <code>""</code> or <code>0</code> is a legitimate
+value.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

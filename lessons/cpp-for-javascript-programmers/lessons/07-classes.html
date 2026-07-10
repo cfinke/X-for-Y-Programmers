@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Classes",
+
+  intro: `
+<p>A C++ <code>class</code> looks a lot like a JavaScript one, but with two
+habits flipped. First, access is <em>closed by default</em>: everything in a
+<code>class</code> is <code>private</code> until you write <code>public:</code>.
+(A <code>struct</code> is the same thing with the default flipped to
+<code>public</code> — that is the <em>only</em> difference.) Second, members are
+grouped under a single <code>public:</code> or <code>private:</code> label rather
+than tagged one by one.</p>
+<table>
+  <tr><th>JavaScript</th><th>C++</th></tr>
+  <tr><td><code>class Counter {</code></td><td><code>class Counter {</code></td></tr>
+  <tr><td><code>#count = 0;</code></td><td><code>private:\n  int count_ = 0;</code></td></tr>
+  <tr><td><code>constructor(n) { this.#count = n; }</code></td><td><code>Counter(int n) : count_(n) {}</code></td></tr>
+  <tr><td><code>increment() { this.#count++; }</code></td><td><code>void increment() { count_++; }</code></td></tr>
+  <tr><td><code>get() { return this.#count; }</code></td><td><code>int get() const { return count_; }</code></td></tr>
+</table>
+<p>The <code>: count_(n)</code> piece is a <strong>member initializer list</strong>.
+It runs before the constructor body and builds each member directly from the
+given value — the idiomatic way to initialize members in C++. The trailing
+<code>const</code> on <code>get()</code> is a promise to the compiler: this
+method does not modify the object. You call it on <code>const</code> objects,
+and the compiler rejects any accidental write to a member. There is no
+<code>this.</code> prefix — members are named directly.</p>`,
+
+  javascript: `class BankAccount {
+  #balance;
+  #owner;
+
+  constructor(owner, opening) {
+    this.#owner = owner;
+    this.#balance = opening;
+  }
+
+  deposit(amount) {
+    this.#balance += amount;
+  }
+
+  getBalance() {
+    return this.#balance;
+  }
+
+  getOwner() {
+    return this.#owner;
+  }
+}`,
+
+  task: `
+<p>Write a <code>BankAccount</code> class:</p>
+<ol>
+  <li>Two <strong>private</strong> members: <code>std::string owner_</code> and
+      <code>int balance_</code>.</li>
+  <li>A constructor <code>BankAccount(std::string owner, int opening)</code> that
+      uses a <strong>member initializer list</strong>
+      (<code>: owner_(owner), balance_(opening)</code>) — do not assign inside
+      the body.</li>
+  <li>A public <code>void deposit(int amount)</code> that adds to the balance.</li>
+  <li>A public <code>void withdraw(int amount)</code> that subtracts from the
+      balance.</li>
+  <li>Two <strong>const</strong> getters: <code>int balance() const</code> and
+      <code>std::string owner() const</code>.</li>
+</ol>`,
+
+  starter: `class BankAccount {
+private:
+  std::string owner_;
+  int balance_ = 0;
+
+public:
+  BankAccount(std::string owner, int opening) {
+    // TODO: use a member initializer list instead of assigning here
+  }
+
+  void deposit(int amount) {
+    // TODO
+  }
+
+  void withdraw(int amount) {
+    // TODO
+  }
+
+  int balance() const {
+    return 0; // TODO
+  }
+
+  std::string owner() const {
+    return ""; // TODO
+  }
+};
+`,
+
+  requirements: [
+    { pattern: /:\s*owner_\s*\(/, message: "Initialize owner_ with a member initializer list (: owner_(...))" },
+    { pattern: /int\s+balance\s*\(\s*\)\s*const/, message: "Make balance() a const member function" },
+    { pattern: /private\s*:/, message: "Keep the data members under a private: section" },
+  ],
+
+  tests: [
+    { name: "opening balance is stored", code: "    BankAccount a(\"Ada\", 100);\n    expect_eq(a.balance(), 100);" },
+    { name: "owner is stored", code: "    BankAccount a(\"Ada\", 100);\n    expect_eq(a.owner(), std::string(\"Ada\"));" },
+    { name: "deposit adds to the balance", code: "    BankAccount a(\"Rob\", 50);\n    a.deposit(25);\n    expect_eq(a.balance(), 75);" },
+    { name: "withdraw subtracts from the balance", code: "    BankAccount a(\"Rob\", 50);\n    a.withdraw(20);\n    expect_eq(a.balance(), 30);" },
+    { name: "deposits and withdrawals accumulate", code: "    BankAccount a(\"Grace\", 0);\n    a.deposit(100);\n    a.withdraw(40);\n    a.deposit(10);\n    expect_eq(a.balance(), 70);" },
+    { name: "getters work on a const object", code: "    const BankAccount a(\"Linus\", 500);\n    expect_eq(a.balance(), 500);\n    expect_eq(a.owner(), std::string(\"Linus\"));" },
+  ],
+
+  solution: `class BankAccount {
+private:
+  std::string owner_;
+  int balance_ = 0;
+
+public:
+  BankAccount(std::string owner, int opening)
+      : owner_(owner), balance_(opening) {}
+
+  void deposit(int amount) {
+    balance_ += amount;
+  }
+
+  void withdraw(int amount) {
+    balance_ -= amount;
+  }
+
+  int balance() const {
+    return balance_;
+  }
+
+  std::string owner() const {
+    return owner_;
+  }
+};
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>C++</th></tr>
+  <tr><td>Default access</td><td><code>public</code> (or <code>#x</code> for private)</td><td><code>class</code> &rarr; <code>private</code>, <code>struct</code> &rarr; <code>public</code></td></tr>
+  <tr><td>Private data</td><td><code>#x = 0;</code></td><td><code>private:</code> then <code>int x_ = 0;</code></td></tr>
+  <tr><td>Member access</td><td><code>this.#x</code></td><td><code>x_</code> (no <code>this.</code>)</td></tr>
+  <tr><td>Init in constructor</td><td><code>this.#x = n;</code></td><td><code>: x_(n) {}</code> (initializer list)</td></tr>
+  <tr><td>Read-only method</td><td>(none)</td><td><code>int get() const</code></td></tr>
+</table>
+<p>A member initializer list is not just style: members without a default value
+must be constructed somehow, and the list constructs them directly rather than
+default-constructing and then assigning. For a <code>std::string</code> that is
+one construction instead of two operations. Marking read-only methods
+<code>const</code> is the everyday default in C++ — it is what lets a
+<code>const BankAccount</code> still answer <code>balance()</code>. A common
+convention, used here, is a trailing underscore (<code>balance_</code>) on
+private members so a getter can be named <code>balance()</code> without a
+clash.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

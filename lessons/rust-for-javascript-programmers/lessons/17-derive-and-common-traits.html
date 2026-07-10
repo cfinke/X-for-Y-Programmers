@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits &amp; Derive</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>JavaScript hands every object a starter kit for free: you can
+<code>console.log</code> it, compare it with <code>===</code> (identity,
+anyway), and copy it with <code>{...spread}</code>. Rust structs start
+with <em>none</em> of that. A fresh <code>struct Point</code> can't be
+printed, can't be <code>==</code>-compared, can't be duplicated — each
+capability is a <em>trait</em> the type opts into. That sounds like
+boilerplate until you meet <code>#[derive(...)]</code>: an attribute you
+put above the struct, and the compiler writes the implementations for
+you.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>console.log(p)</code> — always works</td><td><code>#[derive(Debug)]</code>, then <code>format!("{:?}", p)</code></td></tr>
+  <tr><td><code>a === b</code> — identity, free (and often wrong)</td><td><code>#[derive(PartialEq)]</code>, then <code>a == b</code> — by value</td></tr>
+  <tr><td><code>{...p}</code> — shallow copy, free</td><td><code>#[derive(Clone)]</code>, then <code>p.clone()</code> — deep</td></tr>
+  <tr><td><code>{}</code> then fill it in</td><td><code>#[derive(Default)]</code>, then <code>Point::default()</code></td></tr>
+</table>
+<p>Notice the upgrade hiding in row two: JS's free <code>===</code>
+compares object <em>identity</em>, which is why
+<code>{x: 1} === {x: 1}</code> is <code>false</code> and you end up
+reaching for <code>JSON.stringify</code> or a lodash
+<code>isEqual</code>. Derived <code>PartialEq</code> compares
+<em>values</em>, field by field — the comparison you actually wanted.
+The pattern to internalize: when the compiler complains that some trait
+"is not implemented" for your struct, the fix is usually one word added
+to the <code>derive</code> list.</p>`,
+
+  javascript: `const a = { x: 1, y: 2 };
+const b = { x: 1, y: 2 };
+
+// Identity comparison: free, but rarely what you meant.
+console.log(a === b);                                  // false!
+console.log(JSON.stringify(a) === JSON.stringify(b));  // the workaround
+
+// Debug printing: free.
+console.log(a);        // { x: 1, y: 2 }
+
+// Copying: free.
+const copy = { ...a };
+
+// In Rust each of these is a trait your struct opts into,
+// and #[derive(...)] writes the implementation for you.`,
+
+  task: `
+<p>The starter defines <code>struct Point</code> with no derives, plus
+three unimplemented functions. Add the derives each one needs and fill
+in the bodies:</p>
+<ol>
+  <li><code>points_equal(a: &amp;Point, b: &amp;Point) -&gt; bool</code> —
+      add <code>PartialEq</code> to a <code>#[derive(...)]</code> on
+      <code>Point</code>, then compare with <code>==</code> (dereference
+      the borrows: <code>*a == *b</code>, or compare <code>a == b</code> —
+      references to <code>PartialEq</code> types compare by value too).</li>
+  <li><code>debug_string(p: &amp;Point) -&gt; String</code> — add
+      <code>Debug</code>, then return <code>format!("{:?}", p)</code>
+      (yields <code>"Point { x: 3, y: 4 }"</code>).</li>
+  <li><code>duplicate(p: &amp;Point) -&gt; Point</code> — add
+      <code>Clone</code>, then return <code>p.clone()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Point starts with NO capabilities: it can't be printed, compared,
+// or copied. Add one #[derive(...)] line above it with the traits the
+// three functions below need.
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// 1. points_equal: needs PartialEq on Point, then == just works.
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// 2. debug_string: needs Debug on Point, then format!("{:?}", p).
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// 3. duplicate: needs Clone on Point, then p.clone().
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Add a #[derive(...)] attribute above struct Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == compares points by value" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} can print a Point" },
+    { pattern: /Clone/, message: "Derive Clone so .clone() can duplicate a Point" },
+  ],
+
+  tests: [
+    { name: "points_equal is true for same coordinates (value, not identity!)",
+      code: 'let a = Point { x: 1, y: 2 };\nlet b = Point { x: 1, y: 2 };\nassert!(points_equal(&a, &b));' },
+    { name: "points_equal is false for different coordinates",
+      code: 'let a = Point { x: 1, y: 2 };\nlet c = Point { x: 1, y: 3 };\nassert!(!points_equal(&a, &c));' },
+    { name: 'debug_string(&Point { x: 3, y: 4 }) returns "Point { x: 3, y: 4 }"',
+      code: 'let p = Point { x: 3, y: 4 };\nassert_eq!(debug_string(&p), "Point { x: 3, y: 4 }");' },
+    { name: "duplicate returns a Point with the same fields",
+      code: 'let p = Point { x: 7, y: -2 };\nlet d = duplicate(&p);\nassert_eq!(d.x, 7);\nassert_eq!(d.y, -2);' },
+    { name: "duplicate is a fresh copy, independent of the original",
+      code: 'let p = Point { x: 1, y: 1 };\nlet mut d = duplicate(&p);\nd.x = 99;\nassert_eq!(p.x, 1);' },
+  ],
+
+  solution: `#[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Capability</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Print for debugging</td><td><code>console.log(p)</code></td><td><code>#[derive(Debug)]</code> + <code>{:?}</code> in <code>format!</code>/<code>println!</code></td></tr>
+  <tr><td>Compare by value</td><td><code>JSON.stringify</code> tricks / lodash <code>isEqual</code></td><td><code>#[derive(PartialEq)]</code> + <code>==</code></td></tr>
+  <tr><td>Copy</td><td><code>{...p}</code> (shallow)</td><td><code>#[derive(Clone)]</code> + <code>.clone()</code> (deep)</td></tr>
+  <tr><td>Empty/default value</td><td><code>{}</code>, <code>0</code>, <code>""</code> by hand</td><td><code>#[derive(Default)]</code> + <code>Point::default()</code></td></tr>
+  <tr><td>Several at once</td><td>—</td><td><code>#[derive(Debug, Clone, PartialEq)]</code></td></tr>
+</table>
+<p>Opt-in sounds like a downgrade from "everything free," but it's the
+same trade Rust makes everywhere: the capabilities a type has are visible
+in its source, and you get the <em>right</em> versions — <code>==</code>
+that compares contents instead of identity, clones that are genuinely
+independent. In practice, most structs you write will carry
+<code>#[derive(Debug, Clone, PartialEq)]</code> from birth, and adding a
+missing trait is a one-word edit the compiler error will name for
+you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

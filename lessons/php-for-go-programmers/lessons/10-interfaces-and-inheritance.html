@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Interfaces, Inheritance & Abstracts</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Interfaces, Inheritance & Abstracts",
+
+  intro: `
+<p>Go's interfaces are satisfied <em>implicitly</em> — write the methods and
+you're in, no declaration anywhere. PHP's are explicit: you define an
+<code>interface</code> and each class states <code>implements Shape</code> up
+front. You lose the retroactive magic; you gain a checked, greppable contract
+— PHP refuses to load a class whose <code>implements</code> promise is
+unkept, the closest thing to a compile error the language offers.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td>interface satisfaction is implicit</td><td><code>class Circle implements Shape</code> — declared, and enforced at load time</td></tr>
+  <tr><td>no inheritance; embed types instead</td><td><code>class Circle extends Shape</code> — one parent, methods inherited</td></tr>
+  <tr><td>interface = method set only</td><td><code>interface</code>; or <code>abstract class</code> = contract <em>plus</em> shared code</td></tr>
+  <tr><td>embedded type's method you must still write</td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td>embedding doesn't chain constructors</td><td><code>parent::__construct(...)</code> does, explicitly</td></tr>
+  <tr><td><code>var s Shape = c</code> (checked at compile)</td><td><code>$c instanceof Shape</code> (checked at runtime)</td></tr>
+</table>
+<p>And yes — inheritance exists. Go deliberately chose composition;
+PHP hands you <code>extends</code> and the <code>abstract class</code>: think
+of it as an embedded type that ships real methods <em>and</em> declares
+method stubs you're obligated to fill in. An <code>abstract public function
+area()</code> is an interface method with a home — the parent can already
+call <code>$this->area()</code> in its concrete methods, trusting each child
+to supply it. That's the template-method pattern you're about to write:
+<code>describe()</code> lives once in <code>Shape</code>, dispatching to
+whichever <code>area()</code> the actual object provides.</p>`,
+
+  go: `type Shape interface {
+    Area() float64
+}
+
+type Circle struct{ Radius float64 }
+
+func (c Circle) Area() float64 {
+    return math.Pi * c.Radius * c.Radius
+}
+
+type Rectangle struct{ Width, Height float64 }
+
+func (r Rectangle) Area() float64 {
+    return r.Width * r.Height
+}
+
+// Circle and Rectangle satisfy Shape implicitly —
+// they never say so anywhere.
+func describe(s Shape) string {
+    return fmt.Sprintf("area %.2f", s.Area())
+}`,
+
+  task: `
+<p>Rebuild the shape family with an abstract base class:</p>
+<ol>
+  <li><code>abstract class Shape</code> with
+      <code>abstract public function area(): float;</code> — the contract,
+      no body — plus a <em>concrete</em>
+      <code>describe(): string</code> that returns exactly
+      <code>"This shape has an area of X."</code> where <code>X</code> is
+      <code>round($this->area(), 2)</code>. The parent calls a method only
+      its children define — that's the template method.</li>
+  <li><code>class Circle extends Shape</code> — promoted
+      <code>private float $radius</code>; <code>area()</code> returns
+      <code>M_PI * $this->radius ** 2</code> (PHP ships π as the constant
+      <code>M_PI</code>).</li>
+  <li><code>class Rectangle extends Shape</code> — promoted width and height;
+      <code>area()</code> multiplies them.</li>
+</ol>
+<p>Note what you never write: <code>Circle</code> re-declaring
+<code>describe()</code>. It inherits it, and the inherited code finds the
+child's <code>area()</code> through <code>$this</code>.</p>`,
+
+  starter: `<?php
+
+// The contract AND the shared code, in one type. You cannot
+// "new Shape(...)" — only complete subclasses are constructible.
+abstract class Shape {
+    // An interface method with a home: no body, children must provide it.
+    abstract public function area(): float;
+
+    // Template method: written once, calls whichever area() the
+    // actual object supplies via $this.
+    public function describe(): string {
+        throw new Exception("TODO: implement describe using \$this->area()");
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        throw new Exception("TODO: implement Circle::area with M_PI");
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        throw new Exception("TODO: implement Rectangle::area");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Keep Shape an abstract class" },
+    { pattern: /extends\s+Shape/, message: "Circle and Rectangle must extend Shape" },
+    { pattern: /abstract\s+(public\s+)?function\s+area/, message: "Declare area() as an abstract method on Shape" },
+  ],
+
+  tests: [
+    { name: "Circle area: radius 1 rounds to 3.14",
+      code: '$c = new Circle(1.0);\nexpect_eq(round($c->area(), 2), 3.14);' },
+    { name: "Circle area: radius 2 rounds to 12.57",
+      code: '$c = new Circle(2.0);\nexpect_eq(round($c->area(), 2), 12.57);' },
+    { name: "Rectangle area is width times height, exactly",
+      code: '$r = new Rectangle(3.0, 4.0);\nexpect_eq($r->area(), 12.0);' },
+    { name: "inherited describe() dispatches to Rectangle::area",
+      code: 'expect_eq((new Rectangle(2.0, 5.0))->describe(), "This shape has an area of 10.");' },
+    { name: "inherited describe() dispatches to Circle::area",
+      code: 'expect_eq((new Circle(1.0))->describe(), "This shape has an area of 3.14.");' },
+    { name: "both subclasses are Shapes (instanceof)",
+      code: 'expect_true(new Circle(1.0) instanceof Shape);\nexpect_true(new Rectangle(1.0, 1.0) instanceof Shape);' },
+  ],
+
+  solution: `<?php
+
+abstract class Shape {
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "This shape has an area of " . round($this->area(), 2) . ".";
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        return M_PI * $this->radius ** 2;
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(private float $width, private float $height) {}
+
+    public function area(): float {
+        return $this->width * $this->height;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Interface</td><td>implicit satisfaction</td><td><code>interface Shape {}</code> + explicit <code>implements Shape</code></td></tr>
+  <tr><td>Inheritance</td><td>none — embed instead</td><td><code>extends</code> (single parent only)</td></tr>
+  <tr><td>Contract + shared code</td><td>interface + embedded helper type</td><td><code>abstract class</code> — both in one</td></tr>
+  <tr><td>Required method</td><td>interface method</td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td>Constructor chaining</td><td>—</td><td><code>parent::__construct(...)</code></td></tr>
+  <tr><td>Type test</td><td>type switch / assertion</td><td><code>$x instanceof Shape</code></td></tr>
+  <tr><td>Multiple contracts</td><td>satisfy many interfaces freely</td><td><code>implements A, B</code> — many interfaces, one <code>extends</code></td></tr>
+</table>
+<p>When to reach for which: a plain <code>interface</code> is still the
+Go-shaped tool — pure contract, any class can implement several, and typed
+parameters like <code>function total(Shape ...$shapes)</code> work exactly
+like accepting a Go interface. Reach for an <code>abstract class</code> only
+when there's genuinely shared behavior to hoist, as with
+<code>describe()</code> here. Deep <code>extends</code> hierarchies rot the
+same way everywhere — your Go composition instincts remain good taste in PHP,
+and lesson 12's traits are PHP's own answer to sharing code without a parent
+at all. A subclass that needs the parent's setup must call
+<code>parent::__construct(...)</code> itself; PHP won't chain constructors
+behind your back.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

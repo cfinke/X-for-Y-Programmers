@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Functions & Control Flow</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Functions & Control Flow",
+
+  intro: `
+<p>A JavaScript function signature is a list of names and a shrug:
+<code>function maxOf(a, b)</code> accepts two numbers, one number, five
+strings, or nothing at all, and you find out what happened at runtime. Rust's
+<code>fn max_of(a: i32, b: i32) -> i32</code> pins down every parameter and
+the return type. There is no <code>arguments</code> object, no optional-by
+-accident parameters, no <code>undefined</code> quietly returned because you
+forgot a <code>return</code> — call it wrong or return the wrong thing and it
+doesn't compile.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>function f(x) { ... }</code></td><td><code>fn f(x: i32) -> i32 { ... }</code></td></tr>
+  <tr><td><code>cond ? a : b</code></td><td><code>if cond { a } else { b }</code></td></tr>
+  <tr><td><code>return x;</code> (mandatory)</td><td>last expression, no semicolon</td></tr>
+  <tr><td>forgot to return? <code>undefined</code></td><td>forgot to return? compile error</td></tr>
+</table>
+<p>The other shift: in Rust, almost everything is an <em>expression</em> — it
+produces a value. <code>if/else</code> is Rust's ternary:
+<code>let label = if ok { "yes" } else { "no" };</code> reads like
+<code>ok ? "yes" : "no"</code>, except it also works for long multi-line
+branches. And a block's value is its last line <em>without a semicolon</em>:
+write <code>a + b</code> as the final line of a function and that's the return
+value. Adding a semicolon turns it back into a statement — a surprisingly
+common beginner error the compiler explains clearly.</p>`,
+
+  javascript: `function maxOf(a, b) {
+  return a > b ? a : b;
+}
+
+const grade = (score) => (score >= 60 ? "pass" : "fail");
+
+function sign(n) {
+  if (n > 0) return 1;
+  if (n < 0) return -1;
+  return 0;
+}
+
+// JS lets all of these through — and tells you nothing:
+maxOf(3);          // b is undefined; returns 3 vs undefined... 3? NaN? who knows
+maxOf("9", 10);    // "9" > 10 is false — returns 10, silently
+grade();           // undefined >= 60 is false — "fail", for nobody
+
+console.log(maxOf(3, 7), grade(72), sign(-8)); // 7 "pass" -1`,
+
+  task: `
+<p>Rewrite the JavaScript as Rust:</p>
+<ol>
+  <li><code>max_of(a: i32, b: i32) -> i32</code> — return the larger number
+      using an <code>if/else</code> <em>expression</em> as the function body.
+      No <code>return</code> keyword anywhere: the <code>if</code> itself is
+      the last (and only) expression, so it is the return value.</li>
+  <li><code>grade(score: u32) -> String</code> — <code>"pass"</code> when
+      <code>score</code> is 60 or more, otherwise <code>"fail"</code>. Assign
+      the <code>if/else</code> to a variable first
+      (<code>let result = if ...</code>) — the ternary habit, Rust style —
+      then convert with <code>.to_string()</code>.</li>
+  <li><code>sign(n: i32) -> i32</code> — <code>1</code> for positive,
+      <code>-1</code> for negative, <code>0</code> for zero. Chain
+      <code>if / else if / else</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. max_of: the whole body is one if/else expression. No return keyword.
+fn max_of(a: i32, b: i32) -> i32 {
+    todo!()
+}
+
+// 2. grade: let result = if score >= 60 { ... } else { ... }; then .to_string()
+fn grade(score: u32) -> String {
+    todo!()
+}
+
+// 3. sign: if / else if / else, each branch producing a number.
+fn sign(n: i32) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /->/, message: "Give your functions -> return types" },
+    { pattern: /=\s*if\b/, message: "Assign an if/else expression to a variable (let result = if ...)" },
+  ],
+
+  tests: [
+    { name: "max_of(3, 7) returns 7",
+      code: "assert_eq!(max_of(3, 7), 7);" },
+    { name: "max_of(10, -2) returns 10",
+      code: "assert_eq!(max_of(10, -2), 10);" },
+    { name: 'grade(72) returns "pass"',
+      code: 'assert_eq!(grade(72), "pass");' },
+    { name: 'grade(59) returns "fail" and grade(60) returns "pass"',
+      code: 'assert_eq!(grade(59), "fail");\nassert_eq!(grade(60), "pass");' },
+    { name: "sign(-8) is -1, sign(8) is 1, sign(0) is 0",
+      code: "assert_eq!(sign(-8), -1);\nassert_eq!(sign(8), 1);\nassert_eq!(sign(0), 0);" },
+  ],
+
+  solution: `fn max_of(a: i32, b: i32) -> i32 {
+    if a > b { a } else { b }
+}
+
+fn grade(score: u32) -> String {
+    let result = if score >= 60 { "pass" } else { "fail" };
+    result.to_string()
+}
+
+fn sign(n: i32) -> i32 {
+    if n > 0 {
+        1
+    } else if n < 0 {
+        -1
+    } else {
+        0
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Function</td><td><code>function f(x) { ... }</code></td><td><code>fn f(x: i32) -> i32 { ... }</code> — every type spelled out</td></tr>
+  <tr><td>Ternary</td><td><code>cond ? a : b</code></td><td><code>if cond { a } else { b }</code> (an expression)</td></tr>
+  <tr><td>Return</td><td><code>return x;</code> or get <code>undefined</code></td><td>last expression, no semicolon (early <code>return</code> exists too)</td></tr>
+  <tr><td>Missing argument</td><td><code>undefined</code>, keep running</td><td>compile error</td></tr>
+  <tr><td>Wrong argument type</td><td>coerced, keep running</td><td>compile error</td></tr>
+</table>
+<p>Every JS bug in the left panel — the missing argument, the string compared
+to a number, the call that returns a value nobody checks — is a compile error
+in Rust. One rule to remember: <code>a + b</code> as a final line returns it;
+<code>a + b;</code> with a semicolon discards it. When branches of an
+<code>if</code> expression disagree on type (<code>1</code> here,
+<code>"one"</code> there), the compiler rejects that too — an expression must
+have exactly one type.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

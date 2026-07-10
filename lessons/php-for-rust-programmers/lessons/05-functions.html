@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Mechanically the translation is small: <code>fn f(x: i32) -&gt; String</code>
+becomes <code>function f(int $x): string</code> — the type hops in front of
+the parameter and <code>-&gt;</code> becomes <code>:</code> after the parens.
+The interesting part is what PHP's signatures can do that Rust's
+deliberately can't. Rust has no default parameters (you build builders, or
+take <code>Option</code>s); PHP writes the default inline:
+<code>string $greeting = "Hello"</code>. Rust has no named arguments (that's
+struct-literal syntax, for structs); PHP calls
+<code>greet(name: "Ada")</code> — struct-literal call syntax, for
+functions.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>fn f(x: i32) -&gt; String</code></td><td><code>function f(int $x): string</code></td></tr>
+  <tr><td>no default params — builders / <code>Option</code></td><td><code>string $greeting = "Hello"</code></td></tr>
+  <tr><td><code>last: Option&lt;String&gt;</code></td><td><code>?string $last = null</code></td></tr>
+  <tr><td><code>enum Id { Num(i64), Text(String) }</code></td><td><code>int|string $id</code> (union type)</td></tr>
+  <tr><td><code>match id { Id::Num(n) =&gt; …, … }</code></td><td><code>is_int($id) ? … : …</code></td></tr>
+  <tr><td>no named args</td><td><code>greet(name: "Ada")</code></td></tr>
+</table>
+<p>Where Rust reaches for an enum to accept either of two types, PHP
+declares a <em>union</em>: <code>int|string $id</code>. There's no
+<code>match</code>-with-binding on it; you discriminate at runtime with
+predicate functions — <code>is_int($id)</code>, <code>is_string($id)</code> —
+the match on type, as a function. And <code>?string</code> is literally
+<code>string|null</code>: <code>Option&lt;String&gt;</code> as a one-character
+prefix, with plain <code>null</code> where <code>None</code> would be.</p>`,
+
+  rust: `// No default or named args in Rust — Option is the workaround.
+fn greet(name: &str, greeting: Option<&str>) -> String {
+    let greeting = greeting.unwrap_or("Hello");
+    format!("{greeting}, {name}!")
+}
+
+fn format_name(first: &str, last: Option<&str>) -> String {
+    match last {
+        Some(l) => format!("{first} {l}"),
+        None => first.to_string(),
+    }
+}
+
+enum Id { Num(i64), Text(String) } // either-type param needs an enum
+
+fn describe(id: Id) -> String {
+    match id {
+        Id::Num(n) => format!("numeric id {n}"),
+        Id::Text(s) => format!("string id {s}"),
+    }
+}`,
+
+  task: `
+<p>Port the three functions, letting PHP's signature features absorb the
+Rust workarounds:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      return <code>"Hello, Ada!"</code>-style text. The default parameter
+      replaces the <code>Option</code>/<code>unwrap_or</code> dance
+      entirely.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      <code>"Ada Lovelace"</code> when a last name is given, just
+      <code>"Ada"</code> when it's <code>null</code>. <code>?string</code>
+      is your <code>Option&lt;String&gt;</code>; compare with
+      <code>=== null</code> instead of matching.</li>
+  <li><code>describe(int|string $id): string</code> — return
+      <code>"numeric id 42"</code> for ints and <code>"string id abc"</code>
+      for strings, branching with <code>is_int($id)</code>. The union type
+      replaces the <code>Id</code> enum.</li>
+</ol>
+<p>The tests call <code>greet</code> with named arguments too —
+<code>greet(greeting: "Hi", name: "Grace")</code> — order-free, like a
+struct literal.</p>`,
+
+  starter: `<?php
+
+// 1. Default parameter value: no Option, no builder.
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. ?string = string|null. Check with $last === null.
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. Union type instead of an enum; is_int() instead of match.
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give $greeting a default value of "Hello" in the signature' },
+    { pattern: /\?string/, message: "Declare $last as nullable with ?string" },
+    { pattern: /int\|string/, message: "Declare $id with the union type int|string" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the "Hello" default',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Ada", "Howdy") overrides the greeting',
+      code: 'expect_eq(greet("Ada", "Howdy"), "Howdy, Ada!");' },
+    { name: 'named arguments: greet(greeting: "Hi", name: "Grace")',
+      code: 'expect_eq(greet(greeting: "Hi", name: "Grace"), "Hi, Grace!");' },
+    { name: 'format_name("Ada", "Lovelace") returns "Ada Lovelace"',
+      code: 'expect_eq(format_name("Ada", "Lovelace"), "Ada Lovelace");' },
+    { name: 'format_name("Ada") returns "Ada" (null last name)',
+      code: 'expect_eq(format_name("Ada"), "Ada");\nexpect_eq(format_name("Ada", null), "Ada");' },
+    { name: "describe handles both sides of the union",
+      code: 'expect_eq(describe(42), "numeric id 42");\nexpect_eq(describe("abc"), "string id abc");' },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    if ($last === null) {
+        return $first;
+    }
+    return "$first $last";
+}
+
+function describe(int|string $id): string {
+    return is_int($id) ? "numeric id $id" : "string id $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Signature</td><td><code>fn f(x: i32) -&gt; String</code></td><td><code>function f(int $x): string</code></td></tr>
+  <tr><td>Default arg</td><td>none — builders, <code>Option</code></td><td><code>int $n = 10</code> in the signature</td></tr>
+  <tr><td>Optional value</td><td><code>Option&lt;String&gt;</code> / <code>Some</code>/<code>None</code></td><td><code>?string</code> / value or <code>null</code></td></tr>
+  <tr><td>Either of two types</td><td><code>enum</code> with variants</td><td>union: <code>int|string</code></td></tr>
+  <tr><td>Discriminate</td><td><code>match</code> (binds &amp; proves exhaustive)</td><td><code>is_int()</code>, <code>is_string()</code>, …</td></tr>
+  <tr><td>Named args</td><td>none (struct literals only)</td><td><code>f(name: "Ada")</code>, reorderable</td></tr>
+  <tr><td>No return value</td><td><code>-&gt; ()</code> (implicit)</td><td><code>: void</code></td></tr>
+</table>
+<p>Be honest about the downgrade in <code>describe</code>: Rust's
+<code>match</code> on the <code>Id</code> enum was exhaustive — add a
+variant and every match site fails to compile until handled. The
+<code>is_int</code> ternary proves nothing; widen the union to
+<code>int|string|float</code> and no tool complains that your else-branch
+now lies. In exchange, three lines replaced an enum definition, and the
+default-plus-named-arguments combo means a PHP function with four optional
+knobs needs no builder type at all — call sites just name the knobs they
+set.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

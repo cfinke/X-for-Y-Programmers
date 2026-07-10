@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Abstract Classes &amp; implements</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Abstract Classes & implements",
+
+  intro: `
+<p>The JavaScript pattern for "subclasses must override this" is a base
+method that throws <code>new Error("not implemented")</code> — a contract
+enforced only when the missing method is finally called, usually in
+production. TypeScript replaces the runtime tripwire with two compile-time
+tools. An <code>abstract class</code> can declare <code>abstract</code>
+methods — signatures with no body — and any concrete subclass that fails to
+implement them simply does not compile. Nor can anyone <code>new</code> up
+the abstract base itself.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>area() { throw new Error("not implemented"); }</code></td><td><code>abstract area(): number;</code> — no body, compiler demands an override</td></tr>
+  <tr><td>Subclass forgets <code>area()</code> → 💥 at call time</td><td>Compile error: <em>non-abstract class does not implement 'area'</em></td></tr>
+  <tr><td><code>new Shape("x")</code> — instantiating the "abstract" base is legal</td><td><code>new Shape(...)</code> — compile error on an abstract class</td></tr>
+  <tr><td>"This class has a describe() method" — a comment</td><td><code>class Shape implements Describable</code> — checked, member by member</td></tr>
+</table>
+<p>The second tool is <code>implements</code>. It adds no behavior and emits
+no JavaScript — it is purely a claim: "this class fulfills that interface,
+compiler, please verify." Rename a method, change a signature, forget a
+member, and the class declaration itself lights up. Note the division of
+labor with <code>extends</code>: <code>extends</code> <em>inherits</em> real
+code (and an abstract class may carry plenty — fields, constructors,
+concrete methods alongside the abstract ones), while <code>implements</code>
+only <em>checks a shape</em>. A class can do both at once.</p>`,
+
+  javascript: `class Shape {
+  constructor(name) {
+    this.name = name;
+  }
+  area() {
+    throw new Error("not implemented"); // please override me!
+  }
+  describe() {
+    return this.name + " with area " + this.area();
+  }
+}
+
+class Circle extends Shape {
+  constructor(radius) {
+    super("circle");
+    this.radius = radius;
+  }
+  // forgot to override area() — nobody notices at load time...
+}
+
+const c = new Circle(2);
+c.describe(); // 💥 Error: not implemented — at runtime, in production`,
+
+  task: `
+<p>Rebuild the hierarchy so the forgotten override cannot compile. The
+interface <code>Describable</code> is provided in the starter.</p>
+<ol>
+  <li>Make <code>Shape</code> an <code>abstract class</code> that
+      <code>implements Describable</code>. It keeps a
+      <code>readonly name: string</code> constructor parameter property,
+      declares <code>abstract area(): number;</code> (no body!), and
+      provides a concrete <code>describe(): string</code> returning
+      <code>name + " with area " + </code> the area rounded to 2 decimals
+      via <code>Math.round(this.area() * 100) / 100</code>.</li>
+  <li><code>class Circle extends Shape</code>: constructed with a
+      <code>radius: number</code>, passes <code>"circle"</code> to
+      <code>super</code>, and implements <code>area()</code> as
+      <code>Math.PI * radius * radius</code>.</li>
+  <li><code>class Rectangle extends Shape</code>: constructed with
+      <code>width: number</code> and <code>height: number</code>, passes
+      <code>"rectangle"</code> to <code>super</code>, and implements
+      <code>area()</code> as width × height.</li>
+</ol>
+<p>Delete <code>area()</code> from one subclass afterwards and picture the
+compiler catching it — that is the untyped version's production crash, moved to
+your editor.</p>`,
+
+  starter: `interface Describable {
+  describe(): string;
+}
+
+// 1. TODO: make this class abstract, have it implement Describable,
+//    and turn area() into an abstract declaration with no body.
+class Shape {
+  constructor(readonly name: string) {}
+
+  area(): number {
+    return 0; // TODO: should be an abstract declaration instead
+  }
+
+  describe(): string {
+    // TODO: "<name> with area <area rounded to 2 decimals>"
+    return "";
+  }
+}
+
+// 2. TODO: class Circle extends Shape — radius, area = PI * r * r
+
+// 3. TODO: class Rectangle extends Shape — width & height, area = w * h
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class" },
+    { pattern: /implements\s+\w+/, message: "Have Shape implement the Describable interface with the implements keyword" },
+    { pattern: /abstract\s+area\s*\(\s*\)\s*:\s*number/, message: "Declare abstract area(): number with no body" },
+    { pattern: /extends\s+Shape/, message: "Make Circle and Rectangle extend Shape" },
+  ],
+
+  tests: [
+    { name: "new Circle(2).area() is 12.57 (rounded to 2 decimals)", run: (x) => {
+        expectEqual(Math.round(new x.Circle(2).area() * 100) / 100, 12.57);
+      } },
+    { name: "new Rectangle(3, 4).area() is 12", run: (x) => {
+        expectEqual(new x.Rectangle(3, 4).area(), 12);
+      } },
+    { name: 'new Circle(1).describe() is "circle with area 3.14"', run: (x) => {
+        expectEqual(new x.Circle(1).describe(), "circle with area 3.14");
+      } },
+    { name: 'new Rectangle(3, 4).describe() is "rectangle with area 12"', run: (x) => {
+        expectEqual(new x.Rectangle(3, 4).describe(), "rectangle with area 12");
+      } },
+    { name: "Circle and Rectangle are instances of Shape", run: (x) => {
+        expectTruthy(new x.Circle(1) instanceof x.Shape);
+        expectTruthy(new x.Rectangle(1, 2) instanceof x.Shape);
+      } },
+  ],
+
+  solution: `interface Describable {
+  describe(): string;
+}
+
+abstract class Shape implements Describable {
+  constructor(readonly name: string) {}
+
+  abstract area(): number;
+
+  describe(): string {
+    return this.name + " with area " + Math.round(this.area() * 100) / 100;
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super("circle");
+  }
+
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(private width: number, private height: number) {
+    super("rectangle");
+  }
+
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>"Must override" method</td><td>Base method that throws at runtime</td><td><code>abstract area(): number;</code> — checked at compile time</td></tr>
+  <tr><td>Non-instantiable base class</td><td><code>if (new.target === Shape) throw ...</code></td><td><code>abstract class Shape</code> — <code>new Shape()</code> will not compile</td></tr>
+  <tr><td>Share real code down the hierarchy</td><td><code>extends</code></td><td><code>extends</code> — unchanged, works with abstract bases</td></tr>
+  <tr><td>Promise a shape, share no code</td><td>Duck typing + hope</td><td><code>class X implements SomeInterface</code></td></tr>
+  <tr><td>Both at once</td><td>—</td><td><code>class Circle extends Shape implements Printable, Serializable</code></td></tr>
+  <tr><td>Runtime footprint</td><td>—</td><td><code>abstract</code> and <code>implements</code> erase; the class itself (and <code>instanceof</code>) still work</td></tr>
+</table>
+<p>How to choose: reach for an <code>interface</code> +
+<code>implements</code> when classes merely need to agree on a shape, and an
+<code>abstract class</code> when they should also <em>share code</em> — here
+<code>describe()</code> is written once and every shape inherits it, while
+each subclass supplies only the one calculation that differs. That
+combination — concrete template method calling an abstract hook — is the
+template-method pattern, and TypeScript checks every seam of it before the
+code runs.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Enumerable Power Tools</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Enumerable Power Tools",
+
+  intro: `
+<p>Past <code>map</code> and <code>filter</code>, Kotlin's stdlib gets you
+surprisingly far: <code>groupBy</code>, <code>partition</code>, and the
+<code>Grouping</code> API with <code>eachCount</code> and <code>fold</code>.
+But the frequency map — the thing you count with
+<code>groupingBy { it }.eachCount()</code>, a two-step dance — is one word in
+Ruby: <code>.tally</code>. Ruby ships the same power tools as ordinary methods
+on <code>Enumerable</code>, and the names line up almost one-to-one.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>.groupBy { it.length }</code></td><td><code>.group_by(&amp;:length)</code></td></tr>
+  <tr><td><code>.groupingBy { it }.eachCount()</code></td><td><code>.tally</code></td></tr>
+  <tr><td><code>.reduce { acc, x -&gt; acc + x }</code></td><td><code>.reduce(:+)</code></td></tr>
+  <tr><td>mutable accumulation into a map</td><td><code>.each_with_object({}) { |x, acc| ... }</code></td></tr>
+  <tr><td><code>.partition { it % 2 == 0 }</code></td><td><code>.partition(&amp;:even?)</code></td></tr>
+</table>
+<p>Two of these deserve a closer look. <code>each_with_object</code> is Ruby's
+mutable-accumulator loop: it carries an object (often a hash) alongside each
+element and returns it at the end — pair it with <code>Hash.new(0)</code>, a
+hash whose missing keys read as <code>0</code>, and running totals become a
+one-liner (no <code>getOrDefault(k, 0)</code> or <code>getOrPut</code> in
+sight). And <code>partition</code> returns <em>two arrays</em> — the elements
+where the block was true, then the rest — much like Kotlin's
+<code>partition</code>, except Ruby hands you a plain array of two arrays
+rather than a <code>Pair&lt;List&lt;T&gt;, List&lt;T&gt;&gt;</code>.</p>`,
+
+  kotlin: `data class Item(val category: String, val amount: Int)
+
+object Reports {
+    fun wordLengths(words: List<String>): Map<Int, List<String>> =
+        words.groupBy { it.length }
+
+    fun voteCounts(votes: List<String>): Map<String, Int> =
+        // the frequency-map dance: group by identity, count each
+        votes.groupingBy { it }.eachCount()
+
+    fun totalsByCategory(items: List<Item>): Map<String, Int> =
+        items.groupingBy { it.category }
+            .fold(0) { sum, item -> sum + item.amount }
+
+    fun splitEvens(nums: List<Int>): Pair<List<Int>, List<Int>> =
+        nums.partition { it % 2 == 0 }
+}`,
+
+  task: `
+<p>Rebuild the four reports the Ruby way:</p>
+<ol>
+  <li><code>word_lengths(words)</code> — bucket words by length with
+      <code>group_by(&amp;:length)</code>. Returns a hash like
+      <code>{ 3 =&gt; ["cat"], 5 =&gt; ["horse", "zebra"] }</code>.</li>
+  <li><code>vote_counts(votes)</code> — the whole
+      <code>groupingBy { it }.eachCount()</code> dance is
+      <code>votes.tally</code>.</li>
+  <li><code>totals_by_category(items)</code> — items are hashes like
+      <code>{ category: :food, amount: 10 }</code>. Accumulate with
+      <code>each_with_object(Hash.new(0))</code>, adding each item's
+      <code>[:amount]</code> onto <code>totals[item[:category]]</code>.</li>
+  <li><code>split_evens(nums)</code> — <code>partition(&amp;:even?)</code>
+      returns <code>[evens, odds]</code>: two arrays, like a destructured
+      <code>Pair</code>.</li>
+</ol>`,
+
+  starter: `# 1. word_lengths: group_by takes a key function, like groupingBy.
+def word_lengths(words)
+  raise NotImplementedError, "TODO: implement word_lengths"
+end
+
+# 2. vote_counts: groupingBy(v -> v, counting()) is one word in Ruby.
+def vote_counts(votes)
+  raise NotImplementedError, "TODO: implement vote_counts"
+end
+
+# 3. totals_by_category: each_with_object(Hash.new(0)) carries the totals
+#    hash alongside each item; Hash.new(0) makes missing keys read as 0.
+#    Items look like: { category: :food, amount: 10 }
+def totals_by_category(items)
+  raise NotImplementedError, "TODO: implement totals_by_category"
+end
+
+# 4. split_evens: partition returns [matching, rest] — two arrays.
+def split_evens(nums)
+  raise NotImplementedError, "TODO: implement split_evens"
+end
+`,
+
+  requirements: [
+    { pattern: /group_by/, message: "Bucket the words with group_by" },
+    { pattern: /tally/, message: "Count the votes with tally" },
+    { pattern: /each_with_object/, message: "Accumulate the totals with each_with_object" },
+    { pattern: /partition/, message: "Split the numbers with partition" },
+  ],
+
+  tests: [
+    { name: 'word_lengths(["cat", "horse", "dog", "zebra"]) buckets by length',
+      code: '  expect_eq(word_lengths(["cat", "horse", "dog", "zebra"]), { 3 => ["cat", "dog"], 5 => ["horse", "zebra"] })' },
+    { name: 'vote_counts(["ruby", "java", "ruby", "ruby"]) counts each vote',
+      code: '  expect_eq(vote_counts(["ruby", "java", "ruby", "ruby"]), { "ruby" => 3, "java" => 1 })' },
+    { name: "totals_by_category sums amounts per category",
+      code: `  items = [
+    { category: :food, amount: 10 },
+    { category: :rent, amount: 900 },
+    { category: :food, amount: 5 },
+  ]
+  expect_eq(totals_by_category(items), { food: 15, rent: 900 })` },
+    { name: "totals_by_category of no items is an empty hash",
+      code: "  expect_eq(totals_by_category([]), {})" },
+    { name: "split_evens([1, 2, 3, 4, 5]) returns [[2, 4], [1, 3, 5]]",
+      code: "  expect_eq(split_evens([1, 2, 3, 4, 5]), [[2, 4], [1, 3, 5]])" },
+  ],
+
+  solution: `def word_lengths(words)
+  words.group_by(&:length)
+end
+
+def vote_counts(votes)
+  votes.tally
+end
+
+def totals_by_category(items)
+  items.each_with_object(Hash.new(0)) do |item, totals|
+    totals[item[:category]] += item[:amount]
+  end
+end
+
+def split_evens(nums)
+  nums.partition(&:even?)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Group by key</td><td><code>groupBy { it.length }</code></td><td><code>group_by(&amp;:length)</code></td></tr>
+  <tr><td>Frequency map</td><td><code>groupingBy { it }.eachCount()</code></td><td><code>tally</code></td></tr>
+  <tr><td>Fold / reduce</td><td><code>reduce { acc, x -&gt; acc + x }</code> or <code>sum()</code></td><td><code>reduce(:+)</code> or <code>reduce(0) { |acc, x| acc + x }</code></td></tr>
+  <tr><td>Mutable accumulation</td><td><code>fold(mutableMapOf()) { acc, x -&gt; ... }</code> / manual loop</td><td><code>each_with_object({}) { |x, acc| ... }</code></td></tr>
+  <tr><td>Two-way split</td><td><code>partition { ... }</code> → <code>Pair&lt;List, List&gt;</code></td><td><code>partition { ... }</code> → <code>[yes, no]</code></td></tr>
+  <tr><td>Default-valued map</td><td><code>getOrDefault(k, 0)</code> / <code>getOrPut(k) { 0 }</code></td><td><code>Hash.new(0)</code> — missing keys read as 0</td></tr>
+</table>
+<p>A good rule of thumb: whatever you were about to build with the
+<code>Grouping</code> API or a hand-rolled <code>fold</code>, Enumerable
+probably ships as a single method — check before you reach for
+<code>reduce</code>. And note the argument order in
+<code>each_with_object</code> blocks: element first, accumulator second
+(<code>|item, totals|</code>), the reverse of Kotlin's <code>fold</code>
+<code>{ acc, x -&gt; }</code>. In exchange, the accumulator is returned for you —
+no trailing <code>; acc }</code> to remember.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits & Derive</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>You've typed the ritual: override <code>Equals</code>, override
+<code>GetHashCode</code> (and keep them consistent!), override
+<code>ToString</code> for debuggability. C# eventually admitted this was
+boilerplate and gave you <code>record</code>, where the compiler generates
+value equality and a readable <code>ToString</code>. Rust's answer is
+<code>#[derive(...)]</code> — the same "compiler, write it for me", but à la
+carte: you pick exactly which capabilities each struct gets.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>ToString()</code> override / record's auto-format</td><td><code>#[derive(Debug)]</code> — enables <code>format!("{:?}", x)</code></td></tr>
+  <tr><td>record value equality (<code>Equals</code> + <code>==</code>)</td><td><code>#[derive(PartialEq)]</code> — enables <code>==</code></td></tr>
+  <tr><td><code>with</code> expressions / MemberwiseClone</td><td><code>#[derive(Clone)]</code> — enables explicit <code>.clone()</code></td></tr>
+  <tr><td><code>default(T)</code> (zeroed, like it or not)</td><td><code>#[derive(Default)]</code> — opt-in, customizable</td></tr>
+</table>
+<p>The flip side: a plain <code>struct</code> starts with <em>none</em> of
+these. No derive, no <code>==</code> — comparing two structs is a compile
+error, not reference equality. No <code>Debug</code>, no printing. No
+<code>Clone</code>, no copying (values <em>move</em>, as you learned in
+lesson 4). It's the class-vs-record distinction with the honest default:
+capabilities you didn't ask for don't silently exist. The standard opening
+line for most structs is <code>#[derive(Debug, Clone, PartialEq)]</code>.</p>`,
+
+  csharp: `// The ritual every C# dev has typed at least once:
+class PointClass
+{
+    public int X, Y;
+    public override bool Equals(object? o) =>
+        o is PointClass p && p.X == X && p.Y == Y;
+    public override int GetHashCode() => HashCode.Combine(X, Y);
+    public override string ToString() => $"Point ( X = {X}, Y = {Y} )";
+}
+
+// ...which is exactly why records exist:
+record Point(int X, int Y);
+
+var a = new Point(1, 2);
+var b = new Point(1, 2);
+Console.WriteLine(a == b);   // True  — generated value equality
+Console.WriteLine(a);        // Point { X = 1, Y = 2 } — generated ToString
+var c = a with { };          // shallow copy, also generated`,
+
+  task: `
+<p>The starter defines <code>Point</code> with no derives, so it has no
+<code>==</code>, no <code>{:?}</code> formatting, and no
+<code>.clone()</code>. Add <code>#[derive(...)]</code> and implement the
+three functions:</p>
+<ol>
+  <li>Add <code>#[derive(Debug, Clone, PartialEq)]</code> (any order) on the
+      line above <code>struct Point</code>.</li>
+  <li><code>points_equal</code>: takes <code>a: &amp;Point</code> and
+      <code>b: &amp;Point</code>, returns <code>bool</code> — just
+      <code>a == b</code> once <code>PartialEq</code> is derived.</li>
+  <li><code>debug_string</code>: takes <code>p: &amp;Point</code>, returns
+      <code>String</code> — <code>format!("{:?}", p)</code> once
+      <code>Debug</code> is derived. The derived output looks like
+      <code>Point { x: 1, y: 2 }</code>.</li>
+  <li><code>duplicate</code>: takes <code>p: &amp;Point</code>, returns an
+      owned <code>Point</code> — <code>p.clone()</code> once
+      <code>Clone</code> is derived.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// This struct has NO capabilities yet: no ==, no {:?}, no .clone().
+// Add a #[derive(...)] attribute on the line above it.
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// 1. points_equal: derive PartialEq, then this is just a == b.
+//    (Without the derive, == on Point is a compile error.)
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// 2. debug_string: derive Debug, then format!("{:?}", p).
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// 3. duplicate: derive Clone, then p.clone().
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Add a #[derive(...)] attribute to Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == works on Point" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} formatting works" },
+    { pattern: /Clone/, message: "Derive Clone so .clone() works" },
+  ],
+
+  tests: [
+    { name: "points_equal is true for identical points",
+      code: 'assert!(points_equal(&Point { x: 1, y: 2 }, &Point { x: 1, y: 2 }));' },
+    { name: "points_equal is false when a field differs",
+      code: 'assert!(!points_equal(&Point { x: 1, y: 2 }, &Point { x: 1, y: 3 }));' },
+    { name: 'debug_string(&Point { x: 3, y: 4 }) uses the derived Debug format',
+      code: 'assert_eq!(debug_string(&Point { x: 3, y: 4 }), "Point { x: 3, y: 4 }");' },
+    { name: "duplicate returns an equal, independent copy",
+      code: `let p = Point { x: 7, y: 8 };
+let d = duplicate(&p);
+assert_eq!(d.x, 7);
+assert_eq!(d.y, 8);
+assert!(points_equal(&p, &d));` },
+  ],
+
+  solution: `#[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Capability</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Value equality</td><td><code>record</code>, or hand-written <code>Equals</code>/<code>GetHashCode</code></td><td><code>#[derive(PartialEq)]</code> (+ <code>Eq</code>, <code>Hash</code> for HashMap keys)</td></tr>
+  <tr><td>Debug printing</td><td><code>ToString()</code> override</td><td><code>#[derive(Debug)]</code> + <code>{:?}</code></td></tr>
+  <tr><td>User-facing text</td><td><code>ToString()</code></td><td><code>impl Display</code> — written by hand, deliberately</td></tr>
+  <tr><td>Copying</td><td><code>with { }</code>, <code>MemberwiseClone</code></td><td><code>#[derive(Clone)]</code> + explicit <code>.clone()</code></td></tr>
+  <tr><td>Default value</td><td><code>default(T)</code> / <code>new T()</code></td><td><code>#[derive(Default)]</code> + <code>Point::default()</code></td></tr>
+  <tr><td>Ordering</td><td><code>IComparable&lt;T&gt;</code></td><td><code>#[derive(PartialOrd, Ord)]</code></td></tr>
+</table>
+<p>Two habits transfer with a twist. First, <code>Debug</code> vs
+<code>Display</code> is the split C# crams into one <code>ToString</code>:
+<code>{:?}</code> is for developers (derivable, shows structure),
+<code>{}</code> is for users (never derived — if the type has a human-facing
+form, you write it). Second, <code>.clone()</code> being explicit is the
+point: in C# you can't tell a cheap reference copy from an O(n) deep copy at
+the call site. In Rust, every allocation-costing copy is spelled
+<code>.clone()</code>, so the expensive operations are visible in a diff.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

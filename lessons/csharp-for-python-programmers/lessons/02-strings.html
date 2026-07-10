@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>C# strings will feel familiar: they are immutable sequences of UTF-16 code
+units, much like Python strings, and every operation returns a <em>new</em>
+string rather than mutating the original. The method names differ a little, they
+are PascalCase, and a couple of them (<code>Substring</code>,
+<code>IndexOf</code>) have sharper edges than their Python cousins.</p>
+<table>
+  <tr><th>Python</th><th>C#</th></tr>
+  <tr><td><code>s.upper()</code></td><td><code>s.ToUpper()</code></td></tr>
+  <tr><td><code>"x" in s</code></td><td><code>s.Contains("x")</code></td></tr>
+  <tr><td><code>s.find("x")</code></td><td><code>s.IndexOf("x")</code></td></tr>
+  <tr><td><code>s[1:4]</code></td><td><code>s.Substring(1, 3)</code></td></tr>
+  <tr><td><code>s.split(",")</code></td><td><code>s.Split(',')</code></td></tr>
+  <tr><td><code>s.strip()</code></td><td><code>s.Trim()</code></td></tr>
+  <tr><td><code>", ".join(arr)</code></td><td><code>string.Join(", ", arr)</code></td></tr>
+</table>
+<p>Two traps to note. <code>Substring(start, length)</code> takes a
+<em>length</em>, not an end index, so it is not <code>s[1:4]</code> slicing. And
+<code>IndexOf</code> returns <code>-1</code> when the substring is missing,
+where Python's <code>find</code> also returns <code>-1</code> (though Python's
+<code>index</code> raises an exception instead). For assembling many pieces in a
+loop, reach for <code>StringBuilder</code> instead of repeatedly
+<code>+</code>-ing strings — the same reason you would build a list and
+<code>"".join(...)</code> it in Python rather than concatenate in a loop, but
+here it is the idiomatic tool.</p>`,
+
+  python: `def shout(s: str) -> str:
+    return s.strip().upper()
+
+
+def csv(parts: list[str]) -> str:
+    return ", ".join(parts)
+
+
+def initials(name: str) -> str:
+    return "".join(w[0] for w in name.split(" "))`,
+
+  task: `
+<p>Build a <code>static class TextUtil</code> with these <code>static</code>
+methods:</p>
+<ol>
+  <li><code>Shout(string s)</code> — trim surrounding whitespace and uppercase it.
+      Chain <code>Trim()</code> and <code>ToUpper()</code>.</li>
+  <li><code>Csv(string[] parts)</code> — join the parts with <code>", "</code>
+      using <code>string.Join</code>.</li>
+  <li><code>Initials(string name)</code> — split on spaces, take the first
+      character of each word, and concatenate them. Build the result with a
+      <code>StringBuilder</code>.</li>
+  <li><code>Greeting(string name)</code> — return an interpolated string
+      <code>$"Hello, {name}!"</code>.</li>
+</ol>`,
+
+  starter: `static class TextUtil {
+  public static string Shout(string s) {
+    return ""; // TODO
+  }
+
+  public static string Csv(string[] parts) {
+    return ""; // TODO: use string.Join
+  }
+
+  public static string Initials(string name) {
+    return ""; // TODO: build with a StringBuilder
+  }
+
+  public static string Greeting(string name) {
+    return ""; // TODO: use an interpolated string
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /string\.Join/, message: "Join the parts with string.Join" },
+    { pattern: /new\s+StringBuilder/, message: "Build the initials with a StringBuilder" },
+    { pattern: /\$"/, message: "Build the greeting with an interpolated string ($\"...\")" },
+  ],
+
+  tests: [
+    { name: "Shout(\"  hi there \") is \"HI THERE\"", code: "      expect_eq(TextUtil.Shout(\"  hi there \"), \"HI THERE\");" },
+    { name: "Csv joins with \", \"", code: "      expect_eq(TextUtil.Csv(new string[] { \"a\", \"b\", \"c\" }), \"a, b, c\");" },
+    { name: "Csv of one element has no separator", code: "      expect_eq(TextUtil.Csv(new string[] { \"solo\" }), \"solo\");" },
+    { name: "Initials(\"Ada Lovelace\") is \"AL\"", code: "      expect_eq(TextUtil.Initials(\"Ada Lovelace\"), \"AL\");" },
+    { name: "Initials(\"grace brewster hopper\") is \"gbh\"", code: "      expect_eq(TextUtil.Initials(\"grace brewster hopper\"), \"gbh\");" },
+    { name: "Greeting(\"Ada\") is \"Hello, Ada!\"", code: "      expect_eq(TextUtil.Greeting(\"Ada\"), \"Hello, Ada!\");" },
+  ],
+
+  solution: `static class TextUtil {
+  public static string Shout(string s) {
+    return s.Trim().ToUpper();
+  }
+
+  public static string Csv(string[] parts) {
+    return string.Join(", ", parts);
+  }
+
+  public static string Initials(string name) {
+    var sb = new StringBuilder();
+    foreach (var word in name.Split(' ')) {
+      if (word.Length > 0) {
+        sb.Append(word[0]);
+      }
+    }
+    return sb.ToString();
+  }
+
+  public static string Greeting(string name) {
+    return $"Hello, {name}!";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>C#</th></tr>
+  <tr><td>Uppercase</td><td><code>s.upper()</code></td><td><code>s.ToUpper()</code></td></tr>
+  <tr><td>Contains</td><td><code>x in s</code></td><td><code>s.Contains(x)</code></td></tr>
+  <tr><td>Substring</td><td><code>s[1:4]</code></td><td><code>s.Substring(1, 3)</code> (start, <em>length</em>)</td></tr>
+  <tr><td>Replace</td><td><code>s.replace("a", "b")</code></td><td><code>s.Replace("a", "b")</code> (replaces all)</td></tr>
+  <tr><td>Join</td><td><code>sep.join(arr)</code></td><td><code>string.Join(sep, arr)</code> (static)</td></tr>
+  <tr><td>Build in loop</td><td><code>parts.append(piece)</code></td><td><code>sb.Append(piece)</code></td></tr>
+</table>
+<p>A few more idioms worth filing away. <code>string.Split</code> takes a
+<code>char</code> (single quotes: <code>','</code>) or a <code>string[]</code> of
+separators — not a regex, unlike Python's <code>re.split</code>.
+<code>Replace</code> swaps <em>every</em> occurrence, so it matches Python's
+<code>str.replace</code> with no <code>count</code> argument.
+<code>StartsWith</code>, <code>EndsWith</code>, and <code>Contains</code> all
+return <code>bool</code>, just like Python's <code>startswith</code>,
+<code>endswith</code>, and the <code>in</code> operator. And note that
+<code>string.Join</code>, <code>string.IsNullOrEmpty</code>, and friends are
+<em>static</em> methods on the <code>string</code> type, whereas in Python
+<code>join</code> is a method on the separator string
+(<code>sep.join(iterable)</code>), which trips up a lot of newcomers to C#.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

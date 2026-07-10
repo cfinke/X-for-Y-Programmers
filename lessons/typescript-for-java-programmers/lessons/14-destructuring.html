@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring",
+
+  intro: `
+<p>Java's answer to "pull three values out of an object" has always been
+three getter calls, one line each. Record deconstruction patterns
+(<code>instanceof User(String n, String e, int a)</code>, Java 21) are only
+just arriving, and only work inside pattern-matching contexts. TypeScript has
+had the general tool for a decade: <strong>destructuring</strong> works on
+any object or array, anywhere a variable is declared —
+<code>const { name, age } = user;</code> and you have two local variables.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>String name = user.name();</code><br><code>int age = user.age();</code></td><td><code>const { name, age } = user;</code></td></tr>
+  <tr><td><code>int first = pair[0]; int second = pair[1];</code></td><td><code>const [first, second] = pair;</code></td></tr>
+  <tr><td>manual null-check + fallback</td><td><code>const { city = "Unknown" } = user;</code> (default)</td></tr>
+  <tr><td>—</td><td><code>const { name: userName } = user;</code> (rename)</td></tr>
+  <tr><td>method receives object, calls getters inside</td><td><code>function f({ first, last }: Person)</code> (parameter destructuring)</td></tr>
+</table>
+<p>Three refinements you get for free: <strong>defaults</strong>
+(<code>city = "Unknown"</code> applies when the property is missing or
+<code>undefined</code>), <strong>renaming</strong>
+(<code>{ name: userName }</code> reads "extract <code>name</code>, call it
+<code>userName</code>" — note the colon does <em>not</em> mean a type here),
+and <strong>parameter destructuring</strong>, where the unpacking happens
+right in the function signature. That last one is the backbone of idiomatic
+TypeScript APIs: instead of Java's telescoping constructors and builders, a
+function takes one options object and destructures it on arrival.</p>`,
+
+  java: `public record User(String name, String email, int age) {}
+
+User user = new User("Ada", "ada@example.com", 36);
+
+// The traditional way: one getter call per value.
+String name = user.name();
+int age = user.age();
+System.out.println(name + " (" + age + ")");
+
+int[] pair = { 1, 2 };
+int first = pair[0];
+int second = pair[1];
+
+// Record deconstruction patterns (Java 21) — only just arriving,
+// and only inside instanceof / switch patterns:
+if (user instanceof User(String n, String e, int a)) {
+    System.out.println(n + " <" + e + ">");
+}`,
+
+  task: `
+<p>Write three functions, each leaning on a different flavor of
+destructuring:</p>
+<ol>
+  <li><code>describeUser(user: { name: string; age: number; city?: string }): string</code>
+      — destructure <code>name</code>, <code>age</code>, and <code>city</code>
+      in one <code>const { ... } = user;</code> statement, giving
+      <code>city</code> the default <code>"Unknown"</code>. Return
+      <code>"Ada (36) from London"</code> — or
+      <code>"Ada (36) from Unknown"</code> when no city is present.</li>
+  <li><code>swap(pair: [number, number]): [number, number]</code> — use array
+      destructuring (<code>const [first, second] = pair;</code>) and return
+      the two elements in reversed order.</li>
+  <li><code>fullName(person: { first: string; last: string }): string</code>
+      — change the signature to destructure <em>in the parameter list</em>:
+      <code>fullName({ first, last }: { first: string; last: string })</code>.
+      Return <code>"first last"</code> joined with a space.</li>
+</ol>`,
+
+  starter: `// 1. Object destructuring with a default value.
+//    Java: String name = user.name(); int age = user.age(); ...
+function describeUser(user: { name: string; age: number; city?: string }): string {
+  // TODO: const { name, age, city = "Unknown" } = user;
+  //       then return "<name> (<age>) from <city>"
+  return "";
+}
+
+// 2. Array destructuring.
+function swap(pair: [number, number]): [number, number] {
+  // TODO: const [first, second] = pair; return them reversed
+  return pair;
+}
+
+// 3. Parameter destructuring — unpack right in the signature.
+//    TODO: change the parameter to { first, last }: { first: string; last: string }
+function fullName(person: { first: string; last: string }): string {
+  // TODO: return "<first> <last>"
+  return "";
+}
+`,
+
+  exportNames: ["describeUser", "swap", "fullName"],
+
+  requirements: [
+    { pattern: /const\s*\{/, message: "Use object destructuring: const { ... } = user;" },
+    { pattern: /const\s*\[/, message: "Use array destructuring: const [first, second] = pair;" },
+    { pattern: /city\s*=\s*"Unknown"/, message: 'Give city a destructuring default: { city = "Unknown" }' },
+    { pattern: /\(\s*\{\s*first\s*,\s*last\s*\}/, message: "Destructure { first, last } directly in fullName's parameter list" },
+  ],
+
+  tests: [
+    { name: 'describeUser with a city returns "Ada (36) from London"', run: (x) => expectEqual(x.describeUser({ name: "Ada", age: 36, city: "London" }), "Ada (36) from London") },
+    { name: 'describeUser without a city falls back to "Unknown"', run: (x) => expectEqual(x.describeUser({ name: "Linus", age: 55 }), "Linus (55) from Unknown") },
+    { name: "swap([1, 2]) returns [2, 1]", run: (x) => expectDeepEqual(x.swap([1, 2]), [2, 1]) },
+    { name: "swap([7, 7]) returns [7, 7]", run: (x) => expectDeepEqual(x.swap([7, 7]), [7, 7]) },
+    { name: 'fullName({ first: "Grace", last: "Hopper" }) returns "Grace Hopper"', run: (x) => expectEqual(x.fullName({ first: "Grace", last: "Hopper" }), "Grace Hopper") },
+  ],
+
+  solution: `function describeUser(user: { name: string; age: number; city?: string }): string {
+  const { name, age, city = "Unknown" } = user;
+  return name + " (" + age + ") from " + city;
+}
+
+function swap(pair: [number, number]): [number, number] {
+  const [first, second] = pair;
+  return [second, first];
+}
+
+function fullName({ first, last }: { first: string; last: string }): string {
+  return first + " " + last;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Extract fields</td><td><code>user.name()</code>, <code>user.age()</code> — one per line</td><td><code>const { name, age } = user;</code></td></tr>
+  <tr><td>Extract by position</td><td><code>pair[0]</code>, <code>pair[1]</code></td><td><code>const [first, second] = pair;</code></td></tr>
+  <tr><td>Default for missing value</td><td><code>x != null ? x : fallback</code></td><td><code>const { city = "Unknown" } = user;</code></td></tr>
+  <tr><td>Rename while extracting</td><td>—</td><td><code>const { name: userName } = user;</code></td></tr>
+  <tr><td>Unpack in a signature</td><td>record patterns (Java 21, patterns only)</td><td><code>function f({ first, last }: Person)</code></td></tr>
+  <tr><td>Skip / collect the rest</td><td>—</td><td><code>const [head, ...tail] = xs;</code></td></tr>
+</table>
+<p>One reading trap for Java eyes: in a destructuring pattern the colon means
+<em>rename</em>, not <em>type</em> — <code>const { name: n } = user</code>
+binds a variable <code>n</code>. The type annotation, if you want one, goes
+after the whole pattern: <code>const { name }: User = user;</code>. Once that
+clicks, parameter destructuring plus defaults becomes your replacement for
+overloads and builders: one options-object parameter, unpacked and defaulted
+in the signature itself.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Spread &amp; Rest</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Spread & Rest",
+
+  intro: `
+<p>PHP grew these features one at a time: <code>array_merge($a, $b)</code> for
+combining arrays, <code>...$arr</code> spread in calls and literals (PHP 7.4+,
+string keys only since 8.1), variadic parameters <code>function sum(...$nums)</code>,
+and the ancient <code>func_get_args()</code> before that. TypeScript has one
+operator, <code>...</code>, that covers all of it — and it means two opposite
+things depending on where it appears. In a <em>value</em> position it
+<strong>spreads</strong> (unpacks a collection into its elements); in a
+<em>parameter</em> position it is <strong>rest</strong> (packs remaining
+arguments into an array).</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>array_merge($defaults, $overrides)</code></td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+  <tr><td><code>$copy = [...$arr, $extra];</code> (7.4+)</td><td><code>const copy = [...arr, extra];</code></td></tr>
+  <tr><td><code>function sum(...$nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td><code>func_get_args()</code></td><td>Rest parameters (typed, named)</td></tr>
+</table>
+<p>The big idiom to take away is <em>object spread as immutable
+array_merge</em>: <code>{ ...defaults, ...overrides }</code> builds a brand-new
+object where later spreads win, exactly like <code>array_merge()</code> with
+string keys — but it never touches the inputs, and the compiler knows the
+resulting type. "Clone with changes" — <code>{ ...user, name: "Ada" }</code> —
+is everywhere in TypeScript codebases, replacing the PHP habit of copying an
+array and assigning keys one by one.</p>`,
+
+  php: `<?php
+$defaults  = ['theme' => 'light', 'fontSize' => 14, 'showSidebar' => true];
+$overrides = ['theme' => 'dark'];
+
+// Later arrays win on key collisions:
+$settings = array_merge($defaults, $overrides);
+
+// Spread in array literals (PHP 7.4+, string keys since 8.1):
+$all = [...$defaults, ...$overrides];
+
+// Variadics — PHP's rest parameters:
+function sum(...$nums): int|float
+{
+    return array_sum($nums);
+}
+
+// The pre-5.6 ancestor:
+function sumOldSchool()
+{
+    return array_sum(func_get_args());
+}
+
+echo sum(1, 2, 3); // 6`,
+
+  task: `
+<ol>
+  <li>Write <code>mergeSettings(defaults: Settings, overrides: Partial&lt;Settings&gt;): Settings</code>
+      that combines the two with <strong>object spread</strong> —
+      <code>{ ...defaults, ...overrides }</code> — so overrides win and neither
+      input is mutated. (<code>Partial&lt;Settings&gt;</code> just means "a
+      Settings where every property is optional" — more on it in Lesson 18.)</li>
+  <li>Write <code>sum(...nums: number[]): number</code> using a
+      <strong>rest parameter</strong>, the typed version of PHP's
+      <code>...$nums</code>. Summing zero arguments returns <code>0</code>.</li>
+  <li>Write <code>appendItem&lt;T&gt;(items: T[], item: T): T[]</code> that
+      returns a <em>new</em> array with the item added at the end, using
+      <strong>array spread</strong>: <code>[...items, item]</code>. The
+      original array must not change.</li>
+</ol>`,
+
+  starter: `interface Settings {
+  theme: string;
+  fontSize: number;
+  showSidebar: boolean;
+}
+
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  // TODO: return a new object via spread — overrides win, inputs untouched
+  return defaults;
+}
+
+// TODO: change the parameter to a rest parameter: (...nums: number[])
+function sum(nums: number[]): number {
+  // TODO: sum all the numbers (0 for no arguments)
+  return 0;
+}
+
+function appendItem<T>(items: T[], item: T): T[] {
+  // TODO: return a NEW array using [...items, item]
+  return items;
+}
+`,
+
+  exportNames: ["mergeSettings", "sum", "appendItem"],
+
+  requirements: [
+    { pattern: /\{\s*\.\.\./, message: "Use object spread: { ...defaults, ...overrides }" },
+    { pattern: /sum\s*\(\s*\.\.\.\s*\w+\s*:\s*number\s*\[\s*\]/, message: "Declare sum with a rest parameter: sum(...nums: number[])" },
+    { pattern: /\[\s*\.\.\./, message: "Use array spread ([...items, item]) to build the new array" },
+  ],
+
+  tests: [
+    { name: "mergeSettings lets overrides win", run: (x) => expectDeepEqual(
+        x.mergeSettings({ theme: "light", fontSize: 14, showSidebar: true }, { theme: "dark" }),
+        { theme: "dark", fontSize: 14, showSidebar: true }) },
+    { name: "mergeSettings does not mutate defaults", run: (x) => {
+        const defaults = { theme: "light", fontSize: 14, showSidebar: true };
+        x.mergeSettings(defaults, { theme: "dark", fontSize: 16 });
+        expectDeepEqual(defaults, { theme: "light", fontSize: 14, showSidebar: true });
+      } },
+    { name: "sum(1, 2, 3) returns 6", run: (x) => expectEqual(x.sum(1, 2, 3), 6) },
+    { name: "sum() with no arguments returns 0", run: (x) => expectEqual(x.sum(), 0) },
+    { name: 'appendItem(["a", "b"], "c") returns ["a", "b", "c"]', run: (x) => expectDeepEqual(x.appendItem(["a", "b"], "c"), ["a", "b", "c"]) },
+    { name: "appendItem does not mutate the original array", run: (x) => {
+        const items = [1, 2];
+        x.appendItem(items, 3);
+        expectDeepEqual(items, [1, 2]);
+      } },
+  ],
+
+  solution: `interface Settings {
+  theme: string;
+  fontSize: number;
+  showSidebar: boolean;
+}
+
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  return { ...defaults, ...overrides };
+}
+
+function sum(...nums: number[]): number {
+  return nums.reduce((total, n) => total + n, 0);
+}
+
+function appendItem<T>(items: T[], item: T): T[] {
+  return [...items, item];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Merge assoc arrays / objects</td><td><code>array_merge($a, $b)</code></td><td><code>{ ...a, ...b }</code> (later spreads win)</td></tr>
+  <tr><td>Merge lists</td><td><code>array_merge($a, $b)</code> / <code>[...$a, ...$b]</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td>Shallow copy</td><td><code>$copy = $arr;</code> (arrays copy on write)</td><td><code>[...arr]</code> / <code>{ ...obj }</code> (objects are references!)</td></tr>
+  <tr><td>Clone with changes</td><td><code>$u2 = $u; $u2['name'] = 'Ada';</code></td><td><code>const u2 = { ...u, name: "Ada" };</code></td></tr>
+  <tr><td>Variadic function</td><td><code>function sum(...$nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td>Spread into a call</td><td><code>sum(...$nums)</code></td><td><code>sum(...nums)</code></td></tr>
+</table>
+<p>One PHP habit to unlearn: PHP arrays are value types (copy-on-write), so
+<code>$b = $a;</code> gives you an independent copy. TypeScript objects and
+arrays are <em>references</em> — assignment shares the same underlying data.
+That is why the spread-to-copy idioms in this lesson matter so much: they are
+how you get PHP's safe "hand me my own copy" behavior back. Note the copies
+are shallow, just like <code>array_merge()</code> — nested objects are still
+shared.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

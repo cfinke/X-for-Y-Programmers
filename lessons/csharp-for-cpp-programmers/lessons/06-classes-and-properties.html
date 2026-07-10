@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Classes &amp; Properties</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Classes & Properties",
+
+  intro: `
+<p>C++ classes and C# classes look almost identical at first glance —
+fields, a constructor, methods. The big difference is C#'s <em>properties</em>.
+Where C++ reaches for separate getter/setter methods or exposes a
+<code>const</code> member directly, idiomatic C# uses <em>auto-properties</em>:
+<code>public int Age { get; set; }</code> compiles down to a hidden backing field
+plus a getter and setter, but reads and writes like a plain field.</p>
+<table>
+  <tr><th>C++</th><th>C#</th></tr>
+  <tr><td><code>private: std::string name;</code></td><td><code>private string name;</code></td></tr>
+  <tr><td><code>int age = 0;</code></td><td><code>public int Age { get; set; }</code></td></tr>
+  <tr><td><code>const int id;</code> (set in init list)</td><td><code>public int Id { get; }</code> (get-only)</td></tr>
+  <tr><td><code>int total() const { return …; }</code></td><td><code>public int Total => …;</code></td></tr>
+  <tr><td><code>Thing(int x) { … }</code></td><td><code>public Thing(int x) { … }</code></td></tr>
+</table>
+<p>Three things to internalize. First, public members are conventionally
+<strong>PascalCase</strong> in C# (<code>Balance</code>, not <code>balance</code>).
+Second, a <code>{ get; }</code> property with no setter can only be assigned in
+the constructor — that is C#'s answer to a C++ <code>const</code> member
+initialized in the constructor's init list. A <code>{ get; private set; }</code>
+lets the class mutate it while the outside world sees it as read-only: real
+encapsulation, without needing a separate private setter method. Third,
+<code>=></code> defines an <em>expression-bodied member</em>, the terse form of
+a computed getter or a one-line method — the C# analog of a one-line
+<code>const</code> accessor method in C++.</p>`,
+
+  cpp: `class BankAccount {
+public:
+  BankAccount(const std::string& owner, double initial)
+    : owner_(owner), balance_(initial) {}
+
+  double balance() const { return balance_; }
+
+  void deposit(double amount) { balance_ += amount; }
+
+  std::string summary() const {
+    return std::format("{}: {}", owner_, balance_);
+  }
+
+private:
+  std::string owner_;
+  double balance_;
+};`,
+
+  task: `
+<p>Build a <code>BankAccount</code> class that encapsulates its balance so callers
+can only change it through methods:</p>
+<ol>
+  <li>A constructor <code>BankAccount(string owner, decimal initial)</code>.</li>
+  <li><code>Owner</code> — a get-only auto-property (<code>{ get; }</code>) set in
+      the constructor.</li>
+  <li><code>Balance</code> — a <code>decimal</code> auto-property with a
+      <code>private set</code>, so outside code can read it but not assign it.</li>
+  <li>A private field <code>int transactionCount</code> that counts deposits and
+      withdrawals.</li>
+  <li><code>Deposit(decimal amount)</code> adds to <code>Balance</code> and bumps
+      the count.</li>
+  <li><code>Withdraw(decimal amount)</code> returns <code>false</code> (and does
+      nothing) if <code>amount</code> exceeds <code>Balance</code>; otherwise it
+      subtracts, bumps the count, and returns <code>true</code>.</li>
+  <li><code>TransactionCount</code> and <code>Summary</code> as expression-bodied
+      members (<code>=></code>). <code>Summary</code> returns
+      <code>"Ada: 150"</code> style text via an interpolated string.</li>
+</ol>`,
+
+  starter: `class BankAccount {
+  public string Owner { get; }
+  public decimal Balance { get; private set; }
+  private int transactionCount;
+
+  public BankAccount(string owner, decimal initial) {
+    // TODO: assign Owner and Balance, start the count at 0
+  }
+
+  public void Deposit(decimal amount) {
+    // TODO
+  }
+
+  public bool Withdraw(decimal amount) {
+    return false; // TODO
+  }
+
+  public int TransactionCount => 0; // TODO
+  public string Summary => ""; // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\{\s*get;\s*private set;\s*\}/, message: "Encapsulate Balance with a { get; private set; } auto-property" },
+    { pattern: /=>/, message: "Use expression-bodied members (=>) for TransactionCount and Summary" },
+    { pattern: /\$"/, message: "Build Summary with an interpolated string ($\"...\")" },
+  ],
+
+  tests: [
+    { name: "New account exposes Owner and Balance", code:
+      "      var a = new BankAccount(\"Ada\", 100m);\n" +
+      "      expect_eq(a.Owner, \"Ada\");\n" +
+      "      expect_eq(a.Balance, 100m);" },
+    { name: "Deposit increases the balance", code:
+      "      var a = new BankAccount(\"Ada\", 100m);\n" +
+      "      a.Deposit(50m);\n" +
+      "      expect_eq(a.Balance, 150m);" },
+    { name: "Withdraw within balance succeeds", code:
+      "      var a = new BankAccount(\"Ada\", 100m);\n" +
+      "      expect_true(a.Withdraw(30m));\n" +
+      "      expect_eq(a.Balance, 70m);" },
+    { name: "Overdraw is rejected and leaves balance untouched", code:
+      "      var a = new BankAccount(\"Ada\", 100m);\n" +
+      "      expect_true(!a.Withdraw(1000m));\n" +
+      "      expect_eq(a.Balance, 100m);" },
+    { name: "TransactionCount tracks deposits and withdrawals", code:
+      "      var a = new BankAccount(\"Ada\", 100m);\n" +
+      "      a.Deposit(10m);\n" +
+      "      a.Withdraw(5m);\n" +
+      "      a.Withdraw(9999m);\n" +
+      "      expect_eq(a.TransactionCount, 2);" },
+    { name: "Summary reads owner and balance", code:
+      "      var a = new BankAccount(\"Ada\", 100m);\n" +
+      "      a.Deposit(50m);\n" +
+      "      expect_eq(a.Summary, \"Ada: 150\");" },
+  ],
+
+  solution: `class BankAccount {
+  public string Owner { get; }
+  public decimal Balance { get; private set; }
+  private int transactionCount;
+
+  public BankAccount(string owner, decimal initial) {
+    Owner = owner;
+    Balance = initial;
+    transactionCount = 0;
+  }
+
+  public void Deposit(decimal amount) {
+    Balance += amount;
+    transactionCount++;
+  }
+
+  public bool Withdraw(decimal amount) {
+    if (amount > Balance) {
+      return false;
+    }
+    Balance -= amount;
+    transactionCount++;
+    return true;
+  }
+
+  public int TransactionCount => transactionCount;
+  public string Summary => $"{Owner}: {Balance}";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>C#</th></tr>
+  <tr><td>Mutable property</td><td><code>int x = 0;</code></td><td><code>int X { get; set; }</code></td></tr>
+  <tr><td>Read-only from outside</td><td>private setter method (no direct equiv)</td><td><code>int X { get; private set; }</code></td></tr>
+  <tr><td>Immutable after construction</td><td><code>const int x;</code> (init list)</td><td><code>int X { get; }</code></td></tr>
+  <tr><td>Computed getter</td><td><code>int total() const {…}</code></td><td><code>int Total => …;</code></td></tr>
+  <tr><td>Private field</td><td><code>private: int x_;</code></td><td><code>private int x;</code></td></tr>
+</table>
+<p>An auto-property is just sugar: <code>{ get; set; }</code> generates a hidden
+backing field and trivial accessors — there is no need to hand-write a getter
+and setter pair the way you would in C++. The moment you need logic —
+validation, change tracking — you either switch to a full property with an
+explicit backing field, or, as here, keep the auto-property and route all
+mutation through methods that guard the invariant. Because the setter is
+<code>private</code>, no caller outside <code>BankAccount</code> can bypass
+<code>Withdraw</code>'s overdraft check, the same guarantee you'd get in C++
+by making the setter a private member function.</p>
+<p>One C++ habit to drop: trailing underscores or <code>m_</code> prefixes on
+member names, and lowercase names for public members. The .NET convention is
+PascalCase for anything public (properties, methods, types) and camelCase only
+for private fields, parameters, and locals. The compiler doesn't enforce it,
+but every C# codebase you touch will expect it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules &amp; Visibility</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules & Visibility",
+
+  intro: `
+<p>In PHP, code organization is a three-party agreement:
+<code>namespace App\\Inventory;</code> at the top of the file,
+<code>use App\\Inventory\\Counter;</code> at the call site, and a PSR-4
+autoloader that maps the namespace onto a file path — get the directory name
+wrong and the class silently doesn't exist until runtime. Rust keeps the
+namespace and the <code>use</code>, and drops the autoloader entirely:
+<code>mod</code> carves a namespace right where you write it, and the
+compiler resolves every path before anything runs.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>namespace App\\Inventory;</code> (one per file)</td><td><code>mod inventory { ... }</code> (right in the file, nestable)</td></tr>
+  <tr><td><code>use App\\Inventory\\Counter;</code></td><td><code>use inventory::item_count;</code></td></tr>
+  <tr><td><code>App\\Inventory\\Counter::describe()</code></td><td><code>inventory::describe(...)</code> — <code>::</code>, no backslashes</td></tr>
+  <tr><td>PSR-4: namespace must match the file path</td><td>No path coupling — the compiler is told, not left to guess</td></tr>
+  <tr><td>Top-level functions: always global</td><td>Everything private by default; <code>pub</code> opts in</td></tr>
+</table>
+<p>The bigger shift is visibility. PHP's <code>private</code> only exists
+inside classes — a namespaced <em>function</em> is reachable by anyone who
+spells the namespace, which is why codebases sprout <code>@internal</code>
+docblocks: politeness, not enforcement. In Rust, every item in a module is
+private unless marked <code>pub</code>. A helper without <code>pub</code>
+isn't discouraged from outside use — it's <em>invisible</em>: calling it
+from outside the module is a compile error. The module boundary is the API
+boundary, checked by the compiler.</p>`,
+
+  php: `<?php
+namespace App\\Inventory;
+
+// PSR-4: this file must live at src/Inventory/Counter.php,
+// or the autoloader will never find the class.
+class Counter
+{
+    /** @internal — please don't call this. (A comment, not a rule.) */
+    public static function pluralize(int $n): string
+    {
+        return $n === 1 ? 'item' : 'items';
+    }
+
+    public static function describe(array $items): string
+    {
+        $n = count($items);
+        return "$n " . self::pluralize($n) . " in stock";
+    }
+}`,
+
+  task: `
+<p>Build the same inventory helpers as a Rust module. Everything below goes
+inside <code>mod inventory { ... }</code>:</p>
+<ol>
+  <li><code>pub fn item_count(items: &amp;Vec&lt;String&gt;) -&gt; usize</code>
+      — just <code>items.len()</code>. It needs <code>pub</code>: the tests
+      call it from outside the module as
+      <code>inventory::item_count(...)</code>.</li>
+  <li><code>pub fn describe(items: &amp;Vec&lt;String&gt;) -&gt; String</code>
+      — returns <code>"2 items in stock"</code> /
+      <code>"1 item in stock"</code>, singular when the count is exactly 1.
+      Build it with a <em>private</em> helper: write
+      <code>fn pluralize(n: usize) -&gt; &amp;'static str</code> inside the
+      module <em>without</em> <code>pub</code> — the real
+      <code>@internal</code> — and call it from <code>describe</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `mod inventory {
+    // pub: callable from outside as inventory::item_count(...)
+    pub fn item_count(items: &Vec<String>) -> usize {
+        todo!()
+    }
+
+    // "2 items in stock" / "1 item in stock" — delegate the
+    // singular/plural choice to a private helper below.
+    pub fn describe(items: &Vec<String>) -> String {
+        todo!()
+    }
+
+    // Add the private helper here — fn pluralize(n: usize) -> &'static str
+    // with NO pub. Outside this module it doesn't exist.
+}
+`,
+
+  requirements: [
+    { pattern: /mod\s+inventory/, message: "Define the module: mod inventory { ... }" },
+    { pattern: /pub\s+fn/, message: "Mark the public API with pub fn — private is the default" },
+  ],
+
+  tests: [
+    { name: "inventory::item_count counts two items",
+      code: 'let items = vec!["apple".to_string(), "banana".to_string()];\nassert_eq!(inventory::item_count(&items), 2);' },
+    { name: "inventory::item_count of an empty Vec is 0",
+      code: "let items: Vec<String> = Vec::new();\nassert_eq!(inventory::item_count(&items), 0);" },
+    { name: 'inventory::describe pluralizes: "2 items in stock"',
+      code: 'let items = vec!["apple".to_string(), "banana".to_string()];\nassert_eq!(inventory::describe(&items), "2 items in stock");' },
+    { name: 'exactly one is singular: "1 item in stock"',
+      code: 'let items = vec!["apple".to_string()];\nassert_eq!(inventory::describe(&items), "1 item in stock");' },
+    { name: 'zero is plural again: "0 items in stock"',
+      code: 'let items: Vec<String> = Vec::new();\nassert_eq!(inventory::describe(&items), "0 items in stock");' },
+  ],
+
+  solution: `mod inventory {
+    pub fn item_count(items: &Vec<String>) -> usize {
+        items.len()
+    }
+
+    pub fn describe(items: &Vec<String>) -> String {
+        let n = item_count(items);
+        format!("{} {} in stock", n, pluralize(n))
+    }
+
+    // No pub: private to the module. inventory::pluralize(1) from
+    // outside is a compile error, not a frowned-upon call.
+    fn pluralize(n: usize) -> &'static str {
+        if n == 1 { "item" } else { "items" }
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Declare a namespace</td><td><code>namespace App\\Inventory;</code></td><td><code>mod inventory { ... }</code></td></tr>
+  <tr><td>Path separator</td><td><code>\\</code></td><td><code>::</code></td></tr>
+  <tr><td>Import a name</td><td><code>use App\\Inventory\\Counter;</code></td><td><code>use inventory::item_count;</code></td></tr>
+  <tr><td>Finding the code</td><td>PSR-4 autoloader, path must match, fails at runtime</td><td>Compiler resolves every path at build time</td></tr>
+  <tr><td>Default visibility</td><td>Public (functions/consts always reachable)</td><td>Private — <code>pub</code> opts in</td></tr>
+  <tr><td>"Internal" helper</td><td><code>@internal</code> docblock (a plea)</td><td>Omit <code>pub</code> (a wall)</td></tr>
+</table>
+<p>Notice that <code>describe</code> calls <code>pluralize</code> with no
+prefix — siblings inside a module see each other freely, like two methods of
+the same class. The privacy boundary is the module edge, and it's real:
+delete <code>describe</code> and the compiler will even warn that
+<code>pluralize</code> is dead code, because it can prove nobody outside
+could possibly be calling it. That's the payoff of default-private — your
+public API is exactly the set of <code>pub</code> items, not "whatever
+callers happened to discover," and you can refactor everything else without
+a deprecation cycle.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

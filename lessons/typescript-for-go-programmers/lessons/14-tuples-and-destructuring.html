@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Tuples & Destructuring</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Tuples & Destructuring",
+
+  intro: `
+<p>You already destructure every day — <code>val, err := f()</code> is
+nothing else. TypeScript writes the same move with brackets:
+<code>const [val, err] = f()</code>, where <code>f</code> returns a
+<em>tuple</em> — a fixed-length array whose type lists each position, like
+<code>[number, string]</code>. It is Go's multiple return values, except the
+pair is a real value you can store, pass around, or put in an array. Even
+the classic swap carries over almost character for character:
+<code>a, b = b, a</code> becomes <code>[a, b] = [b, a]</code>.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>val, err := f()</code></td><td><code>const [val, err] = f();</code></td></tr>
+  <tr><td><code>func f() (int, string)</code></td><td><code>function f(): [number, string]</code></td></tr>
+  <tr><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td><code>name, age := u.Name, u.Age</code></td><td><code>const { name, age } = user;</code></td></tr>
+</table>
+<p>Then TypeScript adds a form Go has no answer to: <em>object</em>
+destructuring. <code>const { name, age } = user</code> pulls fields out by
+name, with optional renaming (<code>{ name: userName }</code>) and defaults
+(<code>{ age = 0 }</code>). It works directly in a parameter list, so a
+function can accept an object and unpack it in its signature — the idiomatic
+replacement for a long positional parameter list.</p>`,
+
+  go: `func MinMax(nums []int) (int, int) {
+	lo, hi := nums[0], nums[0]
+	for _, n := range nums {
+		if n < lo {
+			lo = n
+		}
+		if n > hi {
+			hi = n
+		}
+	}
+	return lo, hi
+}
+
+lo, hi := MinMax([]int{3, 1, 4}) // multi-value return
+val, err := strconv.Atoi("42")   // ...you destructure daily
+a, b := 1, 2
+a, b = b, a                      // the classic swap
+
+// No object destructuring — fields come out one at a time:
+u := User{Name: "Ada", Age: 36}
+name, age := u.Name, u.Age`,
+
+  task: `
+<p>Work the tuple and destructuring muscles:</p>
+<ol>
+  <li>Write <code>distance(p: [number, number]): number</code> — the distance
+      of point <code>p</code> from the origin. Destructure the tuple first
+      (<code>const [x, y] = p</code>), then return
+      <code>Math.sqrt(x * x + y * y)</code>.</li>
+  <li>Write <code>swapPair(pair: [number, number]): [number, number]</code>
+      returning a <em>new</em> tuple with the elements swapped — Go's
+      <code>a, b = b, a</code>, but as a value you can return.</li>
+  <li>Write <code>formatUser</code> that destructures its object parameter
+      <em>in the signature</em> —
+      <code>({ name, age }: { name: string; age: number })</code> — and
+      returns <code>"Ada (36)"</code>-style output.</li>
+</ol>
+<p>Note that <code>distance([3, 4, 5])</code> is a compile error: a tuple
+type fixes the length as well as the element types, unlike
+<code>number[]</code>.</p>`,
+
+  starter: `// 1. TODO: destructure the tuple: const [x, y] = p
+//    then return Math.sqrt(x * x + y * y).
+function distance(p: [number, number]): number {
+  return 0;
+}
+
+// 2. TODO: Go swap: a, b = b, a  ->  here, return the swapped tuple.
+//    Destructure pair, then return [b, a].
+function swapPair(pair: [number, number]): [number, number] {
+  return pair;
+}
+
+// 3. TODO: destructure the object IN the parameter list:
+//    function formatUser({ name, age }: { name: string; age: number }): string
+//    and return "<name> (<age>)".
+function formatUser(user: { name: string; age: number }): string {
+  return "";
+}
+`,
+
+  exportNames: ["distance", "swapPair", "formatUser"],
+
+  requirements: [
+    { pattern: /\[\s*number\s*,\s*number\s*\]/, message: "Use a tuple type [number, number] — fixed length, per-position types" },
+    { pattern: /const\s*\[/, message: "Destructure a tuple with const [x, y] = ... (the val, err := f() move)" },
+    { pattern: /\{\s*name\s*,\s*age\s*\}/, message: "Destructure formatUser's object parameter in the signature: ({ name, age }: ...)" },
+  ],
+
+  tests: [
+    { name: "distance([3, 4]) returns 5", run: (x) => expectEqual(x.distance([3, 4]), 5) },
+    { name: "distance([0, 0]) returns 0", run: (x) => expectEqual(x.distance([0, 0]), 0) },
+    { name: "swapPair([1, 2]) returns [2, 1]", run: (x) => expectDeepEqual(x.swapPair([1, 2]), [2, 1]) },
+    { name: "swapPair returns a new tuple — the input is untouched", run: (x) => {
+        const pair = [7, 9];
+        x.swapPair(pair);
+        expectDeepEqual(pair, [7, 9]);
+      } },
+    { name: 'formatUser({ name: "Ada", age: 36 }) returns "Ada (36)"', run: (x) => expectEqual(x.formatUser({ name: "Ada", age: 36 }), "Ada (36)") },
+    { name: 'formatUser({ name: "Rob", age: 68 }) returns "Rob (68)"', run: (x) => expectEqual(x.formatUser({ name: "Rob", age: 68 }), "Rob (68)") },
+  ],
+
+  solution: `function distance(p: [number, number]): number {
+  const [x, y] = p;
+  return Math.sqrt(x * x + y * y);
+}
+
+function swapPair(pair: [number, number]): [number, number] {
+  const [a, b] = pair;
+  return [b, a];
+}
+
+function formatUser({ name, age }: { name: string; age: number }): string {
+  return \`\${name} (\${age})\`;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Multiple returns</td><td><code>func f() (int, string)</code></td><td><code>function f(): [number, string]</code></td></tr>
+  <tr><td>Unpack</td><td><code>val, err := f()</code></td><td><code>const [val, err] = f();</code></td></tr>
+  <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td>Ignore a value</td><td><code>_, err := f()</code></td><td><code>const [, err] = f();</code></td></tr>
+  <tr><td>Object fields</td><td><code>n, a := u.Name, u.Age</code></td><td><code>const { name, age } = u;</code></td></tr>
+  <tr><td>Rename / default</td><td>—</td><td><code>const { name: n, age = 0 } = u;</code></td></tr>
+</table>
+<p>One conceptual upgrade: Go's multiple returns are not a value — you cannot
+store a <code>(int, error)</code> pair or put it in a slice. A TypeScript
+tuple is a first-class value with a fixed-length type, so pairs can flow
+through <code>map</code>, live in arrays, and nest. In practice, idiomatic
+TypeScript reaches for tuples when position is obvious (coordinates,
+key/value pairs) and for objects with destructuring when names carry the
+meaning — a self-documenting call site Go can only approximate with a
+one-off struct.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

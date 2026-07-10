@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>After a decade of C#, the first thing you notice about Ruby is what
+<em>isn't</em> there. No <code>var</code>, no type annotations, no semicolons —
+a variable exists the moment you assign to it, and it will happily hold a
+string today and an integer tomorrow. No namespaces per file, no class
+wrapper, no <code>static void Main</code>: code starts executing at the top of
+the file. The types didn't vanish, though — they moved into the objects.
+Instead of <code>x.GetType()</code> you ask <code>x.class</code>; instead of
+<code>x is string</code> you ask <code>x.is_a?(String)</code>.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>var name = "Ada";</code></td><td><code>name = "Ada"</code></td></tr>
+  <tr><td><code>int age = 36;</code></td><td><code>age = 36</code></td></tr>
+  <tr><td><code>int</code> / <code>long</code> / <code>BigInteger</code></td><td><code>Integer</code> — one class, arbitrary precision</td></tr>
+  <tr><td><code>x.GetType()</code>, <code>x is string</code></td><td><code>x.class</code>, <code>x.is_a?(String)</code></td></tr>
+  <tr><td><code>$"{name} is {age}"</code></td><td><code>"#{name} is #{age}"</code> (the <code>$</code> moves inside)</td></tr>
+</table>
+<p>String interpolation will feel like home: C#'s <code>$"{name}"</code>
+becomes <code>"#{name}"</code> — same braces, but the marker sits inside them
+instead of prefixing the string. And the habit to build first:
+<strong>a method's last expression is its return value</strong>. Think of
+every method as an expression-bodied member — idiomatic Ruby almost never
+writes <code>return</code>.</p>`,
+
+  csharp: `var name = "Ada";
+int age = 36;
+
+// The compiler enforces the type:
+// age = "thirty-six";   // CS0029: cannot implicitly convert
+
+Console.WriteLine(name.GetType());   // System.String
+Console.WriteLine(age is int);       // True
+
+string DescribeUser(string name, int age)
+{
+    return $"{name} is {age} years old";
+}
+
+Console.WriteLine(DescribeUser(name, age));`,
+
+  task: `
+<p>Rewrite the C# as Ruby:</p>
+<ol>
+  <li>Write a method <code>describe_user(name, age)</code> that produces
+      <code>"Ada is 36 years old"</code>-style text with string interpolation —
+      <code>"#{name} is #{age} years old"</code> is your
+      <code>$"{...}"</code>. There are no type annotations to write, and the
+      interpolated string should be the method's <em>last expression</em>
+      rather than an explicit <code>return</code>.</li>
+  <li>Write a method <code>birthday(age)</code> that bumps a local variable
+      with <code>+=</code> and yields the new age implicitly — no
+      <code>return</code> keyword anywhere in your solution.</li>
+</ol>
+<p>Note the conventions: <code>DescribeUser</code> becomes
+<code>snake_case</code> <code>describe_user</code>, braces become
+<code>def ... end</code>, and semicolons are simply gone.</p>`,
+
+  starter: `# 1. describe_user: C# $"{name} is {age} years old"
+#    becomes Ruby "#{name} is #{age} years old".
+#    The last expression of the method is what gets returned.
+def describe_user(name, age)
+  raise NotImplementedError, "TODO: implement describe_user"
+end
+
+# 2. birthday: bump a local with += and let it be the last expression.
+def birthday(age)
+  raise NotImplementedError, "TODO: implement birthday"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+describe_user\s*\(\s*name\s*,\s*age\s*\)/, message: "Define describe_user(name, age) with def" },
+    { pattern: /#\{\s*name\s*\}/, message: "Build the string with #{} interpolation" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: '  expect_eq(describe_user("Ada", 36), "Ada is 36 years old")' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: '  expect_eq(describe_user("Grace", 52), "Grace is 52 years old")' },
+    { name: "birthday(36) returns 37",
+      code: "  expect_eq(birthday(36), 37)" },
+    { name: "birthday(0) returns 1",
+      code: "  expect_eq(birthday(0), 1)" },
+  ],
+
+  solution: `def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Declare a variable</td><td><code>var x = 1;</code></td><td><code>x = 1</code> (assignment is declaration)</td></tr>
+  <tr><td>Constant</td><td><code>const int X = 1;</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+  <tr><td>Integers</td><td><code>int</code>, <code>long</code>, <code>BigInteger</code></td><td><code>Integer</code> — one class, arbitrary precision</td></tr>
+  <tr><td>Interpolation</td><td><code>$"{name}!"</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+  <tr><td>Check a type</td><td><code>x is string</code>, <code>x.GetType()</code></td><td><code>x.is_a?(String)</code>, <code>x.class</code></td></tr>
+  <tr><td>Naming</td><td><code>PascalCase</code> methods</td><td><code>snake_case</code> methods</td></tr>
+  <tr><td>Return</td><td><code>return</code> (or <code>=&gt;</code> body)</td><td>last expression; <code>return</code> only for early exit</td></tr>
+</table>
+<p>Ruby's <code>Integer</code> is arbitrary precision out of the box —
+<code>2 ** 100</code> just works, no <code>BigInteger</code>, no overflow, no
+<code>checked</code> blocks. And where the C# compiler catches a wrong-type
+argument before anything runs, Ruby raises a <code>NoMethodError</code> at
+the moment an object doesn't respond to a message — that trade, compile-time
+proof for runtime flexibility, is the theme of this whole course.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

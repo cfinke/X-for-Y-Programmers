@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Strings: String & &str</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Strings: String & &str",
+
+  intro: `
+<p>Kotlin already trained you to think in two string types: <code>String</code>,
+the immutable value you pass around, and <code>StringBuilder</code>, the
+mutable buffer you build with. Rust has the same split with different names.
+<code>&amp;str</code> is a borrowed, read-only view of string data — the role
+Kotlin's <code>String</code> plays as a parameter. <code>String</code> (capital
+S, Rust's) is the owned, growable buffer — the <code>StringBuilder</code>
+role, and also what you hand back when a function produces new text.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>String</code> parameter (read-only use)</td><td><code>&amp;str</code></td></tr>
+  <tr><td><code>StringBuilder</code> / newly built text</td><td><code>String</code> (owned, growable)</td></tr>
+  <tr><td><code>a == b</code> compares content</td><td><code>a == b</code> compares content</td></tr>
+  <tr><td><code>"$name!"</code> (string template)</td><td><code>format!("{}!", name)</code></td></tr>
+  <tr><td><code>s.uppercase()</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td><code>s.contains(t)</code></td><td><code>s.contains(t)</code></td></tr>
+</table>
+<p>The rule of thumb that carries you a long way: <strong>take
+<code>&amp;str</code> parameters, return <code>String</code></strong>. One
+Kotlin habit carries over untouched: your <code>==</code> instinct is already
+correct. Kotlin's <code>==</code> compares content (it calls
+<code>equals</code>, sidestepping the reference-comparison trap Java has), and
+Rust's <code>==</code> on strings does exactly the same — no
+<code>.equals()</code>, no surprises. What changes is formatting: Kotlin's
+string templates like <code>"Hello, $name"</code> become
+<code>format!("Hello, {}", name)</code>, and the Rust macro is checked at
+compile time — a <code>{}</code> with no matching argument can't survive to
+runtime because the compiler verifies every placeholder.</p>`,
+
+  kotlin: `fun shout(s: String): String {
+    return s.uppercase()
+}
+
+fun greet(name: String): String {
+    // Or with StringBuilder, the mutable buffer:
+    //   StringBuilder("Hello, ").append(name).append("!").toString()
+    return "Hello, $name!"
+}
+
+fun containsWord(haystack: String, needle: String): Boolean {
+    return haystack.contains(needle)
+}
+
+// In Kotlin, == already compares content:
+// "abc" == someString   // structural equality — no .equals() needed`,
+
+  task: `
+<p>Rewrite the Kotlin as Rust, following the rule: borrow with
+<code>&amp;str</code> in, own with <code>String</code> out.</p>
+<ol>
+  <li><code>shout</code> takes <code>s: &amp;str</code> and returns
+      <code>String</code> — the input uppercased, via
+      <code>.to_uppercase()</code> (snake_case now).</li>
+  <li><code>greet</code> takes <code>name: &amp;str</code> and returns
+      <code>String</code> like <code>"Hello, Ada!"</code> — build it with
+      <code>format!</code>.</li>
+  <li><code>contains_word</code> takes <code>haystack: &amp;str</code> and
+      <code>needle: &amp;str</code> and returns <code>bool</code> —
+      <code>.contains()</code> works just like Kotlin's.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. shout: &str in, owned String out. .toUpperCase() -> .to_uppercase()
+fn shout(s: &str) -> String {
+    todo!()
+}
+
+// 2. greet: format!("Hello, {}!", ...) instead of a "Hello, $name!" template
+fn greet(name: &str) -> String {
+    todo!()
+}
+
+// 3. contains_word: .contains() reads the same as Kotlin's.
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&str/, message: "Take string parameters as &str (the borrowed view)" },
+    { pattern: /->\s*String/, message: "Return an owned String from functions that produce text" },
+    { pattern: /format!\s*\(/, message: "Build the greeting with format!" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: 'assert_eq!(shout("hello"), "HELLO");' },
+    { name: 'shout("Rust 1.0") returns "RUST 1.0"',
+      code: 'assert_eq!(shout("Rust 1.0"), "RUST 1.0");' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: 'assert_eq!(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Duke") returns "Hello, Duke!"',
+      code: 'assert_eq!(greet("Duke"), "Hello, Duke!");' },
+    { name: 'contains_word("the quick brown fox", "quick") is true',
+      code: 'assert!(contains_word("the quick brown fox", "quick"));' },
+    { name: 'contains_word("the quick brown fox", "slow") is false',
+      code: 'assert!(!contains_word("the quick brown fox", "slow"));' },
+  ],
+
+  solution: `fn shout(s: &str) -> String {
+    s.to_uppercase()
+}
+
+fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    haystack.contains(needle)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Read-only string parameter</td><td><code>String</code></td><td><code>&amp;str</code></td></tr>
+  <tr><td>Owned / growable text</td><td><code>String</code> + <code>StringBuilder</code></td><td><code>String</code></td></tr>
+  <tr><td>Equality</td><td><code>a == b</code> (content)</td><td><code>a == b</code> (content, always)</td></tr>
+  <tr><td>Formatting</td><td><code>"$s is $n"</code> (string template)</td><td><code>format!("{} is {}", s, n)</code> — checked at compile time</td></tr>
+  <tr><td>Case</td><td><code>s.uppercase()</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td>Search</td><td><code>s.contains(t)</code></td><td><code>s.contains(t)</code></td></tr>
+  <tr><td>Literal's type</td><td><code>"hi"</code> is a <code>String</code></td><td><code>"hi"</code> is a <code>&amp;str</code>; <code>String::from("hi")</code> to own it</td></tr>
+</table>
+<p>Why two types at all? <code>&amp;str</code> is just a view — a pointer and
+a length into text that lives somewhere else — so passing it copies nothing,
+like passing a Kotlin reference. <code>String</code> owns its buffer on the
+heap and can grow, like <code>StringBuilder</code>. The
+"<code>&amp;str</code> in, <code>String</code> out" rule means your functions
+accept both kinds cheaply and hand back something the caller fully owns. The
+next lesson explains what "owns" really means.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

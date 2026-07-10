@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: array_map, array_filter &amp; Friends</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "array_map, array_filter & Friends",
+
+  intro: `
+<p>List comprehensions are the one Python feature with no PHP equivalent —
+there is no <code>[expr for x in xs if cond]</code> syntax. The work moves to
+the <code>array_*</code> function family, and the reading order flips: a
+comprehension reads left to right, but the PHP pipeline nests
+<em>inside-out</em>, innermost operation first.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>[f(x) for x in xs]</code></td><td><code>array_map(fn($x) =&gt; f($x), $xs)</code></td></tr>
+  <tr><td><code>[x for x in xs if cond]</code></td><td><code>array_values(array_filter($xs, fn($x) =&gt; cond))</code></td></tr>
+  <tr><td><code>[p["name"] for p in ps if p["in_stock"]]</code></td>
+      <td><code>array_values(array_map(fn($p) =&gt; $p['name'],<br>&nbsp;&nbsp;array_filter($ps, fn($p) =&gt; $p['in_stock'])))</code></td></tr>
+  <tr><td><code>sum(xs)</code></td><td><code>array_sum($xs)</code></td></tr>
+  <tr><td><code>functools.reduce(f, xs, init)</code></td><td><code>array_reduce($xs, $f, $init)</code></td></tr>
+</table>
+<p>Two traps to internalize. First, the argument orders are inconsistent:
+<code>array_map(<em>callback</em>, $array)</code> puts the function first,
+<code>array_filter($array, <em>callback</em>)</code> puts the array first —
+sixty thousand PHP developers look this up every day; now you're one of them.
+Second, and more serious: <strong><code>array_filter</code> preserves
+keys</strong>. Filter <code>[10, 15, 20]</code> for evens and you get
+<code>[0 =&gt; 10, 2 =&gt; 20]</code> — a gap at index 1. Python never has
+this problem because a comprehension <em>builds a new list</em>; PHP filters
+in place, keys and all. When you need a clean sequential list (and for
+<code>===</code> comparisons and JSON arrays, you do), wrap the result in
+<code>array_values()</code> to reindex.</p>`,
+
+  python: `products = [
+    {"name": "keyboard", "price": 89, "qty": 2, "in_stock": True},
+    {"name": "mouse", "price": 59, "qty": 3, "in_stock": False},
+    {"name": "monitor", "price": 349, "qty": 1, "in_stock": True},
+]
+
+def in_stock_names(products: list[dict]) -> list[str]:
+    return [p["name"] for p in products if p["in_stock"]]
+
+def total_value(products: list[dict]) -> int:
+    return sum(p["price"] * p["qty"] for p in products)
+
+def evens_doubled(nums: list[int]) -> list[int]:
+    return [n * 2 for n in nums if n % 2 == 0]
+
+print(in_stock_names(products))   # ['keyboard', 'monitor']
+print(total_value(products))      # 704
+print(evens_doubled([1, 2, 3, 4]))  # [4, 8]`,
+
+  task: `
+<p>Rewrite the three comprehensions with the <code>array_*</code> family.
+Products are associative arrays with <code>'name'</code>, <code>'price'</code>,
+<code>'qty'</code>, and <code>'in_stock'</code> keys.</p>
+<ol>
+  <li><code>in_stock_names(array $products): array</code> — the names of the
+      in-stock products, as a <em>reindexed</em> list: filter, then map, then
+      <code>array_values()</code> around the lot.</li>
+  <li><code>total_value(array $products): int</code> — the sum of
+      <code>price * qty</code> over all products. Map to the subtotals, then
+      <code>array_sum()</code> (or fold it with <code>array_reduce</code>).</li>
+  <li><code>evens_doubled(array $nums): array</code> — even numbers doubled,
+      reindexed. Without <code>array_values()</code> the keys keep their gaps
+      and the <code>===</code> test fails — see for yourself.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Python: [p["name"] for p in products if p["in_stock"]]
+//    Build it inside-out: array_filter (array FIRST, callback second),
+//    then array_map (callback FIRST, array second), then array_values.
+function in_stock_names(array $products): array {
+    throw new Exception("TODO: filter, map, reindex");
+}
+
+// 2. Python: sum(p["price"] * p["qty"] for p in products)
+function total_value(array $products): int {
+    throw new Exception("TODO: map to subtotals, then array_sum");
+}
+
+// 3. Python: [n * 2 for n in nums if n % 2 == 0]
+//    Remember: array_filter keeps the original keys!
+function evens_doubled(array $nums): array {
+    throw new Exception("TODO: filter, map, reindex");
+}
+`,
+
+  requirements: [
+    { pattern: /array_map/, message: "Use array_map for the transform half of the comprehension" },
+    { pattern: /array_filter/, message: "Use array_filter for the condition half" },
+    { pattern: /array_values/, message: "Reindex filtered results with array_values" },
+    { pattern: /array_reduce|array_sum/, message: "Total up with array_sum (or array_reduce)" },
+  ],
+
+  tests: [
+    { name: "in_stock_names picks names of in-stock products, reindexed",
+      code: "$products = [\n    ['name' => 'keyboard', 'price' => 89, 'qty' => 2, 'in_stock' => true],\n    ['name' => 'mouse', 'price' => 59, 'qty' => 3, 'in_stock' => false],\n    ['name' => 'monitor', 'price' => 349, 'qty' => 1, 'in_stock' => true],\n];\nexpect_eq(in_stock_names($products), ['keyboard', 'monitor']);" },
+    { name: "in_stock_names([]) returns []",
+      code: "expect_eq(in_stock_names([]), []);" },
+    { name: "total_value sums price * qty (704 for the sample data)",
+      code: "$products = [\n    ['name' => 'keyboard', 'price' => 89, 'qty' => 2, 'in_stock' => true],\n    ['name' => 'mouse', 'price' => 59, 'qty' => 3, 'in_stock' => false],\n    ['name' => 'monitor', 'price' => 349, 'qty' => 1, 'in_stock' => true],\n];\nexpect_eq(total_value($products), 704);" },
+    { name: "evens_doubled([1, 2, 3, 4]) returns [4, 8]",
+      code: "expect_eq(evens_doubled([1, 2, 3, 4]), [4, 8]);" },
+    { name: "evens_doubled reindexes — keys are 0, 1, ... with no gaps",
+      code: "expect_eq(array_keys(evens_doubled([1, 2, 3, 4, 6])), [0, 1, 2]);" },
+  ],
+
+  solution: `<?php
+
+function in_stock_names(array $products): array {
+    return array_values(array_map(
+        fn($p) => $p['name'],
+        array_filter($products, fn($p) => $p['in_stock'])
+    ));
+}
+
+function total_value(array $products): int {
+    return array_sum(array_map(fn($p) => $p['price'] * $p['qty'], $products));
+}
+
+function evens_doubled(array $nums): array {
+    return array_values(array_map(
+        fn($n) => $n * 2,
+        array_filter($nums, fn($n) => $n % 2 === 0)
+    ));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Map</td><td><code>[f(x) for x in xs]</code></td><td><code>array_map(fn($x) =&gt; f($x), $xs)</code> — callback first</td></tr>
+  <tr><td>Filter</td><td><code>[x for x in xs if c]</code></td><td><code>array_filter($xs, fn($x) =&gt; c)</code> — array first</td></tr>
+  <tr><td>Reindex</td><td>automatic (new list)</td><td><code>array_values($xs)</code>, by hand</td></tr>
+  <tr><td>Sum</td><td><code>sum(xs)</code></td><td><code>array_sum($xs)</code></td></tr>
+  <tr><td>Reduce</td><td><code>functools.reduce(f, xs, init)</code></td><td><code>array_reduce($xs, $f, $init)</code></td></tr>
+  <tr><td>Sort with key</td><td><code>sorted(xs, key=...)</code></td><td><code>usort($xs, $cmp)</code> — in place, comparator not key</td></tr>
+  <tr><td>Any / all</td><td><code>any(...)</code> / <code>all(...)</code></td><td><code>array_any()</code> / <code>array_all()</code> (8.4) — before that, filter and count</td></tr>
+</table>
+<p>Why does <code>array_filter</code> preserve keys when Python doesn't even
+have the concept? Because PHP has only one array type: the ordered hash map
+you met in lessons 3 and 4. Filtering an associative array
+<em>should</em> keep keys — dropping them would destroy the data. PHP can't
+know whether your array is "a list" or "a dict", so it always keeps them, and
+you say otherwise with <code>array_values()</code>. Python dodges the whole
+question by rebuilding: a comprehension appends to a brand-new list, so
+sequential indexes are guaranteed by construction.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Scope & Closures</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Scope & Closures",
+
+  intro: `
+<p>Closures existed in C++ before JavaScript formalized them, but C++ makes you
+declare the capture explicitly: a lambda's <code>[]</code> capture list says
+whether each outer variable is copied in by value or captured by reference, and
+capturing by value freezes a snapshot unless you add <code>mutable</code>. In
+JavaScript there is no capture list at all — every function silently closes over
+every outer variable it references, capturing the live <em>binding</em>, not a
+value.</p>
+<table>
+  <tr><th>C++</th><th>JavaScript</th></tr>
+  <tr><td><code>std::function&lt;int()&gt; make()</code></td><td><code>function make()</code></td></tr>
+  <tr><td><code>auto add = [a](int b) { return a + b; };</code></td><td><code>const add = (a) =&gt; (b) =&gt; a + b;</code></td></tr>
+  <tr><td>captured var: <code>[x]</code> copy or <code>[&amp;x]</code> reference</td><td>captured var is always a live binding</td></tr>
+</table>
+<p>The important runtime fact: JavaScript's inner function captures the
+<em>binding</em>, not a snapshot of the value — the JS equivalent of always
+writing <code>[&amp;count]</code> and never needing <code>mutable</code>. If the
+outer variable changes, the closure sees the change. That is exactly how a
+counter can keep incrementing, and how you get truly private state — no private
+member, no <code>class</code>, just a variable that nothing outside the closure
+can reach.</p>`,
+
+  cpp: `std::function<int()> makeCounter() {
+  int count = 0;
+  return [count]() mutable -> int { return ++count; };
+}
+
+auto add = [](int a) {
+  return [a](int b) -> int { return a + b; };
+};
+
+template <typename F>
+auto once(F fn) {
+  bool called = false;
+  using R = std::invoke_result_t<F>;
+  R result{};
+  return [=]() mutable -> R {
+    if (!called) { called = true; result = fn(); }
+    return result;
+  };
+}`,
+
+  task: `
+<p>Write the plain-JavaScript versions. Each relies on a variable captured by a
+returned function:</p>
+<ol>
+  <li><code>makeCounter()</code> returns a function; each call returns the next
+      integer starting at <code>1</code>. Two counters must be independent.</li>
+  <li><code>add(a)</code> returns a function so that <code>add(2)(3)</code> is
+      <code>5</code> — a curried adder factory.</li>
+  <li><code>once(fn)</code> returns a wrapped function that runs <code>fn</code>
+      only the first time; later calls return the first result and never call
+      <code>fn</code> again.</li>
+  <li><code>makeAccount(balance)</code> returns an object with
+      <code>deposit(n)</code> and <code>getBalance()</code> methods sharing one
+      private <code>balance</code> variable — no property on the object holds it.</li>
+</ol>`,
+
+  starter: `// 1. makeCounter() -> function returning 1, 2, 3, ...
+function makeCounter() {
+  // TODO
+}
+
+// 2. add(a)(b) -> a + b
+function add(a) {
+  // TODO
+}
+
+// 3. once(fn) -> wrapper that runs fn only the first time
+function once(fn) {
+  // TODO
+}
+
+// 4. makeAccount(balance) -> { deposit, getBalance } over a private balance
+function makeAccount(balance) {
+  // TODO
+}
+`,
+
+  exportNames: ["makeCounter", "add", "once", "makeAccount"],
+
+  requirements: [
+    { pattern: /return\s+function|=>\s*{|=>[^;]*;?\s*}|return\s*\(/, message: "Return a function (or object of functions) that closes over a variable" },
+    { pattern: /let\s+\w+\s*=\s*0|\+\+|count/, message: "Use a captured, mutable variable inside makeCounter" },
+  ],
+
+  tests: [
+    { name: "makeCounter counts 1, 2, 3", run: (x) => {
+      const c = x.makeCounter();
+      expectEqual(c(), 1);
+      expectEqual(c(), 2);
+      expectEqual(c(), 3);
+    } },
+    { name: "counters are independent", run: (x) => {
+      const a = x.makeCounter();
+      const b = x.makeCounter();
+      expectEqual(a(), 1);
+      expectEqual(a(), 2);
+      expectEqual(b(), 1);
+    } },
+    { name: "add(2)(3) is 5", run: (x) => expectEqual(x.add(2)(3), 5) },
+    { name: "add is curried and reusable", run: (x) => {
+      const add10 = x.add(10);
+      expectEqual(add10(5), 15);
+      expectEqual(add10(-10), 0);
+    } },
+    { name: "once runs fn only the first time", run: (x) => {
+      let calls = 0;
+      const f = x.once(() => { calls++; return 42; });
+      expectEqual(f(), 42);
+      expectEqual(f(), 42);
+      expectEqual(calls, 1);
+    } },
+    { name: "once returns the first result on later calls", run: (x) => {
+      let n = 0;
+      const f = x.once(() => ++n);
+      expectEqual(f(), 1);
+      expectEqual(f(), 1);
+    } },
+    { name: "makeAccount keeps balance private", run: (x) => {
+      const acc = x.makeAccount(100);
+      expectEqual(acc.getBalance(), 100);
+      acc.deposit(50);
+      expectEqual(acc.getBalance(), 150);
+      expectEqual(acc.balance, undefined);
+    } },
+  ],
+
+  solution: `function makeCounter() {
+  let count = 0;
+  return function () {
+    return ++count;
+  };
+}
+
+function add(a) {
+  return function (b) {
+    return a + b;
+  };
+}
+
+function once(fn) {
+  let called = false;
+  let result;
+  return function (...args) {
+    if (!called) {
+      called = true;
+      result = fn(...args);
+    }
+    return result;
+  };
+}
+
+function makeAccount(balance) {
+  return {
+    deposit(n) {
+      balance += n;
+    },
+    getBalance() {
+      return balance;
+    },
+  };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>JavaScript</th></tr>
+  <tr><td>Returned function type</td><td><code>std::function&lt;int()&gt;</code></td><td>inferred at runtime</td></tr>
+  <tr><td>Private state</td><td><code>private:</code> member</td><td>captured variable</td></tr>
+  <tr><td>Captured value</td><td><code>[x]</code> copy or <code>[&amp;x]</code> reference</td><td>live binding (sees mutations)</td></tr>
+  <tr><td>Wrapping a fn</td><td>template <code>F</code> + <code>std::invoke_result_t&lt;F&gt;</code></td><td><code>...args</code> rest/spread</td></tr>
+</table>
+<p>The classic gotcha lives here: a closure captures the <em>variable</em>, not
+its value at capture time. With <code>var</code> in a loop, every closure shares
+the one function-scoped binding and ends up seeing the final value; with
+<code>let</code>, each iteration gets a fresh binding — which is what you almost
+always want, and it happens automatically with no capture list to get wrong.
+Contrast that with C++, where capturing a loop variable by reference
+(<code>[&amp;i]</code>) in a lambda that outlives the loop is a classic
+dangling-reference bug — the fix there is capturing by value (<code>[i]</code>),
+which JavaScript's <code>let</code> gives you by default. When you reach for a
+class with a <code>private</code> member just to hide one value, remember a
+closure does the same job with a plain variable that nothing outside can name.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Structured Bindings → Destructuring</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Structured Bindings → Destructuring",
+
+  intro: `
+<p>C++17's <code>auto [x, y] = point;</code> translates almost verbatim:
+<code>const [x, y] = point;</code>. The types on the other side are
+<em>tuple types</em> — <code>[number, number]</code> is TypeScript's
+<code>std::pair&lt;double, double&gt;</code>, and
+<code>[string, number, boolean]</code> is a <code>std::tuple</code>, with
+positions and arity checked by the compiler. The <code>std::tie</code> tricks
+carry over too: <code>[a, b] = [b, a];</code> swaps in place, no
+<code>std::make_tuple</code> ceremony.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>std::pair&lt;double, double&gt;</code></td><td><code>[number, number]</code></td></tr>
+  <tr><td><code>auto [x, y] = point;</code></td><td><code>const [x, y] = point;</code></td></tr>
+  <tr><td><code>std::tie(a, b) = std::make_tuple(b, a);</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td>positional only, all members</td><td><code>const { name, age } = user;</code> — by name</td></tr>
+  <tr><td>(no equivalent)</td><td><code>const { name: n, role = "guest" } = user;</code></td></tr>
+</table>
+<p>Then TypeScript goes past what structured bindings can do:
+<strong>object destructuring</strong> picks struct members <em>by name</em>,
+in any order, ignoring the rest — where <code>auto [a, b, c]</code> is
+positional and must bind every member. You can rename as you bind
+(<code>{ name: n }</code> pulls <code>.name</code> into a local called
+<code>n</code>) and supply defaults for missing fields
+(<code>{ role = "guest" }</code>). Best of all, it works directly in a
+parameter list, so a function taking a config struct can unpack the fields it
+wants right in its signature.</p>`,
+
+  cpp: `#include <cmath>
+#include <tuple>
+#include <utility>
+
+double distance(std::pair<double, double> p) {
+    auto [x, y] = p;                     // structured binding
+    return std::sqrt(x * x + y * y);
+}
+
+std::pair<int, int> swap_pair(std::pair<int, int> p) {
+    auto [a, b] = p;
+    std::tie(a, b) = std::make_tuple(b, a);
+    return {a, b};
+}
+
+// Structured bindings are positional and take ALL members —
+// no picking fields by name, no renaming, no defaults:
+struct User { std::string name; std::string role; };
+std::string format_user(const User& u) {
+    return u.name + " (" + u.role + ")";  // must go through u.
+}`,
+
+  task: `
+<p>Port all three, using a different flavor of destructuring for each:</p>
+<ol>
+  <li><code>distance(p: [number, number]): number</code> — take a tuple type
+      (the <code>std::pair</code> stand-in), unpack it with
+      <code>const [x, y] = p;</code>, and return
+      <code>Math.sqrt(x * x + y * y)</code>.</li>
+  <li><code>swapPair(p: [number, number]): [number, number]</code> — return
+      the pair with its elements swapped. Try the <code>std::tie</code>
+      idiom: destructure with <code>let</code>, then
+      <code>[a, b] = [b, a];</code>.</li>
+  <li><code>formatUser</code> — takes one object of type
+      <code>{ name: string; role?: string }</code> and returns
+      <code>"Ada (admin)"</code>-style output. Destructure <em>in the
+      parameter list</em>, giving <code>role</code> a default of
+      <code>"guest"</code> so <code>formatUser({ name: "Grace" })</code>
+      returns <code>"Grace (guest)"</code>.</li>
+</ol>`,
+
+  starter: `// 1. std::pair<double, double> -> the tuple type [number, number].
+//    Unpack it with a structured binding: const [x, y] = p;
+function distance(p: [number, number]): number {
+  // TODO: const [x, y] = p; then Math.sqrt(x * x + y * y)
+  return 0;
+}
+
+// 2. The std::tie swap: let [a, b] = p; then [a, b] = [b, a];
+function swapPair(p: [number, number]): [number, number] {
+  // TODO
+  return p;
+}
+
+// 3. Object destructuring IN the parameter list, with a default —
+//    something auto [x, y] can't do. TODO: change the parameter to
+//    { name, role = "guest" }: { name: string; role?: string }
+function formatUser(user: { name: string; role?: string }): string {
+  // TODO: return name + " (" + role + ")"
+  return "";
+}
+`,
+
+  exportNames: ["distance", "swapPair", "formatUser"],
+
+  requirements: [
+    { pattern: /\[\s*number\s*,\s*number\s*\]/, message: "Use the tuple type [number, number] — TypeScript's std::pair<double, double>" },
+    { pattern: /const\s*\[/, message: "Unpack the tuple with a structured binding: const [x, y] = p;" },
+    { pattern: /formatUser\s*=?\s*\(\s*\{/, message: "Destructure formatUser's object parameter in the parameter list itself" },
+    { pattern: /role\s*=\s*"guest"/, message: 'Give role a destructuring default of "guest"' },
+  ],
+
+  tests: [
+    { name: "distance([3, 4]) returns 5", run: (x) => expectEqual(x.distance([3, 4]), 5) },
+    { name: "distance([0, 0]) returns 0", run: (x) => expectEqual(x.distance([0, 0]), 0) },
+    { name: "swapPair([1, 2]) returns [2, 1]", run: (x) => expectDeepEqual(x.swapPair([1, 2]), [2, 1]) },
+    { name: "swapPair([7, 7]) returns [7, 7]", run: (x) => expectDeepEqual(x.swapPair([7, 7]), [7, 7]) },
+    { name: 'formatUser({ name: "Ada", role: "admin" }) returns "Ada (admin)"', run: (x) => expectEqual(x.formatUser({ name: "Ada", role: "admin" }), "Ada (admin)") },
+    { name: 'formatUser({ name: "Grace" }) falls back to the default: "Grace (guest)"', run: (x) => expectEqual(x.formatUser({ name: "Grace" }), "Grace (guest)") },
+  ],
+
+  solution: `function distance(p: [number, number]): number {
+  const [x, y] = p;
+  return Math.sqrt(x * x + y * y);
+}
+
+function swapPair(p: [number, number]): [number, number] {
+  let [a, b] = p;
+  [a, b] = [b, a];
+  return [a, b];
+}
+
+function formatUser({ name, role = "guest" }: { name: string; role?: string }): string {
+  return name + " (" + role + ")";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Pair / tuple type</td><td><code>std::pair&lt;A, B&gt;</code>, <code>std::tuple&lt;...&gt;</code></td><td><code>[A, B]</code>, <code>[A, B, C]</code></td></tr>
+  <tr><td>Unpack positionally</td><td><code>auto [x, y] = p;</code></td><td><code>const [x, y] = p;</code></td></tr>
+  <tr><td>Swap</td><td><code>std::tie(a, b) = std::make_tuple(b, a);</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td>Pick members by name</td><td>—</td><td><code>const { name, age } = user;</code></td></tr>
+  <tr><td>Rename while binding</td><td>—</td><td><code>const { name: n } = user;</code></td></tr>
+  <tr><td>Default for missing field</td><td>—</td><td><code>const { role = "guest" } = user;</code></td></tr>
+  <tr><td>Unpack in a signature</td><td>—</td><td><code>function f({ name }: User) { ... }</code></td></tr>
+</table>
+<p>Tuple types are honest arrays at runtime — <code>[number, number]</code>
+compiles away and leaves a two-element array — but the compiler enforces
+length and per-position types, so <code>p[2]</code> is an error just as it
+would be for <code>std::get&lt;2&gt;</code> on a pair. Reach for tuples where
+you would use <code>std::pair</code>; the moment positions stop being
+self-explanatory, use an object and destructure by name instead — that is
+the option C++ never gave you.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

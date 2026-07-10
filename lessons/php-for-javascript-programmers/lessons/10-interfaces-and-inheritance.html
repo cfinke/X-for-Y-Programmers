@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Interfaces, Inheritance &amp; Abstracts</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Interfaces, Inheritance & Abstracts",
+
+  intro: `
+<p><code>extends</code> works exactly as you expect — single inheritance,
+subclass overrides methods, and <code>parent::method()</code> is your
+<code>super.method()</code> (with <code>parent::__construct()</code> standing
+in for <code>super()</code>). What's new is everything JavaScript
+<em>lacks</em>: real contracts. An <code>interface</code> declares method
+signatures with no bodies; a class that says <code>implements
+PaymentMethod</code> must define every one of them or PHP refuses to load the
+class. That's the duck-typing handshake you enforce by convention (or by
+TypeScript) in JS, checked by the engine itself.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>class Circle extends Shape</code></td><td><code>class Circle extends Shape</code> (same)</td></tr>
+  <tr><td><code>super.describe()</code> / <code>super()</code></td><td><code>parent::describe()</code> / <code>parent::__construct()</code></td></tr>
+  <tr><td>interfaces: convention only (or TS)</td><td><code>interface</code> + <code>implements</code>, engine-checked</td></tr>
+  <tr><td><code>area() { throw new Error("not implemented"); }</code></td><td><code>abstract public function area(): float;</code></td></tr>
+  <tr><td>forget to override → runtime throw, someday</td><td>forget to implement → fatal error at load time</td></tr>
+  <tr><td><code>x instanceof Shape</code></td><td><code>$x instanceof Shape</code> (also matches interfaces)</td></tr>
+</table>
+<p>Between the two sits the <code>abstract class</code>: a half-built class
+that can hold real code <em>and</em> unimplemented requirements. Mark a
+method <code>abstract</code> — signature only, no body — and every concrete
+subclass <strong>must</strong> implement it before the program will even
+start. No more base-class methods that <code>throw new Error("not
+implemented")</code> and detonate at 2 a.m. when someone finally calls them.
+The payoff is the template-method pattern: the abstract base writes concrete
+code that calls <code>$this-&gt;area()</code>, trusting a method that
+doesn't exist yet, because the engine guarantees every instantiable subclass
+supplies it. (An abstract class itself can't be <code>new</code>ed — try it
+and PHP throws.)</p>`,
+
+  javascript: `// JS has no abstract classes — you fake the contract and hope:
+class Shape {
+  area() {
+    throw new Error("not implemented"); // found at runtime, if ever
+  }
+  describe() {
+    return "This shape has an area of " + this.area();
+  }
+}
+
+class Circle extends Shape {
+  constructor(radius) {
+    super();                             // parent::__construct() in PHP
+    this.radius = radius;
+  }
+  area() { return Math.PI * this.radius ** 2; }
+}
+
+class Rectangle extends Shape {
+  constructor(w, h) { super(); this.w = w; this.h = h; }
+  area() { return this.w * this.h; }
+}`,
+
+  task: `
+<p>Port the shape hierarchy, replacing the fake contract with a real one:</p>
+<ol>
+  <li><code>abstract class Shape</code> — declare
+      <code>abstract public function area(): float;</code> (signature only,
+      semicolon, no body) plus a concrete
+      <code>describe(): string</code> that returns
+      <code>"This shape has an area of "</code> followed by
+      <code>$this-&gt;area()</code> — concrete code calling an abstract
+      method.</li>
+  <li><code>class Circle extends Shape</code> — promoted
+      <code>private float $radius</code>; implement <code>area()</code>
+      using the <code>M_PI</code> constant (PHP's <code>Math.PI</code>) and
+      <code>**</code> for the square.</li>
+  <li><code>class Rectangle extends Shape</code> — promoted
+      <code>private float $width</code> and <code>private float $height</code>;
+      <code>area()</code> is their product.</li>
+</ol>
+<p>The starter's <code>area()</code> stubs still have TODO bodies — your
+first move is to delete the body from <code>Shape::area()</code> and mark it
+<code>abstract</code>. The tests check both subclasses and the inherited
+<code>describe()</code>.</p>`,
+
+  starter: `<?php
+
+// Make this class abstract, and make area() an abstract method:
+//   abstract public function area(): float;   <- no body, just a semicolon
+class Shape {
+    public function area(): float {
+        throw new Exception("TODO: replace me with an abstract declaration");
+    }
+
+    // Keep this concrete — it's the template-method payoff:
+    public function describe(): string {
+        return "This shape has an area of " . $this->area();
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        throw new Exception("TODO: M_PI * radius squared");
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(
+        private float $width,
+        private float $height,
+    ) {}
+
+    public function area(): float {
+        throw new Exception("TODO: width times height");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class" },
+    { pattern: /extends\s+Shape/, message: "Circle and Rectangle must extend Shape" },
+    { pattern: /abstract\s+(public\s+)?function\s+area/, message: "Declare area() as an abstract method (no body) in Shape" },
+  ],
+
+  tests: [
+    { name: "a unit circle's area rounds to 3.14",
+      code: "$c = new Circle(1.0);\nexpect_eq(round($c->area(), 2), 3.14);" },
+    { name: "a 2×3 rectangle has area 6.0 exactly",
+      code: "$r = new Rectangle(2.0, 3.0);\nexpect_eq($r->area(), 6.0);" },
+    { name: "describe() is inherited from Shape and calls the subclass's area()",
+      code: '$r = new Rectangle(2.0, 3.0);\nexpect_eq($r->describe(), "This shape has an area of 6");' },
+    { name: "both subclasses are instanceof Shape",
+      code: "expect_true(new Circle(1.0) instanceof Shape);\nexpect_true(new Rectangle(1.0, 1.0) instanceof Shape);" },
+    { name: "a bigger circle still computes: radius 2 rounds to 12.57",
+      code: "expect_eq(round((new Circle(2.0))->area(), 2), 12.57);" },
+  ],
+
+  solution: `<?php
+
+abstract class Shape {
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "This shape has an area of " . $this->area();
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        return M_PI * $this->radius ** 2;
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(
+        private float $width,
+        private float $height,
+    ) {}
+
+    public function area(): float {
+        return $this->width * $this->height;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Inherit</td><td><code>extends</code></td><td><code>extends</code> (single inheritance, same)</td></tr>
+  <tr><td>Call the parent</td><td><code>super.method()</code>, <code>super()</code></td><td><code>parent::method()</code>, <code>parent::__construct()</code></td></tr>
+  <tr><td>Contract</td><td>duck typing / TS interfaces</td><td><code>interface</code> + <code>implements</code>, engine-enforced</td></tr>
+  <tr><td>Must-override method</td><td>stub that throws at runtime</td><td><code>abstract public function f(): T;</code>, checked at load</td></tr>
+  <tr><td>Half-built base class</td><td>ordinary class + discipline</td><td><code>abstract class</code> — cannot be instantiated</td></tr>
+  <tr><td>Type test</td><td><code>instanceof</code> (classes only)</td><td><code>instanceof</code> (classes <em>and</em> interfaces)</td></tr>
+  <tr><td>π</td><td><code>Math.PI</code></td><td><code>M_PI</code></td></tr>
+</table>
+<p>The deep insight: JS and PHP draw the enforcement line in different
+places. In JavaScript a broken contract is discovered when the missing
+method is finally <em>called</em> — possibly in production, possibly never.
+In PHP, a class that extends an abstract class without implementing its
+abstract methods is a fatal error the moment the class is loaded, before any
+of it runs. Interfaces push the same guarantee across unrelated classes: one
+class may <code>implement</code> many interfaces (though it
+<code>extends</code> only one parent), which is PHP's answer to most of the
+things you'd reach for mixins to do — and the rest is lesson 12's
+traits.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

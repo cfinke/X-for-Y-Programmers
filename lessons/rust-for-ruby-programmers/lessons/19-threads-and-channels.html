@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Threads & Channels</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Threads & Channels",
+
+  intro: `
+<p>Ruby has threads, but you've probably been told not to expect much from
+them: the GVL (global VM lock) lets only one thread run Ruby code at a
+time, so <code>Thread.new</code> buys you concurrency for I/O waits, not
+parallel computation — Ractors are the escape hatch, with heavy
+restrictions. Rust threads are real OS threads running in true parallel on
+separate cores. The catch you'd expect — data races — is handled by the
+same ownership system you've been using all course:
+<code>thread::spawn(move || ...)</code> <em>moves</em> its captured values
+into the new thread, so two threads simply cannot share mutable data by
+accident. The races the GVL was quietly hiding become compile errors.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>t = Thread.new { ... }</code> (GVL: one at a time)</td><td><code>let t = thread::spawn(move || ...);</code> (true parallelism)</td></tr>
+  <tr><td><code>t.value</code> — wait and get the result</td><td><code>t.join().unwrap()</code> — wait and get the result</td></tr>
+  <tr><td><code>Queue.new</code>, <code>q &lt;&lt; x</code>, <code>q.pop</code></td><td><code>mpsc::channel()</code>, <code>tx.send(x)</code>, <code>rx.recv()</code></td></tr>
+  <tr><td>Sharing state across threads: allowed, racy</td><td>Sharing state: compile error unless provably safe</td></tr>
+</table>
+<p>For sending values <em>between</em> threads, Rust's <code>mpsc</code>
+channel is Ruby's <code>Queue</code> with a type: <code>channel()</code>
+returns a transmitter/receiver pair <code>(tx, rx)</code>, the spawned
+thread <code>tx.send(v)</code>s values in, and the other end
+<code>rx.recv()</code>s them out in order, blocking until one arrives.
+One discipline matters for tests (and for real code): parallel execution is
+nondeterministic in <em>timing</em>, so always <code>.join()</code> every
+handle — or <code>recv()</code> an exact count — before asserting anything
+about the results.</p>`,
+
+  ruby: `# Ruby threads: concurrent, but the GVL means CPU work
+# doesn't actually run in parallel.
+def parallel_sum(a, b)
+  t = Thread.new { b.sum }   # "background" sum
+  a.sum + t.value            # t.value waits for the result
+end
+
+parallel_sum([1, 2], [3, 4])  # => 10
+
+# Queue: how Ruby threads hand values to each other.
+def channel_double(vals)
+  q = Queue.new
+  Thread.new do
+    vals.each { |v| q << v * 2 }
+  end
+  vals.length.times.map { q.pop }
+end
+
+channel_double([1, 2, 3])  # => [2, 4, 6]`,
+
+  task: `
+<p>Port both functions — same shapes, but genuinely parallel:</p>
+<ol>
+  <li><code>parallel_sum</code> takes <code>a: Vec&lt;i32&gt;</code> and
+      <code>b: Vec&lt;i32&gt;</code> and returns <code>i32</code>. Spawn a
+      thread with <code>thread::spawn(move || ...)</code> that sums
+      <code>b</code> (the <code>move</code> hands <code>b</code>'s ownership
+      to the thread), sum <code>a</code> on the current thread, then add the
+      spawned thread's result via <code>.join().unwrap()</code> — Ruby's
+      <code>t.value</code>. Hint: <code>b.iter().sum::&lt;i32&gt;()</code>.</li>
+  <li><code>channel_double</code> takes <code>vals: Vec&lt;i32&gt;</code> and
+      returns <code>Vec&lt;i32&gt;</code> with every value doubled. Create a
+      channel with <code>mpsc::channel()</code>, spawn a thread that
+      <code>tx.send(v * 2)</code>s each value, and collect exactly
+      <code>vals.len()</code> results with <code>rx.recv().unwrap()</code> —
+      a channel delivers them in send order, so the output order matches the
+      input. (Capture the length <em>before</em> the <code>move</code>
+      closure takes <code>vals</code>.)</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::thread;
+use std::sync::mpsc;
+
+// 1. parallel_sum: spawn a thread to sum b, sum a here, add the results.
+//    let handle = thread::spawn(move || ...);  ...  handle.join().unwrap()
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    todo!()
+}
+
+// 2. channel_double: a thread doubles each value and sends it down an
+//    mpsc channel; receive exactly vals.len() results, in order.
+//    let (tx, rx) = mpsc::channel();
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /thread::spawn/, message: "Spawn a thread with thread::spawn(move || ...)" },
+    { pattern: /\.join\(\)/, message: "Wait for the spawned thread with .join()" },
+    { pattern: /mpsc/, message: "Use an mpsc channel (Rust's typed Queue) in channel_double" },
+  ],
+
+  tests: [
+    { name: "parallel_sum(vec![1, 2], vec![3, 4]) returns 10",
+      code: "assert_eq!(parallel_sum(vec![1, 2], vec![3, 4]), 10);" },
+    { name: "parallel_sum(vec![], vec![5]) returns 5",
+      code: "assert_eq!(parallel_sum(vec![], vec![5]), 5);" },
+    { name: "parallel_sum(vec![-1, 1], vec![]) returns 0",
+      code: "assert_eq!(parallel_sum(vec![-1, 1], vec![]), 0);" },
+    { name: "channel_double(vec![1, 2, 3]) returns [2, 4, 6]",
+      code: "assert_eq!(channel_double(vec![1, 2, 3]), vec![2, 4, 6]);" },
+    { name: "channel_double(vec![]) returns []",
+      code: "assert_eq!(channel_double(vec![]), Vec::<i32>::new());" },
+    { name: "channel_double preserves send order",
+      code: "assert_eq!(channel_double(vec![10, -3, 0, 7]), vec![20, -6, 0, 14]);" },
+  ],
+
+  solution: `use std::thread;
+use std::sync::mpsc;
+
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    let handle = thread::spawn(move || b.iter().sum::<i32>());
+    let a_sum: i32 = a.iter().sum();
+    a_sum + handle.join().unwrap()
+}
+
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    let (tx, rx) = mpsc::channel();
+    let n = vals.len();
+    thread::spawn(move || {
+        for v in vals {
+            tx.send(v * 2).unwrap();
+        }
+    });
+    (0..n).map(|_| rx.recv().unwrap()).collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Start a thread</td><td><code>Thread.new { ... }</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+  <tr><td>Parallel CPU work</td><td>No (GVL) — Ractors as escape hatch</td><td>Yes — real OS threads</td></tr>
+  <tr><td>Wait for the result</td><td><code>t.value</code> / <code>t.join</code></td><td><code>handle.join().unwrap()</code></td></tr>
+  <tr><td>Pass values between threads</td><td><code>Queue</code> (<code>&lt;&lt;</code> / <code>pop</code>)</td><td><code>mpsc::channel()</code> (<code>tx.send</code> / <code>rx.recv</code>), typed</td></tr>
+  <tr><td>Give a thread data</td><td>closure shares everything (racy)</td><td><code>move</code> transfers ownership (checked)</td></tr>
+  <tr><td>Data race</td><td>possible, hidden by the GVL, bites in JRuby/Ractors</td><td>compile error</td></tr>
+</table>
+<p>Notice what <code>move</code> is really doing: the ownership rules from
+Lesson 4 turn out to be a <em>concurrency</em> discipline. A value moved
+into a thread has exactly one owner, so no other thread can mutate it —
+which is precisely the invariant the GVL enforces by brute force, and Ruby
+code silently relies on. Channels complete the picture: instead of sharing
+state and locking around it, you transfer values from thread to thread —
+"don't communicate by sharing memory; share memory by communicating." When
+you do need genuinely shared state, Rust has <code>Arc&lt;Mutex&lt;T&gt;&gt;</code>,
+and the compiler will refuse anything less safe.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>In Go, JSON is a ceremony: define a struct, decorate every field with a
+tag, hand <code>Unmarshal</code> a pointer to a zero value, and check the
+error. In PHP, the associative array <em>already is</em> the shape of a JSON
+object, so the entire round trip is two functions:
+<code>json_encode($data)</code> serializes any array (or scalar, or object)
+directly, and <code>json_decode($json, true)</code> parses back into nested
+associative arrays. No target type, no tags, no reflection visible at the
+surface.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td>struct with <code>json:"name"</code> tags</td><td><em>nothing — arrays serialize as-is</em></td></tr>
+  <tr><td><code>data, err := json.Marshal(u)</code></td><td><code>$json = json_encode($u);</code></td></tr>
+  <tr><td><code>err := json.Unmarshal(raw, &amp;u)</code></td><td><code>$u = json_decode($raw, true);</code></td></tr>
+  <tr><td>unknown fields silently dropped into the zero value</td><td>missing keys handled at read time with <code>??</code></td></tr>
+  <tr><td><code>if err != nil { ... }</code></td><td><code>JSON_THROW_ON_ERROR</code> flag → <code>JsonException</code></td></tr>
+</table>
+<p>Two gotchas. First, that <code>true</code> in <code>json_decode</code>
+matters: without it you get <code>stdClass</code> objects
+(<code>$u-&gt;name</code>) instead of arrays (<code>$u['name']</code>) —
+almost everyone passes <code>true</code>. Second, by default a bad document
+makes <code>json_decode</code> return <code>null</code> <em>silently</em> —
+the moral equivalent of ignoring <code>Unmarshal</code>'s error. Passing the
+<code>JSON_THROW_ON_ERROR</code> flag upgrades failures to a thrown
+<code>JsonException</code>, which after lesson 16 is the mode you want. And
+since decoded data has no struct to supply zero values, <code>??</code> from
+lesson 6 becomes your defaulting tool: <code>$u['name'] ?? "unknown"</code>.</p>`,
+
+  go: `type User struct {
+    Name string \`json:"name"\`
+    Age  int    \`json:"age"\`
+}
+
+func encode(u User) (string, error) {
+    data, err := json.Marshal(u)
+    if err != nil {
+        return "", err
+    }
+    return string(data), nil
+}
+
+func parseUser(raw []byte) (User, error) {
+    var u User // zero values stand in for missing fields
+    if err := json.Unmarshal(raw, &u); err != nil {
+        return User{}, err
+    }
+    return u, nil
+}`,
+
+  task: `
+<p>Write the PHP side of the round trip:</p>
+<ol>
+  <li><code>to_json(array $data): string</code> — one call:
+      <code>json_encode($data)</code>. No struct, no tags, no error pair.</li>
+  <li><code>parse_user(string $json): array</code> — decode with
+      <code>json_decode($json, true)</code> (the <code>true</code> gives you
+      arrays, not <code>stdClass</code>), then return an array with exactly
+      two keys: <code>"name"</code> defaulting to <code>"unknown"</code> and
+      <code>"age"</code> defaulting to <code>0</code>, using <code>??</code>.
+      This hand-rolls what Go's zero values did for free — but only for the
+      fields <em>you</em> choose.</li>
+  <li><code>pluck_names(string $json): array</code> — the input is a JSON
+      array of user objects. Decode it, then use <code>array_map</code> from
+      lesson 13 to return just the <code>"name"</code> values, in order.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Go: json.Marshal + err check + string() cast.
+//    PHP: json_encode($data). That's the whole function.
+function to_json(array $data): string {
+    throw new Exception("TODO: implement to_json");
+}
+
+// 2. json_decode($json, true) — true means assoc arrays.
+//    Then build ["name" => ... ?? "unknown", "age" => ... ?? 0].
+function parse_user(string $json): array {
+    throw new Exception("TODO: implement parse_user");
+}
+
+// 3. Decode a JSON array of users, then
+//    array_map(fn($u) => $u["name"], $users).
+function pluck_names(string $json): array {
+    throw new Exception("TODO: implement pluck_names");
+}
+`,
+
+  requirements: [
+    { pattern: /json_encode/, message: "Use json_encode to serialize" },
+    { pattern: /json_decode\s*\(\s*\$\w+\s*,\s*true\s*\)/, message: "Use json_decode($json, true) — the true gives you associative arrays" },
+    { pattern: /\?\?/, message: "Use ?? to supply defaults for missing keys" },
+  ],
+
+  tests: [
+    { name: 'to_json encodes an associative array as a JSON object',
+      code: `expect_eq(to_json(["name" => "gopher", "age" => 12]), '{"name":"gopher","age":12}');` },
+    { name: 'to_json encodes a list as a JSON array',
+      code: `expect_eq(to_json([1, 2, 3]), '[1,2,3]');` },
+    { name: 'parse_user returns the decoded name and age',
+      code: `expect_eq(parse_user('{"name":"Ada","age":36}'), ["name" => "Ada", "age" => 36]);` },
+    { name: 'parse_user defaults missing fields to "unknown" and 0',
+      code: `expect_eq(parse_user('{}'), ["name" => "unknown", "age" => 0]);` },
+    { name: 'parse_user keeps a real age when only the name is missing',
+      code: `expect_eq(parse_user('{"age":99}'), ["name" => "unknown", "age" => 99]);` },
+    { name: 'pluck_names maps out the names in order',
+      code: `expect_eq(pluck_names('[{"name":"Ada","age":36},{"name":"Linus","age":55}]'), ["Ada", "Linus"]);` },
+  ],
+
+  solution: `<?php
+
+function to_json(array $data): string {
+    return json_encode($data);
+}
+
+function parse_user(string $json): array {
+    $data = json_decode($json, true);
+    return [
+        "name" => $data["name"] ?? "unknown",
+        "age"  => $data["age"] ?? 0,
+    ];
+}
+
+function pluck_names(string $json): array {
+    $users = json_decode($json, true);
+    return array_map(fn($u) => $u["name"], $users);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Serialize</td><td><code>json.Marshal(v)</code></td><td><code>json_encode($v)</code></td></tr>
+  <tr><td>Parse</td><td><code>json.Unmarshal(raw, &amp;v)</code></td><td><code>json_decode($raw, true)</code></td></tr>
+  <tr><td>Field naming</td><td><code>json:"snake_name"</code> tags</td><td>array keys are used verbatim</td></tr>
+  <tr><td>Missing field</td><td>zero value</td><td>key absent — read with <code>?? $default</code></td></tr>
+  <tr><td>Bad input</td><td><code>err != nil</code></td><td><code>null</code> silently, or <code>JSON_THROW_ON_ERROR</code> → <code>JsonException</code></td></tr>
+  <tr><td>Pretty output</td><td><code>json.MarshalIndent</code></td><td><code>json_encode($v, JSON_PRETTY_PRINT)</code></td></tr>
+  <tr><td>Objects instead of arrays</td><td>—</td><td>omit the <code>true</code> → <code>stdClass</code></td></tr>
+</table>
+<p>The trade you're making is the same one this whole course keeps
+surfacing: Go's struct tags buy compile-time shape checking — a typo'd field
+is a zero value you can hunt for, but the <em>types</em> are guaranteed.
+Decoded PHP arrays guarantee nothing: <code>$u["age"]</code> might be a
+string, a float, or absent, and nothing complains until you use it. In real
+code the discipline is to validate at the boundary — decode with
+<code>json_decode($raw, true, 512, JSON_THROW_ON_ERROR)</code> (the
+<code>512</code> is the default nesting depth, which you must pass to reach
+the flags parameter), apply <code>??</code> defaults immediately, and hand
+the rest of the program a shape it can trust — much like unmarshalling into
+a struct at the edge of a Go service.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Structs & Comparable</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Structs & Comparable",
+
+  intro: `
+<p>C# records gave you value objects in one line — constructor, properties,
+value equality, all generated. Ruby has had the same deal since long before
+records: <code>Point = Struct.new(:x, :y)</code> builds a class with an
+initializer, accessors, and <code>==</code> that compares by value. Two
+differences from a record: a Struct is <em>mutable</em> by default
+(<code>p.x = 5</code> works — think mutable record with generated members,
+not readonly struct), and extra methods go in a block passed straight to
+<code>Struct.new</code>.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>record Point(double X, double Y);</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td>value equality (generated)</td><td>value equality (generated) — but mutable by default</td></tr>
+  <tr><td><code>: IComparable&lt;Version&gt;</code> + <code>CompareTo</code></td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td></tr>
+  <tr><td><code>&lt;</code>, <code>&gt;</code>, <code>==</code> need hand-written operator overloads</td><td><code>&lt;</code>, <code>&gt;</code>, <code>==</code>, <code>between?</code> — free</td></tr>
+</table>
+<p>Ordering is where Ruby pulls ahead. Implementing
+<code>IComparable&lt;T&gt;.CompareTo</code> buys you <code>List.Sort()</code>
+— and nothing else; if you want <code>a &lt; b</code> to compile, you write
+four operator overloads by hand. In Ruby you define <em>one</em> method,
+<code>&lt;=&gt;</code> (return -1, 0, or 1, exactly like
+<code>CompareTo</code>), add <code>include Comparable</code>, and
+<code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>,
+<code>==</code>, <code>between?</code>, <code>clamp</code>, and sorting all
+arrive for free. A handy trick inside <code>&lt;=&gt;</code>: arrays compare
+element by element, so delegating to
+<code>[major, minor] &lt;=&gt; [other.major, other.minor]</code> gets
+multi-level ordering in one line.</p>`,
+
+  csharp: `public record Point(double X, double Y)
+{
+    public double DistanceTo(Point other) =>
+        Math.Sqrt(Math.Pow(X - other.X, 2) + Math.Pow(Y - other.Y, 2));
+}
+
+public class Version : IComparable<Version>
+{
+    public int Major { get; }
+    public int Minor { get; }
+    public Version(int major, int minor) => (Major, Minor) = (major, minor);
+
+    public int CompareTo(Version? other) =>
+        (Major, Minor).CompareTo((other!.Major, other.Minor));
+
+    // CompareTo unlocks list.Sort() — but NOT v1 < v2 or ==.
+    // Those would each need a hand-written operator overload.
+}`,
+
+  task: `
+<p>Build both value types in Ruby:</p>
+<ol>
+  <li><code>Point = Struct.new(:x, :y)</code> with a
+      <code>distance_to(other)</code> method defined in the block —
+      <code>Math.sqrt</code> of the summed squared deltas. Inside the block,
+      <code>x</code> and <code>y</code> are just the generated accessors.</li>
+  <li>A <code>Version</code> class: <code>include Comparable</code>,
+      an <code>initialize(major, minor)</code> that stores both,
+      <code>attr_reader :major, :minor</code>, and a
+      <code>&lt;=&gt;(other)</code> that compares
+      <code>[major, minor]</code> arrays. That one method must make
+      <code>&lt;</code>, <code>sort</code>, and <code>between?</code> all
+      work — don't define them yourself.</li>
+</ol>`,
+
+  starter: `# 1. Point: Struct.new generates initialize, accessors, and value ==.
+#    Extra methods go in the block.
+Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    raise NotImplementedError, "TODO: Math.sqrt of squared dx + squared dy"
+  end
+end
+
+# 2. Version: one <=> method + include Comparable = every operator.
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    raise NotImplementedError, "TODO: assign @major and @minor"
+  end
+
+  def <=>(other)
+    raise NotImplementedError, "TODO: [major, minor] <=> [other.major, other.minor]"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /Struct\.new/, message: "Build Point with Struct.new" },
+    { pattern: /include\s+Comparable/, message: "include Comparable in Version" },
+    { pattern: /<=>/, message: "Define the <=> spaceship operator" },
+    { pattern: /def\s+distance_to/, message: "Define distance_to inside the Struct block" },
+  ],
+
+  tests: [
+    { name: "Point.new(0, 0).distance_to(Point.new(3, 4)) is 5.0",
+      code: "  expect_eq(Point.new(0, 0).distance_to(Point.new(3, 4)), 5.0)" },
+    { name: "Structs compare by value: Point.new(1, 2) == Point.new(1, 2)",
+      code: "  expect_true(Point.new(1, 2) == Point.new(1, 2))" },
+    { name: "Version.new(1, 2) < Version.new(1, 10) — < arrives free",
+      code: "  expect_true(Version.new(1, 2) < Version.new(1, 10))" },
+    { name: "an array of Versions sorts correctly",
+      code: `  versions = [Version.new(2, 0), Version.new(1, 10), Version.new(1, 2)]
+  sorted = versions.sort.map { |v| [v.major, v.minor] }
+  expect_eq(sorted, [[1, 2], [1, 10], [2, 0]])` },
+    { name: "Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0))",
+      code: "  expect_true(Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0)))" },
+  ],
+
+  solution: `Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    Math.sqrt((x - other.x) ** 2 + (y - other.y) ** 2)
+  end
+end
+
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  def <=>(other)
+    [major, minor] <=> [other.major, other.minor]
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Value object, one line</td><td><code>record Point(double X, double Y);</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td>Mutability</td><td>records readonly by default</td><td>Structs mutable by default</td></tr>
+  <tr><td>Extra members</td><td>record body <code>{ ... }</code></td><td>block passed to <code>Struct.new</code></td></tr>
+  <tr><td>Ordering contract</td><td><code>IComparable&lt;T&gt;.CompareTo</code></td><td><code>&lt;=&gt;</code> returning -1 / 0 / 1</td></tr>
+  <tr><td>Comparison operators</td><td>four hand-written overloads</td><td><code>include Comparable</code> — all derived from <code>&lt;=&gt;</code></td></tr>
+  <tr><td>Range check</td><td><code>v.CompareTo(lo) &gt;= 0 &amp;&amp; ...</code></td><td><code>v.between?(lo, hi)</code></td></tr>
+  <tr><td>Multi-key compare</td><td>tuples: <code>(a, b).CompareTo((c, d))</code></td><td>arrays: <code>[a, b] &lt;=&gt; [c, d]</code></td></tr>
+</table>
+<p>This is Ruby's module system doing real work: <code>Comparable</code> is a
+mixin whose methods are all written in terms of one hook,
+<code>&lt;=&gt;</code>. You supply the hook, the module supplies the API —
+the same pattern <code>Enumerable</code> uses with <code>each</code>. When a
+C# interface would demand you implement five members, a Ruby mixin typically
+asks for one and derives the rest.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

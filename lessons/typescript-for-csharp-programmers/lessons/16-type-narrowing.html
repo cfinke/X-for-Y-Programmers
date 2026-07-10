@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Type Narrowing &amp; Guards</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Type Narrowing & Guards",
+
+  intro: `
+<p>In C#, a value typed as <code>object</code> is opaque until you pattern-match
+it, and matching binds a <em>fresh</em> variable of the narrowed type:
+<code>if (value is string s)</code> gives you <code>s</code>. TypeScript gets
+the same effect through <em>control-flow analysis</em>: an ordinary
+<code>typeof</code>, <code>instanceof</code>, or <code>in</code> check narrows
+the <em>original</em> variable — no new binding needed. Inside
+<code>if (typeof value === "string")</code>, <code>value</code> simply
+<em>is</em> a <code>string</code>, and <code>value.length</code> compiles.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>if (value is string s)</code></td><td><code>if (typeof value === "string")</code> — <code>value</code> itself narrows</td></tr>
+  <tr><td><code>if (value is MemoryStream m)</code></td><td><code>if (value instanceof Map)</code></td></tr>
+  <tr><td><code>if (value is int[] items)</code></td><td><code>if (Array.isArray(value))</code></td></tr>
+  <tr><td><code>value as User</code> (null on failure)</td><td><code>value as User</code> (no runtime check at all!)</td></tr>
+  <tr><td><code>object</code> parameter</td><td><code>unknown</code> parameter (must narrow before use)</td></tr>
+</table>
+<p>Two traps for C# reflexes. First, <code>as</code>: in C# it is a safe cast
+that returns <code>null</code> on failure; in TypeScript it is a
+<em>compile-time-only assertion</em> — it checks nothing, returns nothing
+special, and disappears entirely from the compiled JavaScript. It is you
+telling the compiler "trust me", and it can lie. Second, where a C# API would
+take <code>object</code>, TypeScript offers <code>unknown</code>: like
+<code>object</code>, anything is assignable <em>to</em> it, but the compiler
+refuses every member access until you narrow it.</p>
+<p>For a reusable check, write a <em>type predicate</em>: a function whose
+return type is <code>value is User</code> instead of <code>boolean</code>.
+It is a declarative pattern match packaged as a function — when it returns
+<code>true</code>, the caller's variable narrows to <code>User</code>, exactly
+as if they had written <code>value is User u</code> inline. (And remember:
+C#'s <code>user.Name</code>/<code>user.Age</code> become camelCase
+<code>user.name</code>/<code>user.age</code>.)</p>`,
+
+  csharp: `static string Describe(object value)
+{
+    // Pattern matching binds a NEW variable of the narrowed type
+    if (value is string s)
+        return $"string of length {s.Length}";
+    if (value is int n)
+        return $"number: {n}";
+    if (value is int[] items)
+        return $"array of {items.Length} items";
+
+    // 'as' returns null on failure, so a null check follows
+    var user = value as User;
+    if (user != null)
+        return $"user {user.Name} (age {user.Age})";
+
+    return "something else";
+}`,
+
+  task: `
+<p>Port <code>Describe</code> to TypeScript using narrowing instead of bindings:</p>
+<ol>
+  <li>Keep the provided <code>User</code> interface (<code>name: string</code>,
+      <code>age: number</code> — camelCase where C# had <code>Name</code>/<code>Age</code>).</li>
+  <li>Write <code>isUser(value: unknown)</code> whose <em>return type is a type
+      predicate</em> declaring that <code>value</code> is a <code>User</code>.
+      It returns <code>true</code> only for a non-null object whose
+      <code>name</code> is a string and whose <code>age</code> is a number.</li>
+  <li>Write <code>describeValue(value: unknown): string</code> that returns:
+    <ul>
+      <li><code>"string of length 5"</code> for <code>"hello"</code>
+          (use <code>typeof</code>)</li>
+      <li><code>"number: 42"</code> for <code>42</code></li>
+      <li><code>"array of 3 items"</code> for <code>[1, 2, 3]</code>
+          (use <code>Array.isArray</code>)</li>
+      <li><code>"user Ada (age 36)"</code> for <code>{ name: "Ada", age: 36 }</code>
+          (use your <code>isUser</code> predicate)</li>
+      <li><code>"something else"</code> for anything else</li>
+    </ul>
+  </li>
+</ol>
+<p>Notice that inside each branch you use <code>value</code> directly — the
+compiler has already narrowed it, no <code>s</code>, <code>n</code>, or
+<code>items</code> binding required.</p>`,
+
+  starter: `interface User {
+  name: string;
+  age: number;
+}
+
+// 1. Change the return type from boolean to a type predicate so callers
+//    get narrowing - like packaging a C# pattern match into a function.
+function isUser(value: unknown): boolean {
+  // TODO: true only for a non-null object with a string name and a number age
+  return false;
+}
+
+// 2. Narrow the unknown step by step. No new binding needed: after
+//    typeof value === "string", value IS a string on that branch.
+function describeValue(value: unknown): string {
+  // TODO: string, number, array, user, then the fallback
+  return "something else";
+}
+`,
+
+  exportNames: ["isUser", "describeValue"],
+
+  requirements: [
+    { pattern: /unknown/, message: "Type the parameters as unknown — the safe counterpart of C#'s object" },
+    { pattern: /\bis\s+\w+/, message: "Give isUser a type-predicate return type (the parameter name, then the keyword, then User)" },
+    { pattern: /typeof/, message: "Use typeof checks to narrow the string and number branches" },
+    { pattern: /Array\.isArray/, message: "Use Array.isArray for the array branch — typeof reports arrays as \"object\"" },
+  ],
+
+  tests: [
+    { name: 'describeValue("hello") returns "string of length 5"', run: (x) => expectEqual(x.describeValue("hello"), "string of length 5") },
+    { name: 'describeValue(42) returns "number: 42"', run: (x) => expectEqual(x.describeValue(42), "number: 42") },
+    { name: 'describeValue([1, 2, 3]) returns "array of 3 items"', run: (x) => expectEqual(x.describeValue([1, 2, 3]), "array of 3 items") },
+    { name: 'describeValue({ name: "Ada", age: 36 }) returns "user Ada (age 36)"', run: (x) => expectEqual(x.describeValue({ name: "Ada", age: 36 }), "user Ada (age 36)") },
+    { name: "isUser accepts a real user and rejects near-misses", run: (x) => {
+        expectEqual(x.isUser({ name: "Ada", age: 36 }), true);
+        expectEqual(x.isUser({ name: "Ada" }), false);
+        expectEqual(x.isUser(null), false);
+        expectEqual(x.isUser("Ada"), false);
+      } },
+    { name: 'describeValue(true) falls through to "something else"', run: (x) => expectEqual(x.describeValue(true), "something else") },
+  ],
+
+  solution: `interface User {
+  name: string;
+  age: number;
+}
+
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as User).name === "string" &&
+    typeof (value as User).age === "number"
+  );
+}
+
+function describeValue(value: unknown): string {
+  if (typeof value === "string") {
+    return "string of length " + value.length;
+  }
+  if (typeof value === "number") {
+    return "number: " + value;
+  }
+  if (Array.isArray(value)) {
+    return "array of " + value.length + " items";
+  }
+  if (isUser(value)) {
+    return "user " + value.name + " (age " + value.age + ")";
+  }
+  return "something else";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Primitive check</td><td><code>value is string s</code> (binds <code>s</code>)</td><td><code>typeof value === "string"</code> (narrows <code>value</code>)</td></tr>
+  <tr><td>Class check</td><td><code>value is MemoryStream m</code></td><td><code>value instanceof Map</code></td></tr>
+  <tr><td>Array check</td><td><code>value is int[] a</code></td><td><code>Array.isArray(value)</code></td></tr>
+  <tr><td>Member check</td><td><code>value is { Length: &gt; 0 }</code></td><td><code>"name" in value</code></td></tr>
+  <tr><td>Reusable pattern</td><td>inline patterns only</td><td>predicate: <code>function isUser(v: unknown): v is User</code></td></tr>
+  <tr><td>Safe cast</td><td><code>value as User</code> → null on failure</td><td>none — <code>as</code> asserts and checks <em>nothing</em></td></tr>
+  <tr><td>Opaque value</td><td><code>object</code></td><td><code>unknown</code> (compiler forces narrowing)</td></tr>
+</table>
+<p>The deep difference: C# pattern matching is a runtime feature with compiler
+support, while TypeScript narrowing is compiler analysis over plain JavaScript
+checks. The <code>typeof</code> and <code>Array.isArray</code> calls survive
+compilation and really run; the types and the <code>as</code> assertions are
+erased. That is why TypeScript's <code>as</code> can never return
+<code>null</code> — and why a type predicate that lies (returns
+<code>true</code> for a non-user) produces exactly the kind of runtime surprise
+the type system was supposed to prevent. Keep predicates honest.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

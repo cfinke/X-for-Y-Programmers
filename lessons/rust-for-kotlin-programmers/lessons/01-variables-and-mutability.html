@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables, Mutability & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables, Mutability & Types",
+
+  intro: `
+<p>You already live this distinction: in Kotlin you reach for <code>val</code> by
+default and only fall back to <code>var</code> when you genuinely need to
+reassign. Rust makes the exact same call — <code>let name = "Ada";</code> is an
+immutable binding, the equivalent of your <code>val</code>. Reassignment is the
+thing you opt <em>into</em>, with <code>let mut</code>, which lines up with your
+<code>var</code>. The compiler even nags you the other way: declare something
+<code>mut</code> and never mutate it, and you get a warning — the same instinct
+IntelliJ has when it suggests turning a <code>var</code> back into a
+<code>val</code>.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>val name = "Ada"</code></td><td><code>let name = "Ada";</code></td></tr>
+  <tr><td><code>var age = 36</code> (reassignable)</td><td><code>let mut age = 36;</code></td></tr>
+  <tr><td><code>val price = 9.99</code></td><td><code>let price = 9.99;</code> (inferred <code>f64</code>)</td></tr>
+  <tr><td><code>Int</code> / <code>Long</code> / <code>Double</code></td><td><code>i32</code> / <code>i64</code> / <code>f64</code> — plus <code>u32</code>, <code>u64</code>…</td></tr>
+  <tr><td><code>"$n is $a"</code></td><td><code>format!("{} is {}", n, a)</code></td></tr>
+</table>
+<p>The numeric types map almost one-to-one — <code>i32</code> is
+<code>Int</code>, <code>i64</code> is <code>Long</code>, <code>f64</code> is
+<code>Double</code>. You've seen unsigned types before (<code>UInt</code>,
+<code>ULong</code>), but in Rust they're first-class and everyday:
+<code>u32</code> is a 32-bit integer that simply cannot be negative, which is
+perfect for things like ages and counts. And there's no boxing question hanging
+over you: no <code>Int</code> vs <code>Int?</code> where the nullable form
+quietly becomes a boxed <code>java.lang.Integer</code>. An <code>i32</code> is
+just an <code>i32</code>, everywhere. Inference works like Kotlin's — you write
+<code>let x = 1</code> just as you'd write <code>val x = 1</code> — but Rust's
+inference can even flow backwards from how a value is used, so idiomatic Rust
+annotates function signatures and lets the compiler figure out the locals.</p>`,
+
+  kotlin: `val name = "Ada"
+var age = 36
+val price = 9.99               // inferred Double
+
+age = 37                       // fine: it's a var
+// name = "Grace"              // error: val cannot be reassigned
+
+fun describeUser(name: String, age: Int): String {
+    return "$name is $age years old"
+}
+
+fun birthday(age: Int): Int {
+    var next = age
+    next += 1
+    return next
+}`,
+
+  task: `
+<p>Rewrite the Kotlin as Rust:</p>
+<ol>
+  <li>Write a function <code>describe_user</code> that takes
+      <code>name: &amp;str</code> and <code>age: u32</code> and returns a
+      <code>String</code> like <code>"Ada is 36 years old"</code>. Use
+      <code>format!</code> — instead of a Kotlin string template
+      <code>"$name is $age"</code>, you write <code>{}</code> placeholders and
+      pass the values as arguments. Note the naming convention change:
+      <code>snake_case</code>, not camelCase.</li>
+  <li>Write a function <code>birthday</code> that takes <code>age: u32</code>
+      and returns <code>u32</code>. Parameters are immutable by default (in
+      Kotlin they're always <code>val</code>-like; Rust is the same), so bind
+      the argument to a <code>let mut</code> local, add 1 to it with
+      <code>+=</code>, and return it.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. describe_user: takes name: &str and age: u32, returns String.
+//    Java: String.format("%s is %d years old", name, age)
+//    Rust: format!("{} is {} years old", ...)
+fn describe_user(name: &str, age: u32) -> String {
+    todo!()
+}
+
+// 2. birthday: bind age to a \`let mut\` local, increment it with +=, return it.
+fn birthday(age: u32) -> u32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s+describe_user\s*\(\s*name\s*:\s*&str\s*,\s*age\s*:\s*u32\s*\)\s*->\s*String/, message: "Define describe_user(name: &str, age: u32) -> String" },
+    { pattern: /format!\s*\(/, message: "Use the format! macro to build the string" },
+    { pattern: /let\s+mut\b/, message: "Use a let mut binding inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: 'assert_eq!(describe_user("Ada", 36), "Ada is 36 years old");' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: 'assert_eq!(describe_user("Grace", 52), "Grace is 52 years old");' },
+    { name: "birthday(36) returns 37",
+      code: "assert_eq!(birthday(36), 37);" },
+    { name: "birthday(0) returns 1",
+      code: "assert_eq!(birthday(0), 1);" },
+  ],
+
+  solution: `fn describe_user(name: &str, age: u32) -> String {
+    format!("{} is {} years old", name, age)
+}
+
+fn birthday(age: u32) -> u32 {
+    let mut next = age;
+    next += 1;
+    next
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Immutable local</td><td><code>val x = 1</code></td><td><code>let x = 1;</code> (the default)</td></tr>
+  <tr><td>Mutable local</td><td><code>var x = 1</code></td><td><code>let mut x = 1;</code> (the opt-in)</td></tr>
+  <tr><td>Inference</td><td><code>val x = 1</code></td><td><code>let x = 1;</code></td></tr>
+  <tr><td>Integers</td><td><code>Int</code>, <code>Long</code></td><td><code>i32</code>, <code>i64</code> — plus unsigned <code>u32</code>, <code>u64</code></td></tr>
+  <tr><td>Floating point</td><td><code>Double</code></td><td><code>f64</code></td></tr>
+  <tr><td>Boxing</td><td><code>Int?</code> boxes to <code>Integer</code></td><td>none — <code>i32</code> is always just <code>i32</code></td></tr>
+  <tr><td>Formatting</td><td><code>"$n is $a"</code></td><td><code>format!("{} is {}", n, a)</code></td></tr>
+  <tr><td>Naming</td><td><code>camelCase</code></td><td><code>snake_case</code> (the compiler will nag you)</td></tr>
+</table>
+<p>Notice <code>birthday</code>'s last line has no <code>return</code> and no
+semicolon: a block's final expression is its value. You already know this from
+Kotlin, where <code>if</code>/<code>when</code> are expressions and a function
+body can be <code>= "$name is $age"</code> — Rust takes that idea further, and
+the next lesson leans into it. Also notice what you didn't write: no
+<code>%d</code>-vs-argument-type mismatch waiting to blow up at runtime —
+<code>format!</code> is checked at compile time.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

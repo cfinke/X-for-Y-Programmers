@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put it together. This capstone is a tiny in-memory <em>task store</em>
+that leans on almost everything this course has covered: a <strong>class</strong>
+to hold state and behavior, <strong>array-iteration methods</strong>
+(<code>find</code>, <code>filter</code>, <code>reduce</code>) to query and
+aggregate, and <strong>custom errors</strong> to refuse bad input. Nothing here
+is new syntax — you have written all of it in Kotlin. The point is to feel
+how it behaves once the data classes and the type system are gone and the only
+thing standing between a caller and a corrupt store is the code <em>you</em>
+wrote.</p>
+<table>
+  <tr><th>Kotlin</th><th>JavaScript</th></tr>
+  <tr><td><code>data class Task(val id: Int, var done: Boolean)</code></td><td>a plain object shaped however you build it</td></tr>
+  <tr><td><code>val tasks: MutableList&lt;Task&gt;</code> — element type enforced</td><td><code>this.tasks = []</code> — holds anything you push</td></tr>
+  <tr><td>compiler rejects <code>add(42)</code></td><td>you must <code>throw</code> to reject it</td></tr>
+  <tr><td><code>fun get(id: Int): Task</code> can't return null</td><td><code>find</code> returns <code>undefined</code>; guard it</td></tr>
+</table>
+<p>In Kotlin, <code>find</code> returning <code>Task?</code> forces you to
+handle the miss at compile time — the nullable type won't let you touch
+<code>.done</code> without a check or a <code>!!</code>. At runtime that
+nullability does not exist: <code>find</code> hands back a task or
+<code>undefined</code>, and if you forget to check, the very next property
+access throws a <code>TypeError</code>. The runtime discipline is to <em>make
+the miss explicit</em> — detect it and throw a meaningful error instead of
+letting a cryptic one leak out later.</p>`,
+
+  kotlin: `class NotFoundError(message: String) : Exception(message)
+class ValidationError(message: String) : Exception(message)
+
+data class Task(
+    val id: Int,
+    val title: String,
+    val priority: Int,
+    var done: Boolean
+)
+
+data class Summary(val total: Int, val done: Int, val pending: Int)
+
+class TaskStore {
+    private val tasks = mutableListOf<Task>()
+    private var nextId = 1
+
+    fun add(title: String, priority: Int = 1): Task {
+        if (title.isBlank()) throw ValidationError("title required")
+        val task = Task(nextId++, title, priority, false)
+        tasks.add(task)
+        return task
+    }
+
+    fun get(id: Int): Task {
+        return tasks.find { it.id == id } ?: throw NotFoundError("no task $id")
+    }
+
+    fun complete(id: Int): Task {
+        val task = get(id)
+        task.done = true
+        return task
+    }
+
+    fun pending(): List<Task> {
+        return tasks.filter { !it.done }
+    }
+
+    fun summary(): Summary {
+        return tasks.fold(Summary(0, 0, 0)) { acc, t ->
+            Summary(
+                total = acc.total + 1,
+                done = acc.done + if (t.done) 1 else 0,
+                pending = acc.pending + if (t.done) 0 else 1
+            )
+        }
+    }
+}`,
+
+  task: `
+<p>Build the plain-JavaScript version of the same store. Define two error
+classes and one <code>TaskStore</code> class.</p>
+<ol>
+  <li>Define <code>ValidationError</code> and <code>NotFoundError</code>, each a
+      subclass of <code>Error</code> whose constructor calls
+      <code>super(message)</code> and sets <code>this.name</code> to its own
+      class name.</li>
+  <li><code>TaskStore</code>'s constructor sets <code>this.tasks = []</code> and
+      <code>this.nextId = 1</code>.</li>
+  <li><code>add(title, priority = 1)</code>: if <code>title</code> is not a
+      string or is empty/whitespace, throw a <code>ValidationError</code>.
+      Otherwise create <code>{ id, title, priority, done: false }</code> using
+      the next id (which then increments), push it, and return it.</li>
+  <li><code>get(id)</code>: use <code>find</code> to locate the task; if there is
+      none, throw a <code>NotFoundError</code>. Otherwise return it.</li>
+  <li><code>complete(id)</code>: look the task up with <code>get</code>, set
+      <code>done</code> to <code>true</code>, and return it.</li>
+  <li><code>pending()</code>: return a <code>filter</code>ed array of the
+      not-done tasks.</li>
+  <li><code>summary()</code>: use <code>reduce</code> to return
+      <code>{ total, done, pending }</code> counts.</li>
+</ol>`,
+
+  starter: `// 1. Two custom error subclasses
+class ValidationError extends Error {
+  constructor(message) {
+    // TODO: super(message) and set this.name
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message) {
+    // TODO: super(message) and set this.name
+  }
+}
+
+// 2-7. The in-memory store
+class TaskStore {
+  constructor() {
+    // TODO: this.tasks and this.nextId
+  }
+
+  add(title, priority = 1) {
+    // TODO: validate, build the task, push it, return it
+  }
+
+  get(id) {
+    // TODO: find by id or throw NotFoundError
+  }
+
+  complete(id) {
+    // TODO: get the task, mark done, return it
+  }
+
+  pending() {
+    // TODO: filter to not-done tasks
+    return [];
+  }
+
+  summary() {
+    // TODO: reduce to { total, done, pending }
+    return { total: 0, done: 0, pending: 0 };
+  }
+}
+`,
+
+  exportNames: ["TaskStore", "ValidationError", "NotFoundError"],
+
+  requirements: [
+    { pattern: /class\s+TaskStore/, message: "Define a TaskStore class" },
+    { pattern: /class\s+\w*Error\s+extends\s+Error/, message: "Define a custom Error subclass" },
+    { pattern: /\.(find|filter|reduce)\s*\(/, message: "Use array-iteration methods (find/filter/reduce)" },
+    { pattern: /throw\s+new/, message: "Throw a custom error on bad input or a missing task" },
+  ],
+
+  tests: [
+    { name: "add returns a task with id 1, not done", run: (x) => {
+        const store = new x.TaskStore();
+        expectDeepEqual(store.add("Write", 2), { id: 1, title: "Write", priority: 2, done: false });
+      } },
+    { name: "ids auto-increment across adds", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        expectEqual(store.add("b").id, 2);
+      } },
+    { name: "add with an empty title throws ValidationError", run: (x) => {
+        const store = new x.TaskStore();
+        try { store.add("   "); } catch (e) { expectTruthy(e instanceof x.ValidationError); return; }
+        throw new Error("expected add('   ') to throw");
+      } },
+    { name: "get throws NotFoundError for a missing id", run: (x) => {
+        const store = new x.TaskStore();
+        try { store.get(99); } catch (e) { expectTruthy(e instanceof x.NotFoundError); return; }
+        throw new Error("expected get(99) to throw");
+      } },
+    { name: "complete marks a task done", run: (x) => {
+        const store = new x.TaskStore();
+        const t = store.add("ship");
+        expectEqual(store.complete(t.id).done, true);
+      } },
+    { name: "pending excludes completed tasks", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        const b = store.add("b");
+        store.complete(b.id);
+        expectDeepEqual(store.pending().map((t) => t.title), ["a"]);
+      } },
+    { name: "summary counts total/done/pending", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        store.add("b");
+        store.complete(store.add("c").id);
+        expectDeepEqual(store.summary(), { total: 3, done: 1, pending: 2 });
+      } },
+    { name: "custom errors carry a name, message, and stack", run: (x) => {
+        const err = new x.NotFoundError("nope");
+        expectTruthy(err instanceof x.NotFoundError);
+        expectEqual(err.name, "NotFoundError");
+        expectEqual(err.message, "nope");
+        expectTruthy(typeof err.stack === "string");
+      } },
+  ],
+
+  solution: `class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
+class TaskStore {
+  constructor() {
+    this.tasks = [];
+    this.nextId = 1;
+  }
+
+  add(title, priority = 1) {
+    if (typeof title !== "string" || title.trim() === "") {
+      throw new ValidationError("title must be a non-empty string");
+    }
+    const task = { id: this.nextId++, title, priority, done: false };
+    this.tasks.push(task);
+    return task;
+  }
+
+  get(id) {
+    const task = this.tasks.find((t) => t.id === id);
+    if (!task) {
+      throw new NotFoundError("no task with id " + id);
+    }
+    return task;
+  }
+
+  complete(id) {
+    const task = this.get(id);
+    task.done = true;
+    return task;
+  }
+
+  pending() {
+    return this.tasks.filter((t) => !t.done);
+  }
+
+  summary() {
+    return this.tasks.reduce(
+      (acc, t) => {
+        acc.total += 1;
+        if (t.done) acc.done += 1;
+        else acc.pending += 1;
+        return acc;
+      },
+      { total: 0, done: 0, pending: 0 }
+    );
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+  <tr><td>Task shape</td><td><code>data class Task</code> enforced</td><td>whatever object you construct</td></tr>
+  <tr><td>Bad input</td><td>rejected at compile time</td><td>rejected only if you <code>throw</code></td></tr>
+  <tr><td>Missing lookup</td><td><code>Task?</code> forces a null check</td><td><code>find</code> returns <code>undefined</code> silently</td></tr>
+  <tr><td>Aggregate</td><td><code>fold</code> with a typed accumulator</td><td><code>reduce</code> with a seed object</td></tr>
+</table>
+<p>The lesson of the whole course lives in one line: <code>this.tasks.find(...)</code>
+returns a task <em>or</em> <code>undefined</code>, and the runtime will not stop
+you from reading <code>.done</code> off <code>undefined</code>. The
+<code>if (!task) throw</code> guard is you doing, by hand, the null check the
+compiler forced on you in Kotlin. Every place Kotlin's type system inserted a
+check, runtime code has to earn it.</p>
+<p>Two other habits carried through here. Custom <code>Error</code> subclasses
+let callers tell <em>why</em> something failed with <code>instanceof</code>
+instead of string-matching messages — but only because each constructor sets
+<code>this.name</code>. And the array methods (<code>find</code>,
+<code>filter</code>, <code>reduce</code>) stayed the workhorses: they read the
+same as your Kotlin collection code (<code>find</code>, <code>filter</code>,
+<code>fold</code>), they just no longer promise anything about what the
+elements are. That promise is now your job.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

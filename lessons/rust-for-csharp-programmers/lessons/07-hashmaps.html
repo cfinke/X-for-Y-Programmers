@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p><code>Dictionary&lt;string, int&gt;</code> becomes
+<code>HashMap&lt;String, u32&gt;</code> — same hash table underneath, but you
+must <code>use std::collections::HashMap;</code> first (it lives in the
+standard library's <code>collections</code> module, much like
+<code>System.Collections.Generic</code>). Writing is
+<code>.insert(key, value)</code>, which behaves like the C# indexer setter:
+it adds or overwrites, no <code>Add</code>-throws-on-duplicate variant to
+remember.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>new Dictionary&lt;string, int&gt;()</code></td><td><code>HashMap::new()</code></td></tr>
+  <tr><td><code>dict["hammer"] = 3;</code></td><td><code>map.insert("hammer".to_string(), 3);</code></td></tr>
+  <tr><td><code>dict.TryGetValue(k, out var v)</code></td><td><code>map.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td><code>dict.GetValueOrDefault(k, 0)</code></td><td><code>map.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>if (ContainsKey) ... else ...</code> upsert</td><td><code>*map.entry(k).or_insert(0) += n;</code></td></tr>
+</table>
+<p>Reading is where Rust gets nicer. <code>.get(key)</code> returns
+<code>Option&lt;&amp;V&gt;</code> — it is <code>TryGetValue</code> without the
+<code>out</code> parameter contortion: presence and value travel together in
+one return value. Chain <code>.copied().unwrap_or(0)</code> and you have
+<code>GetValueOrDefault(key, 0)</code> (<code>.copied()</code> just turns the
+<code>&amp;u32</code> reference into a plain <code>u32</code>). Best of all is
+the <em>entry API</em>: the classic C# upsert dance —
+<code>ContainsKey</code>, then either indexer-increment or indexer-set —
+collapses into a single lookup:
+<code>*map.entry(key).or_insert(0) += n;</code>.</p>`,
+
+  csharp: `var inventory = new Dictionary<string, int>();
+inventory["hammer"] = 3;      // indexer set: add or overwrite
+inventory["nails"] = 100;
+
+// Safe lookup: the bool + out parameter dance.
+if (inventory.TryGetValue("hammer", out int count))
+    Console.WriteLine(count);                     // 3
+
+int screws = inventory.GetValueOrDefault("screws", 0);  // 0
+
+// The upsert dance: two lookups, two branches.
+if (inventory.ContainsKey("hammer"))
+    inventory["hammer"] += 2;
+else
+    inventory["hammer"] = 2;`,
+
+  task: `
+<p>Port the inventory code to <code>HashMap</code>:</p>
+<ol>
+  <li>Write <code>build_inventory</code> returning a
+      <code>HashMap&lt;String, u32&gt;</code> containing
+      <code>"hammer" → 3</code> and <code>"nails" → 100</code>. Use
+      <code>.insert</code>; the keys need <code>.to_string()</code> because the
+      map owns them.</li>
+  <li>Write <code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str) -&gt; u32</code>
+      returning the count for <code>name</code>, or <code>0</code> if absent —
+      <code>.get(name).copied().unwrap_or(0)</code> is the whole body.</li>
+  <li>Write <code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str, n: u32)</code>
+      that adds <code>n</code> to the existing count, starting from
+      <code>0</code> for a new key — use
+      <code>inv.entry(name.to_string()).or_insert(0)</code> and add
+      <code>n</code> to what it returns.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "hammer" -> 3, "nails" -> 100.
+//    let mut inv = HashMap::new(); then .insert("hammer".to_string(), 3); ...
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: the count for name, or 0 if missing.
+//    .get returns Option<&u32>; .copied().unwrap_or(0) finishes the job.
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: add n to name's count, starting at 0 for new keys.
+//    One call replaces the ContainsKey dance:
+//    *inv.entry(name.to_string()).or_insert(0) += n;
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Work with the HashMap<String, u32> type" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Use .insert() to build the map and/or .entry() for the upsert" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or for the default-if-missing lookup" },
+  ],
+
+  tests: [
+    { name: 'build_inventory() has "hammer" -> 3',
+      code: 'let inv = build_inventory();\nassert_eq!(inv.get("hammer").copied(), Some(3));' },
+    { name: 'build_inventory() has "nails" -> 100 and exactly 2 entries',
+      code: 'let inv = build_inventory();\nassert_eq!(inv.get("nails").copied(), Some(100));\nassert_eq!(inv.len(), 2);' },
+    { name: 'get_count(&inv, "hammer") returns 3',
+      code: 'assert_eq!(get_count(&build_inventory(), "hammer"), 3);' },
+    { name: 'get_count(&inv, "screws") returns 0 for a missing key',
+      code: 'assert_eq!(get_count(&build_inventory(), "screws"), 0);' },
+    { name: 'add_stock adds to an existing key (hammer + 2 = 5)',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "hammer", 2);\nassert_eq!(inv.get("hammer").copied(), Some(5));' },
+    { name: 'add_stock starts a new key at 0 (screws + 10 = 10)',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "screws", 10);\nassert_eq!(inv.get("screws").copied(), Some(10));' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert("hammer".to_string(), 3);
+    inv.insert("nails".to_string(), 100);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Type</td><td><code>Dictionary&lt;string, int&gt;</code></td><td><code>HashMap&lt;String, u32&gt;</code> (+ <code>use std::collections::HashMap;</code>)</td></tr>
+  <tr><td>Set / overwrite</td><td><code>dict[k] = v;</code></td><td><code>map.insert(k, v)</code></td></tr>
+  <tr><td>Safe lookup</td><td><code>TryGetValue(k, out v)</code> → <code>bool</code> + <code>out</code></td><td><code>map.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>Default if missing</td><td><code>GetValueOrDefault(k, 0)</code></td><td><code>map.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Upsert</td><td><code>ContainsKey</code> + two branches</td><td><code>*map.entry(k).or_insert(0) += n;</code></td></tr>
+  <tr><td>Count</td><td><code>dict.Count</code></td><td><code>map.len()</code></td></tr>
+</table>
+<p>The entry API is the headline: <code>.entry(k)</code> does one hash lookup
+and hands you a cursor to the slot, occupied or vacant, so read-modify-write
+is a single expression with no double lookup and no race between the
+<code>ContainsKey</code> check and the write. The <code>*</code> in front
+dereferences the <code>&amp;mut u32</code> that <code>or_insert</code> returns
+so <code>+=</code> can update the value in place.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

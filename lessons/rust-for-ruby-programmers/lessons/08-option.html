@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Option: The End of Null</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Option: The End of Null",
+
+  intro: `
+<p>Every Ruby developer knows the crash by heart:
+<code>undefined method 'name' for nil:NilClass</code>. The problem isn't that
+<code>nil</code> exists — absence is real — it's that <em>any</em> variable
+might secretly be <code>nil</code>, so the defenses (<code>&amp;.</code>,
+<code>if user</code>, <code>.nil?</code>) are applied by vigilance and hope.
+Rust deletes the problem at the type level: a <code>String</code> is
+<em>always</em> a string, and a value that might be absent has a different
+type — <code>Option&lt;String&gt;</code>, which is either
+<code>Some("Ada")</code> or <code>None</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>user</code> (might be <code>nil</code>… who knows)</td><td><code>Option&lt;String&gt;</code> — maybe-ness is in the type</td></tr>
+  <tr><td><code>user &amp;&amp; user.name</code>, <code>user&amp;.name</code></td><td><code>match</code> / <code>.map(...)</code> — checked by the compiler</td></tr>
+  <tr><td><code>name || "guest"</code></td><td><code>name.unwrap_or("guest".to_string())</code></td></tr>
+  <tr><td>forget the check → crash at runtime</td><td>forget the check → <em>doesn't compile</em></td></tr>
+</table>
+<p>The payoff: you cannot forget. An <code>Option&lt;String&gt;</code> won't
+act as a <code>String</code> until you handle the <code>None</code> arm —
+with <code>match</code> (both cases, enforced), <code>.unwrap_or(default)</code>
+(Ruby's <code>|| "guest"</code>, minus the classic gotcha where
+<code>false || default</code> also fires), or <code>.map(...)</code> (the
+<code>&amp;.</code> chain: apply the function if present, stay <code>None</code>
+if absent). The <code>&amp;.</code>-and-hope pattern becomes a compiler-verified
+contract — and standard-library methods like <code>.chars().next()</code>
+return <code>Option</code> for exactly this reason: an empty string has no
+first character, and the type says so.</p>`,
+
+  ruby: `def find_user(id)
+  case id
+  when 1 then "Ada"
+  when 2 then "Grace"
+  end            # falls through to nil -- silently
+end
+
+def display_name(name)
+  name || "guest"     # the || default habit
+end
+
+def first_char(s)
+  s.chars.first       # nil for "" -- hope the caller checks
+end
+
+puts display_name(find_user(1))   # "Ada"
+puts display_name(find_user(99))  # "guest"
+puts find_user(99).upcase rescue puts "NoMethodError for nil!"`,
+
+  task: `
+<p>Rewrite the Ruby as Rust:</p>
+<ol>
+  <li>Write <code>find_user</code> taking <code>id: u32</code> and returning
+      <code>Option&lt;String&gt;</code>: <code>Some("Ada".to_string())</code>
+      for 1, <code>Some("Grace".to_string())</code> for 2, and
+      <code>None</code> otherwise. A <code>match</code> on <code>id</code>
+      with a <code>_</code> arm reads just like the Ruby <code>case</code> —
+      except the "falls through to nothing" case is now spelled out.</li>
+  <li>Write <code>display_name</code> taking
+      <code>name: Option&lt;String&gt;</code> and returning
+      <code>String</code>: the name if present, <code>"guest"</code> if not.
+      This is <code>name || "guest"</code> —
+      <code>name.unwrap_or("guest".to_string())</code>.</li>
+  <li>Write <code>first_char</code> taking <code>s: &amp;str</code> and
+      returning <code>Option&lt;char&gt;</code> via
+      <code>s.chars().next()</code> — the standard library already speaks
+      Option, so this one is a one-liner.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. find_user: Some("Ada") for 1, Some("Grace") for 2, None otherwise.
+//    match id { 1 => ..., 2 => ..., _ => ... }
+fn find_user(id: u32) -> Option<String> {
+    todo!()
+}
+
+// 2. display_name: Ruby's \`name || "guest"\` -> unwrap_or.
+fn display_name(name: Option<String>) -> String {
+    todo!()
+}
+
+// 3. first_char: .chars().next() already returns Option<char>.
+fn first_char(s: &str) -> Option<char> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option</, message: "Use Option<...> in your signatures" },
+    { pattern: /Some\(/, message: "Return present values wrapped in Some(...)" },
+    { pattern: /None/, message: "Return None for the absent case" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or for the default in display_name" },
+  ],
+
+  tests: [
+    { name: 'find_user(1) returns Some("Ada")',
+      code: 'assert_eq!(find_user(1), Some("Ada".to_string()));' },
+    { name: 'find_user(2) returns Some("Grace")',
+      code: 'assert_eq!(find_user(2), Some("Grace".to_string()));' },
+    { name: "find_user(99) returns None — absence, spelled out",
+      code: "assert_eq!(find_user(99), None);" },
+    { name: 'display_name(Some("Ada")) returns "Ada"',
+      code: 'assert_eq!(display_name(Some("Ada".to_string())), "Ada");' },
+    { name: 'display_name(None) returns "guest"',
+      code: 'assert_eq!(display_name(None), "guest");' },
+    { name: "first_char works on \"rust\" and on \"\"",
+      code: 'assert_eq!(first_char("rust"), Some(\'r\'));\nassert_eq!(first_char(""), None);' },
+  ],
+
+  solution: `fn find_user(id: u32) -> Option<String> {
+    match id {
+        1 => Some("Ada".to_string()),
+        2 => Some("Grace".to_string()),
+        _ => None,
+    }
+}
+
+fn display_name(name: Option<String>) -> String {
+    name.unwrap_or("guest".to_string())
+}
+
+fn first_char(s: &str) -> Option<char> {
+    s.chars().next()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Maybe-absent value</td><td>anything might be <code>nil</code></td><td><code>Option&lt;T&gt;</code>: <code>Some(x)</code> or <code>None</code></td></tr>
+  <tr><td>Default if absent</td><td><code>x || default</code> (also fires on <code>false</code>!)</td><td><code>x.unwrap_or(default)</code> (only on <code>None</code>)</td></tr>
+  <tr><td>Safe navigation</td><td><code>user&amp;.name&amp;.upcase</code></td><td><code>user.map(|n| n.to_uppercase())</code></td></tr>
+  <tr><td>Handle both cases</td><td><code>if x ... else ...</code> (if you remember)</td><td><code>match</code> — compiler requires both arms</td></tr>
+  <tr><td>Check presence</td><td><code>x.nil?</code></td><td><code>x.is_none()</code> / <code>x.is_some()</code></td></tr>
+  <tr><td>"I know it's there"</td><td>just call the method (and pray)</td><td><code>x.unwrap()</code> — panics on <code>None</code>, greppable</td></tr>
+</table>
+<p>The deep shift: in Ruby, <code>nil</code>-safety is a property of how
+carefully the code was written; in Rust it's a property of the types, checked
+before anything runs. <code>find_user</code>'s signature <em>tells</em> every
+caller "this can come back empty" — no doc-reading, no source-diving — and
+the compiler makes them act on it. When you genuinely can't proceed without
+the value, <code>.unwrap()</code> is the explicit, searchable version of
+Ruby's silent gamble.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Python and Ruby are the two most-compared dynamic languages, and lesson one
+is mostly a reunion: assignment declares a variable in both, nothing needs a
+type annotation, and your <code>snake_case</code> habits carry over untouched.
+Even the numbers are kindred spirits — Python's <code>int</code> and Ruby's
+<code>Integer</code> are <em>both</em> arbitrary precision, so
+<code>2 ** 100</code> just works in each.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>name = "Ada"</code></td><td><code>name = "Ada"</code></td></tr>
+  <tr><td><code>int</code> (arbitrary precision)</td><td><code>Integer</code> (arbitrary precision too)</td></tr>
+  <tr><td><code>type(age)</code></td><td><code>age.class</code></td></tr>
+  <tr><td><code>isinstance(name, str)</code></td><td><code>name.is_a?(String)</code></td></tr>
+  <tr><td><code>f"{name} is {age}"</code></td><td><code>"#{name} is #{age}"</code></td></tr>
+</table>
+<p>The differences are in the grammar's posture. Where Python asks a
+<em>function</em> about a value — <code>type(x)</code>,
+<code>isinstance(x, str)</code> — Ruby asks the value itself:
+<code>x.class</code>, <code>x.is_a?(String)</code>. Interpolation drops the
+<code>f</code> prefix: any double-quoted string interpolates with
+<code>#{}</code>. And here is <em>the</em> shift to internalize first: a
+Python function without <code>return</code> hands back <code>None</code>; a
+Ruby method's <strong>last expression is its return value</strong>. Idiomatic
+Ruby almost never writes <code>return</code> at all — where Python has one
+obvious way, Ruby cheerfully lets the expression speak for itself.</p>`,
+
+  python: `name = "Ada"
+age = 36
+
+# The type lives in the object; ask at runtime.
+print(type(age))              # <class 'int'>
+print(isinstance(name, str))  # True
+print(2 ** 100)               # arbitrary precision, no overflow
+
+
+def describe_user(name, age):
+    # Forget "return" here and Python hands back None.
+    return f"{name} is {age} years old"
+
+
+def birthday(age):
+    new_age = age
+    new_age += 1
+    return new_age
+
+
+print(describe_user(name, age))  # Ada is 36 years old
+print(birthday(age))             # 37`,
+
+  task: `
+<p>Rewrite the Python as Ruby:</p>
+<ol>
+  <li>Write a method <code>describe_user(name, age)</code> that produces
+      <code>"Ada is 36 years old"</code>-style text using string
+      interpolation — <code>"#{name} is #{age} years old"</code> is your
+      f-string, minus the <code>f</code>. Make the interpolated string the
+      method's <em>last expression</em>: no <code>return</code> keyword
+      anywhere in your solution.</li>
+  <li>Write a method <code>birthday(age)</code> that copies <code>age</code>
+      into a local variable, bumps it with <code>+=</code>, and lets that
+      local be the last expression — Ruby hands it back automatically, where
+      Python would have handed back <code>None</code>.</li>
+</ol>
+<p>Same <code>snake_case</code>, no colons after the signature, and
+<code>end</code> where Python would dedent.</p>`,
+
+  starter: `# 1. describe_user: interpolate with #{} — the last expression is the result.
+#    Python: f"{name} is {age} years old"  ->  Ruby: "#{name} is #{age} years old"
+def describe_user(name, age)
+  raise NotImplementedError, "TODO: implement describe_user"
+end
+
+# 2. birthday: bump a local with += and let it be the last expression.
+def birthday(age)
+  raise NotImplementedError, "TODO: implement birthday"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+describe_user\s*\(\s*name\s*,\s*age\s*\)/, message: "Define describe_user(name, age) with def" },
+    { pattern: /#\{\s*name\s*\}/, message: "Build the string with #{} interpolation" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: '  expect_eq(describe_user("Ada", 36), "Ada is 36 years old")' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: '  expect_eq(describe_user("Grace", 52), "Grace is 52 years old")' },
+    { name: "birthday(36) returns 37",
+      code: "  expect_eq(birthday(36), 37)" },
+    { name: "birthday(0) returns 1",
+      code: "  expect_eq(birthday(0), 1)" },
+  ],
+
+  solution: `def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Declare a variable</td><td><code>x = 1</code></td><td><code>x = 1</code> (identical — assignment declares)</td></tr>
+  <tr><td>Integers</td><td><code>int</code>, arbitrary precision</td><td><code>Integer</code>, arbitrary precision too</td></tr>
+  <tr><td>What type is this?</td><td><code>type(x)</code></td><td><code>x.class</code></td></tr>
+  <tr><td>Is it a string?</td><td><code>isinstance(x, str)</code></td><td><code>x.is_a?(String)</code></td></tr>
+  <tr><td>Interpolation</td><td><code>f"{name}!"</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+  <tr><td>Return</td><td><code>return</code> required (else <code>None</code>)</td><td>last expression; <code>return</code> only for early exit</td></tr>
+</table>
+<p>The pattern behind <code>x.class</code> and <code>x.is_a?(String)</code>
+runs through everything: where Python reaches for a built-in function, Ruby
+sends the object a message. And implicit return isn't a shortcut — it's a
+consequence of everything in Ruby being an expression. Build the habit now of
+just <em>ending</em> a method on its value; it will feel as natural as
+dropping semicolons did.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

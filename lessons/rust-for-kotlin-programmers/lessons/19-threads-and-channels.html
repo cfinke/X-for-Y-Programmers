@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Threads &amp; Channels</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Threads & Channels",
+
+  intro: `
+<p>You know the Kotlin concurrency toolbox: <code>Thread { ... }.start()</code>
+or an <code>ExecutorService</code> (or coroutines), then a second toolbox to
+survive it — <code>synchronized</code>, <code>@Volatile</code>,
+<code>ConcurrentHashMap</code>, and a mental copy of the JVM Memory Model to
+reason about which writes are visible where. Rust keeps the first toolbox —
+<code>thread::spawn</code> starts a real OS thread and <code>.join()</code>
+waits for it — and replaces the second one with the ownership system you've
+been learning all course.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>Thread { ... }.start()</code> / <code>executor.submit { ... }</code></td><td><code>let handle = thread::spawn(move || ...);</code></td></tr>
+  <tr><td><code>thread.join()</code> / <code>future.get()</code></td><td><code>handle.join().unwrap()</code> — returns the closure's value</td></tr>
+  <tr><td>Share state, guard with <code>synchronized</code>/<code>@Volatile</code></td><td>Unsynchronized sharing of mutable state <em>doesn't compile</em></td></tr>
+  <tr><td><code>BlockingQueue&lt;Int&gt;</code></td><td><code>mpsc::channel()</code> — a typed <code>(tx, rx)</code> pair</td></tr>
+  <tr><td>Data race = heisenbug at 3 a.m.</td><td>Data race = compile error at your desk</td></tr>
+</table>
+<p>The key word is <code>move</code>: it makes the closure take
+<em>ownership</em> of the variables it captures, so the data now belongs to
+the new thread and the spawning thread can't touch it anymore — the compiler
+enforces the handoff. Try to mutate something from two threads without
+synchronization and the borrow checker rejects the program; the memory-model
+folklore becomes a type error. When threads do need to communicate,
+<code>mpsc::channel()</code> ("multi-producer, single-consumer") is your
+typed <code>BlockingQueue</code>: <code>tx.send(v)</code> on one side,
+<code>rx.recv()</code> blocking on the other, and messages arrive in send
+order.</p>`,
+
+  kotlin: `import java.util.concurrent.Executors
+import java.util.concurrent.BlockingQueue
+
+fun parallelSum(a: List<Int>, b: List<Int>): Int {
+    val pool = Executors.newSingleThreadExecutor()
+
+    val sumOfB = pool.submit<Int> { b.sum() }
+
+    val sumOfA = a.sum()
+
+    val total = sumOfA + sumOfB.get()   // blocks, like join()
+    pool.shutdown()
+    return total
+}
+
+// And for pipelines: val queue: BlockingQueue<Int> = ...
+// producer thread: queue.put(v * 2)
+// consumer thread: queue.take()
+// Everything else? synchronized, @Volatile, ConcurrentHashMap —
+// and hoping every reader knows the memory model.`,
+
+  task: `
+<p>Two exercises, one per tool:</p>
+<ol>
+  <li>Write <code>parallel_sum(a: Vec&lt;i32&gt;, b: Vec&lt;i32&gt;) -&gt; i32</code>:
+      spawn a thread with <code>thread::spawn(move || ...)</code> that sums
+      <code>b</code> (the <code>move</code> hands <code>b</code> to the new
+      thread), sum <code>a</code> on the current thread, then
+      <code>.join()</code> the handle and add the two sums.
+      <code>join()</code> returns a <code>Result</code> — <code>.unwrap()</code>
+      it to get the thread's value.</li>
+  <li>Write <code>channel_double(vals: Vec&lt;i32&gt;) -&gt; Vec&lt;i32&gt;</code>:
+      create <code>mpsc::channel()</code>, spawn a thread that sends each
+      value doubled via <code>tx.send(...)</code>, then receive exactly
+      <code>vals.len()</code> values with <code>rx.recv().unwrap()</code>
+      (grab the length <em>before</em> the <code>move</code> closure takes
+      <code>vals</code>). Channels preserve send order, so the result is the
+      doubled values in the original order.</li>
+</ol>
+<p>Join every thread before returning, so results are deterministic. Don't
+write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::thread;
+use std::sync::mpsc;
+
+// 1. Sum b on a spawned thread (move!), sum a here, join, add.
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    todo!()
+}
+
+// 2. Spawn a thread that sends each value * 2 down a channel;
+//    receive vals.len() values (capture the len first!) in order.
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /thread::spawn/, message: "Spawn a thread with thread::spawn" },
+    { pattern: /move\s*\|\|/, message: "Use a move closure to hand ownership to the thread" },
+    { pattern: /\.join\(\)/, message: "Wait for the spawned thread with .join()" },
+    { pattern: /mpsc/, message: "Use an mpsc channel in channel_double" },
+  ],
+
+  tests: [
+    { name: "parallel_sum(vec![1, 2, 3], vec![4, 5, 6]) returns 21",
+      code: "assert_eq!(parallel_sum(vec![1, 2, 3], vec![4, 5, 6]), 21);" },
+    { name: "parallel_sum(vec![], vec![10]) returns 10",
+      code: "assert_eq!(parallel_sum(vec![], vec![10]), 10);" },
+    { name: "parallel_sum handles negatives: (-5) + (-6) + 21 = 10",
+      code: "assert_eq!(parallel_sum(vec![-5, -6], vec![21]), 10);" },
+    { name: "channel_double(vec![1, 2, 3]) returns vec![2, 4, 6] in order",
+      code: "assert_eq!(channel_double(vec![1, 2, 3]), vec![2, 4, 6]);" },
+    { name: "channel_double(vec![-5, 0, 7]) returns vec![-10, 0, 14]",
+      code: "assert_eq!(channel_double(vec![-5, 0, 7]), vec![-10, 0, 14]);" },
+    { name: "channel_double(vec![]) returns an empty Vec",
+      code: "assert_eq!(channel_double(vec![]), Vec::<i32>::new());" },
+  ],
+
+  solution: `use std::thread;
+use std::sync::mpsc;
+
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    let handle = thread::spawn(move || b.iter().sum::<i32>());
+    let sum_a: i32 = a.iter().sum();
+    sum_a + handle.join().unwrap()
+}
+
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    let (tx, rx) = mpsc::channel();
+    let n = vals.len();
+    let handle = thread::spawn(move || {
+        for v in vals {
+            tx.send(v * 2).unwrap();
+        }
+    });
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        out.push(rx.recv().unwrap());
+    }
+    handle.join().unwrap();
+    out
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Start a thread</td><td><code>Thread { ... }.start()</code> / <code>executor.submit { ... }</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+  <tr><td>Wait for it</td><td><code>t.join()</code> / <code>future.get()</code></td><td><code>handle.join().unwrap()</code> — yields the return value</td></tr>
+  <tr><td>Hand data to a thread</td><td>implicit capture; shared by reference</td><td><code>move</code> closure: ownership transfers, checked</td></tr>
+  <tr><td>Queue between threads</td><td><code>BlockingQueue&lt;T&gt;</code></td><td><code>let (tx, rx) = mpsc::channel();</code></td></tr>
+  <tr><td>Send / receive</td><td><code>queue.put(v)</code> / <code>queue.take()</code></td><td><code>tx.send(v)</code> / <code>rx.recv()</code></td></tr>
+  <tr><td>Unsynchronized shared mutation</td><td>compiles; races at runtime</td><td>rejected by the borrow checker</td></tr>
+</table>
+<p>Notice what's missing from this lesson: <code>synchronized</code>,
+<code>@Volatile</code>, happens-before rules. In the Vec-summing thread there's
+nothing to guard, because ownership guarantees exactly one thread can touch
+the data. Rust calls this "fearless concurrency": the same
+<code>Send</code>/<code>Sync</code> machinery that let the compiler reject a
+shared mutable <code>Vec</code> also verifies channels and (when you do need
+shared state) <code>Arc&lt;Mutex&lt;T&gt;&gt;</code> — a mutex whose lock you
+<em>cannot forget to take</em>, because the data lives inside it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

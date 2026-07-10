@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods &amp; Implicit Return</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods & Implicit Return",
+
+  intro: `
+<p>A PHP <code>function</code> becomes a Ruby <code>def</code>, closed with
+<code>end</code> instead of braces. Default parameter values carry over almost
+verbatim: <code>function greet($name, $greeting = "Hello")</code> becomes
+<code>def greet(name, greeting = "Hello")</code>. So far, muscle memory works.
+Then comes the one habit you have to unlearn.</p>
+<p><strong>The last expression a method evaluates is its return value.</strong>
+There is no <code>return</code> keyword in idiomatic Ruby — you just leave the
+value you want as the final line. <code>return</code> still exists, but it is
+reserved for bailing out <em>early</em>; using it on the last line marks you as
+someone still thinking in PHP. This is the biggest day-one adjustment, and the
+tests below enforce it: the reference solution contains no <code>return</code>
+at all.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td><code>function f($x) { ... }</code></td><td><code>def f(x) ... end</code></td></tr>
+  <tr><td><code>return $result;</code></td><td>just make <code>result</code> the last line</td></tr>
+  <tr><td><code>$g = "Hi"</code> default</td><td><code>greeting = "Hi"</code> (same)</td></tr>
+  <tr><td><code>create(name: "Ada")</code> (PHP 8 named arg)</td><td><code>def create(name:)</code> keyword parameter</td></tr>
+  <tr><td><code>is_adult()</code></td><td><code>adult?</code> (predicates end in <code>?</code>)</td></tr>
+</table>
+<p>PHP 8's named arguments are a call-site convenience — any parameter can be
+passed by name. Ruby has a stronger version: <strong>keyword arguments</strong>
+declared in the signature with a trailing colon. <code>def create(name:,
+age: 0)</code> <em>requires</em> callers to write <code>create(name: "Ada")</code>;
+<code>name:</code> with no default is mandatory, <code>age: 0</code> is optional.
+The call syntax is identical to PHP 8, but now it is part of the contract. One
+more convention: method names can end in <code>?</code> or <code>!</code>.
+A trailing <code>?</code> marks a predicate that answers a yes/no question
+(<code>adult?</code>, <code>empty?</code>); <code>!</code> marks a "dangerous"
+or mutating variant. They are ordinary characters in the name, not operators.</p>`,
+
+  php: `<?php
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+echo greet("Ada");             // Hello, Ada!
+echo greet("Ada", "Hi");       // Hi, Ada!
+
+// PHP 8 named arguments at the call site:
+function create_user(string $name, int $age = 0): array {
+    return ['name' => $name, 'age' => $age];
+}
+$u = create_user(name: "Ada", age: 36);
+
+function is_adult(int $age): bool {
+    return $age >= 18;
+}`,
+
+  task: `
+<p>Write three methods — and resist typing <code>return</code>:</p>
+<ol>
+  <li><code>greet(name, greeting = "Hello")</code> — return the string
+      <code>"Hello, Ada!"</code>, built with interpolation
+      <code>"#{greeting}, #{name}!"</code>. Make that string the last (and only)
+      expression; <strong>no <code>return</code> keyword</strong>.</li>
+  <li><code>full_name(first:, last: nil)</code> — use keyword parameters.
+      <code>first:</code> is required; <code>last:</code> defaults to
+      <code>nil</code>. When <code>last</code> is given, return
+      <code>"#{first} #{last}"</code>; otherwise return just <code>first</code>.
+      A ternary is the last expression: <code>last ? "..." : first</code>.</li>
+  <li><code>adult?(age)</code> — a predicate ending in <code>?</code> that is
+      <code>true</code> when <code>age &gt;= 18</code>. The comparison itself is
+      already a boolean — let it be the last line.</li>
+</ol>`,
+
+  starter: `# 1. greet: last expression is the value — do NOT write return.
+def greet(name, greeting = "Hello")
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 2. full_name: keyword parameters. first: is required, last: defaults to nil.
+def full_name(first:, last: nil)
+  raise NotImplementedError, "TODO: implement full_name"
+end
+
+# 3. adult?: a predicate. The comparison is already true/false.
+def adult?(age)
+  raise NotImplementedError, "TODO: implement adult?"
+end
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give greeting the default value "Hello"' },
+    { pattern: /\w+:/, message: "Declare keyword parameters (e.g. first:)" },
+    { pattern: /def\s+adult\?/, message: "Name the predicate adult? (with the question mark)" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "Use implicit return — no return keyword anywhere" },
+  ],
+
+  tests: [
+    { name: "greet(\"Ada\") uses the default greeting",
+      code: "  expect_eq(greet(\"Ada\"), \"Hello, Ada!\")" },
+    { name: "greet(\"Ada\", \"Hi\") overrides the greeting",
+      code: "  expect_eq(greet(\"Ada\", \"Hi\"), \"Hi, Ada!\")" },
+    { name: "full_name with both keywords joins them",
+      code: "  expect_eq(full_name(first: \"Ada\", last: \"Lovelace\"), \"Ada Lovelace\")" },
+    { name: "full_name with only first: returns the first name",
+      code: "  expect_eq(full_name(first: \"Cher\"), \"Cher\")" },
+    { name: "adult?(20) is true",
+      code: "  expect_eq(adult?(20), true)" },
+    { name: "adult?(15) is false",
+      code: "  expect_eq(adult?(15), false)" },
+  ],
+
+  solution: `def greet(name, greeting = "Hello")
+  "#{greeting}, #{name}!"
+end
+
+def full_name(first:, last: nil)
+  last ? "#{first} #{last}" : first
+end
+
+def adult?(age)
+  age >= 18
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Definition</td><td><code>function f($x) { }</code></td><td><code>def f(x) ... end</code></td></tr>
+  <tr><td>Return value</td><td><code>return $x;</code></td><td>last expression (implicit)</td></tr>
+  <tr><td>Early exit</td><td><code>return;</code></td><td><code>return</code> (only for bailing out)</td></tr>
+  <tr><td>Default param</td><td><code>$g = "Hi"</code></td><td><code>greeting = "Hi"</code></td></tr>
+  <tr><td>Keyword param</td><td>named arg at call</td><td><code>def create(name:, age: 0)</code></td></tr>
+  <tr><td>Predicate</td><td><code>is_adult()</code></td><td><code>adult?</code></td></tr>
+  <tr><td>Mutator</td><td>convention varies</td><td><code>sort!</code>, <code>save!</code> (trailing <code>!</code>)</td></tr>
+</table>
+<p>Implicit return feels risky at first — "what if I forget?" — but it pushes
+you toward small methods whose whole body <em>is</em> an expression, which is
+the Ruby style. An <code>if</code>/<code>else</code>, a <code>case</code>, even
+a loop's accumulated value can be the last expression and thus the result.
+Keep <code>return</code> for guard clauses at the top of a method
+(<code>return nil if input.empty?</code>) where leaving early genuinely reads
+clearer, and let every "happy path" fall off the end.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

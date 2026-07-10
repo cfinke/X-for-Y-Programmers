@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Generics & Trait Bounds</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Generics & Trait Bounds",
+
+  intro: `
+<p>Every JavaScript function is "generic" by accident: <code>first(items)</code>
+takes an array of anything, because it takes <em>anything</em>. That
+flexibility is real, but so is the flip side — <code>largest([{}, {}])</code>
+happily compares objects with <code>&gt;</code> and returns nonsense, and
+nobody warns you. The function makes assumptions about its inputs; the
+language never writes them down.</p>
+<p>Rust generics write them down. <code>fn first&lt;T&gt;(items: &amp;[T])
+-&gt; Option&lt;&amp;T&gt;</code> reads: "for <em>any</em> type T, give me a
+slice of T and I'll give you a reference to the first one, maybe." One
+definition works for <code>i32</code>, <code>&amp;str</code>, your
+<code>Dog</code> struct — and it's checked <em>once, for all of them</em>: the
+body may only do things that work for every possible T.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>function first(items)</code> — takes anything</td><td><code>fn first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td>assumptions live in your head</td><td>assumptions live in the signature</td></tr>
+  <tr><td><code>largest([{}, {}])</code> → garbage, silently</td><td><code>&lt;T: PartialOrd&gt;</code> — "T must be comparable" or it won't compile</td></tr>
+  <tr><td>empty array → <code>undefined</code></td><td>empty slice → <code>None</code>, and the caller must deal with it</td></tr>
+</table>
+<p>That "works for every T" rule bites fast: a plain <code>T</code> can't even
+be compared with <code>&lt;</code>, because not every type is comparable. So
+you declare capabilities with a <strong>trait bound</strong> — last lesson's
+traits, put to work. <code>fn largest&lt;T: PartialOrd&gt;</code> means "any T
+that implements PartialOrd," which lets the body use <code>&gt;</code> — and
+lets the compiler reject <code>largest(&amp;[dog1, dog2])</code> at the call
+site. Both ends of the bargain are verified: the function can't assume more
+than it declared, and callers can't supply less.</p>`,
+
+  javascript: `// JS functions are "generic" by default: they take anything.
+function first(items) {
+  return items[0]; // undefined for [] — surprise for the caller
+}
+
+function largest(items) {
+  let best = items[0];
+  for (const item of items) {
+    if (item > best) best = item;
+  }
+  return best;
+}
+
+largest([1, 5, 3]);          // 5 — great
+largest(["apple", "pear"]);  // "pear" — still great
+largest([{}, {}]);           // {} — object > object is meaningless,
+                             // but JS shrugs and returns something`,
+
+  task: `
+<p>Write the two functions from the left, with the assumptions in the
+signature:</p>
+<ol>
+  <li><code>first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code> —
+      return <code>Some(&amp;items[0])</code> if the slice has elements,
+      <code>None</code> if it's empty. No bound on <code>T</code>: handing back
+      a reference works for every type.</li>
+  <li><code>largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code> —
+      return a reference to the biggest element. Start with
+      <code>let mut best = &amp;items[0];</code>, loop with
+      <code>for item in items</code>, and keep whichever is bigger. You may
+      assume the slice is non-empty. The <code>PartialOrd</code> bound is what
+      makes <code>&gt;</code> legal in the body.</li>
+</ol>
+<p>The tests call both functions with <code>i32</code> slices <em>and</em>
+<code>&amp;str</code> slices — one definition, every type. Don't write
+<code>fn main</code> — the lesson's tests call your functions directly.</p>`,
+
+  starter: `// 1. first: works for EVERY element type — that's what <T> declares.
+//    Some(&items[0]) if there's a first element, None for an empty slice.
+fn first<T>(items: &[T]) -> Option<&T> {
+    todo!()
+}
+
+// 2. largest: the bound <T: PartialOrd> says "T must be comparable",
+//    which is exactly what lets the body use >.
+//    Assume the slice is non-empty. Walk it, keep the biggest.
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<T>/, message: "Declare first generic over any T with <T>" },
+    { pattern: /Option<&T>/, message: "first should return Option<&T>" },
+    { pattern: /<T\s*:\s*PartialOrd>/, message: "Give largest the trait bound <T: PartialOrd>" },
+  ],
+
+  tests: [
+    { name: "first(&[10, 20, 30]) returns Some(&10)",
+      code: "assert_eq!(first(&[10, 20, 30]), Some(&10));" },
+    { name: "first of an empty i32 slice returns None",
+      code: "assert_eq!(first::<i32>(&[]), None);" },
+    { name: 'first(&["a", "b"]) works for &str too: Some(&"a")',
+      code: 'assert_eq!(first(&["a", "b"]), Some(&"a"));' },
+    { name: "largest(&[1, 5, 3]) returns &5",
+      code: "assert_eq!(largest(&[1, 5, 3]), &5);" },
+    { name: 'largest(&["apple", "pear", "banana"]) returns &"pear"',
+      code: 'assert_eq!(largest(&["apple", "pear", "banana"]), &"pear");' },
+    { name: "largest(&[-3, -7, -1]) returns &-1",
+      code: "assert_eq!(largest(&[-3, -7, -1]), &-1);" },
+  ],
+
+  solution: `fn first<T>(items: &[T]) -> Option<&T> {
+    if items.is_empty() {
+        None
+    } else {
+        Some(&items[0])
+    }
+}
+
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    let mut best = &items[0];
+    for item in items {
+        if item > best {
+            best = item;
+        }
+    }
+    best
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>A function over any type</td><td>every function, implicitly</td><td><code>fn first&lt;T&gt;(items: &amp;[T])</code>, explicitly</td></tr>
+  <tr><td>"T must be comparable"</td><td>a comment, or a crash</td><td><code>&lt;T: PartialOrd&gt;</code></td></tr>
+  <tr><td>Several capabilities</td><td>—</td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+  <tr><td>Who gets checked</td><td>no one</td><td>the body (can't exceed the bound) <em>and</em> every caller (can't undersupply it)</td></tr>
+  <tr><td>Maybe-missing result</td><td><code>items[0]</code> → <code>undefined</code></td><td><code>Option&lt;&amp;T&gt;</code> → caller must handle <code>None</code></td></tr>
+  <tr><td>Runtime cost</td><td>dynamic dispatch everywhere</td><td>zero — a specialized copy is compiled per concrete T</td></tr>
+</table>
+<p>You've been using this machinery all along: <code>Vec&lt;T&gt;</code>,
+<code>Option&lt;T&gt;</code>, and <code>HashMap&lt;K, V&gt;</code> are generic
+types, and now you can read their signatures. The deeper shift is where errors
+land: JS's <code>largest([{}, {}])</code> fails at the moment of comparison,
+deep inside the function, at runtime. Rust's fails at the <em>call site</em>,
+at compile time, with a message naming the missing trait — the blame lands on
+the caller who broke the contract, not the function that trusted it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Vectors</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Vectors",
+
+  intro: `
+<p>PHP has exactly one collection type, and it does everything: list, map,
+queue, set, matrix — <code>array</code> is all of them at once. Rust splits
+that Swiss-army knife back into dedicated tools. <code>Vec&lt;T&gt;</code> is
+just the <em>list</em> part: a growable, ordered sequence where every element
+has the same type. A <code>Vec&lt;i32&gt;</code> holds integers and nothing
+else — there is no equivalent of quietly appending a string to your list of
+scores.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>$scores = [10, 20, 30];</code></td><td><code>let scores = vec![10, 20, 30];</code></td></tr>
+  <tr><td><code>$scores[] = 40;</code></td><td><code>scores.push(40);</code> (needs <code>let mut</code>)</td></tr>
+  <tr><td><code>count($scores)</code></td><td><code>scores.len()</code></td></tr>
+  <tr><td><code>$scores[100] ?? null</code> (null + warning)</td><td><code>scores.get(100)</code> returns <code>Option</code></td></tr>
+  <tr><td><code>foreach ($scores as $s)</code></td><td><code>for s in &amp;scores</code></td></tr>
+  <tr><td><code>array_sum($scores)</code></td><td><code>scores.iter().sum()</code></td></tr>
+</table>
+<p>Two habits carry over from earlier lessons. First, mutation is opt-in:
+<code>$scores[] = 40;</code> always works in PHP, but <code>.push()</code>
+requires the vector to be bound with <code>let mut</code> (or borrowed as
+<code>&amp;mut Vec&lt;i32&gt;</code>). Second, out-of-range access isn't a
+warning you can ignore — <code>v.get(i)</code> hands you an
+<code>Option</code> so the "might not be there" case is part of the type,
+and <code>v[i]</code> panics outright instead of limping on with null.
+Functions that only <em>read</em> a vector conventionally take
+<code>&amp;[i32]</code> — a borrowed slice — which accepts a borrowed
+<code>Vec</code> for free.</p>`,
+
+  php: `$scores = [10, 20, 30];        // PHP's one array type, wearing its "list" hat
+
+$scores[] = 40;                // append — always allowed
+$count = count($scores);       // 4
+$sum = array_sum($scores);     // 100
+
+// Reading past the end: null and a runtime warning, then life goes on.
+$missing = $scores[100] ?? null;
+
+foreach ($scores as $s) {
+    echo $s . "\\n";
+}
+
+// Nothing stops a "list" from going mixed:
+$scores[] = "not a number";    // PHP shrugs; Rust would refuse to compile`,
+
+  task: `
+<p>Rebuild the score-keeping code with a real list type:</p>
+<ol>
+  <li><code>make_scores() -&gt; Vec&lt;i32&gt;</code> — return the vector
+      <code>[10, 20, 30]</code> using the <code>vec!</code> macro (the
+      <code>[10, 20, 30]</code> literal of Rust).</li>
+  <li><code>append(v: &amp;mut Vec&lt;i32&gt;, x: i32)</code> — push
+      <code>x</code> onto the end of <code>v</code>. This is
+      <code>$arr[] = $x;</code>, except the <code>&amp;mut</code> in the
+      signature announces the mutation.</li>
+  <li><code>total(v: &amp;[i32]) -&gt; i32</code> — return the sum of all
+      elements using <code>v.iter().sum()</code> — Rust's
+      <code>array_sum()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. make_scores: return vec![10, 20, 30].
+//    PHP: return [10, 20, 30];
+fn make_scores() -> Vec<i32> {
+    todo!()
+}
+
+// 2. append: push x onto v.
+//    PHP: $arr[] = $x;  ->  Rust: v.push(x)
+fn append(v: &mut Vec<i32>, x: i32) {
+    todo!()
+}
+
+// 3. total: sum the slice with .iter().sum().
+//    PHP: return array_sum($arr);
+fn total(v: &[i32]) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /vec!\s*\[/, message: "Build the vector with the vec! macro" },
+    { pattern: /\.push\(/, message: "Use .push() to append in append()" },
+    { pattern: /Vec<i32>/, message: "Use the Vec<i32> type" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [10, 20, 30]",
+      code: "assert_eq!(make_scores(), vec![10, 20, 30]);" },
+    { name: "append(&mut v, 3) pushes onto the end",
+      code: "let mut v = vec![1, 2];\nappend(&mut v, 3);\nassert_eq!(v, vec![1, 2, 3]);" },
+    { name: "append works on an empty vector",
+      code: "let mut v: Vec<i32> = Vec::new();\nappend(&mut v, 7);\nassert_eq!(v, vec![7]);" },
+    { name: "total(&[10, 20, 30]) returns 60",
+      code: "assert_eq!(total(&[10, 20, 30]), 60);" },
+    { name: "total of make_scores() is 60, total of empty is 0",
+      code: "assert_eq!(total(&make_scores()), 60);\nassert_eq!(total(&[]), 0);" },
+  ],
+
+  solution: `fn make_scores() -> Vec<i32> {
+    vec![10, 20, 30]
+}
+
+fn append(v: &mut Vec<i32>, x: i32) {
+    v.push(x);
+}
+
+fn total(v: &[i32]) -> i32 {
+    v.iter().sum()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Create a list</td><td><code>$v = [10, 20, 30];</code></td><td><code>let v = vec![10, 20, 30];</code></td></tr>
+  <tr><td>Append</td><td><code>$v[] = $x;</code></td><td><code>v.push(x);</code> — only if <code>mut</code></td></tr>
+  <tr><td>Length</td><td><code>count($v)</code></td><td><code>v.len()</code></td></tr>
+  <tr><td>Safe index</td><td><code>$v[100] ?? null</code></td><td><code>v.get(100)</code> → <code>Option&lt;&amp;i32&gt;</code></td></tr>
+  <tr><td>Iterate</td><td><code>foreach ($v as $x)</code></td><td><code>for x in &amp;v</code></td></tr>
+  <tr><td>Sum</td><td><code>array_sum($v)</code></td><td><code>v.iter().sum()</code></td></tr>
+  <tr><td>Element types</td><td>anything, mixed freely</td><td>exactly one <code>T</code> per <code>Vec&lt;T&gt;</code></td></tr>
+</table>
+<p>Note the parameter type of <code>total</code>: <code>&amp;[i32]</code>, a
+<em>slice</em>, not <code>&amp;Vec&lt;i32&gt;</code>. A slice is a borrowed
+view of any contiguous run of integers, so <code>total(&amp;v)</code> works on
+a <code>Vec</code>, an array, or a piece of either — the same instinct as
+type-hinting an interface instead of a concrete class in PHP. And notice what
+you did <em>not</em> have to think about: whether the "array" is secretly a
+map, whether the keys are contiguous, or what happens when a string sneaks in.
+<code>Vec&lt;i32&gt;</code> answers all of that at compile time.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

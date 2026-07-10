@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generic Constraints & keyof</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generic Constraints & keyof",
+
+  intro: `
+<p><code>obj[key]</code> is the most JavaScript line there is — and the source
+of half your <code>undefined</code> bugs. Typo the key, or reach for a
+property that moved, and JS hands you <code>undefined</code> and lets the
+crash happen three files later. In the last lesson <code>T</code> could be
+<em>anything</em>; this lesson is about telling the compiler that one type
+parameter <em>depends on another</em>.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>function pluck(obj, key)</code></td><td><code>function pluck&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K]</code></td></tr>
+  <tr><td><code>pluck(user, "name")</code> → something</td><td><code>pluck(user, "name")</code> → <code>string</code></td></tr>
+  <tr><td><code>pluck(user, "aeg")</code> → <code>undefined</code> at runtime</td><td><code>pluck(user, "aeg")</code> → compile error</td></tr>
+  <tr><td>Valid keys live in your head</td><td><code>keyof T</code> — the compiler knows them all</td></tr>
+</table>
+<p>Two new pieces. <code>keyof T</code> is the union of <code>T</code>'s
+property names — for <code>{ name: string; age: number }</code> it is
+<code>"name" | "age"</code>. And <code>K extends keyof T</code> is a
+<em>constraint</em>: <code>K</code> can be any type, as long as it fits inside
+<code>keyof T</code>. The payoff is the return type <code>T[K]</code> — an
+<em>indexed access type</em> that reads "the type of that property on
+<code>T</code>". Pass <code>"age"</code>, get <code>number</code> back;
+pass a typo, get a red squiggle before you ever run the code.</p>`,
+
+  javascript: `// The obj[key] pattern you write every day:
+function pluck(obj, key) {
+  return obj[key];
+}
+
+function pluckAll(items, key) {
+  return items.map(function (item) {
+    return item[key];
+  });
+}
+
+var user = { name: "Ada", age: 36 };
+pluck(user, "name"); // "Ada"
+pluck(user, "aeg");  // undefined — a typo nothing caught
+
+var users = [{ name: "Ada" }, { name: "Grace" }];
+pluckAll(users, "name"); // ["Ada", "Grace"]`,
+
+  task: `
+<p>Type the property-access helpers so typos become compile errors:</p>
+<ol>
+  <li>Write <code>pluck&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K]</code> —
+      return <code>obj[key]</code>. Two type parameters: <code>T</code> is the
+      object, <code>K</code> is constrained to be one of its keys, and
+      <code>T[K]</code> is the type of that property.</li>
+  <li>Write <code>pluckAll&lt;T, K extends keyof T&gt;(items: T[], key: K): T[K][]</code> —
+      map over the array and pluck the key from every element, returning an
+      array of property values.</li>
+</ol>
+<p>Both bodies are one-liners you have written a hundred times — the whole
+exercise is the signatures. As with all generics, callers never spell out
+<code>T</code> or <code>K</code>; both are inferred from the arguments.</p>`,
+
+  starter: `// 1. pluck: constrain key to the object's own keys.
+//    JS:  function pluck(obj, key) { return obj[key]; }
+//    TS:  function pluck<T, K extends keyof T>(obj: T, key: K): T[K]
+function pluck(obj: any, key: any): any {
+  // TODO: introduce T and K extends keyof T
+  return obj[key];
+}
+
+// 2. pluckAll: same constraint, applied across an array.
+function pluckAll(items: any[], key: any): any[] {
+  // TODO: items: T[], key: K, returns T[K][]
+  return items.map((item) => item[key]);
+}
+`,
+
+  exportNames: ["pluck", "pluckAll"],
+
+  requirements: [
+    { pattern: /<T/, message: "Declare generic type parameters starting with <T" },
+    { pattern: /extends\s+keyof/, message: "Constrain the key parameter with K extends keyof T" },
+    { pattern: /pluck\s*<[^>]*>\s*\(\s*obj\s*:\s*T\s*,\s*key\s*:\s*K\s*\)\s*:\s*T\s*\[\s*K\s*\]/, message: "Give pluck the signature (obj: T, key: K): T[K]" },
+  ],
+
+  tests: [
+    { name: 'pluck({name: "Ada", age: 36}, "name") returns "Ada"', run: (x) => expectEqual(x.pluck({ name: "Ada", age: 36 }, "name"), "Ada") },
+    { name: 'pluck({name: "Ada", age: 36}, "age") returns 36', run: (x) => expectEqual(x.pluck({ name: "Ada", age: 36 }, "age"), 36) },
+    { name: 'pluckAll(users, "name") returns ["Ada", "Grace"]', run: (x) => expectDeepEqual(x.pluckAll([{ name: "Ada" }, { name: "Grace" }], "name"), ["Ada", "Grace"]) },
+    { name: 'pluckAll(products, "price") returns [25, 89]', run: (x) => expectDeepEqual(x.pluckAll([{ name: "Mouse", price: 25 }, { name: "Keyboard", price: 89 }], "price"), [25, 89]) },
+  ],
+
+  solution: `function pluck<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+function pluckAll<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>All keys of an object</td><td><code>Object.keys(obj)</code> at runtime</td><td><code>keyof T</code> at compile time — <code>"name" | "age"</code></td></tr>
+  <tr><td>Restrict what a type param can be</td><td>n/a</td><td><code>K extends keyof T</code> (also e.g. <code>T extends { id: number }</code>)</td></tr>
+  <tr><td>Type of one property</td><td>n/a</td><td><code>T[K]</code>, or concretely <code>User["age"]</code> → <code>number</code></td></tr>
+  <tr><td>Typo'd key</td><td><code>undefined</code>, later, somewhere</td><td>compile error at the call site</td></tr>
+</table>
+<p><code>extends</code> in a constraint means "is assignable to", not class
+inheritance — <code>K extends keyof T</code> reads "K must fit within the
+union of T's keys". This one signature is why lodash-style
+<code>get</code>/<code>pick</code> helpers can be fully type-safe, and you
+will meet it again in the built-in utility types
+(<code>Pick&lt;T, K&gt;</code> has exactly this constraint).</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

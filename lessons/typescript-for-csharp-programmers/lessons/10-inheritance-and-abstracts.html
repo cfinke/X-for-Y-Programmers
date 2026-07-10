@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Class hierarchies translate almost mechanically: <code>: Shape</code>
+becomes <code>extends Shape</code>, <code>base(...)</code> becomes
+<code>super(...)</code>, and <code>abstract</code> means exactly what it means
+in C# — the class cannot be instantiated, and subclasses must implement the
+abstract members. The template-method pattern you know (a concrete method on
+the abstract base calling an abstract one) ports without modification.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>class Circle : Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td><code>public Circle(double r) : base("circle")</code></td><td><code>constructor(r: number) { super("circle"); }</code></td></tr>
+  <tr><td><code>abstract class Shape</code> / <code>public abstract double Area();</code></td><td><code>abstract class Shape</code> / <code>abstract area(): number;</code></td></tr>
+  <tr><td><code>virtual</code> + <code>override</code> keywords</td><td>Neither exists — every method is overridable</td></tr>
+</table>
+<p>The one philosophical difference: C# methods are sealed unless you say
+<code>virtual</code>, and overriding demands the <code>override</code>
+keyword. TypeScript inherits JavaScript's model, where <em>every</em> method
+is virtual and a subclass overrides simply by redeclaring the method — no
+keyword on either end. Abstract methods are "overridden" the same way: just
+implement them. You lose C#'s guardrail against accidental overrides (an
+<code>override</code> keyword exists as an opt-in lint via
+<code>noImplicitOverride</code>, but plain redeclaration is the norm), and
+there is no <code>sealed</code> to forbid subclassing. Also note
+<code>super(...)</code> is a statement inside the constructor body, not a
+<code>: base(...)</code> clause on its signature — and it must run before you
+touch <code>this</code>.</p>`,
+
+  csharp: `abstract class Shape
+{
+    public string Name { get; }
+    protected Shape(string name) => Name = name;
+
+    public abstract double Area();      // must be marked abstract/virtual
+
+    public string Describe()            // non-virtual: sealed by default
+        => $"{Name} with area {Math.Round(Area(), 2)}";
+}
+
+class Circle : Shape
+{
+    private readonly double _radius;
+    public Circle(double radius) : base("circle") => _radius = radius;
+
+    public override double Area()       // override keyword required
+        => Math.PI * _radius * _radius;
+}
+
+class Rectangle : Shape
+{
+    private readonly double _w, _h;
+    public Rectangle(double w, double h) : base("rectangle") { _w = w; _h = h; }
+    public override double Area() => _w * _h;
+}`,
+
+  task: `
+<p>Port the hierarchy (camelCase members: <code>Area</code> →
+<code>area</code>, <code>Describe</code> → <code>describe</code>):</p>
+<ol>
+  <li>Declare <code>abstract class Shape</code> with a parameter property
+      <code>public readonly name: string</code>, an
+      <code>abstract area(): number;</code> (signature only, semicolon, no
+      body), and a concrete <code>describe(): string</code> returning
+      <code>"circle with area 3.14"</code>-style text. Round the area with
+      <code>Math.round(this.area() * 100) / 100</code> — the template method
+      calls the abstract one, exactly as in C#.</li>
+  <li>Write <code>class Circle extends Shape</code> with a private
+      <code>radius</code>, calling <code>super("circle")</code> in its
+      constructor. Implement <code>area()</code> as
+      <code>Math.PI * radius²</code> — note: no <code>override</code>
+      keyword.</li>
+  <li>Write <code>class Rectangle extends Shape</code> taking
+      <code>width</code> and <code>height</code>, calling
+      <code>super("rectangle")</code>, with <code>area()</code> returning
+      <code>width * height</code>.</li>
+</ol>`,
+
+  starter: `// 1. C#: abstract class Shape — same keyword here.
+abstract class Shape {
+  constructor(public readonly name: string) {}
+
+  // TODO: declare the abstract method:  abstract area(): number;
+
+  describe(): string {
+    // TODO: return "<name> with area <rounded>", where rounded is
+    // Math.round(this.area() * 100) / 100
+    return "";
+  }
+}
+
+// 2. C#: class Circle : Shape  →  extends Shape; base("circle") → super("circle")
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super("circle");
+  }
+
+  // TODO: implement area() — no override keyword needed
+}
+
+// 3. Rectangle: width * height
+class Rectangle extends Shape {
+  constructor(private width: number, private height: number) {
+    super("rectangle");
+  }
+
+  // TODO: implement area()
+}
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class" },
+    { pattern: /abstract\s+area\s*\(\s*\)\s*:\s*number/, message: "Declare abstract area(): number on Shape (signature only)" },
+    { pattern: /extends\s+Shape/, message: "Derive the subclasses with extends Shape" },
+    { pattern: /super\s*\(/, message: "Call super(...) in the subclass constructors (C#'s : base(...))" },
+  ],
+
+  tests: [
+    { name: "new Circle(1).area() is 3.14 to two decimals", run: (x) => expectEqual(Math.round(new x.Circle(1).area() * 100) / 100, 3.14) },
+    { name: "new Circle(2).area() is 12.57 to two decimals", run: (x) => expectEqual(Math.round(new x.Circle(2).area() * 100) / 100, 12.57) },
+    { name: "new Rectangle(3, 4).area() is 12", run: (x) => expectEqual(new x.Rectangle(3, 4).area(), 12) },
+    { name: 'new Circle(1).describe() is "circle with area 3.14"', run: (x) => expectEqual(new x.Circle(1).describe(), "circle with area 3.14") },
+    { name: 'new Rectangle(3, 4).describe() is "rectangle with area 12"', run: (x) => expectEqual(new x.Rectangle(3, 4).describe(), "rectangle with area 12") },
+    { name: "Circle and Rectangle are instanceof Shape", run: (x) => {
+        expectTruthy(new x.Circle(1) instanceof x.Shape);
+        expectTruthy(new x.Rectangle(1, 1) instanceof x.Shape);
+      } },
+  ],
+
+  solution: `abstract class Shape {
+  constructor(public readonly name: string) {}
+
+  abstract area(): number;
+
+  describe(): string {
+    return this.name + " with area " + (Math.round(this.area() * 100) / 100);
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super("circle");
+  }
+
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(private width: number, private height: number) {
+    super("rectangle");
+  }
+
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Inherit</td><td><code>class Circle : Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td>Base constructor</td><td><code>public Circle(double r) : base("circle")</code></td><td><code>super("circle");</code> first statement in the ctor body</td></tr>
+  <tr><td>Abstract class/method</td><td><code>abstract</code> / <code>public abstract double Area();</code></td><td><code>abstract</code> / <code>abstract area(): number;</code></td></tr>
+  <tr><td>Overridable method</td><td>Only if marked <code>virtual</code>/<code>abstract</code></td><td>All of them, always</td></tr>
+  <tr><td>Override</td><td><code>public override double Area()</code></td><td>Just redeclare <code>area()</code> (opt-in check: <code>noImplicitOverride</code>)</td></tr>
+  <tr><td>Call base method</td><td><code>base.Describe()</code></td><td><code>super.describe()</code></td></tr>
+  <tr><td>Forbid subclassing</td><td><code>sealed</code></td><td>No equivalent keyword</td></tr>
+</table>
+<p>Everything-virtual sounds alarming to a C# ear, but in practice the
+abstract keyword carries the design intent: mark the extension points
+<code>abstract</code> and the compiler forces subclasses to fill them in,
+exactly like C#. One structural limit to know about before you design a big
+hierarchy: like C#, TypeScript has single inheritance only — one
+<code>extends</code>, though a class may <code>implements</code> any number
+of interfaces. And since interfaces are structural here, deep hierarchies are
+rarer in idiomatic TypeScript than in C# — many designs that would be base
+classes in .NET are just interfaces plus plain functions.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

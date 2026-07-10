@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>PHP functions are free functions, exactly like the C++ you write outside
+classes — but with no headers and no forward declarations. A function can be
+defined anywhere in the file (even <em>after</em> the call site) and called
+from anywhere; the whole declaration/definition split, the
+<code>.h</code>/<code>.cpp</code> shuffle, and the one-definition rule
+ceremony are gone. Default arguments carry over unchanged:
+<code>string $greeting = "Hello"</code> works just like
+<code>const std::string&amp; greeting = "Hello"</code>, trailing-defaults
+rule included.</p>
+<table>
+  <tr><th>C++17</th><th>PHP</th></tr>
+  <tr><td>declare in <code>.h</code>, define in <code>.cpp</code></td><td>just define it — anywhere, no forward declarations</td></tr>
+  <tr><td><code>f(int x, int y = 2)</code></td><td><code>function f(int $x, int $y = 2)</code></td></tr>
+  <tr><td><code>std::optional&lt;std::string&gt;</code> parameter</td><td><code>?string $last = null</code> — nullable type</td></tr>
+  <tr><td>overload set: <code>f(int)</code> / <code>f(string)</code></td><td>one function with a union type: <code>int|string $id</code></td></tr>
+  <tr><td>which one did I get? — resolved at compile time</td><td><code>is_int($id)</code> / <code>is_string($id)</code> at runtime</td></tr>
+  <tr><td>designated initializers (aggregates only)</td><td><code>greet(name: "Ada")</code> — named args on any call</td></tr>
+</table>
+<p>What does <em>not</em> carry over is overloading: one name, one function.
+The overload set's job is done by richer parameter types —
+<code>?string</code> is a nullable (an <code>optional</code> baked into the
+type syntax) and <code>int|string</code> is a union (a <code>variant</code>
+the runtime checks for you), with <code>is_int()</code> playing
+<code>std::holds_alternative</code>. In exchange you get something C++ calls
+can't do: <strong>named arguments</strong>. <code>greet(name: "Ada")</code>
+is designated initializers for function calls — skip defaults, reorder at
+will, make boolean parameters readable.</p>`,
+
+  cpp: `#include <format>
+#include <optional>
+#include <string>
+
+std::string greet(const std::string& name,
+                  const std::string& greeting = "Hello") {
+    return std::format("{}, {}!", greeting, name);
+}
+
+std::string format_name(const std::string& first,
+                        std::optional<std::string> last = std::nullopt) {
+    return last ? first + " " + *last : first;
+}
+
+// The int/string split needs an overload set (or std::variant + visit):
+std::string describe(int id) {
+    return std::format("numeric id {}", id);
+}
+std::string describe(const std::string& id) {
+    return std::format("string id {}", id);
+}`,
+
+  task: `
+<p>Port the trio — the overload set becomes one function:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      returns <code>"Hello, Ada!"</code> by default and
+      <code>"Hi, Ada!"</code> when a greeting is passed. One test calls it
+      with named arguments — your parameter names are part of the
+      signature now.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      <code>"Ada Lovelace"</code> when <code>$last</code> is given,
+      <code>"Ada"</code> when it's <code>null</code>. The <code>?</code>
+      prefix means "this type or null" — <code>optional</code> as a type
+      annotation.</li>
+  <li><code>describe(int|string $id): string</code> — one function replaces
+      the overload set. Return <code>"numeric id 7"</code> for ints and
+      <code>"string id abc"</code> for strings, branching with
+      <code>is_int($id)</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Default argument, same rules as C++ (defaults trail).
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. ?string = "string or null" — std::optional as type syntax.
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. int|string is the whole overload set in one signature.
+//    Branch with is_int($id).
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give $greeting a default value of "Hello" in the signature' },
+    { pattern: /\?string/, message: "Declare $last as nullable with ?string" },
+    { pattern: /int\|string/, message: "Give describe the union type int|string" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default greeting',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Ada", "Hi") overrides the default',
+      code: 'expect_eq(greet("Ada", "Hi"), "Hi, Ada!");' },
+    { name: 'named arguments work: greet(greeting: "Howdy", name: "Ada")',
+      code: 'expect_eq(greet(greeting: "Howdy", name: "Ada"), "Howdy, Ada!");' },
+    { name: 'format_name("Ada", "Lovelace") returns "Ada Lovelace"',
+      code: 'expect_eq(format_name("Ada", "Lovelace"), "Ada Lovelace");' },
+    { name: 'format_name("Ada") returns just "Ada"',
+      code: 'expect_eq(format_name("Ada"), "Ada");' },
+    { name: "describe handles both halves of the union",
+      code: 'expect_eq(describe(7), "numeric id 7");\nexpect_eq(describe("abc"), "string id abc");' },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    return $last === null ? $first : "$first $last";
+}
+
+function describe(int|string $id): string {
+    return is_int($id) ? "numeric id $id" : "string id $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+  <tr><td>Declaration</td><td>prototype in header, define once</td><td>define anywhere, call anywhere — no forward declarations</td></tr>
+  <tr><td>Default argument</td><td><code>f(int x = 2)</code></td><td><code>function f(int $x = 2)</code></td></tr>
+  <tr><td>Maybe-a-value param</td><td><code>std::optional&lt;T&gt;</code></td><td><code>?T $x = null</code>, checked with <code>=== null</code></td></tr>
+  <tr><td>Overloading</td><td><code>f(int)</code> / <code>f(string)</code></td><td>not allowed — one name, one function</td></tr>
+  <tr><td>Either-type param</td><td><code>std::variant&lt;int, std::string&gt;</code></td><td><code>int|string $x</code></td></tr>
+  <tr><td>Which alternative?</td><td><code>std::holds_alternative&lt;int&gt;(v)</code></td><td><code>is_int($x)</code>, <code>is_string($x)</code>, …</td></tr>
+  <tr><td>Call by parameter name</td><td>designated init for aggregates only</td><td><code>f(name: "Ada")</code> on any function (8.0+)</td></tr>
+</table>
+<p>The trade at the heart of this lesson: C++ resolves an overload set at
+compile time by matching argument types; PHP moves that dispatch inside the
+function, where a union-typed parameter is inspected at runtime with
+<code>is_int</code>-style checks. It's <code>std::visit</code> flattened
+into an <code>if</code>. And because named arguments bind by parameter
+name, renaming a parameter is now an API break — a thing no C++ programmer
+has ever had to consider.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

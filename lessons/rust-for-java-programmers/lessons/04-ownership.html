@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Ownership & Moves</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Ownership & Moves",
+
+  intro: `
+<p>Here is the idea that makes Rust <em>Rust</em>. In Java, every object lives
+on the heap, every variable is a reference, assignment copies the reference —
+so <code>b = a</code> gives you two names for one object — and the garbage
+collector cleans up, eventually, on its own schedule. Rust has no GC. Instead,
+every value has exactly <strong>one owner</strong>, and when the owner goes
+out of scope the memory is freed right there, deterministically. No GC pauses,
+no finalizers, no wondering when (or whether) cleanup happens.</p>
+<table>
+  <tr><th>Java</th><th>Rust</th></tr>
+  <tr><td><code>b = a;</code> — two references, one object</td><td><code>let b = a;</code> — a <em>move</em>; <code>a</code> is now dead</td></tr>
+  <tr><td>aliasing everywhere, GC sorts it out</td><td>one owner per value, freed when the owner ends</td></tr>
+  <tr><td>deep copy: write a copy constructor, hope</td><td><code>a.clone()</code> — explicit, built in</td></tr>
+  <tr><td><code>int</code>/<code>double</code> copied by value</td><td>same: <code>i32</code>, <code>f64</code>, <code>bool</code> are <code>Copy</code></td></tr>
+</table>
+<p>One owner means assignment can't copy the reference — it <em>moves</em>
+ownership. After <code>let b = a;</code>, using <code>a</code> is a
+<em>compile error</em>, not a runtime surprise. Passing a value to a function
+moves it too: the parameter becomes the new owner, and the caller's variable
+is dead. When you genuinely want two independent values, you say so:
+<code>a.clone()</code> is an explicit deep copy — the reliable copy
+constructor you always wished Java had — and the cost is visible right at the
+call site. Primitives are exempt: <code>i32</code>, <code>f64</code>,
+<code>bool</code> and friends are <code>Copy</code> types, duplicated freely
+just like Java's primitives.</p>`,
+
+  java: `// Java: assignment aliases; both names see every change.
+List<Integer> a = new ArrayList<>(List.of(1, 2, 3));
+List<Integer> b = a;           // b and a are the SAME list
+b.add(4);
+System.out.println(a);         // [1, 2, 3, 4] — surprise at a distance
+
+// Want an independent copy? You must remember to ask:
+List<Integer> c = new ArrayList<>(a);   // manual "deep" copy
+c.add(5);
+System.out.println(a);         // unchanged this time
+
+// And who frees all this? The GC, eventually, whenever it likes.
+String s = "java";
+String t = s.toUpperCase();    // new object; old one is GC's problem`,
+
+  task: `
+<p>Feel the move rules directly:</p>
+<ol>
+  <li><code>consume_and_shout</code> takes <code>s: String</code> — note:
+      <em>owned</em> <code>String</code>, not <code>&amp;str</code>, so the
+      function takes ownership and the caller's variable dies — and returns
+      the uppercased <code>String</code> (via <code>.to_uppercase()</code>).</li>
+  <li><code>keep_both</code> takes <code>v: Vec&lt;i32&gt;</code> and returns
+      a tuple <code>(Vec&lt;i32&gt;, Vec&lt;i32&gt;)</code>: the original
+      vector untouched, plus an independent <code>.clone()</code> of it with
+      the extra element <code>0</code> pushed on the end (make the clone a
+      <code>let mut</code> so you can <code>.push(0)</code>). Return them as
+      <code>(v, extended)</code>. In Java the "copy" would share the same
+      list; here the clone is truly independent.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. consume_and_shout takes ownership of s (an owned String, not &str)
+//    and returns the uppercased String.
+fn consume_and_shout(s: String) -> String {
+    todo!()
+}
+
+// 2. keep_both: clone v into a \`let mut\` copy, push 0 onto the clone,
+//    then return (original, clone) as a tuple.
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.clone\(\)/, message: "Use .clone() to make an explicit, independent copy" },
+    { pattern: /\.push\(/, message: "Push the extra element onto the clone with .push(...)" },
+  ],
+
+  tests: [
+    { name: 'consume_and_shout(String::from("java")) returns "JAVA"',
+      code: 'assert_eq!(consume_and_shout(String::from("java")), "JAVA");' },
+    { name: 'consume_and_shout(String::from("no gc")) returns "NO GC"',
+      code: 'assert_eq!(consume_and_shout(String::from("no gc")), "NO GC");' },
+    { name: "keep_both(vec![1, 2, 3]) leaves the original untouched",
+      code: "let (original, _extended) = keep_both(vec![1, 2, 3]);\nassert_eq!(original, vec![1, 2, 3]);" },
+    { name: "keep_both(vec![1, 2, 3]) returns a clone with 0 pushed",
+      code: "let (_original, extended) = keep_both(vec![1, 2, 3]);\nassert_eq!(extended, vec![1, 2, 3, 0]);" },
+    { name: "keep_both(vec![]) returns ([], [0])",
+      code: "let (original, extended) = keep_both(vec![]);\nassert_eq!(original, Vec::<i32>::new());\nassert_eq!(extended, vec![0]);" },
+  ],
+
+  solution: `fn consume_and_shout(s: String) -> String {
+    s.to_uppercase()
+}
+
+fn keep_both(v: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
+    let mut extended = v.clone();
+    extended.push(0);
+    (v, extended)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Rust</th></tr>
+  <tr><td>Assignment of an object</td><td>copies the reference (aliases)</td><td>moves ownership; old variable is dead</td></tr>
+  <tr><td>Using the old variable</td><td>fine — same object</td><td>compile error: "value moved"</td></tr>
+  <tr><td>Independent copy</td><td>copy constructor / manual copy</td><td><code>.clone()</code> — explicit deep copy</td></tr>
+  <tr><td>Cleanup</td><td>GC, eventually</td><td>deterministic, when the owner goes out of scope</td></tr>
+  <tr><td>Primitives</td><td>copied by value</td><td>same — <code>Copy</code> types are exempt from moves</td></tr>
+  <tr><td>Passing to a method</td><td>shares the object</td><td>moves it in (unless you borrow — next lesson)</td></tr>
+</table>
+<p>Notice <code>keep_both</code> could return <code>v</code> after cloning it:
+cloning reads through <code>v</code> without consuming it, so <code>v</code>
+is still alive and owned. And notice what the Java panel can't promise: that
+nobody else holds a reference to your list. In Rust, if you own it, you
+<em>know</em> nobody else does — that guarantee is what the compiler is
+buying with the move rules, and it's also how it knows exactly when to free
+the memory.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

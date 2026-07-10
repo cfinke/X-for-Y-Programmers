@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Discriminated Unions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Discriminated Unions",
+
+  intro: `
+<p>Ruby 3's pattern matching was a revelation: <code>case event; in { type:
+"click", x:, y: }</code> destructures and dispatches in one move. TypeScript's
+equivalent is the <strong>discriminated union</strong> (also "tagged union"):
+you model each variant as an object type carrying a <em>literal</em>
+discriminator — <code>kind: "circle"</code>, not <code>kind: string</code> —
+union them together, and <code>switch (shape.kind)</code> narrows to the exact
+variant inside each <code>case</code>. Same dispatch-on-shape idea, but the
+compiler plays along.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>case shape ... in { kind: "circle", radius: }</code></td><td><code>switch (shape.kind) { case "circle": ... shape.radius</code></td></tr>
+  <tr><td>Variant = a hash shape you hope arrives intact</td><td>Variant = an interface with a literal <code>kind</code> property</td></tr>
+  <tr><td>All variants together: convention</td><td><code>type Shape = Circle | Rectangle | Triangle</code></td></tr>
+  <tr><td>Missed variant → <code>NoMatchingPatternError</code> at runtime</td><td>Missed variant → <code>never</code> assignment fails at compile time</td></tr>
+</table>
+<p>The killer feature is <strong>exhaustiveness</strong>. In Ruby,
+<code>case/in</code> raises <code>NoMatchingPatternError</code> only when an
+unmatched value actually shows up in production. In TypeScript, you add a
+<code>default</code> branch that assigns the value to a variable of type
+<code>never</code> — the type with no values. If every variant is handled, the
+value in <code>default</code> <em>is</em> <code>never</code> and it compiles.
+Add a fourth shape next month and forget a case? The <code>never</code>
+assignment turns red before the code ever runs.</p>`,
+
+  ruby: `def area(shape)
+  case shape
+  in { kind: "circle", radius: }
+    Math::PI * radius * radius
+  in { kind: "rectangle", width:, height: }
+    width * height
+  in { kind: "triangle", base:, height: }
+    base * height / 2.0
+  end
+end
+
+area({ kind: "circle", radius: 2 })
+# => 12.566370614359172
+
+area({ kind: "hexagon", side: 3 })
+# => NoMatchingPatternError — but only when it happens,
+#    in production, at runtime.`,
+
+  task: `
+<p>Model the shapes as a tagged union and port <code>area</code>:</p>
+<ol>
+  <li>Define three variant types — <code>Circle</code>
+      (<code>kind: "circle"</code>, <code>radius: number</code>),
+      <code>Rectangle</code> (<code>kind: "rectangle"</code>,
+      <code>width</code>, <code>height</code>) and <code>Triangle</code>
+      (<code>kind: "triangle"</code>, <code>base</code>, <code>height</code>).
+      The <code>kind</code> must be a literal string type, like a frozen
+      symbol.</li>
+  <li>Union them: <code>type Shape = Circle | Rectangle | Triangle</code>.</li>
+  <li>Write <code>area(shape: Shape): number</code> with a
+      <code>switch (shape.kind)</code>. Inside <code>case "circle"</code>,
+      <code>shape.radius</code> is available — the compiler narrowed for
+      you.</li>
+  <li>In the <code>default</code> branch, assign <code>shape</code> to a
+      constant typed <code>never</code>, then <code>throw new Error(...)</code>.
+      That constant is your compile-time <code>NoMatchingPatternError</code>.</li>
+</ol>`,
+
+  starter: `interface Circle {
+  kind: "circle";       // literal type — like a frozen :circle symbol
+  radius: number;
+}
+
+// TODO: define Rectangle (kind: "rectangle", width, height)
+//       and Triangle   (kind: "triangle", base, height)
+
+type Shape = Circle; // TODO: union all three variants with |
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    // TODO: case "rectangle" and case "triangle"
+    default: {
+      // TODO: assign shape to a const of type never, then throw.
+      // Ruby raises NoMatchingPatternError here — at runtime.
+      // The never assignment moves that error to compile time.
+      throw new Error("Unhandled shape");
+    }
+  }
+}
+`,
+
+  exportNames: ["area"],
+
+  requirements: [
+    { pattern: /kind\s*:\s*"/, message: "Tag each variant with a literal kind property (kind: \"circle\")" },
+    { pattern: /Circle\s*\|\s*Rectangle\s*\|\s*Triangle/, message: "Union the variants: type Shape = Circle | Rectangle | Triangle" },
+    { pattern: /never/, message: "Use a never-typed default branch for compile-time exhaustiveness" },
+    { pattern: /switch/, message: "Dispatch with switch (shape.kind) — the case/in of TypeScript" },
+  ],
+
+  tests: [
+    { name: 'area({ kind: "circle", radius: 2 }) is PI * 4', run: (x) => expectEqual(x.area({ kind: "circle", radius: 2 }), Math.PI * 4) },
+    { name: 'area({ kind: "rectangle", width: 3, height: 4 }) is 12', run: (x) => expectEqual(x.area({ kind: "rectangle", width: 3, height: 4 }), 12) },
+    { name: 'area({ kind: "triangle", base: 6, height: 4 }) is 12', run: (x) => expectEqual(x.area({ kind: "triangle", base: 6, height: 4 }), 12) },
+    { name: "an unknown kind still throws at runtime (the never branch)", run: (x) => expectThrows(() => x.area({ kind: "hexagon", side: 3 })) },
+  ],
+
+  solution: `interface Circle {
+  kind: "circle";
+  radius: number;
+}
+
+interface Rectangle {
+  kind: "rectangle";
+  width: number;
+  height: number;
+}
+
+interface Triangle {
+  kind: "triangle";
+  base: number;
+  height: number;
+}
+
+type Shape = Circle | Rectangle | Triangle;
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    case "rectangle":
+      return shape.width * shape.height;
+    case "triangle":
+      return (shape.base * shape.height) / 2;
+    default: {
+      // If a new variant is added to Shape and not handled above,
+      // this line becomes a compile error — NoMatchingPatternError, early.
+      const impossible: never = shape;
+      throw new Error("Unhandled shape: " + JSON.stringify(impossible));
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Dispatch on shape</td><td><code>case x; in { kind: "click", x:, y: }</code></td><td><code>switch (x.kind) { case "click": ...</code></td></tr>
+  <tr><td>The tag</td><td>A hash key by convention</td><td>A literal-typed property (<code>kind: "click"</code>) the compiler discriminates on</td></tr>
+  <tr><td>The union</td><td>Implicit — "this method takes event-ish hashes"</td><td><code>type Event = Click | KeyPress | Scroll</code></td></tr>
+  <tr><td>Destructuring</td><td><code>in { radius: }</code> binds <code>radius</code></td><td>Narrowing makes <code>shape.radius</code> legal in that case</td></tr>
+  <tr><td>Missed variant</td><td><code>NoMatchingPatternError</code> at runtime</td><td><code>const impossible: never = shape;</code> fails at compile time</td></tr>
+</table>
+<p>The insight: <code>never</code> is the type with zero possible values. A
+<code>switch</code> that handles every variant leaves <code>shape</code> typed
+<code>never</code> in <code>default</code>, so the assignment type-checks.
+Handle one fewer, and <code>shape</code> is still <code>Circle</code> (say) in
+<code>default</code> — and <code>Circle</code> is not assignable to
+<code>never</code>. You get Ruby's pattern-matching ergonomics, but the "you
+forgot a case" alarm rings at compile time instead of paging you.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Borrowing & References</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Borrowing & References",
+
+  intro: `
+<p>PHP has references — <code>function f(array &amp;$items)</code> — and
+every style guide tells you to avoid them, because nothing at the call site
+warns you that <code>f($list)</code> is about to rewrite <code>$list</code>.
+Rust inverts the culture: references (called <em>borrows</em>) are
+everywhere, because the compiler makes them safe and the signatures make
+them honest. A borrow lets a function use your value without taking
+ownership of it — the answer to last lesson's cliffhanger.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>function total(array $numbers)</code> — gets a copy</td><td><code>fn total(numbers: &amp;[i32])</code> — borrows, read-only</td></tr>
+  <tr><td><code>function add(array &amp;$items)</code> — spooky, discouraged</td><td><code>fn add(items: &amp;mut Vec&lt;String&gt;)</code> — explicit, checked</td></tr>
+  <tr><td><code>add($list);</code> — call site looks innocent</td><td><code>add(&amp;mut list);</code> — mutation visible at the call</td></tr>
+  <tr><td>who can alias what? anyone, anything</td><td>many <code>&amp;T</code> readers <em>or</em> one <code>&amp;mut T</code> writer — never both</td></tr>
+</table>
+<p>There are two kinds. <code>&amp;T</code> is a shared borrow: read-only,
+and any number can exist at once. <code>&amp;mut T</code> is an exclusive
+borrow: it can mutate, and while it lives there can be no other borrow of
+the value — not even readers. The compiler enforces this, which is what
+kills PHP's reference spookiness: a signature taking <code>&amp;[i32]</code>
+<em>guarantees</em> your array comes back untouched, and one taking
+<code>&amp;mut Vec&lt;String&gt;</code> declares the mutation up front, at
+both the signature and the call site. (<code>&amp;[i32]</code> is a
+<em>slice</em> — a read-only view of any sequence of <code>i32</code>s;
+it's to <code>Vec</code> what <code>&amp;str</code> is to
+<code>String</code>.)</p>`,
+
+  php: `<?php
+// Pass-by-value: the function gets its own copy. Safe but implicit.
+function total(array $numbers): int {
+    return array_sum($numbers);
+}
+
+// Pass-by-reference: the & your style guide warns you about.
+function addItem(array &$items, string $item): void {
+    $items[] = $item;
+}
+
+function longer(string $a, string $b): int {
+    return max(strlen($a), strlen($b));
+}
+
+$list = ["bread"];
+addItem($list, "milk");   // nothing HERE says $list just changed
+count($list);             // 2 — surprise lives at the call site`,
+
+  task: `
+<p>Rewrite the PHP with honest signatures:</p>
+<ol>
+  <li>Write <code>total</code> taking <code>numbers: &amp;[i32]</code> — a
+      shared, read-only borrow — and returning <code>i32</code>: the sum of
+      the elements (a <code>for n in numbers</code> loop with a
+      <code>let mut sum</code>, or <code>.iter().sum()</code>).</li>
+  <li>Write <code>add_item</code> taking
+      <code>items: &amp;mut Vec&lt;String&gt;</code> and
+      <code>item: String</code>, returning nothing: push the item into the
+      vector. The <code>&amp;mut</code> in the signature is PHP's
+      <code>&amp;$items</code> — except every caller must visibly opt in
+      with <code>&amp;mut</code> too.</li>
+  <li>Write <code>longer</code> taking <code>a: &amp;str</code> and
+      <code>b: &amp;str</code>, returning <code>usize</code>: the byte
+      length of the longer string (<code>.len()</code> returns
+      <code>usize</code>, Rust's index-and-length integer).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. total: &[i32] is a read-only view — the caller KNOWS you can't
+//    change their data, because the type says so.
+fn total(numbers: &[i32]) -> i32 {
+    todo!()
+}
+
+// 2. add_item: &mut is PHP's &$items, but visible at the call site too,
+//    and exclusive — no one else can touch the Vec while you hold it.
+fn add_item(items: &mut Vec<String>, item: String) {
+    todo!()
+}
+
+// 3. longer: two shared borrows in, the bigger .len() out (usize).
+fn longer(a: &str, b: &str) -> usize {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&mut\s/, message: "Take the vector as an exclusive &mut borrow in add_item" },
+    { pattern: /&\[i32\]/, message: "Take the numbers as a shared &[i32] slice in total" },
+  ],
+
+  tests: [
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total(&[]) returns 0, and the caller keeps the data",
+      code: "assert_eq!(total(&[]), 0);\nlet nums = vec![10, 20];\nassert_eq!(total(&nums), 30);\nassert_eq!(nums, vec![10, 20]); // still ours: it was only borrowed" },
+    { name: 'add_item pushes onto the borrowed vector',
+      code: 'let mut items = vec![String::from("bread")];\nadd_item(&mut items, String::from("milk"));\nassert_eq!(items, vec!["bread", "milk"]);' },
+    { name: "add_item works on an empty vector",
+      code: 'let mut items: Vec<String> = Vec::new();\nadd_item(&mut items, String::from("eggs"));\nassert_eq!(items, vec!["eggs"]);' },
+    { name: 'longer("hi", "hello") is 5, longer("bread", "oat") is 5',
+      code: 'assert_eq!(longer("hi", "hello"), 5);\nassert_eq!(longer("bread", "oat"), 5);' },
+  ],
+
+  solution: `fn total(numbers: &[i32]) -> i32 {
+    let mut sum = 0;
+    for n in numbers {
+        sum += n;
+    }
+    sum
+}
+
+fn add_item(items: &mut Vec<String>, item: String) {
+    items.push(item);
+}
+
+fn longer(a: &str, b: &str) -> usize {
+    if a.len() > b.len() { a.len() } else { b.len() }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Read-only access</td><td><code>array $numbers</code> — implicit copy</td><td><code>&amp;[i32]</code> / <code>&amp;T</code> — shared borrow, zero copy</td></tr>
+  <tr><td>Mutating access</td><td><code>array &amp;$items</code> — rare, spooky</td><td><code>&amp;mut Vec&lt;String&gt;</code> — explicit, exclusive</td></tr>
+  <tr><td>At the call site</td><td><code>addItem($list, ...)</code> — invisible</td><td><code>add_item(&amp;mut list, ...)</code> — announced</td></tr>
+  <tr><td>Aliasing rules</td><td>none — debug it at runtime</td><td>many readers <em>xor</em> one writer, compile-checked</td></tr>
+  <tr><td>Lengths &amp; indexes</td><td><code>int</code></td><td><code>usize</code></td></tr>
+</table>
+<p>The payoff compounds: in PHP, "does this function modify my array?"
+means reading its body (or its docblock, and hoping). In Rust the signature
+is a contract the compiler enforces — <code>&amp;</code> means <em>look,
+don't touch</em>, <code>&amp;mut</code> means <em>I will change this, and
+nobody else may even look while I do</em>. That one-writer-or-many-readers
+rule is the same discipline that later makes Rust's fearless concurrency
+possible: data races become compile errors, not production incidents.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

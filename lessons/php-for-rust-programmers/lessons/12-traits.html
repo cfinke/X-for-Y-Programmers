@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>False friend alert: PHP <code>trait</code>s are <em>not</em> Rust traits.
+The job Rust traits do — declaring a contract that many types implement, and
+bounding generics over it — belongs to PHP <em>interfaces</em> (lesson 10).
+A PHP trait is a <strong>mixin</strong>: a bundle of method (and property)
+definitions that <code>use Describable;</code> copies into a class, as if the
+code had been written there. The closest Rust analogy is a macro that expands
+into an <code>impl</code> block: pure code injection, no type, no contract,
+nothing you can accept as a parameter.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>trait Describable { fn describe(&amp;self) .. }</code> as a <em>contract</em></td><td><code>interface Describable</code> (lesson 10)</td></tr>
+  <tr><td>default method bodies in a trait</td><td><code>trait Describable { public function describe() .. }</code></td></tr>
+  <tr><td><code>impl Describable for Dog {}</code></td><td><code>class Dog { use Describable; }</code> — the code is flattened in</td></tr>
+  <tr><td><code>fn f(x: &amp;dyn Describable)</code></td><td>needs an interface — a trait is not a type hint</td></tr>
+  <tr><td>one <code>impl</code> per trait per type</td><td>a class can <code>use</code> many traits; name clashes resolved with <code>insteadof</code></td></tr>
+</table>
+<p>The overlap with Rust is <em>default trait methods</em>: a PHP trait method
+can call <code>$this-&gt;name()</code> and simply trust that the using class
+defines it — like a Rust default method calling a required method, except no
+signature declares the requirement. If the class forgets <code>name()</code>,
+you find out at call time, not compile time. In real code, traits are often
+paired with an interface: the interface states the contract, the trait ships
+the shared default bodies.</p>`,
+
+  rust: `trait Describable {
+    // Required method: implementors must provide it.
+    fn name(&self) -> String;
+
+    // Default method: free for every implementor,
+    // written once in terms of name().
+    fn describe(&self) -> String {
+        format!("This is {}", self.name())
+    }
+}
+
+struct Dog;
+struct Robot;
+
+impl Describable for Dog {
+    fn name(&self) -> String { "Rex".to_string() }
+}
+
+impl Describable for Robot {
+    fn name(&self) -> String { "Unit 734".to_string() }
+}`,
+
+  task: `
+<p>Port the default-method half of the Rust trait to a PHP mixin:</p>
+<ol>
+  <li>Fill in <code>trait Describable</code>: its <code>describe(): string</code>
+      method returns <code>'This is '</code> followed by
+      <code>$this-&gt;name()</code> — the same "default method written in terms
+      of a required method" shape as the Rust version, minus the declared
+      requirement.</li>
+  <li>Class <code>Dog</code> already says <code>use Describable;</code>.
+      Implement its <code>name(): string</code> to return <code>'Rex'</code>.</li>
+  <li>Class <code>Robot</code> also uses the trait. Implement its
+      <code>name(): string</code> to return <code>'Unit 734'</code>.</li>
+</ol>
+<p>The tests call both <code>-&gt;name()</code> and <code>-&gt;describe()</code>
+on each class — <code>describe()</code> exists only because the trait was
+mixed in.</p>`,
+
+  starter: `<?php
+
+// A mixin, not a contract: 'use Describable;' pastes this method
+// into a class. Think macro-expanded impl block, not dyn Trait.
+trait Describable {
+    public function describe(): string {
+        throw new Exception("TODO: return 'This is ' followed by \$this->name()");
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return 'Rex'");
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: return 'Unit 734'");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describable/, message: "Define trait Describable (PHP's mixin construct)" },
+    { pattern: /use\s+Describable/, message: "Mix the trait into the classes with use Describable;" },
+  ],
+
+  tests: [
+    { name: "(new Dog())->name() returns 'Rex'",
+      code: "expect_eq((new Dog())->name(), 'Rex');" },
+    { name: "(new Dog())->describe() returns 'This is Rex' via the trait",
+      code: "expect_eq((new Dog())->describe(), 'This is Rex');" },
+    { name: "(new Robot())->name() returns 'Unit 734'",
+      code: "expect_eq((new Robot())->name(), 'Unit 734');" },
+    { name: "(new Robot())->describe() reuses the same trait method",
+      code: "expect_eq((new Robot())->describe(), 'This is Unit 734');" },
+  ],
+
+  solution: `<?php
+
+trait Describable {
+    public function describe(): string {
+        return "This is " . $this->name();
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        return 'Rex';
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        return 'Unit 734';
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Job</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Declare a contract</td><td><code>trait</code></td><td><code>interface</code></td></tr>
+  <tr><td>Share default method bodies</td><td>trait default methods</td><td><code>trait</code> + <code>use TheTrait;</code></td></tr>
+  <tr><td>Accept "anything implementing X"</td><td><code>impl Trait</code> / <code>dyn Trait</code> / bounds</td><td>type-hint the <code>interface</code>, never the trait</td></tr>
+  <tr><td>Require a method the default calls</td><td>declared in the trait, compiler-checked</td><td>just call <code>$this-&gt;name()</code> and hope — or add <code>abstract public function name(): string;</code> in the trait</td></tr>
+  <tr><td>Multiple reuse sources</td><td>many trait impls per type</td><td><code>use A, B;</code> with <code>insteadof</code>/<code>as</code> for clashes</td></tr>
+  <tr><td>Coherence/orphan rules</td><td>yes</td><td>none — it's textual inclusion</td></tr>
+</table>
+<p>Rule of thumb for the Rust-shaped brain: when you reach for a trait to
+<em>bound</em> or <em>abstract over</em> types, write a PHP interface; when
+you reach for a trait to <em>share method bodies</em> across unrelated
+classes, write a PHP trait. A trait can even declare
+<code>abstract</code> methods to make its requirements explicit — that's the
+closest PHP gets to a Rust trait's required-method list, and it turns the
+call-time failure into an instantiation-time one.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

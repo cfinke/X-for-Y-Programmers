@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Hashes & Symbols</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Hashes & Symbols",
+
+  intro: `
+<p>Where JavaScript reaches for an object literal, Ruby reaches for a
+<strong>Hash</strong> — and the literal even looks the same:
+<code>{ apples: 3, bananas: 5 }</code>. But there is one genuinely new thing
+hiding in it: those keys are <strong>symbols</strong>. <code>:apples</code>
+is a lightweight, immutable identifier — not a string, its own type — and it
+is the idiomatic choice for fixed, known keys. <code>{ apples: 3 }</code> is
+shorthand for <code>{ :apples =&gt; 3 }</code>; the <code>=&gt;</code>
+"hash rocket" form is what you use for any other key type, like
+<code>{ "with spaces" =&gt; 1, 42 =&gt; "answer" }</code>. Any value can be a
+key — no stringification of keys like a JS object.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>{ apples: 3 }</code> (key is the string "apples")</td><td><code>{ apples: 3 }</code> (key is the symbol <code>:apples</code>)</td></tr>
+  <tr><td><code>inv.apples</code> / <code>inv["apples"]</code></td><td><code>inv[:apples]</code></td></tr>
+  <tr><td><code>inv[name] ?? 0</code></td><td><code>inv.fetch(name, 0)</code></td></tr>
+  <tr><td><code>for (const [k, v] of Object.entries(inv))</code></td><td><code>inv.each { |k, v| ... }</code></td></tr>
+  <tr><td><code>{ ...inv, [name]: n }</code></td><td><code>inv.merge(name =&gt; n)</code></td></tr>
+  <tr><td><code>Object.keys(inv)</code></td><td><code>inv.keys</code></td></tr>
+</table>
+<p>Access is always brackets — <code>inv[:apples]</code>, no dot access — and
+a missing key returns <code>nil</code>, Ruby's <code>undefined</code>-ish
+value. For missing keys on <em>your</em> terms there is
+<code>inv.fetch(:apples, 0)</code>: like <code>?? 0</code>, except that
+without the default, <code>fetch</code> <em>raises</em> on a missing key —
+you choose loud or defaulted, instead of <code>undefined</code> silently
+flowing downstream. Iteration is <code>inv.each { |k, v| ... }</code>, your
+<code>Object.entries</code> loop with less setup. And THE gotcha to tattoo
+somewhere: <code>h[:name]</code> and <code>h["name"]</code> are
+<strong>different keys</strong>. Symbol in, symbol out — mixing them is the
+classic Ruby beginner bug (you will meet it again when parsing JSON).</p>`,
+
+  javascript: `function buildInventory() {
+  return { apples: 3, bananas: 5 };
+}
+
+function getCount(inv, name) {
+  return inv[name] ?? 0;
+}
+
+function addStock(inv, name, n) {
+  // non-mutating: spread into a fresh object
+  return { ...inv, [name]: (inv[name] ?? 0) + n };
+}
+
+function hasApples(inv) {
+  return Object.keys(inv).includes("apples");
+}
+
+const inv = buildInventory();
+console.log(getCount(inv, "cherries"));       // 0
+console.log(addStock(inv, "apples", 2));      // { apples: 5, bananas: 5 }`,
+
+  task: `
+<p>Port the inventory helpers to Ruby. All keys are symbols
+(<code>:apples</code>), not strings:</p>
+<ol>
+  <li><code>build_inventory</code> — the hash
+      <code>{ apples: 3, bananas: 5 }</code>. Same characters as the JS
+      object literal, but the keys are the symbols <code>:apples</code> and
+      <code>:bananas</code>.</li>
+  <li><code>get_count(inv, name)</code> — <code>inv.fetch(name, 0)</code>:
+      the count, or 0 when the item is unknown. This is your
+      <code>?? 0</code>.</li>
+  <li><code>add_stock(inv, name, n)</code> — <em>non-mutating</em>, like the
+      JS spread version: <code>inv.merge(name =&gt; inv.fetch(name, 0) + n)</code>.
+      Note the <code>=&gt;</code> — <code>name</code> is a variable holding a
+      symbol, so the shorthand <code>name:</code> would wrongly make the
+      literal key <code>:name</code>.</li>
+  <li><code>has_apples?(inv)</code> — a predicate: do the hash's
+      <code>.keys</code> include the symbol <code>:apples</code>?
+      (<code>"apples"</code> the string would never match — THE gotcha.)</li>
+</ol>`,
+
+  starter: `# 1. build_inventory: { apples: 3, bananas: 5 } — keys are :apples, :bananas.
+def build_inventory
+  raise NotImplementedError, "TODO: implement build_inventory"
+end
+
+# 2. get_count: inv[name] ?? 0  ->  inv.fetch(name, 0)
+def get_count(inv, name)
+  raise NotImplementedError, "TODO: implement get_count"
+end
+
+# 3. add_stock: non-mutating — merge returns a NEW hash, like {...inv, [name]: n}.
+#    Use the => form: name is a variable, name: would mean the literal key :name.
+def add_stock(inv, name, n)
+  raise NotImplementedError, "TODO: implement add_stock"
+end
+
+# 4. has_apples?: check inv.keys for the SYMBOL :apples (not the string "apples").
+def has_apples?(inv)
+  raise NotImplementedError, "TODO: implement has_apples?"
+end
+`,
+
+  requirements: [
+    { pattern: /fetch\s*\(/, message: "Use .fetch(name, 0) for defaulted lookup in get_count" },
+    { pattern: /merge/, message: "Build the new hash with .merge in add_stock (non-mutating)" },
+    { pattern: /:\w+/, message: "Use a symbol literal like :apples" },
+    { pattern: /\.each|\.keys/, message: "Walk the hash with .each or .keys" },
+  ],
+
+  tests: [
+    { name: "build_inventory returns { apples: 3, bananas: 5 }",
+      code: "  expect_eq(build_inventory, { apples: 3, bananas: 5 })" },
+    { name: "get_count(inv, :apples) returns 3",
+      code: "  expect_eq(get_count(build_inventory, :apples), 3)" },
+    { name: "get_count(inv, :cherries) returns 0 for an unknown item",
+      code: "  expect_eq(get_count(build_inventory, :cherries), 0)" },
+    { name: "add_stock adds to an existing count without mutating the original",
+      code: `  inv = { apples: 3 }
+  expect_eq(add_stock(inv, :apples, 2), { apples: 5 })
+  expect_eq(inv, { apples: 3 })` },
+    { name: "add_stock starts a brand-new item at n",
+      code: "  expect_eq(add_stock({}, :pears, 4), { pears: 4 })" },
+    { name: "has_apples? finds the symbol :apples (and only the symbol)",
+      code: `  expect_true(has_apples?({ apples: 1 }))
+  expect_eq(has_apples?({ pears: 2 }), false)
+  expect_eq(has_apples?({ "apples" => 1 }), false)` },
+  ],
+
+  solution: `def build_inventory
+  { apples: 3, bananas: 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  inv.merge(name => inv.fetch(name, 0) + n)
+end
+
+def has_apples?(inv)
+  inv.keys.include?(:apples)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Literal</td><td><code>{ apples: 3 }</code></td><td><code>{ apples: 3 }</code> — sugar for <code>{ :apples =&gt; 3 }</code></td></tr>
+  <tr><td>Non-identifier keys</td><td><code>{ "a b": 1 }</code></td><td><code>{ "a b" =&gt; 1 }</code> (any object can be a key)</td></tr>
+  <tr><td>Read</td><td><code>o.k</code> / <code>o["k"]</code></td><td><code>h[:k]</code> (brackets only; missing key is <code>nil</code>)</td></tr>
+  <tr><td>Read with default</td><td><code>o[k] ?? 0</code></td><td><code>h.fetch(k, 0)</code>; bare <code>h.fetch(k)</code> raises</td></tr>
+  <tr><td>Iterate</td><td><code>Object.entries(o)</code> + loop</td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td>Copy-with-changes</td><td><code>{ ...o, k: v }</code></td><td><code>h.merge(k =&gt; v)</code></td></tr>
+  <tr><td>Keys / values</td><td><code>Object.keys(o)</code> / <code>.values(o)</code></td><td><code>h.keys</code> / <code>h.values</code></td></tr>
+</table>
+<p>Why symbols at all? A string like <code>"apples"</code> is a mutable
+character buffer — each literal is a fresh object. A symbol is a single
+immutable name that exists once in the whole program, which makes it cheap to
+compare and perfect for the fixed vocabulary of keys, option names, and (next
+lesson) keyword arguments. The rule of thumb: symbols for identifiers your
+<em>code</em> knows about, strings for <em>data</em>. Just never mix them on
+the same hash: <code>h[:name]</code> and <code>h["name"]</code> are two
+different keys, and the second one silently returns <code>nil</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

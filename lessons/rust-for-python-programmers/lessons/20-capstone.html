@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Twenty lessons ago, <code>let</code> refused to let you mutate a variable.
+Now you own the whole toolkit: structs for shape, <code>Option</code> instead
+of <code>None</code>-crashes, iterator chains instead of loops-with-appends,
+<code>&amp;</code> to look and <code>&amp;mut</code> to touch, and lifetimes
+naming whose data a reference borrows. The capstone is a small inventory
+system that uses every one of them — the kind of code you'd write in Python
+with a <code>@dataclass</code> and a handful of comprehensions, translated
+idiom for idiom.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>sum(i.price_cents * i.count for i in items)</code></td><td><code>items.iter().map(|i| ...).sum()</code></td></tr>
+  <tr><td><code>next((i for i in items if ...), None)</code></td><td><code>items.iter().find(|i| ...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+  <tr><td>mutate freely, return <code>bool</code></td><td><code>&amp;mut Vec&lt;Item&gt;</code> — mutation declared in the signature</td></tr>
+  <tr><td><code>[i.name for i in items if i.count &gt; 0]</code></td><td><code>.iter().filter(...).map(...).collect()</code></td></tr>
+</table>
+<p>Two things to notice as you write it. <code>find_item</code> returns
+<code>Option&lt;&amp;'a Item&gt;</code> — a <em>borrowed</em> view into the
+slice, and the <code>'a</code> from Lesson 16 says exactly that: the result
+lives only as long as the slice it points into. And <code>restock</code>
+takes <code>&amp;mut Vec&lt;Item&gt;</code> — where Python mutation is
+invisible at the call site, Rust callers see <code>&amp;mut items</code> and
+know. Nothing new here; this is just everything at once.</p>`,
+
+  python: `from dataclasses import dataclass
+
+@dataclass
+class Item:
+    name: str
+    price_cents: int
+    count: int
+
+def total_value(items: list[Item]) -> int:
+    return sum(i.price_cents * i.count for i in items)
+
+def find_item(items: list[Item], name: str) -> Item | None:
+    return next((i for i in items if i.name == name), None)
+
+def restock(items: list[Item], name: str, amount: int) -> bool:
+    item = find_item(items, name)
+    if item is None:
+        return False
+    item.count += amount
+    return True
+
+def names_in_stock(items: list[Item]) -> list[str]:
+    return [i.name for i in items if i.count > 0]`,
+
+  task: `
+<p>The <code>Item</code> struct is done; implement the four functions:</p>
+<ol>
+  <li><code>total_value(items: &amp;[Item]) -&gt; u32</code> — sum of
+      <code>price_cents * count</code> over all items. Iterator chain:
+      <code>.iter().map(...).sum()</code>.</li>
+  <li><code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt;
+      Option&lt;&amp;'a Item&gt;</code> — the first item with that name, or
+      <code>None</code>. This is Python's <code>next((...), None)</code>:
+      use <code>.iter().find(|i| i.name == name)</code>, which already
+      returns exactly this <code>Option</code>.</li>
+  <li><code>restock(items: &amp;mut Vec&lt;Item&gt;, name: &amp;str, amount:
+      u32) -&gt; bool</code> — find the named item, add <code>amount</code>
+      to its <code>count</code>, return <code>true</code>; return
+      <code>false</code> if it's not there. Mutating through a reference
+      needs <code>.iter_mut()</code> (or a <code>for</code> loop over it).</li>
+  <li><code>names_in_stock(items: &amp;[Item]) -&gt; Vec&lt;String&gt;</code> —
+      names of items with <code>count &gt; 0</code>, in order. The list
+      comprehension: <code>.iter().filter(...).map(|i| i.name.clone()).collect()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// The struct is complete -- implement the four functions below.
+struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+// 1. Sum of price_cents * count. (.iter().map(...).sum())
+fn total_value(items: &[Item]) -> u32 {
+    todo!()
+}
+
+// 2. First item with this name, or None. The 'a says the returned
+//    borrow points into the items slice. (.iter().find(...))
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    todo!()
+}
+
+// 3. Add amount to the named item's count; true if found,
+//    false otherwise. (.iter_mut() to mutate while iterating)
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    todo!()
+}
+
+// 4. Names of items with count > 0, in order.
+//    (.iter().filter(...).map(...).collect())
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option<&/, message: "find_item returns Option<&Item> — a borrowed view, not a copy" },
+    { pattern: /\.iter\(\)/, message: "Use .iter() chains for the read-only functions" },
+    { pattern: /&mut\s+Vec<Item>/, message: "restock takes &mut Vec<Item> — mutation is declared in the signature" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count across items",
+      code: `let items = vec![
+    Item { name: String::from("apple"), price_cents: 150, count: 4 },
+    Item { name: String::from("banana"), price_cents: 75, count: 2 },
+    Item { name: String::from("kiwi"), price_cents: 999, count: 0 },
+];
+assert_eq!(total_value(&items), 750);
+assert_eq!(total_value(&[]), 0);` },
+    { name: 'find_item("banana") returns Some of the borrowed item',
+      code: `let items = vec![
+    Item { name: String::from("apple"), price_cents: 150, count: 4 },
+    Item { name: String::from("banana"), price_cents: 75, count: 2 },
+];
+let found = find_item(&items, "banana");
+assert!(found.is_some());
+assert_eq!(found.unwrap().price_cents, 75);` },
+    { name: "find_item returns None when the name is missing",
+      code: `let items = vec![
+    Item { name: String::from("apple"), price_cents: 150, count: 4 },
+];
+assert!(find_item(&items, "durian").is_none());` },
+    { name: "restock adds to an existing item's count and returns true",
+      code: `let mut items = vec![
+    Item { name: String::from("apple"), price_cents: 150, count: 1 },
+    Item { name: String::from("banana"), price_cents: 75, count: 0 },
+];
+assert_eq!(restock(&mut items, "banana", 6), true);
+assert_eq!(items[1].count, 6);
+assert_eq!(items[0].count, 1);` },
+    { name: "restock returns false (and changes nothing) for a missing name",
+      code: `let mut items = vec![
+    Item { name: String::from("apple"), price_cents: 150, count: 1 },
+];
+assert_eq!(restock(&mut items, "durian", 5), false);
+assert_eq!(items[0].count, 1);` },
+    { name: "names_in_stock lists only items with count > 0, in order",
+      code: `let items = vec![
+    Item { name: String::from("apple"), price_cents: 150, count: 4 },
+    Item { name: String::from("kiwi"), price_cents: 999, count: 0 },
+    Item { name: String::from("banana"), price_cents: 75, count: 2 },
+];
+assert_eq!(names_in_stock(&items), vec!["apple", "banana"]);
+assert_eq!(names_in_stock(&[]), Vec::<String>::new());` },
+  ],
+
+  solution: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+fn total_value(items: &[Item]) -> u32 {
+    items.iter().map(|i| i.price_cents * i.count).sum()
+}
+
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    items.iter().find(|i| i.name == name)
+}
+
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    for item in items.iter_mut() {
+        if item.name == name {
+            item.count += amount;
+            return true;
+        }
+    }
+    false
+}
+
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    items
+        .iter()
+        .filter(|i| i.count > 0)
+        .map(|i| i.name.clone())
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Pattern</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>Record type</td><td><code>@dataclass class Item:</code></td><td><code>struct Item { ... }</code></td></tr>
+  <tr><td>Aggregate</td><td><code>sum(... for i in items)</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+  <tr><td>Find-or-None</td><td><code>next((i for i in ... if ...), None)</code></td><td><code>.iter().find(...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+  <tr><td>Filtered projection</td><td><code>[i.name for i in items if ...]</code></td><td><code>.iter().filter(...).map(...).collect()</code></td></tr>
+  <tr><td>Mutation</td><td>implicit — any function might</td><td><code>&amp;mut</code> in the signature, <code>&amp;mut items</code> at the call</td></tr>
+  <tr><td>Borrowed result</td><td>every reference, GC-managed</td><td><code>Option&lt;&amp;'a Item&gt;</code> — tied to the slice's life</td></tr>
+</table>
+<p>Look back at what changed and what didn't. The <em>logic</em> is
+line-for-line the Python you started with — same comprehension shapes, same
+find-or-None, same early-return restock. What changed is that every implicit
+Python contract became explicit and checked: absence is <code>Option</code>,
+not a crash waiting on a <code>None</code>; mutation is visible at every call
+site; and the borrowed <code>&amp;'a Item</code> can never outlive the
+inventory it points into. That's the trade this course has been selling —
+you spell out what Python leaves implicit, and in exchange the compiler
+catches at build time what Python catches in production. Welcome to Rust;
+you're ready for real projects, <code>cargo new</code> awaits.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

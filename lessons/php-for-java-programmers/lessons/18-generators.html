@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Generators &amp; Iterables</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Generators & Iterables",
+
+  intro: `
+<p>Java streams gave you lazy pipelines — but writing your own lazy
+<em>source</em> means implementing <code>Iterator&lt;T&gt;</code> by hand:
+a class, mutable cursor state, and carefully paired
+<code>hasNext()</code>/<code>next()</code> methods. PHP collapses all of that
+into one keyword. Any function containing <code>yield</code> becomes a
+<em>generator</em>: calling it runs no code and returns a
+<code>Generator</code> object; each time a consumer asks for the next value,
+the body runs until the next <code>yield</code> and pauses there. Every
+<code>yield</code> is a <code>hasNext()</code>/<code>next()</code> pair the
+engine writes for you.</p>
+<table>
+  <tr><th>Java</th><th>PHP</th></tr>
+  <tr><td>implement <code>Iterator&lt;T&gt;</code> (class + state)</td><td><code>function f(): Generator { yield ...; }</code></td></tr>
+  <tr><td><code>IntStream.rangeClosed(0, max)</code></td><td>a <code>for</code> loop that <code>yield</code>s</td></tr>
+  <tr><td><code>for (int x : iterable)</code></td><td><code>foreach ($gen as $x)</code> (consumes it)</td></tr>
+  <tr><td><code>stream.toList()</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td><code>Iterable&lt;T&gt;</code> parameter</td><td><code>iterable</code> type (arrays <em>and</em> generators)</td></tr>
+</table>
+<p>Consumption is ordinary: <code>foreach</code> drives a generator exactly
+like an array, and <code>iterator_to_array()</code> is your
+<code>collect()</code>/<code>toList()</code> when you do want everything
+materialized. On the type side, <code>iterable</code> is the union of
+<code>array</code> and anything traversable — declare a parameter
+<code>iterable $items</code> and it accepts a plain array or a generator
+interchangeably, like accepting <code>Iterable&lt;T&gt;</code> instead of
+<code>List&lt;T&gt;</code>. Because generators are lazy, an effectively
+infinite source costs nothing as long as the consumer stops early.</p>`,
+
+  java: `// Lazy pipelines exist, but custom lazy *sources* are painful:
+// you implement Iterator<T> with hand-rolled cursor state.
+IntStream evensUpTo(int max) {
+    return IntStream.rangeClosed(0, max).filter(n -> n % 2 == 0);
+}
+
+IntStream squares(int[] nums) {
+    return IntStream.of(nums).map(n -> n * n);
+}
+
+int[] take(IntStream items, int n) {
+    return items.limit(n).toArray();   // laziness means this is cheap
+}
+
+// The hand-rolled equivalent of one PHP yield:
+// class Evens implements Iterator<Integer> {
+//     private int i = 0;
+//     public boolean hasNext() { ... }
+//     public Integer next() { ... }
+// }`,
+
+  task: `
+<p>Build the lazy pipeline with generators:</p>
+<ol>
+  <li>Write <code>evens_up_to(int $max): Generator</code> — loop from 0 to
+      <code>$max</code> inclusive in steps of 2 and <code>yield</code> each
+      value. No array is ever built.</li>
+  <li>Write <code>squares(array $nums): Generator</code> —
+      <code>foreach</code> over <code>$nums</code> and <code>yield</code> each
+      square. This is a lazy <code>map</code>.</li>
+  <li>Write <code>take(iterable $items, int $n): array</code> — the parameter
+      type is <code>iterable</code> so it accepts arrays <em>and</em>
+      generators. Keep a counter, append to a result array, and
+      <code>break</code> once you have <code>$n</code> items. This is
+      <code>limit(n).toArray()</code>.</li>
+</ol>
+<p>One test calls <code>take(evens_up_to(2000000000), 3)</code> — two billion
+potential values. If your code materializes the sequence instead of yielding
+lazily, it will never finish; the generator makes it instant.</p>`,
+
+  starter: `<?php
+
+// 1. evens_up_to: for ($i = 0; $i <= $max; $i += 2) { yield $i; }
+//    The yield keyword alone turns this into a Generator.
+function evens_up_to(int $max): Generator {
+    throw new Exception('TODO: loop and yield 0, 2, 4, ... up to $max');
+}
+
+// 2. squares: a lazy map -- foreach over $nums, yield $n * $n.
+function squares(array $nums): Generator {
+    throw new Exception('TODO: yield the square of each number');
+}
+
+// 3. take: iterable accepts arrays AND generators.
+//    foreach, count, append, and break at $n items.
+function take(iterable $items, int $n): array {
+    throw new Exception('TODO: collect the first $n items');
+}
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Use yield to produce values lazily" },
+    { pattern: /:\s*Generator/, message: "Declare the Generator return type on your generator functions" },
+    { pattern: /iterable/, message: "Type take's first parameter as iterable" },
+  ],
+
+  tests: [
+    { name: "iterator_to_array(evens_up_to(8)) collects [0, 2, 4, 6, 8]",
+      code: "expect_eq(iterator_to_array(evens_up_to(8)), [0, 2, 4, 6, 8]);" },
+    { name: "evens_up_to(4) is a Generator object, not an array",
+      code: "expect_true(evens_up_to(4) instanceof Generator);" },
+    { name: "iterator_to_array(squares([1, 2, 3])) collects [1, 4, 9]",
+      code: "expect_eq(iterator_to_array(squares([1, 2, 3])), [1, 4, 9]);" },
+    { name: "take accepts a plain array: take([10, 20, 30, 40], 2) is [10, 20]",
+      code: "expect_eq(take([10, 20, 30, 40], 2), [10, 20]);\nexpect_eq(take([10, 20], 5), [10, 20]);" },
+    { name: "laziness: take(evens_up_to(2000000000), 3) returns instantly",
+      code: "expect_eq(take(evens_up_to(2000000000), 3), [0, 2, 4]);" },
+    { name: "generators compose: take(squares([2, 3, 4, 5]), 2) is [4, 9]",
+      code: "expect_eq(take(squares([2, 3, 4, 5]), 2), [4, 9]);" },
+  ],
+
+  solution: `<?php
+
+function evens_up_to(int $max): Generator {
+    for ($i = 0; $i <= $max; $i += 2) {
+        yield $i;
+    }
+}
+
+function squares(array $nums): Generator {
+    foreach ($nums as $n) {
+        yield $n * $n;
+    }
+}
+
+function take(iterable $items, int $n): array {
+    $result = [];
+    $count = 0;
+    foreach ($items as $item) {
+        if ($count >= $n) {
+            break;
+        }
+        $result[] = $item;
+        $count += 1;
+    }
+    return $result;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>PHP</th></tr>
+  <tr><td>Lazy source</td><td>implement <code>Iterator&lt;T&gt;</code></td><td>any function containing <code>yield</code></td></tr>
+  <tr><td>Produce a value</td><td><code>hasNext()</code> + <code>next()</code> pair</td><td><code>yield $value;</code></td></tr>
+  <tr><td>Return type</td><td><code>Iterator&lt;T&gt;</code> / <code>Stream&lt;T&gt;</code></td><td><code>: Generator</code></td></tr>
+  <tr><td>Consume</td><td><code>for (T x : it)</code></td><td><code>foreach ($gen as $x)</code></td></tr>
+  <tr><td>Materialize</td><td><code>stream.toList()</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td>Accept array or lazy seq</td><td><code>Iterable&lt;T&gt;</code></td><td><code>iterable</code></td></tr>
+  <tr><td>Infinite sequences</td><td><code>Stream.iterate(...)</code></td><td><code>while (true) { yield ...; }</code></td></tr>
+</table>
+<p>The insight: calling a generator function executes <em>none</em> of its
+body — you get a paused <code>Generator</code> object, and each request for a
+value runs the body just far enough to hit the next <code>yield</code>. That
+inversion is what Java makes you build by exiling loop state into fields of an
+<code>Iterator</code> class; PHP lets the loop <em>be</em> the state. Two
+consumption caveats: a generator is single-pass (iterate it twice and the
+second <code>foreach</code> throws), and <code>iterator_to_array()</code> on
+an infinite generator never returns — always <code>break</code> or bound the
+source.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

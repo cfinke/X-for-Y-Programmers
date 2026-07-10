@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods",
+
+  intro: `
+<p>You already write PHP functions with default parameter values, variadic
+parameters (<code>...$args</code>), and — since PHP 8.0 — named arguments. C#
+methods cover the same ground but formalize a few things PHP leaves loose. PHP
+already has reference parameters (<code>&$x</code>) for mutating a caller's
+variable, and C#'s <code>ref</code> is a close match for that. But C# also adds
+<code>out</code>, a stricter cousin with no real PHP equivalent, and real
+method <em>overloading</em> — many methods sharing a name, distinguished by
+their parameter list, each with its own body — where PHP only ever has one
+implementation per function name.</p>
+<table>
+  <tr><th>PHP</th><th>C#</th></tr>
+  <tr><td><code>function f($x = 1) {}</code></td><td><code>void F(int x = 1) {}</code> (optional param)</td></tr>
+  <tr><td><code>f(x: 1)</code> (PHP 8+ named arg)</td><td><code>F(x: 1)</code> (named argument)</td></tr>
+  <tr><td><code>function f(...$xs) {}</code></td><td><code>void F(params int[] xs)</code></td></tr>
+  <tr><td>no true overloading, one body</td><td>overload <em>bodies</em>, one per signature</td></tr>
+  <tr><td><code>function f(&$x) {}</code> (reference param)</td><td><code>ref</code> parameter; <code>out</code> has no PHP equivalent</td></tr>
+</table>
+<p>The <code>out</code> idea has no real PHP counterpart. An <code>out</code>
+parameter is an extra, compiler-enforced return channel: the method must
+assign it before returning, and the caller reads it back — the backbone of the
+<code>TryParse</code> pattern. PHP's closest tool, a reference parameter
+(<code>&$x</code>), lets a function mutate the caller's variable, but nothing
+forces you to assign it, and PHP no longer even marks the reference at the
+call site (only in the function's own signature) the way C# marks both
+<code>ref</code> and <code>out</code> arguments at every call.</p>`,
+
+  php: `function greet(string $name, string $greeting = "Hello"): string {
+  return "{$greeting}, {$name}!";
+}
+
+function sum(int ...$numbers): int {
+  return array_sum($numbers);
+}
+
+// PHP has no out — return an array for the extra value
+function tryDivide(int $a, int $b): array {
+  return $b === 0 ? [false, 0] : [true, intdiv($a, $b)];
+}`,
+
+  task: `
+<p>Build a <code>static class Calc</code> that shows off C#'s method features:</p>
+<ol>
+  <li><strong>Overloading:</strong> <code>Max(int a, int b)</code> returns the
+      larger, and <code>Max(int a, int b, int c)</code> returns the largest of
+      three (reuse the two-argument version).</li>
+  <li><strong>Optional parameter:</strong> <code>Greet(string name, string
+      greeting = "Hello")</code> returns <code>"Hello, Ada!"</code>, or uses the
+      supplied greeting.</li>
+  <li><strong>out parameter:</strong> <code>bool TryDivide(int a, int b, out int
+      quotient)</code> sets <code>quotient</code> to <code>a / b</code> and
+      returns <code>true</code>; when <code>b</code> is <code>0</code>, set
+      <code>quotient = 0</code> and return <code>false</code>.</li>
+  <li><strong>params array:</strong> <code>Sum(params int[] numbers)</code>
+      returns the total (and <code>Sum()</code> is <code>0</code>).</li>
+  <li><strong>ref parameter:</strong> <code>void Increment(ref int x)</code>
+      adds one to the caller's variable.</li>
+</ol>`,
+
+  starter: `static class Calc {
+  public static int Max(int a, int b) {
+    return 0; // TODO
+  }
+
+  public static int Max(int a, int b, int c) {
+    return 0; // TODO: reuse the two-argument Max
+  }
+
+  public static string Greet(string name, string greeting = "Hello") {
+    return ""; // TODO
+  }
+
+  public static bool TryDivide(int a, int b, out int quotient) {
+    quotient = 0; // out params must be assigned before returning
+    return false; // TODO
+  }
+
+  public static int Sum(params int[] numbers) {
+    return 0; // TODO
+  }
+
+  public static void Increment(ref int x) {
+    // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /\bout\s+int\s+quotient\b/, message: "TryDivide must use an out parameter (out int quotient)" },
+    { pattern: /\bparams\s+int\[\]/, message: "Sum must take a params int[] array" },
+    { pattern: /\bref\s+int\s+x\b/, message: "Increment must use a ref parameter (ref int x)" },
+  ],
+
+  tests: [
+    { name: "Max(3, 7) is 7", code: "      expect_eq(Calc.Max(3, 7), 7);" },
+    { name: "Max(3, 7, 5) is 7 (three-arg overload)", code: "      expect_eq(Calc.Max(3, 7, 5), 7);" },
+    { name: "Greet(\"Ada\") uses the default greeting", code: "      expect_eq(Calc.Greet(\"Ada\"), \"Hello, Ada!\");" },
+    { name: "Greet with a named argument", code: "      expect_eq(Calc.Greet(name: \"Rob\", greeting: \"Hi\"), \"Hi, Rob!\");" },
+    { name: "TryDivide(10, 2) succeeds with quotient 5", code: "      bool ok = Calc.TryDivide(10, 2, out int q);\n      expect_true(ok);\n      expect_eq(q, 5);" },
+    { name: "TryDivide by zero fails and yields 0", code: "      bool ok2 = Calc.TryDivide(10, 0, out int q2);\n      expect_true(!ok2);\n      expect_eq(q2, 0);" },
+    { name: "Sum(1, 2, 3, 4) is 10 and Sum() is 0", code: "      expect_eq(Calc.Sum(1, 2, 3, 4), 10);\n      expect_eq(Calc.Sum(), 0);" },
+    { name: "Increment mutates the caller's variable", code: "      int x = 5;\n      Calc.Increment(ref x);\n      expect_eq(x, 6);" },
+  ],
+
+  solution: `static class Calc {
+  public static int Max(int a, int b) {
+    return a > b ? a : b;
+  }
+
+  public static int Max(int a, int b, int c) {
+    return Max(Max(a, b), c);
+  }
+
+  public static string Greet(string name, string greeting = "Hello") {
+    return $"{greeting}, {name}!";
+  }
+
+  public static bool TryDivide(int a, int b, out int quotient) {
+    if (b == 0) {
+      quotient = 0;
+      return false;
+    }
+    quotient = a / b;
+    return true;
+  }
+
+  public static int Sum(params int[] numbers) {
+    int total = 0;
+    foreach (int n in numbers) {
+      total += n;
+    }
+    return total;
+  }
+
+  public static void Increment(ref int x) {
+    x++;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+  <tr><td>Optional parameter</td><td><code>function f($x = 1) {}</code></td><td><code>F(int x = 1)</code></td></tr>
+  <tr><td>Named argument</td><td><code>f(x: 1)</code> (PHP 8+)</td><td><code>F(x: 1)</code></td></tr>
+  <tr><td>Rest / params</td><td><code>...$xs</code></td><td><code>params int[] xs</code></td></tr>
+  <tr><td>Overloading</td><td>not supported, one body</td><td>a full body per signature</td></tr>
+  <tr><td>Extra output</td><td>reference param, unchecked</td><td><code>out</code> parameter, compiler-checked</td></tr>
+  <tr><td>Mutate caller's variable</td><td><code>function f(&$x) {}</code></td><td><code>ref</code> parameter</td></tr>
+</table>
+<p>A few sharp edges. Optional parameters must come after all required ones, and
+their defaults must be compile-time constants — so <code>string greeting =
+"Hello"</code> is fine but <code>DateTime.Now</code> is not. Named arguments let
+you skip past optional parameters and document call sites — this should feel
+familiar, since PHP 8's <code>f(x: 1)</code> syntax works the same way, just
+available on every C# method rather than only ones you opt into. <code>out</code>
+variables can be declared right in the call — <code>TryDivide(10, 2, out int
+q)</code> — and the <code>Try…</code>-returns-<code>bool</code> shape is
+idiomatic all through the .NET library (<code>int.TryParse</code>,
+<code>Dictionary.TryGetValue</code>); PHP typically reaches for a
+<code>null</code> return or an exception instead of a paired
+success-flag-plus-output-value. Finally, only one <code>params</code> array is
+allowed and it must be the last parameter — the same rule PHP enforces for
+<code>...$args</code> — and the caller may pass loose arguments or a real
+array.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>Ruby's string interpolation is one of its signature comforts, and the good
+news is that TypeScript has an almost identical feature: <em>template
+literals</em>. Two mechanical changes: the quotes become backticks, and the
+braces gain a dollar sign — <code>"#{name} is #{age}"</code> becomes
+<code>\`\${name} is \${age}\`</code>. Regular single and double quotes still
+exist, but they never interpolate; only backticks do.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>"#{name} is #{age}"</code></td><td><code>\`\${name} is \${age}\`</code></td></tr>
+  <tr><td><code>name.upcase</code></td><td><code>name.toUpperCase()</code></td></tr>
+  <tr><td><code>sentence.include?("ruby")</code></td><td><code>sentence.includes("ruby")</code></td></tr>
+  <tr><td><code>name.length</code></td><td><code>name.length</code> (a property — no parens)</td></tr>
+  <tr><td><code>csv.split(",")</code> / <code>parts.join("-")</code></td><td><code>csv.split(",")</code> / <code>parts.join("-")</code></td></tr>
+</table>
+<p>The method names shift dialect: <code>upcase</code> →
+<code>toUpperCase()</code>, <code>downcase</code> → <code>toLowerCase()</code>,
+and Ruby's question-mark predicates lose the <code>?</code> —
+<code>include?</code> becomes <code>includes</code> (note it also gains an
+<em>s</em>). Every method call needs parentheses in TypeScript…
+except <code>.length</code>, which is a property, not a method. And since
+strings are frozen-by-default taken to the extreme — JavaScript strings are
+always immutable — every method returns a new string, like Ruby's
+non-bang methods.</p>`,
+
+  ruby: `name = "Ada Lovelace"
+language = "Ruby"
+
+intro = "#{name} programs in #{language}"
+
+puts name.upcase              # "ADA LOVELACE"
+puts name.length              # 12
+puts intro.include?("Ruby")   # true — predicate methods end in ?
+
+shout = "#{name.upcase}!"
+
+parts = "a,b,c".split(",")    # ["a", "b", "c"]
+puts parts.join(" - ")        # "a - b - c"`,
+
+  task: `
+<p>Translate the string idioms:</p>
+<ol>
+  <li>Write a function <code>introduce</code> that takes
+      <code>name: string</code> and <code>language: string</code> and returns
+      <code>"NAME programs in LANGUAGE"</code> — built with a template
+      literal (backticks and <code>\${...}</code>), not concatenation.</li>
+  <li>Write a function <code>shout</code> that takes <code>text: string</code>
+      and returns the text uppercased with a <code>"!"</code> appended:
+      <code>shout("hello")</code> → <code>"HELLO!"</code>. Ruby's
+      <code>.upcase</code> is <code>.toUpperCase()</code> here.</li>
+  <li>Write a function <code>mentions</code> that takes
+      <code>sentence: string</code> and <code>word: string</code> and returns
+      a <code>boolean</code>: does the sentence contain the word? Ruby's
+      <code>include?</code> drops the <code>?</code> and gains an
+      <code>s</code>: <code>.includes(...)</code>.</li>
+</ol>`,
+
+  starter: `// 1. Template literal: backticks, and #{...} becomes \${...}
+function introduce(name: string, language: string): string {
+  // TODO: return \`...\` using \${name} and \${language}
+  return "";
+}
+
+// 2. Ruby: text.upcase + "!"
+function shout(text: string): string {
+  // TODO: uppercase, then append "!"
+  return "";
+}
+
+// 3. Ruby: sentence.include?(word)
+function mentions(sentence: string, word: string): boolean {
+  // TODO
+  return false;
+}
+`,
+
+  exportNames: ["introduce", "shout", "mentions"],
+
+  requirements: [
+    { pattern: /`[^`]*\$\{[^}]+\}[^`]*`/, message: "Use a template literal (backticks with ${...} interpolation) somewhere" },
+    { pattern: /\.toUpperCase\s*\(\s*\)/, message: "Use .toUpperCase() — the TypeScript spelling of .upcase" },
+    { pattern: /\.includes\s*\(/, message: "Use .includes(...) — include? loses the ? and gains an s" },
+  ],
+
+  tests: [
+    { name: 'introduce("Ada", "Ruby") returns "Ada programs in Ruby"', run: (x) => expectEqual(x.introduce("Ada", "Ruby"), "Ada programs in Ruby") },
+    { name: 'introduce("Matz", "C") returns "Matz programs in C"', run: (x) => expectEqual(x.introduce("Matz", "C"), "Matz programs in C") },
+    { name: 'shout("hello") returns "HELLO!"', run: (x) => expectEqual(x.shout("hello"), "HELLO!") },
+    { name: 'mentions("I love Ruby", "Ruby") is true', run: (x) => expectEqual(x.mentions("I love Ruby", "Ruby"), true) },
+    { name: 'mentions("I love Ruby", "Python") is false', run: (x) => expectEqual(x.mentions("I love Ruby", "Python"), false) },
+  ],
+
+  solution: `function introduce(name: string, language: string): string {
+  return \`\${name} programs in \${language}\`;
+}
+
+function shout(text: string): string {
+  return \`\${text.toUpperCase()}!\`;
+}
+
+function mentions(sentence: string, word: string): boolean {
+  return sentence.includes(word);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Interpolation</td><td><code>"#{name}"</code></td><td><code>\`\${name}\`</code> (backticks, braces gain a $)</td></tr>
+  <tr><td>Uppercase / lowercase</td><td><code>.upcase</code> / <code>.downcase</code></td><td><code>.toUpperCase()</code> / <code>.toLowerCase()</code></td></tr>
+  <tr><td>Containment</td><td><code>.include?(x)</code></td><td><code>.includes(x)</code> — no <code>?</code> in names</td></tr>
+  <tr><td>Length</td><td><code>.length</code> (method)</td><td><code>.length</code> (property — no parens)</td></tr>
+  <tr><td>Split / join</td><td><code>.split(",")</code> / <code>.join("-")</code></td><td>Identical</td></tr>
+  <tr><td>Trim whitespace</td><td><code>.strip</code></td><td><code>.trim()</code></td></tr>
+</table>
+<p>Ruby lets method names end in <code>?</code> and <code>!</code>;
+JavaScript's grammar does not, so predicates read as plain verbs
+(<code>includes</code>, <code>startsWith</code>, <code>endsWith</code>) and
+there is no bang-method convention — no string method mutates, ever, so
+everything behaves like the non-bang variant returning a new string.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

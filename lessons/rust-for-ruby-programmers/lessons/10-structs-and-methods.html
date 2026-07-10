@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Structs &amp; Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A Ruby class conjures its data into existence at runtime: <code>@ivars</code>
+appear when <code>initialize</code> assigns them, <code>attr_accessor</code>
+opts fields into the public API, and what a <code>BankAccount</code> actually
+contains is whatever the code happens to have set. Rust splits the class in
+two: a <code>struct</code> declares the data — every field named and typed,
+up front — and an <code>impl</code> block holds the methods. There's no
+<code>new</code> keyword; by convention you write an associated function
+<code>fn new(...)</code>, the stand-in for <code>initialize</code>, called as
+<code>BankAccount::new("Ada")</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>class BankAccount</code> + <code>@ivars</code> at runtime</td><td><code>struct BankAccount { owner: String, balance: i64 }</code></td></tr>
+  <tr><td><code>def initialize(owner)</code></td><td><code>fn new(owner: &amp;str) -&gt; BankAccount</code> (convention)</td></tr>
+  <tr><td><code>BankAccount.new("Ada")</code></td><td><code>BankAccount::new("Ada")</code></td></tr>
+  <tr><td><code>def deposit(amount)</code> — mutates? read the body</td><td><code>fn deposit(&amp;mut self, ...)</code> — mutates, says so</td></tr>
+  <tr><td><code>attr_reader :balance</code> (opt-in exposure)</td><td>fields private outside their module by default</td></tr>
+</table>
+<p>The star of the show is <code>self</code>. Ruby methods can touch
+<code>@ivars</code> freely, so "does this mutate?" is answered by convention —
+a <code>!</code> in the name if you're lucky, reading the implementation if
+you're not. Rust methods <em>declare</em> it: <code>&amp;self</code> methods can
+only read; <code>&amp;mut self</code> methods can mutate — and can only be
+called on a <code>mut</code> binding. The compiler enforces what the bang was
+politely suggesting. And where Ruby fields are invisible until
+<code>attr_*</code> exposes them, Rust fields are private outside their module
+by default, with <code>pub</code> as the explicit opt-in.</p>`,
+
+  ruby: `class BankAccount
+  attr_reader :owner, :balance
+
+  def initialize(owner)
+    @owner = owner
+    @balance = 0
+  end
+
+  def deposit(amount)
+    @balance += amount        # mutates -- nothing in the name says so
+  end
+
+  def withdraw(amount)
+    raise ArgumentError, "insufficient funds" if amount > @balance
+    @balance -= amount
+  end
+end
+
+acct = BankAccount.new("Ada")
+acct.deposit(100)
+acct.withdraw(40)
+puts acct.balance             # 60`,
+
+  task: `
+<p>The <code>struct</code> is already defined in the starter — your job is the
+<code>impl BankAccount</code> block:</p>
+<ol>
+  <li><code>new(owner: &amp;str) -&gt; BankAccount</code> — the
+      <code>initialize</code>: build a <code>BankAccount</code> with
+      <code>owner: owner.to_string()</code> and <code>balance: 0</code>.</li>
+  <li><code>deposit(&amp;mut self, amount: i64)</code> — add to
+      <code>self.balance</code>. Note the <code>&amp;mut self</code>: this
+      method admits it mutates.</li>
+  <li><code>withdraw(&amp;mut self, amount: i64) -&gt; Result&lt;(), String&gt;</code>
+      — Ruby's <code>raise</code>, as a value: if <code>amount</code> exceeds
+      the balance return <code>Err("insufficient funds".to_string())</code>;
+      otherwise subtract and return <code>Ok(())</code>.</li>
+  <li><code>balance(&amp;self) -&gt; i64</code> — the
+      <code>attr_reader</code>: just return <code>self.balance</code>
+      (yes, a field and a method can share a name).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your methods
+directly.</p>`,
+
+  starter: `// The data half: every field named and typed. (In Ruby these @ivars
+// would exist only once initialize assigns them.)
+struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+// The behavior half. Your work is in here.
+impl BankAccount {
+    // 1. The initialize: BankAccount { owner: owner.to_string(), balance: 0 }
+    fn new(owner: &str) -> BankAccount {
+        todo!()
+    }
+
+    // 2. &mut self: this method declares that it mutates.
+    fn deposit(&mut self, amount: i64) {
+        todo!()
+    }
+
+    // 3. The raise, as a value: Err(...) if amount > self.balance,
+    //    otherwise subtract and Ok(()).
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        todo!()
+    }
+
+    // 4. The attr_reader: &self is read-only access.
+    fn balance(&self) -> i64 {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /struct\s+BankAccount/, message: "Keep the struct BankAccount definition" },
+    { pattern: /impl\s+BankAccount/, message: "Put the methods in an impl BankAccount block" },
+    { pattern: /&mut\s+self/, message: "Mutating methods must take &mut self" },
+  ],
+
+  tests: [
+    { name: 'BankAccount::new("Ada") starts with balance 0 and remembers its owner',
+      code: 'let acct = BankAccount::new("Ada");\nassert_eq!(acct.balance(), 0);\nassert_eq!(acct.owner, "Ada");' },
+    { name: "deposit(100) raises the balance to 100",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert_eq!(acct.balance(), 100);' },
+    { name: "withdraw(40) after deposit(100) succeeds and leaves 60",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert!(acct.withdraw(40).is_ok());\nassert_eq!(acct.balance(), 60);' },
+    { name: "withdrawing more than the balance returns an Err",
+      code: 'let mut acct = BankAccount::new("Ada");\nassert!(acct.withdraw(100).is_err());' },
+    { name: "a failed withdrawal leaves the balance untouched",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(50);\nlet _ = acct.withdraw(80);\nassert_eq!(acct.balance(), 50);' },
+  ],
+
+  solution: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: &str) -> BankAccount {
+        BankAccount {
+            owner: owner.to_string(),
+            balance: 0,
+        }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        if amount > self.balance {
+            return Err("insufficient funds".to_string());
+        }
+        self.balance -= amount;
+        Ok(())
+    }
+
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Data + behavior</td><td>one <code>class</code></td><td><code>struct</code> (data) + <code>impl</code> (methods)</td></tr>
+  <tr><td>Fields</td><td><code>@ivars</code>, appear at runtime</td><td>declared and typed in the <code>struct</code></td></tr>
+  <tr><td>Constructor</td><td><code>def initialize</code> / <code>Klass.new</code></td><td><code>fn new(...)</code> by convention / <code>Klass::new(...)</code></td></tr>
+  <tr><td>Read-only method</td><td>convention only</td><td><code>fn balance(&amp;self)</code></td></tr>
+  <tr><td>Mutating method</td><td>maybe a <code>!</code> in the name</td><td><code>fn deposit(&amp;mut self, ...)</code> — enforced</td></tr>
+  <tr><td>Field visibility</td><td>hidden until <code>attr_*</code> opts in</td><td>private outside the module until <code>pub</code> opts in</td></tr>
+  <tr><td>Failing method</td><td><code>raise</code></td><td>return <code>Result</code></td></tr>
+</table>
+<p>The <code>&amp;self</code> / <code>&amp;mut self</code> split is Lesson 5's
+borrowing rules applied to methods — and it turns a Ruby cultural convention
+into a checked contract. A caller holding a non-<code>mut</code>
+<code>BankAccount</code> can call <code>balance()</code> but not
+<code>deposit()</code>: read-only access is something the compiler can hand
+out and actually mean. Skim any Rust API and each method's <code>self</code>
+tells you instantly whether it's a question or a command.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

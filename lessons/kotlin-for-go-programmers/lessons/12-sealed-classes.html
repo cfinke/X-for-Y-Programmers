@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Sealed Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Sealed Classes",
+
+  intro: `
+<p>In Go you model "one of a fixed set of shapes" with an interface plus a
+set of structs that implement it — often with a type switch on the
+concrete type. There is nothing stopping another package from adding a
+new struct that satisfies the interface, so the compiler can't promise
+you've covered every case. Kotlin's equivalent is a <strong>sealed
+class</strong> (or <strong>sealed interface</strong>): a type whose subclasses
+are all known at compile time because they must live in the same file/module.</p>
+<table>
+  <tr><th>Go</th><th>Kotlin</th></tr>
+  <tr><td><code>type Shape interface{ isShape() }</code></td><td><code>sealed class Shape</code></td></tr>
+  <tr><td><code>type Circle struct{ ... }</code></td><td><code>class Circle : Shape()</code></td></tr>
+  <tr><td><code>switch s := shape.(type)</code></td><td><code>when (s) { is Circle -&gt; ... }</code></td></tr>
+  <tr><td>type check <code>case Circle:</code></td><td>type check <code>is Circle</code></td></tr>
+</table>
+<p>The payoff is <em>exhaustiveness</em>. Because the compiler knows the complete
+list of subtypes, a <code>when</code> that covers them all needs <strong>no
+<code>else</code> branch</strong> — and if you later add a fourth subclass, every
+<code>when</code> used as an expression stops compiling until you handle it. Go's
+type switch gives you no such guarantee: forget a case and the <code>default</code>
+branch (or a silent no-op) just runs at runtime, with nothing catching the
+gap at compile time.</p>`,
+
+  go: `type Shape interface {
+	isShape()
+}
+
+type Circle struct{ Radius float64 }
+type Rectangle struct{ Width, Height float64 }
+type Triangle struct{ Base, Height float64 }
+
+func (Circle) isShape()    {}
+func (Rectangle) isShape() {}
+func (Triangle) isShape()  {}
+
+func Area(shape Shape) float64 {
+	switch s := shape.(type) {
+	case Circle:
+		return math.Pi * s.Radius * s.Radius
+	case Rectangle:
+		return s.Width * s.Height
+	case Triangle:
+		return 0.5 * s.Base * s.Height
+	}
+	return 0
+}`,
+
+  task: `
+<p>The <code>Shape</code> hierarchy is already declared for you (a
+<code>sealed class</code> with three subclasses). Fill in the two functions using
+an exhaustive <code>when</code> — inside each <code>is Circle</code> branch the
+value is smart-cast, so you can read <code>shape.radius</code> directly:</p>
+<ol>
+  <li>Complete <code>area(shape: Shape): Double</code>. Match each subtype with
+      <code>is</code> and return its area (<code>PI * r * r</code> for a circle,
+      <code>width * height</code> for a rectangle, <code>0.5 * base * height</code>
+      for a triangle). Do <strong>not</strong> add an <code>else</code> branch.</li>
+  <li>Complete <code>name(shape: Shape): String</code> to return
+      <code>"circle"</code>, <code>"rectangle"</code>, or <code>"triangle"</code>.</li>
+</ol>`,
+
+  starter: `import kotlin.math.PI
+
+sealed class Shape
+class Circle(val radius: Double) : Shape()
+class Rectangle(val width: Double, val height: Double) : Shape()
+class Triangle(val base: Double, val height: Double) : Shape()
+
+// 1. Area via an exhaustive when — no else branch needed.
+fun area(shape: Shape): Double {
+    return 0.0 // TODO
+}
+
+// 2. Lowercase name of the shape.
+fun name(shape: Shape): String {
+    return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /sealed\s+class\s+Shape/, message: "Keep the sealed class Shape hierarchy" },
+    { pattern: /when\s*\(/, message: "Match the shape with a when expression" },
+    { pattern: /is\s+Circle/, message: "Branch on the subtype with `is Circle` (and friends)" },
+  ],
+
+  tests: [
+    { name: "area of a rectangle", code: "        expect_eq(area(Rectangle(3.0, 4.0)), 12.0)" },
+    { name: "area of a triangle", code: "        expect_eq(area(Triangle(4.0, 3.0)), 6.0)" },
+    { name: "area of a circle uses PI", code: "        expect_true(area(Circle(1.0)) > 3.14 && area(Circle(1.0)) < 3.15)" },
+    { name: 'name(Circle) is "circle"', code: "        expect_eq(name(Circle(2.0)), \"circle\")" },
+    { name: 'name(Rectangle) is "rectangle"', code: "        expect_eq(name(Rectangle(1.0, 2.0)), \"rectangle\")" },
+    { name: 'name(Triangle) is "triangle"', code: "        expect_eq(name(Triangle(1.0, 2.0)), \"triangle\")" },
+  ],
+
+  solution: `import kotlin.math.PI
+
+sealed class Shape
+class Circle(val radius: Double) : Shape()
+class Rectangle(val width: Double, val height: Double) : Shape()
+class Triangle(val base: Double, val height: Double) : Shape()
+
+fun area(shape: Shape): Double = when (shape) {
+    is Circle -> PI * shape.radius * shape.radius
+    is Rectangle -> shape.width * shape.height
+    is Triangle -> 0.5 * shape.base * shape.height
+}
+
+fun name(shape: Shape): String = when (shape) {
+    is Circle -> "circle"
+    is Rectangle -> "rectangle"
+    is Triangle -> "triangle"
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Kotlin</th></tr>
+  <tr><td>Closed set of types</td><td>interface + structs (not closed)</td><td><code>sealed class</code> / <code>sealed interface</code></td></tr>
+  <tr><td>Variant</td><td><code>type Circle struct{ ... }</code></td><td><code>class Circle(...) : Shape()</code></td></tr>
+  <tr><td>Match</td><td><code>switch s := shape.(type)</code></td><td><code>when (s) { is Circle -&gt; }</code></td></tr>
+  <tr><td>Narrowing</td><td><code>s</code> bound to concrete type in each case</td><td>smart cast after <code>is</code></td></tr>
+  <tr><td>Exhaustiveness</td><td>none — missing case fails silently at runtime</td><td>built in — no <code>else</code></td></tr>
+</table>
+<p>A <code>when</code> used as an <em>expression</em> (as here, on the right of
+<code>=</code>) is checked for exhaustiveness; a <code>when</code> used only as a
+statement is not, so prefer the expression form to get the safety. The same
+pattern models a <code>Result</code>: <code>sealed class Result&lt;out T&gt;</code>
+with <code>class Ok&lt;T&gt;(val value: T)</code> and
+<code>class Err(val message: String)</code>, then <code>when</code> over it.
+Variants that carry no data can be <code>object</code> singletons (e.g.
+<code>object Loading : Result&lt;Nothing&gt;()</code>) instead of classes.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

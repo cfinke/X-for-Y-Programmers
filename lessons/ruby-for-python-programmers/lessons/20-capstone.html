@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>No new concepts — this is the course in one exercise: a class with
+<code>attr_reader</code>, and four functions over a collection of its
+instances, each one an Enumerable method with a block where Python reaches
+for a comprehension or a <code>next(...)</code> idiom.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>sum(i.price_cents * i.count for i in items)</code></td><td><code>items.sum { |i| i.price_cents * i.count }</code></td></tr>
+  <tr><td><code>next((i for i in items if ...), None)</code></td><td><code>items.find { |i| ... }</code> — nil on miss</td></tr>
+  <tr><td><code>[i.name for i in items if i.count &gt; 0]</code></td><td><code>items.select { ... }.map(&amp;:name)</code></td></tr>
+  <tr><td><code>Item(i.name, ...)</code> to avoid aliasing</td><td><code>Item.new(i.name, ...)</code> — same reason</td></tr>
+</table>
+<p>One Python instinct transfers wholesale: variables hold <em>references</em>
+to objects, exactly like Python's. If <code>restock</code> mutated the
+matching item, every other list holding that item would see the change — the
+same aliasing bug as mutating a shared object in Python. So build a fresh
+<code>Item.new(...)</code> for the updated entry and return a new array,
+leaving the caller's data untouched.</p>`,
+
+  python: `class Item:
+    def __init__(self, name, price_cents, count):
+        self.name = name
+        self.price_cents = price_cents
+        self.count = count
+
+def total_value(items):
+    return sum(i.price_cents * i.count for i in items)
+
+def find_item(items, name):
+    return next((i for i in items if i.name == name), None)
+
+def restock(items, name, amount):
+    return [Item(i.name, i.price_cents, i.count + amount)
+            if i.name == name else i
+            for i in items]
+
+def names_in_stock(items):
+    return [i.name for i in items if i.count > 0]`,
+
+  task: `
+<p>The <code>Item</code> class is written for you. Implement the four
+functions:</p>
+<ol>
+  <li><code>total_value(items)</code> — <code>sum</code> with a block:
+      <code>i.price_cents * i.count</code> across all items.</li>
+  <li><code>find_item(items, name)</code> — <code>.find</code> with a block
+      comparing <code>i.name</code>. It returns <code>nil</code> on a miss,
+      just like your <code>next(..., None)</code> default.</li>
+  <li><code>restock(items, name, amount)</code> — return a <strong>new
+      array</strong> where the matching item is replaced by a fresh
+      <code>Item.new(i.name, i.price_cents, i.count + amount)</code> and
+      every other element passes through unchanged (<code>map</code> is
+      perfect). Do not mutate the originals.</li>
+  <li><code>names_in_stock(items)</code> — <code>select</code> the items with
+      <code>count &gt; 0</code>, then <code>map</code> to their names.</li>
+</ol>`,
+
+  starter: `# The class is complete — the work is in the four functions below.
+class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+# 1. total_value: sum(i.price_cents * i.count for i in items) -> sum + block.
+def total_value(items)
+  raise NotImplementedError, "TODO: implement total_value"
+end
+
+# 2. find_item: next((i for i in items if ...), None) -> items.find { ... }.
+def find_item(items, name)
+  raise NotImplementedError, "TODO: implement find_item"
+end
+
+# 3. restock: map to a NEW array; build a fresh Item.new for the match —
+#    Ruby variables are references, so mutating in place would leak out.
+def restock(items, name, amount)
+  raise NotImplementedError, "TODO: implement restock"
+end
+
+# 4. names_in_stock: select the in-stock items, then map to names.
+def names_in_stock(items)
+  raise NotImplementedError, "TODO: implement names_in_stock"
+end
+`,
+
+  requirements: [
+    { pattern: /\.find\b/, message: "Locate the item with .find" },
+    { pattern: /\.select/, message: "Filter in-stock items with .select" },
+    { pattern: /\.sum/, message: "Total the values with .sum and a block" },
+    { pattern: /Item\.new/, message: "Build a fresh Item.new in restock — no mutation" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count",
+      code: '  items = [Item.new("pen", 150, 3), Item.new("ink", 900, 0), Item.new("pad", 400, 2)]\n  expect_eq(total_value(items), 1250)' },
+    { name: "find_item returns the matching item",
+      code: '  items = [Item.new("pen", 150, 3), Item.new("ink", 900, 0)]\n  expect_eq(find_item(items, "ink").price_cents, 900)' },
+    { name: "find_item returns nil on a miss",
+      code: '  items = [Item.new("pen", 150, 3)]\n  expect_eq(find_item(items, "gum"), nil)' },
+    { name: "restock bumps only the matching item's count",
+      code: '  items = [Item.new("pen", 150, 3), Item.new("ink", 900, 0)]\n  restocked = restock(items, "ink", 5)\n  expect_eq(restocked.map { |i| i.count }, [3, 5])\n  expect_eq(restocked.map { |i| i.name }, ["pen", "ink"])' },
+    { name: "restock does not mutate the original items",
+      code: '  items = [Item.new("ink", 900, 0)]\n  restock(items, "ink", 5)\n  expect_eq(items[0].count, 0)' },
+    { name: "restock with an unknown name changes nothing; names_in_stock filters",
+      code: '  items = [Item.new("pen", 150, 3), Item.new("ink", 900, 0), Item.new("pad", 400, 2)]\n  expect_eq(restock(items, "gum", 5).map { |i| i.count }, [3, 0, 2])\n  expect_eq(names_in_stock(items), ["pen", "pad"])' },
+  ],
+
+  solution: `class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+def total_value(items)
+  items.sum { |i| i.price_cents * i.count }
+end
+
+def find_item(items, name)
+  items.find { |i| i.name == name }
+end
+
+def restock(items, name, amount)
+  items.map do |i|
+    if i.name == name
+      Item.new(i.name, i.price_cents, i.count + amount)
+    else
+      i
+    end
+  end
+end
+
+def names_in_stock(items)
+  items.select { |i| i.count > 0 }.map(&:name)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Sum a derived value</td><td><code>sum(f(i) for i in xs)</code></td><td><code>xs.sum { |i| f(i) }</code></td></tr>
+  <tr><td>First match or nothing</td><td><code>next((i for i in xs if p), None)</code></td><td><code>xs.find { |i| p }</code> — nil built in</td></tr>
+  <tr><td>Filter + transform</td><td><code>[i.name for i in xs if p]</code></td><td><code>xs.select { |i| p }.map(&amp;:name)</code></td></tr>
+  <tr><td>Conditional rebuild</td><td>list comp with ternary</td><td><code>map</code> with <code>if/else</code> inside the block</td></tr>
+  <tr><td>Avoid aliasing</td><td>construct a new object</td><td><code>Item.new(...)</code> — same instinct</td></tr>
+</table>
+<p>That's the course: classes whose accessors are one <code>attr_reader</code>
+line, collections processed by naming the operation
+(<code>sum</code>, <code>find</code>, <code>select</code>, <code>map</code>)
+instead of writing a comprehension, blocks as the universal callable, and
+<code>nil</code> flowing through misses the way <code>None</code> does. When a
+pipeline needs a step you'd import from <code>itertools</code> or write a
+recipe for, check Enumerable first — it's almost always already there.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

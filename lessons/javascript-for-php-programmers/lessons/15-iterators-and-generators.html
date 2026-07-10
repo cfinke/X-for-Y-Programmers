@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Iterators &amp; Generators</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Iterators & Generators",
+
+  intro: `
+<p>PHP has its own generator syntax (<code>yield</code> inside a function) and
+its own <code>Iterator</code>/<code>IteratorAggregate</code> interfaces for
+building custom <code>foreach</code>-able objects. JavaScript's version of the
+same idea is a plain protocol instead of a pair of interfaces: an object is
+<em>iterable</em> if it has a method under the key <code>Symbol.iterator</code>
+that returns an <em>iterator</em> — any object with a <code>next()</code> method
+returning <code>{ value, done }</code>.</p>
+<table>
+  <tr><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td><code>function range(int $a, int $b): Generator</code></td><td><code>function* range(a, b)</code></td></tr>
+  <tr><td><code>Iterator::current()</code> / <code>next()</code> / <code>valid()</code></td><td><code>const it = xs[Symbol.iterator]();</code></td></tr>
+  <tr><td>three separate methods report position, value, and end</td><td>a single <code>{ value, done }</code> object from <code>next()</code></td></tr>
+  <tr><td>engine enforces the <code>Iterator</code> interface shape</td><td><code>for...of</code> just calls <code>next()</code></td></tr>
+</table>
+<p>A <code>function*</code> (generator function) is the easy way to build both at
+once: calling it returns an object that is <em>its own</em> iterator, and each
+<code>yield</code> hands a value back to the consumer and pauses until
+<code>next()</code> is called again. <code>yield*</code> delegates to another
+iterable. Because generators are lazy, <code>range(0, Infinity)</code> is fine
+until you actually pull values from it — the same laziness PHP generators give
+you with <code>yield</code>.</p>`,
+
+  php: `<?php
+function range(int $start, int $end): Generator {
+  for ($i = $start; $i < $end; $i++) {
+    yield $i;
+  }
+}
+
+function take(iterable $gen, int $n): array {
+  $out = [];
+  $count = 0;
+  foreach ($gen as $value) {
+    if ($count >= $n) break;
+    $out[] = $value;
+    $count++;
+  }
+  return $out;
+}`,
+
+  task: `
+<p>Build a tiny lazy-sequence toolkit using the iterator protocol directly — no
+type declarations in the runtime code:</p>
+<ol>
+  <li><code>range(start, end)</code> — a generator function that
+      <code>yield</code>s every integer from <code>start</code> up to but not
+      including <code>end</code>.</li>
+  <li><code>take(iterable, n)</code> — pull at most <code>n</code> values from
+      any iterable by driving its <code>next()</code>, returning them as an
+      array. Stop early if the iterable runs out.</li>
+  <li><code>concat(a, b)</code> — a generator that yields everything from
+      <code>a</code>, then everything from <code>b</code>, using
+      <code>yield*</code>.</li>
+  <li><code>countUpFrom(start)</code> — return a custom <em>iterable object</em>
+      (not a generator function) whose <code>[Symbol.iterator]()</code> counts
+      <code>start</code>, <code>start + 1</code>, <code>start + 2</code>, …
+      forever.</li>
+</ol>`,
+
+  starter: `// 1. range(start, end) — generator yielding start .. end-1
+function* range(start, end) {
+  // TODO
+}
+
+// 2. take(iterable, n) — first n values as an array
+function take(iterable, n) {
+  // TODO
+  return [];
+}
+
+// 3. concat(a, b) — generator delegating with yield*
+function* concat(a, b) {
+  // TODO
+}
+
+// 4. countUpFrom(start) — a custom iterable object (infinite)
+function countUpFrom(start) {
+  // TODO
+  return {};
+}
+`,
+
+  exportNames: ["range", "take", "concat", "countUpFrom"],
+
+  requirements: [
+    { pattern: /function\s*\*\s*range/, message: "range must be a generator function (function*)" },
+    { pattern: /yield\s*\*/, message: "Use yield* to delegate inside concat" },
+    { pattern: /\[\s*Symbol\.iterator\s*\]/, message: "countUpFrom must define a [Symbol.iterator]() method" },
+    { pattern: /\.next\s*\(/, message: "take must drive the iterator by calling next()" },
+  ],
+
+  tests: [
+    { name: "range(0, 5) spreads to [0,1,2,3,4]", run: (x) => expectDeepEqual([...x.range(0, 5)], [0, 1, 2, 3, 4]) },
+    { name: "range(2, 2) is empty", run: (x) => expectDeepEqual(Array.from(x.range(2, 2)), []) },
+    { name: "take(range(10, 100), 3) is [10,11,12]", run: (x) => expectDeepEqual(x.take(x.range(10, 100), 3), [10, 11, 12]) },
+    { name: "take stops early when the source runs out", run: (x) => expectDeepEqual(x.take(x.range(0, 2), 5), [0, 1]) },
+    { name: "concat yields a then b", run: (x) => expectDeepEqual([...x.concat(x.range(0, 2), x.range(5, 7))], [0, 1, 5, 6]) },
+    { name: "concat works with arrays (any iterable)", run: (x) => expectDeepEqual(Array.from(x.concat([1, 2], [3])), [1, 2, 3]) },
+    { name: "countUpFrom is an infinite iterable driven by take", run: (x) => expectDeepEqual(x.take(x.countUpFrom(100), 4), [100, 101, 102, 103]) },
+  ],
+
+  solution: `function* range(start, end) {
+  for (let i = start; i < end; i++) {
+    yield i;
+  }
+}
+
+function take(iterable, n) {
+  const out = [];
+  const it = iterable[Symbol.iterator]();
+  for (let i = 0; i < n; i++) {
+    const r = it.next();
+    if (r.done) break;
+    out.push(r.value);
+  }
+  return out;
+}
+
+function* concat(a, b) {
+  yield* a;
+  yield* b;
+}
+
+function countUpFrom(start) {
+  return {
+    [Symbol.iterator]() {
+      let i = start;
+      return {
+        next() {
+          return { value: i++, done: false };
+        },
+      };
+    },
+  };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td>Iterable contract</td><td><code>iterable</code> / <code>IteratorAggregate</code></td><td>object with <code>[Symbol.iterator]()</code></td></tr>
+  <tr><td>Iterator contract</td><td><code>Iterator</code> (<code>current()</code>, <code>next()</code>, <code>valid()</code>, <code>key()</code>, <code>rewind()</code>)</td><td>object with <code>next()</code> → <code>{ value, done }</code></td></tr>
+  <tr><td>Generator</td><td>a function containing <code>yield</code>, returns <code>Generator</code></td><td>result of calling a <code>function*</code></td></tr>
+  <tr><td>Collect to array</td><td><code>iterator_to_array($gen)</code></td><td><code>[...gen]</code> / <code>Array.from(gen)</code> — both drive the protocol</td></tr>
+</table>
+<p>A generator object is <em>both</em> an iterator and an iterable: its own
+<code>[Symbol.iterator]()</code> returns itself. That is why you can spread it
+directly with <code>[...range(0, 5)]</code>. Note the consequence — a generator
+is single-use; once fully consumed, iterating it again yields nothing, much
+like a PHP generator that throws once you try to <code>rewind()</code> past
+the first value pulled. A custom iterable object like <code>countUpFrom</code>
+is different: each call to <code>[Symbol.iterator]()</code> starts a fresh
+iterator, so it can be looped over repeatedly — closer to how a PHP class
+implementing <code>IteratorAggregate</code> can hand back a new iterator on
+every <code>foreach</code>.</p>
+<p>Beware infinite iterables with <code>[...gen]</code> or <code>Array.from</code>
+— they will loop forever, just like <code>iterator_to_array()</code> on an
+infinite PHP generator. That is exactly what <code>take</code> guards against:
+it pulls a bounded number of values and never asks for more.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

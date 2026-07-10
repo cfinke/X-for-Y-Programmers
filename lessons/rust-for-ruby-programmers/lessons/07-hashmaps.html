@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p>Ruby's <code>Hash</code> becomes Rust's <code>HashMap&lt;K, V&gt;</code> —
+same idea, but the key type and value type are both fixed up front:
+<code>HashMap&lt;String, u32&gt;</code> maps strings to unsigned integers,
+period. It also isn't auto-loaded; you bring it in with
+<code>use std::collections::HashMap;</code>. Writing is
+<code>.insert(key, value)</code> instead of <code>h[:k] = v</code>, and —
+Lesson 1's rule again — only on a <code>mut</code> map.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>h = {}</code></td><td><code>let mut h: HashMap&lt;String, u32&gt; = HashMap::new();</code></td></tr>
+  <tr><td><code>h[:apples] = 3</code></td><td><code>h.insert("apples".to_string(), 3);</code></td></tr>
+  <tr><td><code>h[:missing]</code> → <code>nil</code></td><td><code>h.get("missing")</code> → <code>None</code></td></tr>
+  <tr><td><code>h.fetch(:k, 0)</code></td><td><code>h.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>Hash.new(0)</code> then <code>h[:k] += 1</code></td><td><code>*h.entry(k).or_insert(0) += 1</code></td></tr>
+</table>
+<p>Reads are where the honesty shows. Ruby's <code>h[:missing]</code> returns
+<code>nil</code> and hopes you notice; Rust's <code>.get()</code> returns
+<code>Option&lt;&amp;V&gt;</code> — a reference wrapped in "maybe" — and the
+compiler won't let you use it until you say what happens when it's absent.
+The <code>h.fetch(:k, 0)</code> idiom becomes
+<code>.get(k).copied().unwrap_or(0)</code> (<code>.copied()</code> turns the
+<code>&amp;u32</code> into a plain <code>u32</code>). And where Ruby reaches for
+<code>Hash.new(0)</code> to make counters "just work", Rust has the entry
+API: <code>h.entry(key).or_insert(0)</code> gets you a slot you can add to,
+default supplied per call rather than baked into the hash.</p>`,
+
+  ruby: `def build_inventory
+  { "apples" => 3, "bananas" => 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)     # missing key -> 0, not nil
+end
+
+def add_stock(inv, name, n)
+  inv[name] = inv.fetch(name, 0) + n
+  # or: Hash.new(0) and inv[name] += n
+end
+
+inv = build_inventory
+add_stock(inv, "apples", 2)
+add_stock(inv, "pears", 4)     # new key appears
+puts get_count(inv, "apples")  # 5
+puts get_count(inv, "durians") # 0`,
+
+  task: `
+<p>Rewrite the Ruby as Rust (the starter already has the
+<code>use</code> line):</p>
+<ol>
+  <li>Write <code>build_inventory</code> returning
+      <code>HashMap&lt;String, u32&gt;</code> with two items:
+      <code>"apples"</code> → 3 and <code>"bananas"</code> → 5. Make a
+      <code>mut</code> map with <code>HashMap::new()</code>, then
+      <code>.insert("apples".to_string(), 3)</code> etc.</li>
+  <li>Write <code>get_count</code> taking
+      <code>inv: &amp;HashMap&lt;String, u32&gt;</code> and
+      <code>name: &amp;str</code>, returning <code>u32</code>. This is Ruby's
+      <code>inv.fetch(name, 0)</code>:
+      <code>inv.get(name).copied().unwrap_or(0)</code>.</li>
+  <li>Write <code>add_stock</code> taking
+      <code>inv: &amp;mut HashMap&lt;String, u32&gt;</code>,
+      <code>name: &amp;str</code>, and <code>n: u32</code>, returning nothing.
+      Use the entry API:
+      <code>*inv.entry(name.to_string()).or_insert(0) += n;</code> — the
+      <code>*</code> dereferences the slot so you can add to it.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "apples" -> 3, "bananas" -> 5.
+//    Ruby: { "apples" => 3, "bananas" => 5 }
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: Ruby's inv.fetch(name, 0).
+//    .get() returns Option<&u32>; .copied().unwrap_or(0) finishes the job.
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: the entry API is Ruby's Hash.new(0) trick, per call:
+//    *inv.entry(name.to_string()).or_insert(0) += n;
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Use the HashMap<...> type in your signatures" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Write to the map with .insert() or the .entry() API" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or for the missing-key default (Ruby's fetch(k, 0))" },
+  ],
+
+  tests: [
+    { name: "build_inventory() holds exactly two items",
+      code: "assert_eq!(build_inventory().len(), 2);" },
+    { name: 'get_count(&inv, "apples") returns 3',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "apples"), 3);\nassert_eq!(get_count(&inv, "bananas"), 5);' },
+    { name: 'get_count for a missing key returns 0, not a crash',
+      code: 'assert_eq!(get_count(&build_inventory(), "durians"), 0);' },
+    { name: 'add_stock(&mut inv, "apples", 2) bumps an existing count to 5',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "apples", 2);\nassert_eq!(get_count(&inv, "apples"), 5);' },
+    { name: 'add_stock on a brand-new key inserts it',
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "pears", 4);\nassert_eq!(get_count(&inv, "pears"), 4);' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert("apples".to_string(), 3);
+    inv.insert("bananas".to_string(), 5);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>The type</td><td><code>Hash</code> (any keys, any values)</td><td><code>HashMap&lt;String, u32&gt;</code> (both fixed)</td></tr>
+  <tr><td>Availability</td><td>always there</td><td><code>use std::collections::HashMap;</code></td></tr>
+  <tr><td>Write</td><td><code>h[:k] = v</code></td><td><code>h.insert(k, v)</code> (needs <code>mut</code>)</td></tr>
+  <tr><td>Read, may be missing</td><td><code>h[:k]</code> → <code>nil</code></td><td><code>h.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>Read with default</td><td><code>h.fetch(:k, 0)</code></td><td><code>h.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Default-and-update</td><td><code>Hash.new(0)</code>; <code>h[:k] += 1</code></td><td><code>*h.entry(k).or_insert(0) += 1</code></td></tr>
+</table>
+<p>The entry API deserves a spot in your muscle memory: it's Ruby's
+<code>Hash.new(0)</code> default block, but chosen at the call site instead
+of at construction — so the same map can default to 0 in one function and to
+an empty <code>Vec</code> in another, and there's no "wait, does this hash
+have a default block?" archaeology. One lookup finds-or-creates the slot,
+then hands you a mutable reference to it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

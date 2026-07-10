@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Array Iteration</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Array Iteration",
+
+  intro: `
+<p>In Rust, iterator adapters like <code>map</code>, <code>filter</code>, and
+<code>fold</code> are checked by the compiler at every link: <code>fold</code>
+requires you to name the accumulator's type up front via its initial value,
+<code>filter</code> only compiles if the closure returns <code>bool</code>, and
+the whole chain is <em>lazy</em> — nothing runs until you call
+<code>.collect()</code> or another consuming method. JavaScript's array methods
+look similar on the page, but nothing enforces those shapes: <code>filter</code>
+just calls your callback and keeps whatever is truthy, <code>reduce</code>'s
+accumulator can silently change type from one call to the next, and every step
+in a chain runs eagerly, allocating a full array before the next method ever
+sees it.</p>
+<table>
+  <tr><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td><code>xs.iter().map(|x: &amp;i32| -&gt; String { ... })</code></td><td><code>arr.map((x) =&gt; ...)</code></td></tr>
+  <tr><td><code>xs.iter().fold(0i32, fn)</code></td><td><code>arr.reduce(fn, 0)</code></td></tr>
+  <tr><td><code>xs.iter().find(...) -&gt; Option&lt;&amp;T&gt;</code></td><td><code>arr.find(...)</code> — may be <code>undefined</code></td></tr>
+  <tr><td>result type inferred &amp; checked</td><td>result is whatever the callback returned</td></tr>
+</table>
+<p>The idiomatic move — in both languages — is to <em>chain</em> these methods
+instead of writing manual <code>for</code> loops: describe the transformation as
+a pipeline (<code>filter</code> then <code>map</code> then <code>reduce</code>)
+rather than a sequence of mutations. Unlike Rust's lazy iterator chains, each
+link in a JavaScript pipeline allocates a new array immediately, so it reads
+top-to-bottom as a series of pure steps but does strictly more work than Rust's
+fused chain. Two runtime facts worth holding onto: <code>find</code> returns
+<code>undefined</code> when nothing matches (no <code>Option</code> to force
+you to check it), and <code>reduce</code> on an empty array <em>throws</em> if
+you gave it no initial value — Rust's <code>fold</code> takes its initial value
+as a required argument, so that situation can never arise.</p>`,
+
+  rust: `struct Order {
+    id: u32,
+    customer: String,
+    total: f64,
+    paid: bool,
+}
+
+fn paid_total(orders: &[Order]) -> f64 {
+    orders
+        .iter()
+        .filter(|o| o.paid)
+        .fold(0.0, |sum, o| sum + o.total)
+}
+
+fn customer_names(orders: &[Order]) -> Vec<String> {
+    orders.iter().map(|o| o.customer.clone()).collect()
+}`,
+
+  task: `
+<p>You are given an array of order objects, each shaped like
+<code>{ id, customer, total, paid }</code>. Build a little reporting toolkit —
+no manual <code>for</code>/<code>while</code> loops, use the array methods:</p>
+<ol>
+  <li><code>paidTotal(orders)</code> — sum of <code>total</code> across only the
+      <em>paid</em> orders (chain <code>filter</code> then <code>reduce</code>).
+      Returns <code>0</code> for an empty array.</li>
+  <li><code>bigSpenders(orders, min)</code> — an array of the
+      <code>customer</code> names whose order <code>total</code> is greater than
+      or equal to <code>min</code> (chain <code>filter</code> then
+      <code>map</code>).</li>
+  <li><code>findOrder(orders, id)</code> — the first order object with the given
+      <code>id</code>, or <code>undefined</code> if there is none (use
+      <code>find</code>).</li>
+  <li><code>allPaid(orders)</code> — <code>true</code> if every order is paid
+      (use <code>every</code>).</li>
+  <li><code>anyUnpaid(orders)</code> — <code>true</code> if at least one order is
+      unpaid (use <code>some</code>).</li>
+  <li><code>totalByCustomer(orders)</code> — an object mapping each customer name
+      to the sum of their order totals, built with a single <code>reduce</code>.</li>
+</ol>`,
+
+  starter: `// The data the tests will pass in looks like:
+// { id: 1, customer: "Ada", total: 40, paid: true }
+
+// 1. Sum of totals across only paid orders.
+function paidTotal(orders) {
+  // TODO: filter then reduce
+  return 0;
+}
+
+// 2. Names of customers whose order total is >= min.
+function bigSpenders(orders, min) {
+  // TODO: filter then map
+  return [];
+}
+
+// 3. First order with matching id, or undefined.
+function findOrder(orders, id) {
+  // TODO: find
+  return undefined;
+}
+
+// 4. True if every order is paid.
+function allPaid(orders) {
+  // TODO: every
+  return false;
+}
+
+// 5. True if at least one order is unpaid.
+function anyUnpaid(orders) {
+  // TODO: some
+  return false;
+}
+
+// 6. Map of customer name -> summed total, via one reduce.
+function totalByCustomer(orders) {
+  // TODO: reduce into an object
+  return {};
+}
+`,
+
+  exportNames: ["paidTotal", "bigSpenders", "findOrder", "allPaid", "anyUnpaid", "totalByCustomer"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter() to select orders" },
+    { pattern: /\.map\s*\(/, message: "Use .map() to project customer names" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce() to aggregate totals" },
+    { pattern: /\.find\s*\(/, message: "Use .find() to locate an order by id" },
+  ],
+
+  tests: [
+    {
+      name: "paidTotal sums only paid orders",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+          { id: 3, customer: "Ada", total: 10, paid: true },
+        ];
+        expectEqual(x.paidTotal(orders), 50);
+      },
+    },
+    {
+      name: "paidTotal returns 0 for an empty array",
+      run: (x) => expectEqual(x.paidTotal([]), 0),
+    },
+    {
+      name: "bigSpenders keeps names at or above min",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+          { id: 3, customer: "Cy", total: 100, paid: true },
+        ];
+        expectDeepEqual(x.bigSpenders(orders, 40), ["Ada", "Cy"]);
+      },
+    },
+    {
+      name: "findOrder returns the matching order",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+        ];
+        expectEqual(x.findOrder(orders, 2).customer, "Rob");
+      },
+    },
+    {
+      name: "findOrder returns undefined when nothing matches",
+      run: (x) => expectEqual(x.findOrder([{ id: 1, customer: "Ada", total: 40, paid: true }], 99), undefined),
+    },
+    {
+      name: "allPaid and anyUnpaid reflect the paid flags",
+      run: (x) => {
+        const mixed = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+        ];
+        const clean = [{ id: 3, customer: "Cy", total: 10, paid: true }];
+        expectEqual(x.allPaid(mixed), false);
+        expectEqual(x.allPaid(clean), true);
+        expectEqual(x.anyUnpaid(mixed), true);
+        expectEqual(x.anyUnpaid(clean), false);
+      },
+    },
+    {
+      name: "totalByCustomer groups totals by name",
+      run: (x) => {
+        const orders = [
+          { id: 1, customer: "Ada", total: 40, paid: true },
+          { id: 2, customer: "Rob", total: 25, paid: false },
+          { id: 3, customer: "Ada", total: 10, paid: true },
+        ];
+        expectDeepEqual(x.totalByCustomer(orders), { Ada: 50, Rob: 25 });
+      },
+    },
+  ],
+
+  solution: `function paidTotal(orders) {
+  return orders
+    .filter((o) => o.paid)
+    .reduce((sum, o) => sum + o.total, 0);
+}
+
+function bigSpenders(orders, min) {
+  return orders
+    .filter((o) => o.total >= min)
+    .map((o) => o.customer);
+}
+
+function findOrder(orders, id) {
+  return orders.find((o) => o.id === id);
+}
+
+function allPaid(orders) {
+  return orders.every((o) => o.paid);
+}
+
+function anyUnpaid(orders) {
+  return orders.some((o) => !o.paid);
+}
+
+function totalByCustomer(orders) {
+  return orders.reduce((acc, o) => {
+    acc[o.customer] = (acc[o.customer] || 0) + o.total;
+    return acc;
+  }, {});
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>JavaScript (runtime)</th></tr>
+  <tr><td>Mapped result type</td><td><code>collect::&lt;Vec&lt;U&gt;&gt;()</code>, inferred or annotated</td><td>whatever the callback returns</td></tr>
+  <tr><td>reduce accumulator</td><td>fixed by <code>fold</code>'s required initial value</td><td>whatever you seed and return</td></tr>
+  <tr><td>find miss</td><td><code>Option&lt;&amp;T&gt;</code> forces a match or <code>unwrap</code></td><td>silently <code>undefined</code></td></tr>
+  <tr><td>reduce, no seed, empty array</td><td>impossible — <code>fold</code>'s seed is a required argument</td><td>throws <code>TypeError</code> at runtime</td></tr>
+  <tr><td>Grouping accumulator</td><td><code>HashMap&lt;String, f64&gt;</code></td><td>a plain <code>{}</code> object</td></tr>
+</table>
+<p>Because the borrow checker and the compiler are gone, a few runtime edges
+become yours to manage. Always pass an initial value to <code>reduce</code> —
+both to define the result type in your head and because
+<code>[].reduce((a, b) =&gt; a + b)</code> throws "Reduce of empty array with no
+initial value" (Rust's <code>fold</code> makes this impossible, since the seed
+isn't optional the way <code>reduce</code>'s second argument is). A
+<code>find</code> that fails returns <code>undefined</code> instead of Rust's
+<code>None</code>, so reaching straight into <code>.customer</code> on the
+result can blow up with "Cannot read properties of undefined" — guard it, or
+use <code>?.</code>, where Rust would force you to match on the
+<code>Option</code> or call <code>.unwrap()</code> and pay for it loudly. And
+each of <code>filter</code>/<code>map</code> allocates a fresh array, so a long
+chain over a huge list does more work than Rust's fused iterator chain, which
+never materializes an intermediate collection until <code>.collect()</code> is
+called; for the sizes in everyday code the readability of the pipeline wins,
+but it is a real runtime cost Rust's zero-cost abstractions never carry.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes",
+
+  intro: `
+<p>Kotlin already spoils you here: <code>class BankAccount(val owner: String)</code>
+declares the field, assigns the constructor parameter, and sets visibility in
+one stroke. TypeScript has the same trick, it just spells it differently.
+Writing <code>constructor(private balance: number)</code> does three things
+at once: declares the field, assigns the parameter to it, and sets its
+visibility. These are <em>parameter properties</em> — TypeScript's answer to
+Kotlin's primary-constructor <code>val</code>/<code>var</code>.</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td><code>class BankAccount(private var x: Double)</code></td><td><code>constructor(private x: number) {}</code> — same idea, all three at once</td></tr>
+  <tr><td><code>val owner: String</code> (in the primary constructor)</td><td><code>readonly owner: string</code> (add <code>private</code> only to hide it)</td></tr>
+  <tr><td>A <code>val</code> is already public and read-only — no getter needed</td><td>Often just a method — or expose <code>readonly</code> fields directly</td></tr>
+  <tr><td><code>throw IllegalStateException("...")</code></td><td><code>throw new Error("...")</code></td></tr>
+</table>
+<p>Visibility works much as it does in Kotlin — <code>private</code>,
+<code>protected</code>, <code>public</code> (the default, so nobody writes
+it) — with one caveat: unlike Kotlin, where <code>private</code> is enforced
+at runtime, TypeScript's modifiers are checked by the <em>compiler</em> and
+then erased, so at runtime the field is just an ordinary property.
+<code>readonly</code> is TypeScript's <code>val</code> for fields: assignable in
+the constructor, frozen after. And the getter culture matches Kotlin's
+instinct: a <code>readonly</code> public field needs no <code>getOwner()</code>,
+because nobody can reassign it anyway — just like a Kotlin <code>val</code>.
+Reserve <code>private</code> + a getter for state you must guard, like a
+balance that only <code>deposit</code> and <code>withdraw</code> may touch.</p>`,
+
+  kotlin: `class BankAccount(
+    val owner: String,   // Kotlin already does the whole ritual:
+    val id: String,      // declare, accept as parameter, and assign —
+    private var balance: Double,  // all from the constructor header.
+) {
+    fun deposit(amount: Double) { balance += amount }
+
+    fun withdraw(amount: Double) {
+        if (amount > balance) throw IllegalStateException("Insufficient funds")
+        balance -= amount
+    }
+
+    fun getBalance(): Double = balance
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code> to TypeScript, letting parameter properties
+eat the boilerplate — the same way Kotlin's constructor header does:</p>
+<ol>
+  <li>Declare <code>class BankAccount</code> whose constructor takes, in
+      order: <code>readonly owner: string</code>,
+      <code>readonly id: string</code>, <code>private balance: number</code>.
+      The constructor body stays <em>empty</em> — the modifiers do the field
+      declarations and assignments for you, just like a Kotlin primary
+      constructor.</li>
+  <li>Add <code>deposit(amount: number): void</code> — adds to the
+      balance.</li>
+  <li>Add <code>withdraw(amount: number): void</code> — if
+      <code>amount</code> exceeds the balance, <code>throw new
+      Error("Insufficient funds")</code>; otherwise subtract it.</li>
+  <li>Add <code>getBalance(): number</code>. The balance needs a getter
+      because it is <code>private</code>; <code>owner</code> and
+      <code>id</code> need none — they are <code>readonly</code>, so
+      exposing them is already safe (a Kotlin <code>val</code> in disguise).</li>
+</ol>`,
+
+  starter: `// The literal Java translation — it works, but TypeScript can delete
+// most of it. Replace the field declarations AND the constructor body with
+// parameter properties:
+//   constructor(readonly owner: string, readonly id: string, private balance: number) {}
+class BankAccount {
+  owner: string;
+  id: string;
+  balance: number;
+
+  constructor(owner: string, id: string, balance: number) {
+    this.owner = owner;
+    this.id = id;
+    this.balance = balance;
+  }
+
+  // TODO: deposit(amount: number): void — add to the balance
+
+  // TODO: withdraw(amount: number): void — throw new Error("Insufficient funds")
+  //       when amount > balance, otherwise subtract
+
+  // TODO: getBalance(): number
+}
+`,
+
+  exportNames: ["BankAccount"],
+
+  requirements: [
+    { pattern: /private\s+balance/, message: "Make balance private (in the constructor parameter list) — only deposit/withdraw may touch it" },
+    { pattern: /readonly\s+owner/, message: "Mark owner readonly — TypeScript's final" },
+    { pattern: /readonly\s+id/, message: "Mark id readonly too" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada", "ACCT-1", 100) starts with balance 100', run: (x) => expectEqual(new x.BankAccount("Ada", "ACCT-1", 100).getBalance(), 100) },
+    { name: "deposit(50) raises the balance to 150", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-1", 100); a.deposit(50); expectEqual(a.getBalance(), 150); } },
+    { name: "withdraw(30) lowers the balance to 70", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-1", 100); a.withdraw(30); expectEqual(a.getBalance(), 70); } },
+    { name: "withdraw beyond the balance throws", run: (x) => { const a = new x.BankAccount("Ada", "ACCT-1", 100); expectThrows(() => a.withdraw(1000)); } },
+    { name: "owner is set by the parameter property (no this.owner = owner needed)", run: (x) => expectEqual(new x.BankAccount("Ada", "ACCT-1", 100).owner, "Ada") },
+  ],
+
+  solution: `class BankAccount {
+  constructor(
+    readonly owner: string,
+    readonly id: string,
+    private balance: number
+  ) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("Insufficient funds");
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Field + assignment + visibility</td><td><code>class C(private var x: Double)</code></td><td><code>constructor(private x: number) {}</code></td></tr>
+  <tr><td>Read-only field</td><td><code>val id: String</code></td><td><code>readonly id: string</code></td></tr>
+  <tr><td>Default visibility</td><td><code>public</code></td><td><code>public</code> (so it is rarely written)</td></tr>
+  <tr><td>Getter culture</td><td>A <code>val</code> exposes itself; getters only when guarding</td><td>Getters only for guarded <code>private</code> state</td></tr>
+  <tr><td>Field access</td><td><code>balance</code> (implicit this)</td><td><code>this.balance</code> — always explicit</td></tr>
+  <tr><td>Exceptions</td><td><code>IllegalStateException</code> etc., all unchecked</td><td><code>Error</code>; nothing is checked</td></tr>
+</table>
+<p>Two habits to retrain. First, <code>this.</code> is mandatory inside
+methods — bare <code>balance</code> is not the field, it is a missing
+variable (Kotlin lets you drop the receiver; TypeScript does not). Second,
+remember lesson 8: TypeScript is structural even for classes, so a class
+earns its keep through <em>encapsulation and behavior</em> — an invariant
+like "balance never goes negative" that <code>private</code> protects — not
+through being a container for data. If there is no invariant to guard, an
+interface and a literal (or in Kotlin terms, a <code>data class</code>'s
+plain-data role) are the more idiomatic tool.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

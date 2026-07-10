@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules & Visibility</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules & Visibility",
+
+  intro: `
+<p>Go's module story is refreshingly physical: a package <em>is</em> a
+directory, and visibility <em>is</em> capitalization —
+<code>ItemCount</code> is exported, <code>joinNames</code> is not. Rust
+decouples both halves. A <code>mod</code> is a purely logical namespace —
+you can declare several in one file, or put one in its own file, and the
+code doesn't change. And visibility is a keyword, <code>pub</code>, applied
+independently to each function, struct, field, and module — so
+<code>deposit</code> can stay lowercase <em>and</em> public.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td>package = directory</td><td><code>mod</code> = logical namespace (file layout optional)</td></tr>
+  <tr><td><code>ItemCount</code> — capital letter exports</td><td><code>pub fn item_count</code> — keyword exports</td></tr>
+  <tr><td><code>joinNames</code> — lowercase hides</td><td>no <code>pub</code> — private is the default</td></tr>
+  <tr><td><code>import "example.com/inventory"</code></td><td><code>use crate::inventory;</code></td></tr>
+  <tr><td><code>inventory.ItemCount(items)</code></td><td><code>inventory::item_count(&amp;items)</code></td></tr>
+</table>
+<p>Everything inside a <code>mod</code> is private until marked
+<code>pub</code> — same default as Go, different spelling. The parent
+reaches in with <code>::</code> paths (<code>inventory::item_count</code>),
+or shortens them with <code>use</code>, Rust's <code>import</code>. One
+freedom Go doesn't offer: because <code>pub</code> attaches per-item, a
+public struct can have private fields, and a module can expose two
+functions while a helper stays sealed inside — no separate
+<code>internal/</code> directory required.</p>`,
+
+  go: `// inventory/inventory.go
+package inventory
+
+import (
+	"fmt"
+	"strings"
+)
+
+// Capitalized = exported.
+func ItemCount(items []string) int {
+	return len(items)
+}
+
+func Describe(items []string) string {
+	if len(items) == 0 {
+		return "empty inventory"
+	}
+	return fmt.Sprintf("%d items: %s", len(items), joinNames(items))
+}
+
+// lowercase = private to the package.
+func joinNames(items []string) string {
+	return strings.Join(items, ", ")
+}`,
+
+  task: `
+<p>Port the Go package as a Rust module — one file, no directories:</p>
+<ol>
+  <li>Declare <code>mod inventory { ... }</code> and put everything inside
+      it.</li>
+  <li><code>pub fn item_count</code> takes
+      <code>items: &amp;Vec&lt;String&gt;</code> and returns
+      <code>usize</code> — just <code>items.len()</code>.</li>
+  <li><code>pub fn describe</code> takes
+      <code>items: &amp;Vec&lt;String&gt;</code> and returns
+      <code>String</code>: <code>"empty inventory"</code> when the list is
+      empty, otherwise <code>"2 items: hammer, wrench"</code> — count,
+      the word <code>items:</code>, then the names joined with
+      <code>", "</code>. Build the joined names in a <em>private</em> helper
+      (no <code>pub</code>) inside the module, like Go's
+      <code>joinNames</code> — <code>items.join(", ")</code> does the
+      work.</li>
+</ol>
+<p>The tests call <code>inventory::item_count(...)</code> and
+<code>inventory::describe(...)</code> from outside the module, so both must
+be <code>pub</code>. Don't write <code>fn main</code> — the lesson's tests
+call your functions directly.</p>`,
+
+  starter: `mod inventory {
+    // pub = Go's capital letter, but per-item and per-function.
+    pub fn item_count(items: &Vec<String>) -> usize {
+        todo!()
+    }
+
+    // "empty inventory" if empty, else "N items: a, b, c".
+    // Call a private helper (below) for the joined names.
+    pub fn describe(items: &Vec<String>) -> String {
+        todo!()
+    }
+
+    // No pub: private to the module, like a lowercase Go func.
+    fn join_names(items: &Vec<String>) -> String {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /mod\s+inventory/, message: "Declare a module named inventory" },
+    { pattern: /pub\s+fn/, message: "Mark the module's API functions pub" },
+  ],
+
+  tests: [
+    { name: "inventory::item_count counts the items",
+      code: 'let items = vec![String::from("hammer"), String::from("wrench"), String::from("bolt")];\nassert_eq!(inventory::item_count(&items), 3);' },
+    { name: "inventory::item_count on an empty list returns 0",
+      code: "let items: Vec<String> = Vec::new();\nassert_eq!(inventory::item_count(&items), 0);" },
+    { name: 'inventory::describe lists two items as "2 items: hammer, wrench"',
+      code: 'let items = vec![String::from("hammer"), String::from("wrench")];\nassert_eq!(inventory::describe(&items), "2 items: hammer, wrench");' },
+    { name: "inventory::describe handles a single item",
+      code: 'let items = vec![String::from("anvil")];\nassert_eq!(inventory::describe(&items), "1 items: anvil");' },
+    { name: 'inventory::describe on an empty list returns "empty inventory"',
+      code: 'let items: Vec<String> = Vec::new();\nassert_eq!(inventory::describe(&items), "empty inventory");' },
+  ],
+
+  solution: `mod inventory {
+    pub fn item_count(items: &Vec<String>) -> usize {
+        items.len()
+    }
+
+    pub fn describe(items: &Vec<String>) -> String {
+        if items.is_empty() {
+            String::from("empty inventory")
+        } else {
+            format!("{} items: {}", item_count(items), join_names(items))
+        }
+    }
+
+    fn join_names(items: &Vec<String>) -> String {
+        items.join(", ")
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Namespace unit</td><td>package = one directory</td><td><code>mod</code> — inline or per-file, your call</td></tr>
+  <tr><td>Export a function</td><td><code>func ItemCount</code> (capitalize)</td><td><code>pub fn item_count</code> (keyword)</td></tr>
+  <tr><td>Private helper</td><td><code>func joinNames</code> (lowercase)</td><td><code>fn join_names</code> (default)</td></tr>
+  <tr><td>Qualified call</td><td><code>inventory.ItemCount(x)</code></td><td><code>inventory::item_count(&amp;x)</code></td></tr>
+  <tr><td>Import / shorten</td><td><code>import "…/inventory"</code></td><td><code>use crate::inventory;</code> or <code>use inventory::item_count;</code></td></tr>
+  <tr><td>Struct fields</td><td>exported per-field by case</td><td><code>pub</code> per-field — public struct, private fields is idiomatic</td></tr>
+</table>
+<p>Notice <code>describe</code> calls <code>item_count</code> and
+<code>join_names</code> with no prefix — siblings inside a module see each
+other directly, just like functions within one Go package. The deeper win
+of divorcing visibility from naming: in Go, exporting <code>joinNames</code>
+means <em>renaming</em> it (and every call site) to <code>JoinNames</code>;
+in Rust, it's three letters — <code>pub</code> — and nothing else moves.
+When a module grows too big for one file, <code>mod inventory;</code> plus
+an <code>inventory.rs</code> file gives you Go's directory layout back,
+with the same code inside.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>How do you share behavior across unrelated things in JavaScript? Pick your
+poison: a base class to extend, a mixin you <code>Object.assign</code> onto
+prototypes, or plain duck typing — "if it has a <code>.describe()</code>
+method, call it and hope." All three work, and all three fail the same way:
+nothing ever <em>checks</em>. The mixin calls <code>this.name()</code> and you
+find out at runtime whether this particular duck actually quacks.</p>
+<p>Rust's answer is the <strong>trait</strong>: a named contract listing the
+methods a type must provide. <code>trait Describe</code> says "anything
+describable has a <code>name()</code>." A type opts in explicitly with
+<code>impl Describe for Dog</code>, and the compiler verifies the contract is
+fully met — no missing methods, no wrong signatures, checked before anything
+runs. Traits can also ship <em>default methods</em>: write
+<code>describe()</code> once in the trait, in terms of <code>self.name()</code>,
+and every implementor inherits it for free — that's the useful half of the
+mixin, minus the hoping.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>mixin object / abstract base class</td><td><code>trait Describe { fn name(&amp;self) -&gt; String; }</code></td></tr>
+  <tr><td><code>Object.assign(Dog.prototype, mixin)</code></td><td><code>impl Describe for Dog { ... }</code></td></tr>
+  <tr><td>shared method that assumes <code>this.name</code> exists</td><td>default method — compiler proves <code>self.name()</code> exists</td></tr>
+  <tr><td>duck typing: checked never</td><td>contract: checked at compile time</td></tr>
+</table>
+<p>One more superpower with no JS equivalent: you can implement <em>your</em>
+trait for types you didn't write — <code>impl Describe for u32</code> is
+fine — without monkey-patching anyone's prototype. The implementation lives
+in your code, visible and checked, not bolted onto a global.</p>`,
+
+  javascript: `// Sharing behavior in JS: a mixin copied onto a prototype.
+const describable = {
+  describe() {
+    return \`I am \${this.name()}\`; // assumes this.name() exists!
+  },
+};
+
+class Dog {
+  constructor(nickname) { this.nickname = nickname; }
+  name() { return this.nickname; }
+}
+Object.assign(Dog.prototype, describable);
+
+class Robot {
+  constructor(id) { this.id = id; }
+  // oops — forgot name()
+}
+Object.assign(Robot.prototype, describable);
+
+new Dog("Rex").describe();  // "I am Rex"
+new Robot(7).describe();    // TypeError, at runtime, in production`,
+
+  task: `
+<p>Rebuild the mixin as a trait the compiler enforces:</p>
+<ol>
+  <li>The starter defines <code>trait Describe</code> with a required
+      <code>name(&amp;self) -&gt; String</code>. Fill in the trait's
+      <em>default</em> <code>describe()</code> method so it returns
+      <code>"I am {name}"</code> — build it with
+      <code>format!("I am {}", self.name())</code>. Write it once, in the
+      trait; both structs inherit it.</li>
+  <li>Finish <code>impl Describe for Dog</code>: <code>name()</code> returns
+      a clone of the dog's <code>nickname</code> field
+      (<code>self.nickname.clone()</code>).</li>
+  <li>Finish <code>impl Describe for Robot</code>: <code>name()</code> returns
+      <code>"Unit-{id}"</code> using the robot's <code>id</code> field.</li>
+</ol>
+<p>The tests call <code>.name()</code> and <code>.describe()</code> on both a
+<code>Dog</code> and a <code>Robot</code>. Don't write <code>fn main</code> —
+the lesson's tests call your functions directly.</p>`,
+
+  starter: `// The contract: anything Describe-able must provide name().
+trait Describe {
+    fn name(&self) -> String;
+
+    // Default method: write describe() ONCE here, using self.name().
+    // Every implementor below inherits it.
+    fn describe(&self) -> String {
+        todo!() // format!("I am {}", ...)
+    }
+}
+
+// Two totally unrelated types — no shared base class anywhere.
+struct Dog {
+    nickname: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+impl Describe for Dog {
+    fn name(&self) -> String {
+        todo!() // the dog's nickname (clone it)
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        todo!() // "Unit-{id}"
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describe/, message: "Define the trait Describe" },
+    { pattern: /impl\s+Describe\s+for\s+/, message: "Implement Describe for the structs with impl Describe for ..." },
+    { pattern: /self\.name\(\)/, message: "The default describe() should call self.name()" },
+  ],
+
+  tests: [
+    { name: 'Dog { nickname: "Rex" }.name() returns "Rex"',
+      code: `let d = Dog { nickname: String::from("Rex") };
+assert_eq!(d.name(), "Rex");` },
+    { name: 'Dog { nickname: "Rex" }.describe() returns "I am Rex" (via the default method)',
+      code: `let d = Dog { nickname: String::from("Rex") };
+assert_eq!(d.describe(), "I am Rex");` },
+    { name: 'Robot { id: 7 }.name() returns "Unit-7"',
+      code: `let r = Robot { id: 7 };
+assert_eq!(r.name(), "Unit-7");` },
+    { name: 'Robot { id: 7 }.describe() returns "I am Unit-7" (same default, different name())',
+      code: `let r = Robot { id: 7 };
+assert_eq!(r.describe(), "I am Unit-7");` },
+  ],
+
+  solution: `trait Describe {
+    fn name(&self) -> String;
+
+    fn describe(&self) -> String {
+        format!("I am {}", self.name())
+    }
+}
+
+struct Dog {
+    nickname: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+impl Describe for Dog {
+    fn name(&self) -> String {
+        self.nickname.clone()
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        format!("Unit-{}", self.id)
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>The contract</td><td>implicit — "has a name() method"</td><td><code>trait Describe { fn name(&amp;self) -&gt; String; }</code></td></tr>
+  <tr><td>Opting a type in</td><td><code>Object.assign(Dog.prototype, mixin)</code></td><td><code>impl Describe for Dog { ... }</code></td></tr>
+  <tr><td>Shared implementation</td><td>mixin method using <code>this.name()</code></td><td>default method using <code>self.name()</code></td></tr>
+  <tr><td>Missing method</td><td><code>TypeError</code> at runtime</td><td>compile error: "not all trait items implemented"</td></tr>
+  <tr><td>Extending types you don't own</td><td>monkey-patch the prototype (global, risky)</td><td><code>impl YourTrait for TheirType</code> (local, checked)</td></tr>
+</table>
+<p>The mental flip: in JS, "this object can be described" is a fact you
+discover by calling the method. In Rust it's a fact the type system
+<em>knows</em> — which is what unlocks the next lesson, where a generic
+function says "give me anything that implements Describe" and the compiler
+holds every caller to it. And note what <code>Robot</code> got for free: one
+<code>name()</code> method, and the trait's default <code>describe()</code>
+came along with it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

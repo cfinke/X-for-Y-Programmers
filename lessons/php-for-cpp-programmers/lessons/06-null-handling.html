@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null, ?? &amp; ?-&gt;</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null, ?? & ?->",
+
+  intro: `
+<p>C++ splits "no value" across two worlds: <code>nullptr</code> for pointers
+and <code>std::optional&lt;T&gt;</code> for values, each with its own API.
+PHP has exactly one: <code>null</code>. Any variable can hold it, a
+<code>?Type</code> declaration (note the leading <code>?</code> — that's
+<code>std::optional&lt;Type&gt;</code> spelled in three characters) allows it
+in a signature, and one pair of operators handles every "might be null"
+situation.</p>
+<table>
+  <tr><th>C++</th><th>PHP</th></tr>
+  <tr><td><code>std::optional&lt;Address&gt;</code>, <code>Address*</code></td><td><code>?Address</code> (both collapse to one <code>null</code>)</td></tr>
+  <tr><td><code>opt.value_or(def)</code></td><td><code>$x ?? $def</code></td></tr>
+  <tr><td><code>if (p &amp;&amp; p-&gt;addr &amp;&amp; ...)</code> pyramid</td><td><code>$user?-&gt;address?-&gt;city</code></td></tr>
+  <tr><td><code>opt.has_value()</code></td><td><code>isset($x)</code> / <code>$x !== null</code></td></tr>
+</table>
+<p>The two operators: <code>??</code> is <code>value_or</code> generalized —
+<code>$a ?? $b</code> yields <code>$a</code> unless it is null (or unset), and
+it works on variables, array lookups, and property chains alike. And
+<code>?-&gt;</code> is the <em>nullsafe</em> member access: in a chain like
+<code>$user?-&gt;address?-&gt;city</code>, a null anywhere short-circuits the
+whole expression to null. No segfaults, no undefined behavior, no
+<code>if (p &amp;&amp; p-&gt;q)</code> ladders — dereferencing null through
+<code>?-&gt;</code> is simply defined to produce null.</p>`,
+
+  cpp: `#include <map>
+#include <optional>
+#include <string>
+
+struct Address { std::string city; };
+struct User    { std::optional<Address> address; };
+
+std::string get_city(const User* user) {
+    // The pyramid: test every level yourself, or UB.
+    if (user && user->address.has_value()) {
+        return user->address->city;
+    }
+    return "Unknown";
+}
+
+std::string pick(const std::map<std::string, std::string>& data,
+                 const std::string& key, const std::string& def) {
+    auto it = data.find(key);
+    return it != data.end() ? it->second : def;  // value_or, by hand
+}`,
+
+  task: `
+<p>The starter defines <code>Address</code> and <code>User</code> for you
+(note the <code>?Address $address = null</code> — an optional member with no
+<code>std::optional</code> wrapper). Implement:</p>
+<ol>
+  <li><code>get_city(?User $user): string</code> — return the user's city via
+      one nullsafe chain, <code>$user?-&gt;address?-&gt;city</code>, falling
+      back to <code>"Unknown"</code> with <code>??</code>. One line replaces
+      the whole C++ pyramid.</li>
+  <li><code>pick(array $data, string $key, string $default): string</code> —
+      return <code>$data[$key]</code> if it exists and is non-null, otherwise
+      <code>$default</code>. Use <code>??</code>; it never warns about a
+      missing key.</li>
+</ol>`,
+
+  starter: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+// 1. One ?-> chain plus one ?? — no if statements needed.
+function get_city(?User $user): string {
+    throw new Exception("TODO: implement get_city");
+}
+
+// 2. data.find(key) != end() ? it->second : def, as one ?? expression.
+function pick(array $data, string $key, string $default): string {
+    throw new Exception("TODO: implement pick");
+}
+`,
+
+  requirements: [
+    { pattern: /\?\?/, message: "Use the null coalescing operator ??" },
+    { pattern: /\?->/, message: "Use the nullsafe operator ?-> to walk the chain" },
+    { pattern: /\?User|\?Address/, message: "Keep the nullable type declarations (?User / ?Address)" },
+  ],
+
+  tests: [
+    { name: 'get_city on a user with an address returns the city',
+      code: 'expect_eq(get_city(new User(new Address("Paris"))), "Paris");' },
+    { name: 'get_city on a user with a null address returns "Unknown"',
+      code: 'expect_eq(get_city(new User()), "Unknown");' },
+    { name: 'get_city(null) returns "Unknown" — null at the head of the chain',
+      code: 'expect_eq(get_city(null), "Unknown");' },
+    { name: 'pick returns the value when the key exists',
+      code: 'expect_eq(pick(["theme" => "dark"], "theme", "light"), "dark");' },
+    { name: 'pick falls back to the default on a missing key',
+      code: 'expect_eq(pick([], "theme", "light"), "light");' },
+    { name: 'pick treats a null value like a missing key',
+      code: 'expect_eq(pick(["theme" => null], "theme", "light"), "light");' },
+  ],
+
+  solution: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+function get_city(?User $user): string {
+    return $user?->address?->city ?? "Unknown";
+}
+
+function pick(array $data, string $key, string $default): string {
+    return $data[$key] ?? $default;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>PHP</th></tr>
+  <tr><td>Absent value</td><td><code>nullptr</code> / <code>std::nullopt</code></td><td><code>null</code> (one for everything)</td></tr>
+  <tr><td>Optional type</td><td><code>std::optional&lt;T&gt;</code></td><td><code>?T</code></td></tr>
+  <tr><td>Default fallback</td><td><code>opt.value_or(def)</code></td><td><code>$x ?? $def</code></td></tr>
+  <tr><td>Chained access</td><td><code>if (p &amp;&amp; p-&gt;q &amp;&amp; p-&gt;q-&gt;r)</code></td><td><code>$p?-&gt;q?-&gt;r</code></td></tr>
+  <tr><td>Presence test</td><td><code>opt.has_value()</code></td><td><code>isset($x)</code></td></tr>
+  <tr><td>Assign if null</td><td>—</td><td><code>$x ??= $def;</code></td></tr>
+</table>
+<p>The deep difference: in C++, dereferencing a null pointer or an empty
+optional is undefined behavior — the language trusts you to have checked.
+In PHP, <code>?-&gt;</code> makes the null case a <em>defined result</em>
+(null propagates), and <code>??</code> then converts that null into your
+fallback. The pattern <code>$a?-&gt;b?-&gt;c ?? $default</code> is the safe
+navigation idiom you will see everywhere in modern PHP; <code>isset()</code>
+is <code>has_value()</code> when you need the boolean rather than the
+value.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

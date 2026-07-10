@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Vectors</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Vectors",
+
+  intro: `
+<p>Rust's <code>Vec&lt;T&gt;</code> is your <code>number[]</code>: a growable,
+heap-allocated list. The literal syntax is the <code>vec!</code> macro —
+<code>vec![1, 2, 3]</code> — and <code>.push()</code>, <code>.len()</code>,
+and <code>for</code> loops all feel familiar. The surprise comes from
+Lesson 1's rule applied to collections: in TypeScript,
+<code>const scores = [1, 2]</code> happily lets you <code>scores.push(3)</code>.
+In Rust it's the reverse gotcha — calling <code>.push()</code> requires the
+<em>binding</em> to be <code>let mut</code>, because mutating the contents
+counts as mutation.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>const v: number[] = [1, 2, 3];</code></td><td><code>let v: Vec&lt;i32&gt; = vec![1, 2, 3];</code></td></tr>
+  <tr><td><code>v.push(4);</code> (works on <code>const</code>!)</td><td><code>v.push(4);</code> — only if <code>let mut v</code></td></tr>
+  <tr><td><code>v.length</code></td><td><code>v.len()</code></td></tr>
+  <tr><td><code>v[99]</code> → <code>undefined</code>, silently</td><td><code>v.get(99)</code> → <code>None</code>, as a type</td></tr>
+  <tr><td><code>for (const x of v)</code></td><td><code>for x in &amp;v</code></td></tr>
+</table>
+<p>Indexing is honest, too. TypeScript's <code>v[99]</code> quietly hands you
+<code>undefined</code> typed as <code>number</code>. Rust's <code>v[99]</code>
+panics, and the safe alternative <code>v.get(99)</code> returns an
+<code>Option</code> — the "might not be there" case becomes a value you must
+handle, not a runtime surprise. Iteration borrows: <code>for x in &amp;v</code>
+loops over references without consuming the vector, so you can keep using
+<code>v</code> afterwards.</p>`,
+
+  typescript: `const scores: number[] = [10, 20, 30];
+scores.push(40);          // fine — const doesn't stop mutation!
+
+function makeScores(): number[] {
+  return [10, 20, 30];
+}
+
+function append(arr: number[], x: number): void {
+  arr.push(x);            // mutates the caller's array, invisibly
+}
+
+function total(arr: number[]): number {
+  return arr.reduce((sum, n) => sum + n, 0);
+}
+
+console.log(scores.length);   // 4
+console.log(scores[99]);      // undefined — no warning, no error`,
+
+  task: `
+<p>Port the array helpers to <code>Vec</code>:</p>
+<ol>
+  <li><code>make_scores() -&gt; Vec&lt;i32&gt;</code> — return the vector
+      <code>[10, 20, 30]</code> using the <code>vec!</code> macro.</li>
+  <li><code>append(v: &amp;mut Vec&lt;i32&gt;, x: i32)</code> — push
+      <code>x</code> onto the vector. Unlike the TypeScript version, the
+      <code>&amp;mut</code> in the signature announces the mutation to every
+      caller.</li>
+  <li><code>total(v: &amp;[i32]) -&gt; i32</code> — sum the elements with
+      <code>.iter().sum()</code> (Rust's <code>reduce</code> for the common
+      case).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. make_scores: return vec![10, 20, 30].
+fn make_scores() -> Vec<i32> {
+    todo!()
+}
+
+// 2. append: push x onto the vector.
+//    The &mut is the whole story: callers can see this function mutates.
+fn append(v: &mut Vec<i32>, x: i32) {
+    todo!()
+}
+
+// 3. total: sum the slice. .iter().sum() does what reduce((s, n) => s + n, 0) does.
+fn total(v: &[i32]) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /vec!\s*\[/, message: "Build the vector with the vec! macro" },
+    { pattern: /\.push\(/, message: "Use .push() inside append" },
+    { pattern: /Vec<i32>/, message: "Keep the Vec<i32> types in the signatures" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [10, 20, 30]",
+      code: "assert_eq!(make_scores(), vec![10, 20, 30]);" },
+    { name: "append pushes onto the caller's vector",
+      code: "let mut v = make_scores();\nappend(&mut v, 40);\nassert_eq!(v, vec![10, 20, 30, 40]);\nassert_eq!(v.len(), 4);" },
+    { name: "append works repeatedly",
+      code: "let mut v = vec![1];\nappend(&mut v, 2);\nappend(&mut v, 3);\nassert_eq!(v, vec![1, 2, 3]);" },
+    { name: "total(&make_scores()) is 60",
+      code: "assert_eq!(total(&make_scores()), 60);" },
+    { name: "total of an empty slice is 0",
+      code: "assert_eq!(total(&[]), 0);" },
+  ],
+
+  solution: `fn make_scores() -> Vec<i32> {
+    vec![10, 20, 30]
+}
+
+fn append(v: &mut Vec<i32>, x: i32) {
+    v.push(x);
+}
+
+fn total(v: &[i32]) -> i32 {
+    v.iter().sum()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>List type</td><td><code>number[]</code> / <code>Array&lt;number&gt;</code></td><td><code>Vec&lt;i32&gt;</code></td></tr>
+  <tr><td>Literal</td><td><code>[1, 2, 3]</code></td><td><code>vec![1, 2, 3]</code></td></tr>
+  <tr><td>Append</td><td><code>v.push(4)</code> — even on <code>const</code></td><td><code>v.push(4)</code> — binding must be <code>mut</code></td></tr>
+  <tr><td>Length</td><td><code>v.length</code></td><td><code>v.len()</code></td></tr>
+  <tr><td>Safe index</td><td><code>v[i]</code> → <code>T | undefined</code> (lies as <code>T</code>)</td><td><code>v.get(i)</code> → <code>Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td>Sum</td><td><code>v.reduce((s, n) =&gt; s + n, 0)</code></td><td><code>v.iter().sum()</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (const x of v)</code></td><td><code>for x in &amp;v</code></td></tr>
+</table>
+<p>The deeper shift: in TypeScript, whether <code>append(arr, x)</code>
+mutates its argument is a documentation problem. In Rust it's in the type —
+<code>&amp;mut Vec&lt;i32&gt;</code> tells every caller (and the compiler)
+that this function writes. Passing <code>&amp;v</code> where <code>&amp;mut</code>
+is required is a compile error, not a code-review comment.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

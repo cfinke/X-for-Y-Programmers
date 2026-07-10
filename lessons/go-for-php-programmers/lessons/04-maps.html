@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Maps</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Maps",
+
+  intro: `
+<p>A Go <code>map[K]V</code> is the everyday key/value structure — the rough
+equivalent of a PHP associative array, but with static key and value types
+baked in. Create one with <code>make(map[K]V)</code> or a literal, then read
+and write with <code>m[k]</code>.</p>
+<table>
+  <tr><th>PHP</th><th>Go</th></tr>
+  <tr><td><code>$m = [];</code></td><td><code>m := make(map[string]int)</code></td></tr>
+  <tr><td><code>["a" => 1, "b" => 2]</code></td><td><code>map[string]int{"a": 1, "b": 2}</code></td></tr>
+  <tr><td><code>$m["a"] = 1;</code></td><td><code>m["a"] = 1</code></td></tr>
+  <tr><td><code>$m["a"] ?? 0</code></td><td><code>m["a"]</code> (missing key gives the zero value)</td></tr>
+  <tr><td><code>array_key_exists("a", $m)</code></td><td><code>v, ok := m["a"]</code> (comma-ok)</td></tr>
+  <tr><td><code>unset($m["a"]);</code></td><td><code>delete(m, "a")</code></td></tr>
+</table>
+<p>The big difference from PHP is the <em>comma-ok</em> read. Reading a
+missing key never throws and never gives <code>null</code> — you get the
+value type's zero value (<code>0</code>, <code>""</code>, …). To tell "key is
+absent" apart from "key is present with a zero value", use the two-result form
+<code>v, ok := m[k]</code>, where <code>ok</code> is a <code>bool</code>. Also
+note <code>range</code> over a map visits pairs in <strong>random</strong>
+order, so sort the keys yourself when order matters.</p>`,
+
+  php: `function tally(array $words): array {
+  $counts = [];
+  foreach ($words as $w) {
+    $counts[$w] = ($counts[$w] ?? 0) + 1;
+  }
+  return $counts;
+}
+
+// "comma-ok" has no direct equivalent — check membership separately:
+$present = array_key_exists("the", $counts);`,
+
+  task: `
+<p>Write these package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>Tally(words []string) map[string]int</code> counts how many times
+      each string appears. Start with <code>make(map[string]int)</code> and
+      <code>range</code> the slice, doing <code>counts[w]++</code> — reading a
+      missing key gives <code>0</code>, so the increment just works.</li>
+  <li><code>Lookup(m map[string]int, key string) (int, bool)</code> returns the
+      value and whether the key was present, using the comma-ok form
+      <code>v, ok := m[key]</code>.</li>
+  <li><code>Keys(m map[string]int) []string</code> returns the keys
+      <strong>sorted</strong> (<code>range</code> is unordered, so collect then
+      <code>sort.Strings</code>).</li>
+  <li><code>Remove(m map[string]int, key string) int</code> deletes
+      <code>key</code> with <code>delete(m, key)</code> and returns the new
+      <code>len(m)</code>. Deleting an absent key is a no-op, not an error.</li>
+</ol>`,
+
+  starter: `func Tally(words []string) map[string]int {
+	return nil // TODO
+}
+
+func Lookup(m map[string]int, key string) (int, bool) {
+	return 0, false // TODO
+}
+
+func Keys(m map[string]int) []string {
+	return nil // TODO
+}
+
+func Remove(m map[string]int, key string) int {
+	return 0 // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /make\(map\[/, message: "Create the counter with make(map[string]int)" },
+    { pattern: /,\s*ok\s*:=/, message: "Use the comma-ok form (v, ok := m[key]) in Lookup" },
+    { pattern: /delete\(/, message: "Use delete(m, key) in Remove" },
+  ],
+
+  tests: [
+    { name: "Tally counts repeats", code: "\t\texpect_eq(Tally([]string{\"a\", \"b\", \"a\"}), map[string]int{\"a\": 2, \"b\": 1})" },
+    { name: "Tally of the same word three times", code: "\t\texpect_eq(Tally([]string{\"go\", \"go\", \"go\"}), map[string]int{\"go\": 3})" },
+    { name: "Lookup finds a present key", code: "\t\tv, ok := Lookup(map[string]int{\"x\": 5}, \"x\")\n\t\texpect_eq(v, 5)\n\t\texpect_true(ok)" },
+    { name: "Lookup reports a missing key", code: "\t\tv, ok := Lookup(map[string]int{\"x\": 5}, \"y\")\n\t\texpect_eq(v, 0)\n\t\texpect_true(!ok)" },
+    { name: "Keys returns sorted keys", code: "\t\texpect_eq(Keys(map[string]int{\"b\": 1, \"a\": 2, \"c\": 3}), []string{\"a\", \"b\", \"c\"})" },
+    { name: "Remove deletes and returns len", code: "\t\tm := map[string]int{\"a\": 1, \"b\": 2}\n\t\texpect_eq(Remove(m, \"a\"), 1)" },
+    { name: "Remove of an absent key is a no-op", code: "\t\texpect_eq(Remove(map[string]int{\"a\": 1}, \"zzz\"), 1)" },
+  ],
+
+  solution: `func Tally(words []string) map[string]int {
+	counts := make(map[string]int)
+	for _, w := range words {
+		counts[w]++
+	}
+	return counts
+}
+
+func Lookup(m map[string]int, key string) (int, bool) {
+	v, ok := m[key]
+	return v, ok
+}
+
+func Keys(m map[string]int) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func Remove(m map[string]int, key string) int {
+	delete(m, key)
+	return len(m)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Go</th></tr>
+  <tr><td>Create empty</td><td><code>[]</code></td><td><code>make(map[string]int)</code></td></tr>
+  <tr><td>Literal</td><td><code>["a" => 1]</code></td><td><code>map[string]int{"a": 1}</code></td></tr>
+  <tr><td>Read missing key</td><td><code>null</code> (with a warning)</td><td>zero value (<code>0</code>, <code>""</code>, …)</td></tr>
+  <tr><td>Membership</td><td><code>array_key_exists("a", $m)</code></td><td><code>_, ok := m["a"]</code></td></tr>
+  <tr><td>Delete</td><td><code>unset($m["a"])</code></td><td><code>delete(m, "a")</code></td></tr>
+  <tr><td>Size</td><td><code>count($m)</code></td><td><code>len(m)</code></td></tr>
+  <tr><td>Iterate</td><td>insertion order</td><td><code>range</code> — random order</td></tr>
+</table>
+<p>Two habits worth internalizing. First, maps are reference types: passing one to
+a function and calling <code>delete</code> or assigning a key mutates the
+caller's map — unlike a PHP array, which is copied by value when passed to a
+function or assigned to another variable. Second, the zero-value read is a
+feature, not a footgun — <code>counts[w]++</code> works on a brand-new key
+because the missing read yields <code>0</code> first. Just reach for
+comma-ok whenever "absent" and "zero" need to be distinguished. Finally, never
+rely on <code>range</code> order; Go deliberately randomizes it, so sort keys (or
+values) when you need determinism.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

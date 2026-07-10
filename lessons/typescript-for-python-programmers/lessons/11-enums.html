@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Literal Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Literal Types",
+
+  intro: `
+<p>Python gives you two ways to say "one of these fixed values":
+<code>enum.Enum</code> (real objects, with <code>.value</code> to reach the
+payload) and <code>typing.Literal["pending", "shipped"]</code> (a pure typing
+construct over plain strings). TypeScript has the same pair. A string
+<code>enum</code> is the <code>Enum</code> counterpart — with one ergonomic
+win: <code>OrderStatus.Pending</code> <em>is</em> the string
+<code>"pending"</code> at runtime, no <code>.value</code> unwrapping.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>class OrderStatus(Enum):</code><br><code>&nbsp;&nbsp;PENDING = "pending"</code></td><td><code>enum OrderStatus {</code><br><code>&nbsp;&nbsp;Pending = "pending",</code><br><code>}</code></td></tr>
+  <tr><td><code>OrderStatus.PENDING.value</code></td><td><code>OrderStatus.Pending</code> (no .value needed)</td></tr>
+  <tr><td><code>Literal["pending", "shipped"]</code></td><td><code>"pending" | "shipped"</code></td></tr>
+  <tr><td><code>Status = Literal[...]</code> (alias)</td><td><code>type Status = "pending" | ...;</code></td></tr>
+</table>
+<p>The Literal counterpart is the <strong>string-literal union</strong>:
+<code>type Status = "pending" | "shipped"</code> — a union (Lesson 7) whose
+members are exact strings. Modern TypeScript style generally
+<em>prefers literal unions</em> over enums: they are erased types over plain
+strings (zero runtime code, like <code>Literal</code>), they need no imports
+at call sites, and any matching string just works. Enums earn their keep
+mainly when you want a runtime object to iterate or attach the values to.
+Learn both, default to literal unions.</p>`,
+
+  python: `from enum import Enum
+from typing import Literal
+
+class OrderStatus(Enum):
+    PENDING = "pending"
+    SHIPPED = "shipped"
+    DELIVERED = "delivered"
+
+print(OrderStatus.PENDING.value)  # "pending" — note the .value
+
+# The lighter-weight alternative: plain strings, checked by the type
+Status = Literal["pending", "shipped", "delivered"]
+
+def status_label(status: Status) -> str:
+    if status == "pending":
+        return "Order received"
+    if status == "shipped":
+        return "On the way"
+    return "Delivered"
+
+print(status_label("shipped"))  # mypy rejects status_label("shiped")`,
+
+  task: `
+<p>Port both flavors:</p>
+<ol>
+  <li>Define a string enum <code>enum OrderStatus</code> with members
+      <code>Pending = "pending"</code>, <code>Shipped = "shipped"</code>, and
+      <code>Delivered = "delivered"</code>. (Members are conventionally
+      PascalCase, not SCREAMING_CASE.)</li>
+  <li>Define the Literal-style alias:
+      <code>type Status = "pending" | "shipped" | "delivered";</code></li>
+  <li>Write <code>statusLabel(status: Status): string</code> mapping
+      <code>"pending"</code> → <code>"Order received"</code>,
+      <code>"shipped"</code> → <code>"On the way"</code>, and
+      <code>"delivered"</code> → <code>"Delivered"</code>.</li>
+</ol>
+<p>Then try calling <code>statusLabel("shiped")</code> — the compiler catches
+the typo, exactly as pyright does with <code>Literal</code>. Note the tests
+can see <code>OrderStatus</code> (enums compile to real runtime objects) but
+not <code>Status</code> (type aliases are erased, like every annotation).</p>`,
+
+  starter: `// 1. TODO: turn this into a string enum with Pending, Shipped, Delivered.
+//    Python: class OrderStatus(Enum): PENDING = "pending" ...
+enum OrderStatus {
+  Pending = "pending",
+  // TODO: Shipped and Delivered
+}
+
+// 2. TODO: the Literal["pending", "shipped", "delivered"] equivalent:
+type Status = "pending";  // TODO: complete the union with | pipes
+
+// 3. TODO: map each status to its label:
+//    pending -> "Order received", shipped -> "On the way",
+//    delivered -> "Delivered"
+function statusLabel(status: Status): string {
+  return "";
+}
+`,
+
+  exportNames: ["OrderStatus", "statusLabel"],
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus/, message: "Define an enum named OrderStatus" },
+    { pattern: /"\w+"\s*\|\s*"/, message: 'Define a string-literal union like "pending" | "shipped" | ... (the Literal[...] equivalent)' },
+    { pattern: /type\s+Status\s*=/, message: "Name the literal union with a type alias: type Status = ..." },
+  ],
+
+  tests: [
+    { name: 'OrderStatus.Pending is the string "pending" (no .value!)', run: (x) => expectEqual(x.OrderStatus.Pending, "pending") },
+    { name: 'OrderStatus.Shipped and OrderStatus.Delivered hold their strings', run: (x) => {
+        expectEqual(x.OrderStatus.Shipped, "shipped");
+        expectEqual(x.OrderStatus.Delivered, "delivered");
+      } },
+    { name: 'statusLabel("pending") → "Order received"', run: (x) => expectEqual(x.statusLabel("pending"), "Order received") },
+    { name: 'statusLabel("shipped") → "On the way"', run: (x) => expectEqual(x.statusLabel("shipped"), "On the way") },
+    { name: 'statusLabel("delivered") → "Delivered"', run: (x) => expectEqual(x.statusLabel("delivered"), "Delivered") },
+  ],
+
+  solution: `// The enum.Enum counterpart — a real runtime object:
+enum OrderStatus {
+  Pending = "pending",
+  Shipped = "shipped",
+  Delivered = "delivered",
+}
+
+// The Literal[...] counterpart — erased at runtime, usually preferred:
+type Status = "pending" | "shipped" | "delivered";
+
+function statusLabel(status: Status): string {
+  if (status === "pending") {
+    return "Order received";
+  }
+  if (status === "shipped") {
+    return "On the way";
+  }
+  return "Delivered";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Enum declaration</td><td><code>class OrderStatus(Enum):</code></td><td><code>enum OrderStatus { }</code></td></tr>
+  <tr><td>Member with payload</td><td><code>PENDING = "pending"</code></td><td><code>Pending = "pending",</code></td></tr>
+  <tr><td>Getting the value</td><td><code>OrderStatus.PENDING.value</code></td><td><code>OrderStatus.Pending</code> — already the string</td></tr>
+  <tr><td>Literal set of strings</td><td><code>Literal["a", "b"]</code></td><td><code>"a" | "b"</code></td></tr>
+  <tr><td>Named alias</td><td><code>Status = Literal["a", "b"]</code></td><td><code>type Status = "a" | "b";</code></td></tr>
+  <tr><td>Runtime footprint</td><td>Enum: real class; Literal: none</td><td>enum: real object; literal union: none (erased)</td></tr>
+</table>
+<p>Recommendation: reach for literal unions first — they are the idiomatic
+TypeScript spelling of <code>Literal</code>, cost nothing at runtime, and
+compose beautifully with narrowing (a <code>switch</code> on a literal union
+can be checked for exhaustiveness, which pays off big in Lesson 17's
+discriminated unions). Use an <code>enum</code> when you genuinely need the
+runtime object — say, to loop over all statuses or expose them as a value to
+JavaScript callers.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

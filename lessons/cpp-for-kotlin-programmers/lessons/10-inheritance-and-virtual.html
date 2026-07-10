@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance & Virtual Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Virtual Functions",
+
+  intro: `
+<p>Kotlin doesn't default to "every method is virtual" the way some languages
+do — it defaults to the opposite. Classes and member functions are
+<code>final</code> unless you mark them <code>open</code> (or they're already
+<code>abstract</code>), so Kotlin programmers already have the right instinct:
+dispatch is not automatic, you opt in. The difference is just the spelling.
+Kotlin marks the base method <code>open</code> (or <code>abstract</code>) and
+the override with <code>override</code>; C++ marks the base method
+<code>virtual</code> and the override with <code>override</code> too — same
+keyword, same job.</p>
+<table>
+  <tr><th>Kotlin</th><th>C++</th></tr>
+  <tr><td><code>class Dog(name: String) : Animal(name)</code></td><td><code>class Dog : public Animal {}</code></td></tr>
+  <tr><td><code>open fun speak(): String { … }</code></td><td><code>virtual std::string speak() const</code></td></tr>
+  <tr><td><code>override fun speak(): String { … }</code></td><td><code>std::string speak() const override</code></td></tr>
+  <tr><td><code>abstract fun area(): Double</code></td><td><code>virtual double area() const = 0;</code></td></tr>
+  <tr><td><code>abstract class Shape</code></td><td>class with a pure virtual (<code>= 0</code>)</td></tr>
+</table>
+<p>Three rules to carry over. First, <code>virtual</code> in the base is what
+enables dynamic dispatch, the same role Kotlin's <code>open</code>/<code>abstract</code>
+plays; write <code>override</code> in the derived class so the compiler checks
+you actually matched a base signature — Kotlin's <code>override</code> keyword
+does the same check. Second, a pure virtual (<code>= 0</code>) makes the class
+abstract — you cannot instantiate it, exactly like Kotlin's <code>abstract
+class</code>. Third, a base class with any virtual function needs a
+<code>virtual ~Base() = default;</code> destructor so deleting through a base
+pointer cleans up the derived part; Kotlin's garbage collector makes this a
+non-issue there, but C++ needs it spelled out.</p>`,
+
+  kotlin: `abstract class Animal(protected val name: String) {
+    abstract fun speak(): String
+    fun describe(): String = "\$name says \${speak()}"
+}
+
+class Dog(name: String) : Animal(name) {
+    override fun speak(): String = "Woof"
+}
+class Cat(name: String) : Animal(name) {
+    override fun speak(): String = "Meow"
+}
+
+fun announce(a: Animal): String {
+    return a.describe()
+}`,
+
+  task: `
+<p>Model the same hierarchy in C++.</p>
+<ol>
+  <li>An abstract base <code>Animal</code> holding a <code>std::string name</code>
+      (constructor takes it). Give it a pure virtual
+      <code>virtual std::string speak() const = 0;</code> and a non-virtual
+      <code>describe()</code> returning <code>name + " says " + speak()</code>.
+      Add <code>virtual ~Animal() = default;</code>.</li>
+  <li><code>Dog</code> and <code>Cat</code> deriving <code>public Animal</code>,
+      each with a constructor forwarding the name to <code>Animal</code> and an
+      <code>override</code> of <code>speak()</code> returning <code>"Woof"</code>
+      / <code>"Meow"</code>.</li>
+  <li>A free function <code>announce(const Animal&amp; a)</code> returning
+      <code>a.describe()</code> — proving dispatch works through a
+      <code>Base&amp;</code>.</li>
+</ol>`,
+
+  starter: `class Animal {
+public:
+  explicit Animal(std::string name) : name(std::move(name)) {}
+  virtual ~Animal() = default;
+  // TODO: make speak() a pure virtual (= 0) so Animal is abstract
+  virtual std::string speak() const { return ""; }
+  std::string describe() const {
+    return ""; // TODO: return name + " says " + speak()
+  }
+protected:
+  std::string name;
+};
+
+class Dog : public Animal {
+public:
+  explicit Dog(std::string name) : Animal(std::move(name)) {}
+  // TODO: override speak() to return "Woof"
+  std::string speak() const override { return ""; }
+};
+
+class Cat : public Animal {
+public:
+  explicit Cat(std::string name) : Animal(std::move(name)) {}
+  // TODO: override speak() to return "Meow"
+  std::string speak() const override { return ""; }
+};
+
+std::string announce(const Animal& a) {
+  return ""; // TODO: return a.describe()
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*0\s*;/, message: "Give Animal a pure virtual method (= 0) so it is abstract" },
+    { pattern: /\boverride\b/, message: "Mark the derived speak() with override" },
+    { pattern: /virtual\s+~Animal/, message: "Give the base a virtual destructor" },
+  ],
+
+  tests: [
+    { name: "Dog speaks Woof", code: "    Dog d(\"Rex\");\n    expect_eq(d.speak(), std::string(\"Woof\"));" },
+    { name: "Cat speaks Meow", code: "    Cat c(\"Tom\");\n    expect_eq(c.speak(), std::string(\"Meow\"));" },
+    { name: "describe uses the override", code: "    Dog d(\"Rex\");\n    expect_eq(d.describe(), std::string(\"Rex says Woof\"));" },
+    { name: "announce dispatches through Animal&", code: "    Cat c(\"Tom\");\n    expect_eq(announce(c), std::string(\"Tom says Meow\"));" },
+    { name: "polymorphism through a base pointer", code: "    std::unique_ptr<Animal> p = std::make_unique<Dog>(\"Fido\");\n    expect_eq(p->describe(), std::string(\"Fido says Woof\"));" },
+  ],
+
+  solution: `class Animal {
+public:
+  explicit Animal(std::string name) : name(std::move(name)) {}
+  virtual ~Animal() = default;
+  virtual std::string speak() const = 0;
+  std::string describe() const {
+    return name + " says " + speak();
+  }
+protected:
+  std::string name;
+};
+
+class Dog : public Animal {
+public:
+  explicit Dog(std::string name) : Animal(std::move(name)) {}
+  std::string speak() const override { return "Woof"; }
+};
+
+class Cat : public Animal {
+public:
+  explicit Cat(std::string name) : Animal(std::move(name)) {}
+  std::string speak() const override { return "Meow"; }
+};
+
+std::string announce(const Animal& a) {
+  return a.describe();
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+  <tr><td>Extend a class</td><td><code>class Dog(name: String) : Animal(name)</code></td><td><code>class Dog : public Animal</code></td></tr>
+  <tr><td>Enable dispatch</td><td><code>open</code>/<code>abstract</code> in the base</td><td><code>virtual</code> in the base</td></tr>
+  <tr><td>Override</td><td><code>override fun m() {}</code></td><td><code>m() const override</code></td></tr>
+  <tr><td>Abstract method</td><td><code>abstract fun m(): T</code></td><td><code>virtual T m() const = 0;</code></td></tr>
+  <tr><td>Call super ctor</td><td><code>: Animal(name)</code> (primary ctor delegation)</td><td><code>: Animal(name)</code> init list</td></tr>
+  <tr><td>Base handle</td><td><code>a: Animal</code></td><td><code>const Animal&amp;</code> / <code>Animal*</code></td></tr>
+</table>
+<p>The gotcha for Kotlin refugees: forget <code>virtual</code> and
+<code>announce</code> would call <code>Animal::speak</code> — except here it
+cannot, because <code>speak</code> is pure, so the class would not compile as
+concrete at all. In a hierarchy where the base <em>did</em> supply a body,
+dropping <code>virtual</code> silently gives you static dispatch and the wrong
+answer — the same trap as forgetting <code>open</code> in Kotlin, except
+Kotlin's compiler refuses to let you <code>override</code> a non-open member
+at all, while C++ happily compiles a "hiding" method with no complaint. Note
+also that value semantics matter: assigning a <code>Dog</code> into an
+<code>Animal</code> variable <em>slices</em> off the derived part.
+Polymorphism in C++ only works through a reference (<code>Animal&amp;</code>)
+or a pointer (<code>Animal*</code> / <code>std::unique_ptr&lt;Animal&gt;</code>),
+never a by-value base — there's no equivalent trap in Kotlin, where objects
+are always accessed through a reference under the hood.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

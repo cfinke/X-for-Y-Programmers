@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>PHP will feel like a cousin of Ruby: dynamically typed, assignment is
+declaration, <code>snake_case</code> everywhere. The first visible difference
+is the sigil — Ruby reserves <code>$</code> for globals, but in PHP
+<em>every</em> variable wears it: <code>$name</code>, <code>$age</code>, local
+or not. And where Ruby has a family of number-ish classes, PHP has plain
+<code>int</code> and <code>float</code> scalar types.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>name = "Ada"</code></td><td><code>$name = "Ada";</code> ($ on everything, ; required)</td></tr>
+  <tr><td><code>Integer</code>, <code>Float</code></td><td><code>int</code>, <code>float</code></td></tr>
+  <tr><td><code>def f(x)</code> … <code>end</code></td><td><code>function f(int $x): string { … }</code></td></tr>
+  <tr><td><code>"#{name} is #{age}"</code></td><td><code>"$name is $age"</code></td></tr>
+  <tr><td>last expression is returned</td><td><code>return</code> is <strong>mandatory</strong> — no return means <code>null</code></td></tr>
+</table>
+<p>Those signature types are <em>optional</em> — leave them off and PHP is as
+loose as Ruby — but when present they are <em>enforced at runtime</em>: pass a
+wrong type and PHP throws a <code>TypeError</code> the moment the function is
+called. The critical habit change: PHP does <strong>not</strong> return the
+last expression. A function body that ends without <code>return</code> quietly
+returns <code>null</code> — the single most common bug Rubyists write in their
+first week of PHP.</p>`,
+
+  ruby: `name = "Ada"
+age = 36
+
+# Ruby: the last expression IS the return value.
+def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age # implicit return
+end
+
+puts describe_user(name, age) # Ada is 36 years old
+puts birthday(age)            # 37`,
+
+  task: `
+<p>Rewrite the Ruby as PHP:</p>
+<ol>
+  <li>Write <code>describe_user</code> taking <code>string $name</code> and
+      <code>int $age</code> (type before the parameter, C-style) with a
+      <code>: string</code> return type, returning
+      <code>"Ada is 36 years old"</code>-style text. Use double-quote
+      interpolation — <code>"$name is $age years old"</code> is Ruby's
+      <code>#{...}</code> minus the braces.</li>
+  <li>Write <code>birthday</code> taking <code>int $age</code>, returning
+      <code>int</code>: copy into a local variable, add 1 with
+      <code>+=</code>, and — this is the part Ruby muscle memory will fight —
+      <strong>explicitly <code>return</code> it</strong>. Leaving the value as
+      the last expression returns <code>null</code>.</li>
+</ol>
+<p>Keep the <code>&lt;?php</code> tag at the top. Every variable needs its
+<code>$</code>, every statement its <code>;</code>.</p>`,
+
+  starter: `<?php
+
+// 1. describe_user: string $name and int $age in, string out.
+//    Ruby: "#{name} is #{age} years old"  ->  PHP: "$name is $age years old"
+//    Don't forget the explicit return!
+function describe_user(string $name, int $age): string {
+    throw new Exception("TODO: implement describe_user");
+}
+
+// 2. birthday: assign to a local ($ sigil!), += 1, and return it.
+function birthday(int $age): int {
+    throw new Exception("TODO: implement birthday");
+}
+`,
+
+  requirements: [
+    { pattern: /function\s+describe_user\s*\(\s*string\s+\$name\s*,\s*int\s+\$age\s*\)\s*:\s*string/, message: "Define describe_user(string $name, int $age): string with full type declarations" },
+    { pattern: /"\$\w+/, message: "Build the string with double-quote interpolation (\"$name ...\"), not concatenation" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: 'expect_eq(describe_user("Ada", 36), "Ada is 36 years old");' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: 'expect_eq(describe_user("Grace", 52), "Grace is 52 years old");' },
+    { name: "birthday(36) returns 37 (an explicit return, not null!)",
+      code: "expect_eq(birthday(36), 37);" },
+    { name: "birthday(0) returns 1",
+      code: "expect_eq(birthday(0), 1);" },
+  ],
+
+  solution: `<?php
+
+function describe_user(string $name, int $age): string {
+    return "$name is $age years old";
+}
+
+function birthday(int $age): int {
+    $next = $age;
+    $next += 1;
+    return $next;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Local variable</td><td><code>x = 1</code></td><td><code>$x = 1;</code> ($ on every variable)</td></tr>
+  <tr><td>Global variable</td><td><code>$x</code> (the $ means global)</td><td><code>$x</code> is just a variable; globals need the <code>global</code> keyword</td></tr>
+  <tr><td>Numbers</td><td><code>Integer</code> / <code>Float</code> objects</td><td><code>int</code> / <code>float</code> scalars</td></tr>
+  <tr><td>Function definition</td><td><code>def f(x)</code> … <code>end</code></td><td><code>function f(int $x): string { … }</code></td></tr>
+  <tr><td>Return value</td><td>last expression, implicitly</td><td><code>return</code> required — otherwise <code>null</code></td></tr>
+  <tr><td>Interpolation</td><td><code>"#{name}!"</code></td><td><code>"$name!"</code> (double quotes only)</td></tr>
+</table>
+<p>PHP's type declarations sit between Ruby's duck typing and Sorbet: they're
+optional per parameter, but wherever you write one, the engine checks it at
+call time and throws a <code>TypeError</code> on mismatch — no separate
+checker to run, no <code>sig</code> block. This course writes them everywhere,
+because modern PHP does.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

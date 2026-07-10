@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>There's a question PHP's request-scoped garbage collector never asks you:
+if a function returns a string, how long is that string valid? In PHP the
+answer is always "as long as anyone holds it" — the engine refcounts every
+value and cleans up when the request ends. So you can return
+<code>$a</code> from any function, stash it anywhere, and never think about
+where its memory came from. Rust has no GC. When a function returns a
+<em>reference</em> — a <code>&amp;str</code> pointing into someone else's
+data — the compiler must prove that reference can't outlive the data it
+points into. Otherwise you'd have PHP's impossible bug: a variable whose
+contents were freed out from under it.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>return $a;</code> — the engine keeps it alive</td><td><code>-&gt; &amp;'a str</code> — you say whose data it borrows from</td></tr>
+  <tr><td>Values live as long as the GC decides</td><td>Borrows live no longer than their owner</td></tr>
+  <tr><td>No syntax for "how long is this valid?"</td><td><code>&lt;'a&gt;</code> — a lifetime parameter, like <code>&lt;T&gt;</code> but for time</td></tr>
+  <tr><td>N/A — the question never comes up</td><td>Usually inferred (<em>elision</em>); written only when ambiguous</td></tr>
+</table>
+<p>A lifetime is just a <em>name</em> for that answer. In
+<code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>,
+the <code>'a</code> says: "the returned reference borrows from <code>a</code>
+or <code>b</code>, so it stays valid only while both of them do." Nothing
+runs at runtime — it's a promise the compiler checks, like a type. And most
+of the time you don't write it: when a function takes <em>one</em> reference
+and returns one, the compiler fills the lifetime in automatically (the
+<em>elision</em> rules). You only reach for <code>&lt;'a&gt;</code> when
+there are two inputs and the compiler can't tell which one the output
+borrows from.</p>`,
+
+  php: `<?php
+function longest(string $a, string $b): string {
+    // Return by value: the engine refcounts the string out.
+    // It lives for as long as anyone still holds it.
+    return strlen($a) >= strlen($b) ? $a : $b;
+}
+
+function firstWord(string $s): string {
+    $words = preg_split('/\\s+/', trim($s));
+    return $words[0] ?? '';
+}
+
+echo longest("hello", "hi");       // hello
+echo firstWord("hello world");     // hello
+
+// "How long is the returned string valid?" — a question no PHP
+// developer has ever had to ask. The GC owns everything.`,
+
+  task: `
+<p>The same two functions, but returning <em>borrows</em> instead of copies —
+which means answering the compiler's new question:</p>
+<ol>
+  <li><code>longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+      — return whichever string is longer by <code>.len()</code>; on a tie,
+      return <code>a</code> (so compare with <code>&gt;=</code>). Two input
+      references, one returned — the compiler can't guess which it borrows
+      from, so you must name the lifetime <code>'a</code> yourself.</li>
+  <li><code>first_word(s: &amp;str) -&gt; &amp;str</code> — return the first
+      whitespace-separated word, or <code>""</code> if there is none:
+      <code>s.split_whitespace().next().unwrap_or("")</code>. One input
+      reference, so <em>elision</em> applies: no annotation needed at all.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// longest: two input borrows, one comes back out. Name the shared
+// lifetime 'a so the compiler knows the output borrows from the inputs.
+// Longer by .len() wins; on a tie, return a (compare with >=).
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// first_word: one input reference, so elision fills the lifetime in —
+// write it exactly as if lifetimes didn't exist.
+// s.split_whitespace().next() is an Option<&str>; unwrap_or("") defaults it.
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a lifetime parameter: fn longest<'a>(...)" },
+    { pattern: /&'a\s+str/, message: "Annotate the borrowed strings with the lifetime: &'a str" },
+  ],
+
+  tests: [
+    { name: 'longest("hello", "hi") returns "hello"',
+      code: 'assert_eq!(longest("hello", "hi"), "hello");' },
+    { name: 'longest("a", "abcde") returns "abcde"',
+      code: 'assert_eq!(longest("a", "abcde"), "abcde");' },
+    { name: 'on a tie, the first argument wins: longest("left", "same")',
+      code: 'assert_eq!(longest("left", "same"), "left");' },
+    { name: "the returned borrow is valid while its owner lives",
+      code: 'let owned = String::from("the quick brown fox");\nlet result = longest(owned.as_str(), "hi");\nassert_eq!(result, "the quick brown fox");' },
+    { name: 'first_word("hello world") returns "hello"',
+      code: 'assert_eq!(first_word("hello world"), "hello");' },
+    { name: 'first_word("") returns "" and leading spaces are skipped',
+      code: 'assert_eq!(first_word(""), "");\nassert_eq!(first_word("   leading spaces"), "leading");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() >= b.len() { a } else { b }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Returning a value</td><td><code>return $a;</code> — refcounted, always safe</td><td><code>-&gt; String</code> owns; <code>-&gt; &amp;str</code> borrows</td></tr>
+  <tr><td>"How long is it valid?"</td><td>The GC's problem</td><td>The lifetime's answer: <code>&lt;'a&gt;</code></td></tr>
+  <tr><td>Declaring one</td><td>—</td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>One input, one output</td><td>—</td><td>Elision: <code>fn first_word(s: &amp;str) -&gt; &amp;str</code>, no annotation</td></tr>
+  <tr><td>Runtime cost</td><td>Refcount bookkeeping on every value</td><td>Zero — lifetimes are compile-time only</td></tr>
+</table>
+<p>Read <code>'a</code> the way you read <code>T</code> in generics: not a
+specific thing, but a placeholder the caller fills in. It doesn't extend
+anything's life — it only <em>describes</em> the relationship "the output
+lives no longer than the inputs," so the compiler can reject code that would
+use the result after the owner is gone. Most Rust you write looks like
+<code>first_word</code>: no lifetime in sight, elision doing the paperwork.
+When the compiler does ask for one, it's asking the question PHP's GC
+answered for you your whole career — and once you name the answer, it's
+checked forever, for free, at compile time.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

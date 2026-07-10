@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; case</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & case",
+
+  intro: `
+<p>Ruby's conditionals will feel familiar minus the colons: <code>elif</code>
+becomes <code>elsif</code>, and instead of dedenting to close a block you
+write <code>end</code>. Two forms Python half-has, Ruby has fully. The
+<strong>modifier form</strong> — <code>return x if cond</code> — puts the
+condition after any <em>statement</em>; Python's trailing
+<code>x if cond else y</code> only works inside expressions, so
+<code>return x if cond</code> alone is a Python syntax error but everyday
+Ruby. And <code>unless</code> is the <code>if not</code> you were going to
+write anyway: <code>unless logged_in?</code> reads better than
+<code>if !logged_in?</code>.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>elif cond:</code></td><td><code>elsif cond</code></td></tr>
+  <tr><td>dedent closes the block</td><td><code>end</code> closes the block</td></tr>
+  <tr><td><code>if not done:</code></td><td><code>unless done</code></td></tr>
+  <tr><td>— (expressions only)</td><td><code>return x if cond</code> (statement modifier)</td></tr>
+  <tr><td><code>match day: case "sat" | "sun":</code></td><td><code>case day ... when "sat", "sun"</code></td></tr>
+</table>
+<p>Python 3.10's <code>match</code>/<code>case</code> maps to Ruby's much
+older <code>case</code>/<code>when</code>. For now, think of it as the
+simpler cousin: it compares the value against each <code>when</code> using
+smart equality, so arms can be plain values, grouped values
+(<code>when "sat", "sun"</code>), or <em>ranges</em> —
+<code>when 90..</code> matches 90 and up. No destructuring patterns in this
+lesson; the grading table below is where <code>case</code> shines. Bonus:
+<code>if</code> and <code>case</code> are <em>expressions</em> — they return
+their last value, so <code>result = if ... end</code> just works.</p>`,
+
+  python: `def grade(score):
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    elif score >= 60:
+        return "D"
+    else:
+        return "F"
+
+def day_type(day):
+    match day:                 # Python 3.10+
+        case "sat" | "sun":
+            return "weekend"
+        case _:
+            return "weekday"`,
+
+  task: `
+<p>Port the Python — each function exercises a different Ruby form:</p>
+<ol>
+  <li><code>grade(score)</code> — use a <code>case score</code> with
+      <em>range</em> arms: <code>when 90.. then "A"</code>,
+      <code>when 80..89 then "B"</code>, and so on, with
+      <code>else "F"</code>. Let the whole <code>case</code> be the method's
+      last expression.</li>
+  <li><code>day_type(day)</code> — <code>case day</code> with grouped values:
+      <code>when "sat", "sun" then "weekend"</code>, a grouped arm for the
+      five weekdays returning <code>"weekday"</code>, and
+      <code>else "unknown"</code>.</li>
+  <li><code>describe_number(n)</code> — return <code>"zero"</code> using a
+      <em>modifier if</em> guard (<code>return "zero" if n.zero?</code>),
+      then use an <code>if</code>/<code>else</code> <em>expression</em> to
+      produce <code>"positive"</code> or <code>"negative"</code>.</li>
+</ol>`,
+
+  starter: `# 1. case with range arms: when 90.. then "A" / when 80..89 then "B" ...
+def grade(score)
+  raise NotImplementedError, "TODO: implement grade with case/when ranges"
+end
+
+# 2. case with grouped values: when "sat", "sun" then "weekend"
+def day_type(day)
+  raise NotImplementedError, "TODO: implement day_type"
+end
+
+# 3. A modifier-if guard, then an if/else expression.
+def describe_number(n)
+  raise NotImplementedError, "TODO: implement describe_number"
+end
+`,
+
+  requirements: [
+    { pattern: /case\b/, message: "Use a case expression" },
+    { pattern: /when\s+/, message: "Use when arms inside your case" },
+    { pattern: /elsif|unless|if\s/, message: "Use an if (modifier or block form), unless, or elsif" },
+  ],
+
+  tests: [
+    { name: 'grade: 95 is "A", 85 is "B", 72 is "C"',
+      code: '  expect_eq(grade(95), "A")\n  expect_eq(grade(85), "B")\n  expect_eq(grade(72), "C")' },
+    { name: 'grade: 90 exactly is "A" (the 90.. range includes 90)',
+      code: '  expect_eq(grade(90), "A")' },
+    { name: 'grade: 61 is "D" and 42 is "F"',
+      code: '  expect_eq(grade(61), "D")\n  expect_eq(grade(42), "F")' },
+    { name: 'day_type: "sat" and "sun" are "weekend"',
+      code: '  expect_eq(day_type("sat"), "weekend")\n  expect_eq(day_type("sun"), "weekend")' },
+    { name: 'day_type: "wed" is "weekday", "blursday" is "unknown"',
+      code: '  expect_eq(day_type("wed"), "weekday")\n  expect_eq(day_type("blursday"), "unknown")' },
+    { name: 'describe_number: 0 -> "zero", 5 -> "positive", -3 -> "negative"',
+      code: '  expect_eq(describe_number(0), "zero")\n  expect_eq(describe_number(5), "positive")\n  expect_eq(describe_number(-3), "negative")' },
+  ],
+
+  solution: `def grade(score)
+  case score
+  when 90.. then "A"
+  when 80..89 then "B"
+  when 70..79 then "C"
+  when 60..69 then "D"
+  else "F"
+  end
+end
+
+def day_type(day)
+  case day
+  when "sat", "sun" then "weekend"
+  when "mon", "tue", "wed", "thu", "fri" then "weekday"
+  else "unknown"
+  end
+end
+
+def describe_number(n)
+  return "zero" if n.zero?
+
+  if n.positive?
+    "positive"
+  else
+    "negative"
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Else-if</td><td><code>elif cond:</code></td><td><code>elsif cond</code></td></tr>
+  <tr><td>Close a block</td><td>dedent</td><td><code>end</code></td></tr>
+  <tr><td>Guard clause</td><td><code>if cond: return x</code></td><td><code>return x if cond</code></td></tr>
+  <tr><td>Negated if</td><td><code>if not cond:</code></td><td><code>unless cond</code></td></tr>
+  <tr><td>Multiway branch</td><td><code>match</code>/<code>case</code> (3.10+)</td><td><code>case</code>/<code>when</code></td></tr>
+  <tr><td>Grouped arm</td><td><code>case "sat" | "sun":</code></td><td><code>when "sat", "sun"</code></td></tr>
+  <tr><td>Range arm</td><td><code>case s if s &gt;= 90:</code></td><td><code>when 90..</code></td></tr>
+</table>
+<p><code>case</code>/<code>when</code> compares with the <code>===</code>
+("case equality") operator, which is why a Range, a String, or even a class
+can sit in a <code>when</code> arm. And because <code>if</code> and
+<code>case</code> are expressions that return their last value, idiomatic
+Ruby assigns straight from them — no ternary gymnastics required.
+(Ruby 3 also added <code>case</code>/<code>in</code> pattern matching, the
+true <code>match</code> analogue with destructuring — a later topic.)</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

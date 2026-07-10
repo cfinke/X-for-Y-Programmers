@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: References &amp; Pointers</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "References & Pointers",
+
+  intro: `
+<p>In C# there is one way to reach an object: a variable that either holds
+a reference to it or is <code>null</code>. Objects are shared by reference
+automatically, value types are copied, and <code>ref</code>/<code>out</code>
+parameters are the exception rather than the rule — you rarely write an
+address. C++ splits that single idea into two distinct tools, and you choose
+between them.</p>
+<p>A <strong>reference</strong> (<code>T&amp;</code>) is an alias for an existing
+object. It can never be null and never rebound — it <em>is</em> the thing it
+names. Pass <code>int&amp;</code> to let a function write back into the caller's
+variable (much like C#'s <code>ref int</code>); pass <code>const T&amp;</code> to
+look without copying. A <strong>pointer</strong> (<code>T*</code>) is a separate
+variable holding an address. It <em>can</em> be <code>nullptr</code>, so it is
+C++'s way to say "maybe there is an object here" — like C#'s nullable reference
+types or <code>int?</code>.</p>
+<table>
+  <tr><th>C#</th><th>C++</th></tr>
+  <tr><td><code>void F(ref int n)</code> mutates <code>n</code></td><td><code>void f(int&amp; n)</code> mutates <code>n</code></td></tr>
+  <tr><td>read-only object param (<code>in string s</code>)</td><td><code>const std::string&amp; s</code></td></tr>
+  <tr><td><code>int? p</code></td><td><code>const int* p</code> (may be <code>nullptr</code>)</td></tr>
+  <tr><td><code>p ?? fallback</code></td><td><code>p ? *p : fallback</code></td></tr>
+  <tr><td><code>obj.Method()</code></td><td><code>ptr-&gt;method()</code></td></tr>
+</table>
+<p>Getting a pointer: <code>&amp;x</code> takes the address of <code>x</code>.
+Using one: <code>*p</code> reads the pointed-to value, and <code>p-&gt;size()</code>
+is shorthand for <code>(*p).size()</code>. A raw pointer here is just a
+non-owning "maybe" handle — we are not allocating anything, so there is no
+<code>new</code> and no <code>delete</code> in this lesson.</p>`,
+
+  csharp: `// C# mutation across a call boundary uses ref:
+void AddInPlace(ref int n, int delta) {
+    n += delta;
+}
+
+// "maybe an int" is a nullable value type; ?? supplies a fallback:
+int ValueOr(int? p, int fallback) {
+    return p ?? fallback;
+}`,
+
+  task: `
+<p>Write these free functions. Two mutate through references; two take a
+possibly-null pointer.</p>
+<ol>
+  <li><code>addInPlace(int&amp; n, int delta)</code> returns <code>void</code> and
+      adds <code>delta</code> to the caller's <code>n</code>.</li>
+  <li><code>swapValues(int&amp; a, int&amp; b)</code> returns <code>void</code> and
+      swaps the two values in place.</li>
+  <li><code>valueOr(const int* p, int fallback)</code> returns <code>*p</code>
+      when <code>p</code> is non-null, otherwise <code>fallback</code>. Check
+      <code>p == nullptr</code> first.</li>
+  <li><code>safeLength(const std::string* s)</code> returns the string's length
+      as an <code>int</code> via <code>s-&gt;size()</code>, or <code>-1</code> when
+      <code>s</code> is <code>nullptr</code>.</li>
+</ol>`,
+
+  starter: `void addInPlace(int& n, int delta) {
+  // TODO: write delta into the caller's n
+}
+
+void swapValues(int& a, int& b) {
+  // TODO: swap the two values in place
+}
+
+int valueOr(const int* p, int fallback) {
+  return 0; // TODO: dereference p, or return fallback when null
+}
+
+int safeLength(const std::string* s) {
+  return 0; // TODO: s->size() when non-null, else -1
+}
+`,
+
+  requirements: [
+    { pattern: /\bint&/, message: "Take an int& parameter so the function can mutate the caller's variable" },
+    { pattern: /nullptr/, message: "Guard against nullptr before dereferencing the pointer" },
+    { pattern: /->/, message: "Use -> to call size() through the string pointer" },
+  ],
+
+  tests: [
+    { name: "addInPlace writes back into the caller's variable", code: "    int x = 10;\n    addInPlace(x, 5);\n    expect_eq(x, 15);" },
+    { name: "swapValues swaps in place", code: "    int a = 1, b = 2;\n    swapValues(a, b);\n    expect_eq(a, 2);\n    expect_eq(b, 1);" },
+    { name: "valueOr dereferences a non-null pointer", code: "    int v = 42;\n    expect_eq(valueOr(&v, 0), 42);" },
+    { name: "valueOr returns the fallback for nullptr", code: "    expect_eq(valueOr(nullptr, -1), -1);" },
+    { name: "safeLength reads length through the pointer", code: "    std::string s = \"hello\";\n    expect_eq(safeLength(&s), 5);" },
+    { name: "safeLength returns -1 for nullptr", code: "    expect_eq(safeLength(nullptr), -1);" },
+  ],
+
+  solution: `void addInPlace(int& n, int delta) {
+  n += delta;
+}
+
+void swapValues(int& a, int& b) {
+  int tmp = a;
+  a = b;
+  b = tmp;
+}
+
+int valueOr(const int* p, int fallback) {
+  if (p == nullptr) return fallback;
+  return *p;
+}
+
+int safeLength(const std::string* s) {
+  if (s == nullptr) return -1;
+  return static_cast<int>(s->size());
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>C++</th></tr>
+  <tr><td>Mutate caller's value</td><td><code>void F(ref int n)</code></td><td><code>void f(int&amp; n)</code></td></tr>
+  <tr><td>Read without copying</td><td><code>in string s</code></td><td><code>const std::string&amp; s</code></td></tr>
+  <tr><td>Maybe-absent</td><td><code>int?</code> / nullable reference</td><td><code>T*</code> (can be <code>nullptr</code>)</td></tr>
+  <tr><td>Address-of</td><td><code>&amp;x</code> (only in <code>unsafe</code> code)</td><td><code>&amp;x</code></td></tr>
+  <tr><td>Dereference</td><td>— (implicit)</td><td><code>*p</code>, <code>p-&gt;m()</code></td></tr>
+</table>
+<p>Rule of thumb: reach for a <strong>reference</strong> by default — it cannot be
+null, so there is nothing to check, and <code>const T&amp;</code> is the standard
+read-only parameter. Reach for a <strong>pointer</strong> only when absence is a
+real possibility, and then always test against <code>nullptr</code> before
+<code>*</code> or <code>-&gt;</code>; dereferencing a null pointer is undefined
+behavior, not a catchable <code>NullReferenceException</code>. Note
+<code>p-&gt;size()</code> is exactly <code>(*p).size()</code> — the arrow just
+dereferences and reaches a member in one step, the way C#'s <code>.</code> does
+automatically once you already hold a reference. When you later need an
+<em>owning</em> handle, you will use <code>std::unique_ptr</code> rather than raw
+<code>new</code>/<code>delete</code> — much closer in spirit to how C#'s garbage
+collector manages object lifetime for you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

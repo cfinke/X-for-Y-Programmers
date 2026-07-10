@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Methods & Implicit Return</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Methods & Implicit Return",
+
+  intro: `
+<p>Look at what a Java method drags along: a wrapper class, a visibility
+keyword, <code>static</code>, a return type, parameter types, braces, and a
+mandatory <code>return</code>. Ruby's whole answer is
+<code>def greet(name) ... end</code> — at the top level of a file, no class
+required. And the habit you started in lesson 1 becomes law here: the
+method's <strong>last expression is its return value</strong>. Since
+<code>if</code>/<code>else</code> is itself an expression in Ruby, even
+branching methods usually need no <code>return</code>; the keyword exists,
+but idiomatic code saves it for early exits (guard clauses).</p>
+<table>
+  <tr><th>Java</th><th>Ruby</th></tr>
+  <tr><td><code>public static String greet(String n) { ... }</code></td><td><code>def greet(n) ... end</code></td></tr>
+  <tr><td><code>return</code> required</td><td>last expression is the value</td></tr>
+  <tr><td>overloading: <code>greet(n)</code> + <code>greet(n, g)</code></td><td>default args: <code>def greet(n, g = "Hello")</code></td></tr>
+  <tr><td>builder pattern</td><td>keyword arguments: <code>def create(name:, age: 0)</code></td></tr>
+  <tr><td><code>isAdult(age)</code></td><td><code>adult?(age)</code></td></tr>
+</table>
+<p>Two Java workarounds dissolve entirely. <strong>Overloading</strong> — two
+methods for one idea — becomes a single method with a default:
+<code>def greet(name, greeting = "Hello")</code>. And the
+<strong>builder pattern</strong>, Java's decade-long apology for lacking
+named parameters, becomes <strong>keyword arguments</strong>:
+<code>def create(name:, age: 0)</code> is called as
+<code>create(name: "Ada")</code> — callers name what they pass, order stops
+mattering, and a bare <code>name:</code> (no default) makes the argument
+required. Round it out with the naming conventions: <code>?</code> for
+predicates, and <code>!</code> marking the "dangerous" variant of a method
+(usually the one that mutates the receiver).</p>`,
+
+  java: `public class Users {
+    // Overloading: two declarations to express one optional argument.
+    static String greet(String name) {
+        return greet(name, "Hello");
+    }
+
+    static String greet(String name, String greeting) {
+        return greeting + ", " + name + "!";
+    }
+
+    static boolean isAdult(int age) {
+        return age >= 18;
+    }
+
+    // No named parameters, so Java grew the builder pattern:
+    // User u = new User.Builder().name("Ada").age(36).build();
+    public static void main(String[] args) {
+        System.out.println(greet("Ada"));            // Hello, Ada!
+        System.out.println(greet("Ada", "Howdy"));   // Howdy, Ada!
+    }
+}`,
+
+  task: `
+<p>Rewrite it in Ruby — one method per idea, and not a single
+<code>return</code> keyword anywhere in your solution:</p>
+<ol>
+  <li><code>greet(name, greeting = "Hello")</code> — the two Java overloads
+      collapse into one method with a default argument. Produce
+      <code>"Hello, Ada!"</code> (or <code>"Howdy, Ada!"</code> when a
+      greeting is given) via interpolation as the last expression.</li>
+  <li><code>full_name(first:, last: nil)</code> — keyword arguments: a
+      required <code>first:</code> and an optional <code>last:</code>.
+      When <code>last</code> is present, produce
+      <code>"first last"</code>; otherwise just <code>first</code>. Use an
+      <code>if</code>/<code>else</code> as the last expression — in Ruby the
+      whole <code>if</code> yields a value, so no <code>return</code> is
+      needed in either branch.</li>
+  <li><code>adult?(age)</code> — true from age 18 up. The comparison
+      <code>age &gt;= 18</code> already <em>is</em> a boolean expression;
+      make it the method body. Note the name: <code>isAdult</code> becomes
+      <code>adult?</code>.</li>
+</ol>`,
+
+  starter: `# 1. greet: both Java overloads in one def, thanks to the default argument.
+def greet(name, greeting = "Hello")
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 2. full_name: keyword args — first: is required, last: defaults to nil.
+#    Call it like full_name(first: "Ada", last: "Lovelace").
+#    An if/else is an expression here: its value is the method's result.
+def full_name(first:, last: nil)
+  raise NotImplementedError, "TODO: implement full_name"
+end
+
+# 3. adult?: predicates end in ? — the comparison itself is the body.
+def adult?(age)
+  raise NotImplementedError, "TODO: implement adult?"
+end
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give greeting a default value of "Hello"' },
+    { pattern: /\w+:/, message: "Use keyword arguments (first:, last:) in full_name" },
+    { pattern: /def\s+adult\?/, message: "Name the predicate adult? — question mark included" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: '  expect_eq(greet("Ada"), "Hello, Ada!")' },
+    { name: 'greet("Ada", "Howdy") returns "Howdy, Ada!"',
+      code: '  expect_eq(greet("Ada", "Howdy"), "Howdy, Ada!")' },
+    { name: 'full_name(first: "Ada", last: "Lovelace") returns "Ada Lovelace"',
+      code: '  expect_eq(full_name(first: "Ada", last: "Lovelace"), "Ada Lovelace")' },
+    { name: 'full_name(first: "Ada") returns "Ada"',
+      code: '  expect_eq(full_name(first: "Ada"), "Ada")' },
+    { name: "adult?(18) is true",
+      code: "  expect_true(adult?(18))" },
+    { name: "adult?(17) is false",
+      code: "  expect_eq(adult?(17), false)" },
+  ],
+
+  solution: `def greet(name, greeting = "Hello")
+  "#{greeting}, #{name}!"
+end
+
+def full_name(first:, last: nil)
+  if last
+    "#{first} #{last}"
+  else
+    first
+  end
+end
+
+def adult?(age)
+  age >= 18
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Ruby</th></tr>
+  <tr><td>Define a method</td><td><code>public static String greet(String n)</code></td><td><code>def greet(n)</code> — no class, no types</td></tr>
+  <tr><td>Return a value</td><td><code>return x;</code></td><td>last expression; <code>return</code> only for early exit</td></tr>
+  <tr><td>Optional argument</td><td>overload the method</td><td><code>def greet(n, g = "Hello")</code></td></tr>
+  <tr><td>Named parameters</td><td>builder pattern</td><td><code>def create(name:, age: 0)</code> → <code>create(name: "Ada")</code></td></tr>
+  <tr><td>Required keyword</td><td>builder <code>.build()</code> validation</td><td>bare <code>name:</code> — missing it raises <code>ArgumentError</code></td></tr>
+  <tr><td>Predicate</td><td><code>isAdult(age)</code></td><td><code>adult?(age)</code></td></tr>
+  <tr><td>Mutating variant</td><td>naming convention, maybe</td><td><code>sort</code> (copy) vs <code>sort!</code> (in place)</td></tr>
+  <tr><td>Call, no args</td><td><code>user.getName()</code></td><td><code>user.name</code> — parens optional</td></tr>
+</table>
+<p>Keyword arguments are the feature Java developers miss most once they've
+tasted them: the call site documents itself, defaults kill the builder
+boilerplate, and a required keyword fails loudly at call time instead of at
+<code>.build()</code>. The <code>?</code>/<code>!</code> suffixes go further
+than any <code>is</code>-prefix convention because they're part of the method
+name itself — <code>adult?</code>, <code>save!</code> — readable at every
+call site.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

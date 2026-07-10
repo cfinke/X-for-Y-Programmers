@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>In C++, JSON means a dependency decision — usually vendoring nlohmann/json's
+25,000-line single header. In Ruby it means <code>require "json"</code>: the
+parser ships in the standard library, and serialization is a <em>method on
+the data itself</em> — <code>data.to_json</code> works on any Hash or Array.
+Parsing goes the other way with <code>JSON.parse(s)</code>, which returns
+plain Hashes and Arrays with <strong>string keys</strong> by default; pass
+<code>symbolize_names: true</code> to get the <code>:symbol</code> keys
+idiomatic Ruby prefers.</p>
+<table>
+  <tr><th>C++ (nlohmann/json)</th><th>Ruby</th></tr>
+  <tr><td>vendor a 25k-line header</td><td><code>require "json"</code> (stdlib)</td></tr>
+  <tr><td><code>j.dump()</code></td><td><code>data.to_json</code></td></tr>
+  <tr><td><code>json::parse(s)</code></td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+  <tr><td><code>j["a"]["b"]</code> — throws or worse on a miss</td><td><code>data.dig(:a, :b)</code> — nil, safely</td></tr>
+  <tr><td><code>catch (const json::parse_error&amp;)</code></td><td><code>rescue JSON::ParserError</code></td></tr>
+</table>
+<p>Navigation is where habits differ most. Chained
+<code>j["a"]["b"]</code> in nlohmann silently inserts null nodes through
+<code>operator[]</code> on a non-const object and throws (or is UB via a
+dangling reference) in other modes. Ruby's answer is <code>.dig(:a, :b)</code>
+— walk as deep as you like and get <code>nil</code> the moment a key is
+missing — plus <code>fetch(key, default)</code> from lesson 4 when you want
+an explicit fallback. Malformed input raises <code>JSON::ParserError</code>,
+which you now know how to rescue at the def level.</p>`,
+
+  cpp: `#include <nlohmann/json.hpp>   // vendored single-header dependency
+#include <string>
+using json = nlohmann::json;
+
+std::string to_json_string(const json& data) {
+    return data.dump();
+}
+
+struct User { std::string name; int age; };
+
+User parse_user(const std::string& s) {
+    json j = json::parse(s);            // throws json::parse_error
+    return User{
+        j.value("name", std::string("unknown")),   // default on missing key
+        j.value("age", 0),
+    };
+}
+
+json safe_parse(const std::string& s) {
+    try { return json::parse(s); }
+    catch (const json::parse_error&) { return json::object(); }
+}`,
+
+  task: `
+<p>The starter already has <code>require "json"</code>. Write:</p>
+<ol>
+  <li><code>to_json_string(data)</code> — serialization is a message:
+      <code>data.to_json</code>.</li>
+  <li><code>parse_user(json)</code> — parse with
+      <code>JSON.parse(json, symbolize_names: true)</code>, then return
+      <code>{ name: ..., age: ... }</code> using
+      <code>fetch(:name, "unknown")</code> and <code>fetch(:age, 0)</code>
+      so missing keys get defaults — <code>j.value(key, default)</code>,
+      as a Hash method.</li>
+  <li><code>pluck_names(json)</code> — parse an array of user objects
+      (again with <code>symbolize_names: true</code>) and <code>map</code>
+      out each <code>[:name]</code>.</li>
+  <li><code>safe_parse(json)</code> — <code>JSON.parse(json)</code>, but
+      return <code>{}</code> on <code>JSON::ParserError</code> via a
+      def-level rescue.</li>
+</ol>`,
+
+  starter: `require "json"
+
+# 1. Serialization is a method on the Hash/Array itself.
+def to_json_string(data)
+  raise NotImplementedError, "TODO: implement to_json_string"
+end
+
+# 2. symbolize_names: true gives :symbol keys; fetch supplies the defaults
+#    ("unknown" for :name, 0 for :age).
+def parse_user(json)
+  raise NotImplementedError, "TODO: implement parse_user"
+end
+
+# 3. Parse the array, then map out each user's :name.
+def pluck_names(json)
+  raise NotImplementedError, "TODO: implement pluck_names"
+end
+
+# 4. Def-level rescue of JSON::ParserError -> {}.
+def safe_parse(json)
+  raise NotImplementedError, "TODO: implement safe_parse"
+end
+`,
+
+  requirements: [
+    { pattern: /require\s+["']json["']/, message: 'Keep require "json" at the top' },
+    { pattern: /to_json/, message: "Serialize with .to_json" },
+    { pattern: /symbolize_names:\s*true/, message: "Parse with symbolize_names: true" },
+    { pattern: /JSON::ParserError|rescue/, message: "Rescue JSON::ParserError in safe_parse" },
+  ],
+
+  tests: [
+    { name: 'to_json_string({ "a" => 1, "b" => [1, 2] }) round-trips to compact JSON',
+      code: '  expect_eq(to_json_string({ "a" => 1, "b" => [1, 2] }), %q({"a":1,"b":[1,2]}))' },
+    { name: 'parse_user with both keys present',
+      code: '  expect_eq(parse_user(%q({"name":"Ada","age":36})), { name: "Ada", age: 36 })' },
+    { name: 'parse_user("{}") falls back to "unknown" / 0',
+      code: '  expect_eq(parse_user("{}"), { name: "unknown", age: 0 })' },
+    { name: 'pluck_names on a JSON array of users',
+      code: '  expect_eq(pluck_names(%q([{"name":"Ada"},{"name":"Grace"}])), ["Ada", "Grace"])' },
+    { name: 'safe_parse("not json") returns {}',
+      code: '  expect_eq(safe_parse("not json"), {})' },
+    { name: 'safe_parse on valid JSON parses normally (string keys)',
+      code: '  expect_eq(safe_parse(%q({"ok":true})), { "ok" => true })' },
+  ],
+
+  solution: `require "json"
+
+def to_json_string(data)
+  data.to_json
+end
+
+def parse_user(json)
+  user = JSON.parse(json, symbolize_names: true)
+  { name: user.fetch(:name, "unknown"), age: user.fetch(:age, 0) }
+end
+
+def pluck_names(json)
+  JSON.parse(json, symbolize_names: true).map { |user| user[:name] }
+end
+
+def safe_parse(json)
+  JSON.parse(json)
+rescue JSON::ParserError
+  {}
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++ (nlohmann/json)</th><th>Ruby</th></tr>
+  <tr><td>Get the library</td><td>vendor the header, update it by hand</td><td><code>require "json"</code></td></tr>
+  <tr><td>Serialize</td><td><code>j.dump()</code> / <code>j.dump(2)</code></td><td><code>data.to_json</code> / <code>JSON.pretty_generate(data)</code></td></tr>
+  <tr><td>Parse</td><td><code>json::parse(s)</code></td><td><code>JSON.parse(s)</code> — string keys!</td></tr>
+  <tr><td>Symbol keys</td><td>n/a</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+  <tr><td>Deep access</td><td><code>j["a"]["b"]</code> (inserts/throws on miss)</td><td><code>data.dig(:a, :b)</code> — nil on miss</td></tr>
+  <tr><td>Missing key default</td><td><code>j.value("k", fallback)</code></td><td><code>h.fetch(:k, fallback)</code></td></tr>
+  <tr><td>Bad input</td><td><code>json::parse_error</code></td><td><code>JSON::ParserError</code> (a StandardError)</td></tr>
+</table>
+<p>The design difference worth internalizing: nlohmann gives you a
+<em>json type</em> — a tagged variant you index into and convert out of.
+Ruby gives you <em>no JSON type at all</em>: parsing produces ordinary Hashes,
+Arrays, Strings, Integers, and <code>nil</code>, so every tool from lessons
+3, 4, 12 and 13 — <code>map</code>, <code>select</code>, <code>dig</code>,
+<code>fetch</code> — works on parsed JSON with nothing new to learn. The one
+sharp edge is key type: over-the-wire keys are strings, so decide at the
+parse site (<code>symbolize_names: true</code>) and stay consistent.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

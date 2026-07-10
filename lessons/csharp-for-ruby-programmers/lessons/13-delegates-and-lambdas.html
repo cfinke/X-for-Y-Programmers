@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Delegates & Lambdas</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Delegates & Lambdas",
+
+  intro: `
+<p>In Ruby, functions are values too: you write a lambda like
+<code>->(a, b) { a + b }</code>, pass them around, and close over locals. C#
+does all of this too, but a function value has a <em>named type</em> called a
+<strong>delegate</strong>. You rarely declare one by hand, because the
+framework ships generic delegates that cover almost every case:
+<code>Func&lt;&gt;</code> for something that returns a value,
+<code>Action&lt;&gt;</code> for something that returns <code>void</code>, and
+<code>Predicate&lt;T&gt;</code> for a test returning <code>bool</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>C#</th></tr>
+  <tr><td><code>->(x) { x + 1 }</code></td><td><code>Func&lt;int, int&gt;</code></td></tr>
+  <tr><td><code>->(a, b) { a + b }</code></td><td><code>Func&lt;int, int, int&gt;</code></td></tr>
+  <tr><td><code>->(x) { puts x }</code></td><td><code>Action&lt;int&gt;</code></td></tr>
+  <tr><td><code>->(x) { x.even? }</code></td><td><code>Predicate&lt;int&gt;</code></td></tr>
+  <tr><td><code>->(x) { x + 1 }</code></td><td><code>x =&gt; x + 1</code> (different arrow!)</td></tr>
+  <tr><td>no named function type — just a lambda in a variable</td><td><code>delegate int Op(int a, int b);</code></td></tr>
+</table>
+<p>Two things to note. In <code>Func&lt;A, B, R&gt;</code> the <em>last</em>
+type parameter is the return type and the rest are the arguments — so
+<code>Func&lt;int, int, int&gt;</code> takes two <code>int</code>s and returns an
+<code>int</code>. And C#'s lambda arrow <code>=&gt;</code> plays the same role as
+Ruby's stabby lambda: <code>x =&gt; x + 1</code> is <code>->(x) { x + 1 }</code>,
+or with a block body <code>x =&gt; { return x + 1; }</code>. Lambdas capture
+surrounding variables, so you can return one that closes over a parameter, just
+like a Ruby lambda that closes over a local.</p>`,
+
+  ruby: `Combine = ->(a, b) { a + b }  # Ruby has no named function types -- just a lambda
+
+def reduce(nums, seed, op)
+  acc = seed
+  nums.each { |n| acc = op.call(acc, n) }
+  acc
+end
+
+def count_where(nums, pred)
+  nums.count { |x| pred.call(x) }
+end
+
+adder = ->(n) { ->(x) { x + n } }`,
+
+  task: `
+<p>Build a <code>static class Higher</code> of higher-order helpers that take
+delegates and apply them to data:</p>
+<ol>
+  <li>Declare a <strong>custom delegate type</strong>
+      <code>public delegate int Combine(int a, int b);</code></li>
+  <li><code>Reduce(IEnumerable&lt;int&gt; nums, int seed, Combine op)</code> folds
+      the numbers: start from <code>seed</code> and apply <code>op(acc, n)</code>
+      for each <code>n</code>.</li>
+  <li><code>CountWhere(IEnumerable&lt;int&gt; nums, Predicate&lt;int&gt; pred)</code>
+      returns how many numbers satisfy <code>pred</code>.</li>
+  <li><code>SumMapped(IEnumerable&lt;int&gt; nums, Func&lt;int, int&gt; f)</code>
+      applies <code>f</code> to each number and returns the sum of the results.</li>
+  <li><code>Adder(int n)</code> returns a <code>Func&lt;int, int&gt;</code> — a
+      lambda that closes over <code>n</code> and adds it to its argument.</li>
+  <li><code>ForEach(IEnumerable&lt;int&gt; nums, Action&lt;int&gt; effect)</code>
+      calls <code>effect</code> once per number (returns <code>void</code>).</li>
+</ol>
+<p>Pass lambdas (<code>x =&gt; x * x</code>) when you call these methods.</p>`,
+
+  starter: `static class Higher {
+  public delegate int Combine(int a, int b);
+
+  public static int Reduce(IEnumerable<int> nums, int seed, Combine op) {
+    return 0; // TODO
+  }
+
+  public static int CountWhere(IEnumerable<int> nums, Predicate<int> pred) {
+    return 0; // TODO
+  }
+
+  public static int SumMapped(IEnumerable<int> nums, Func<int, int> f) {
+    return 0; // TODO
+  }
+
+  public static Func<int, int> Adder(int n) {
+    return null; // TODO: return a lambda that closes over n
+  }
+
+  public static void ForEach(IEnumerable<int> nums, Action<int> effect) {
+    // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /=>/, message: "Use a lambda expression (=>) somewhere in your solution" },
+    { pattern: /\bdelegate\b/, message: "Declare the custom delegate type with the delegate keyword" },
+  ],
+
+  tests: [
+    { name: "Reduce sums with a lambda", code: "      expect_eq(Higher.Reduce(new List<int>{1, 2, 3, 4}, 0, (a, b) => a + b), 10);" },
+    { name: "Reduce multiplies with a lambda", code: "      expect_eq(Higher.Reduce(new List<int>{1, 2, 3, 4}, 1, (a, b) => a * b), 24);" },
+    { name: "CountWhere counts evens via Predicate", code: "      expect_eq(Higher.CountWhere(new List<int>{1, 2, 3, 4, 5, 6}, x => x % 2 == 0), 3);" },
+    { name: "SumMapped sums squares via Func", code: "      expect_eq(Higher.SumMapped(new List<int>{1, 2, 3}, x => x * x), 14);" },
+    { name: "Adder returns a closure", code: "      var add5 = Higher.Adder(5);\n      expect_eq(add5(3), 8);" },
+    { name: "ForEach runs an Action per element", code: "      int sum = 0;\n      Higher.ForEach(new List<int>{4, 5, 6}, x => sum += x);\n      expect_eq(sum, 15);" },
+  ],
+
+  solution: `static class Higher {
+  public delegate int Combine(int a, int b);
+
+  public static int Reduce(IEnumerable<int> nums, int seed, Combine op) {
+    int acc = seed;
+    foreach (var n in nums) {
+      acc = op(acc, n);
+    }
+    return acc;
+  }
+
+  public static int CountWhere(IEnumerable<int> nums, Predicate<int> pred) {
+    int count = 0;
+    foreach (var n in nums) {
+      if (pred(n)) count++;
+    }
+    return count;
+  }
+
+  public static int SumMapped(IEnumerable<int> nums, Func<int, int> f) {
+    int total = 0;
+    foreach (var n in nums) {
+      total += f(n);
+    }
+    return total;
+  }
+
+  public static Func<int, int> Adder(int n) {
+    return x => x + n;
+  }
+
+  public static void ForEach(IEnumerable<int> nums, Action<int> effect) {
+    foreach (var n in nums) {
+      effect(n);
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>C#</th></tr>
+  <tr><td>Value-returning fn type</td><td><code>->(x) { x + 1 }</code></td><td><code>Func&lt;int, int&gt;</code></td></tr>
+  <tr><td>Void fn type</td><td><code>->(x) { puts x }</code></td><td><code>Action&lt;int&gt;</code></td></tr>
+  <tr><td>Boolean test</td><td><code>->(x) { x.even? }</code></td><td><code>Predicate&lt;int&gt;</code></td></tr>
+  <tr><td>Named fn type</td><td>no named type — just a lambda in a variable</td><td><code>delegate int Op(int a, int b);</code></td></tr>
+  <tr><td>Arrow / lambda</td><td><code>->(x) { x + 1 }</code></td><td><code>x =&gt; x + 1</code></td></tr>
+  <tr><td>Closure</td><td><code>->(n) { ->(x) { x + n } }</code></td><td><code>x =&gt; x + n</code> (captures <code>n</code>)</td></tr>
+</table>
+<p><code>Func&lt;&gt;</code>, <code>Action&lt;&gt;</code>, and
+<code>Predicate&lt;T&gt;</code> are just pre-declared delegate types, so your
+<code>Combine</code> above could equally have been a
+<code>Func&lt;int, int, int&gt;</code> — a custom delegate mostly earns its keep
+when the name documents intent or the signature uses <code>ref</code>/<code>out</code>
+parameters that <code>Func</code> cannot express.</p>
+<p>Because these are all the same underlying concept, a lambda flows into any
+delegate whose shape it matches. This is exactly how LINQ works:
+<code>nums.Where(x =&gt; x &gt; 0).Select(x =&gt; x * x).Sum()</code> is just
+higher-order methods taking <code>Func</code>/<code>Predicate</code> arguments —
+your <code>CountWhere</code> and <code>SumMapped</code> are hand-rolled versions
+of Ruby's <code>count { |x| ... }</code> and a block-based <code>sum { |x| ... }</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

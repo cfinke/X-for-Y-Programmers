@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Static, Constants &amp; readonly</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Static, Constants & readonly",
+
+  intro: `
+<p>JavaScript's <code>static</code> fields and methods map straight across —
+same keyword, different access operator. Class-level members are reached with
+<code>::</code> (the <em>scope resolution operator</em>) instead of
+<code>.</code>: <code>Counter::increment()</code> from outside,
+<code>self::$count</code> from inside the class. Note the asymmetry that trips
+everyone once: static <em>properties</em> keep their <code>$</code> after the
+<code>::</code> (<code>self::$count</code>), static <em>methods</em> and
+constants don't.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>static #count = 0;</code></td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td><code>Counter.increment()</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td><code>Counter.#count</code> inside the class</td><td><code>self::$count</code></td></tr>
+  <tr><td>module-level <code>const MAX = 10</code></td><td>class constant: <code>const MAX = 10;</code></td></tr>
+  <tr><td><code>Object.freeze(this)</code> in constructor</td><td><code>public readonly string $name</code></td></tr>
+</table>
+<p>Two things JS makes you improvise, PHP builds in. <strong>Class
+constants</strong>: <code>const DEFAULT_NAME = "guest";</code> lives inside
+the class and reads as <code>Config::DEFAULT_NAME</code> — no
+<code>#</code>-privacy contortions needed, since real
+<code>private</code>/<code>public</code> exists here too. And
+<strong><code>readonly</code> properties</strong> (PHP 8.1): a property marked
+<code>readonly</code> can be written exactly once — in the constructor — and
+is then locked by the engine. It's <code>Object.freeze</code> per property,
+except violations throw an <code>Error</code> instead of failing silently.</p>`,
+
+  javascript: `class Counter {
+  static #count = 0;                 // static private field
+
+  static increment() {
+    return ++Counter.#count;
+  }
+
+  static current() {
+    return Counter.#count;
+  }
+}
+
+const DEFAULT_NAME = "guest";        // no class constants in JS
+
+class Config {
+  constructor(name) {
+    this.name = name;
+    Object.freeze(this);             // fake immutability, whole-object
+  }
+}
+
+console.log(Counter.increment());    // 1
+const config = new Config("ada");
+config.name = "x";                   // silently ignored (throws in strict mode)`,
+
+  task: `
+<p>Port both classes:</p>
+<ol>
+  <li><code>Counter</code> — the starter declares
+      <code>private static int $count = 0</code>. Implement
+      <code>public static function increment(): int</code> (add 1 to
+      <code>self::$count</code> and return the new value) and
+      <code>public static function current(): int</code> (return it).
+      Remember: <code>self::$count</code>, dollar sign and all.</li>
+  <li><code>Config</code> — already written in the starter; keep its class
+      constant <code>const DEFAULT_NAME = "guest";</code> and its one-line
+      promoted constructor <code>public function __construct(public readonly
+      string $name) {}</code> intact. That single parameter declares the
+      property, assigns it, and locks it — the tests read
+      <code>Config::DEFAULT_NAME</code> straight off the class, then try to
+      overwrite <code>-&gt;name</code> and expect the engine to throw an
+      <code>Error</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        throw new Exception("TODO: implement increment (use self::\\$count)");
+    }
+
+    public static function current(): int {
+        throw new Exception("TODO: implement current");
+    }
+}
+
+// Config is complete — study it. One const, one promoted readonly
+// property: written once in the constructor, locked forever after.
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+/, message: "Counter's members must be static" },
+    { pattern: /const\s+[A-Z_]+/, message: "Declare the DEFAULT_NAME class constant with const" },
+    { pattern: /readonly/, message: "Make Config's $name property readonly" },
+  ],
+
+  tests: [
+    { name: "Counter::increment() counts 1, 2 and current() agrees",
+      code: `expect_eq(Counter::increment(), 1);
+expect_eq(Counter::increment(), 2);
+expect_eq(Counter::current(), 2);` },
+    { name: 'Config::DEFAULT_NAME is "guest" — read off the class, no instance',
+      code: `expect_eq(Config::DEFAULT_NAME, "guest");` },
+    { name: 'new Config("ada")->name reads back "ada"',
+      code: `$c = new Config("ada");
+expect_eq($c->name, "ada");
+expect_eq((new Config(Config::DEFAULT_NAME))->name, "guest");` },
+    { name: "writing to a readonly property throws an Error",
+      code: `$c = new Config("locked");
+try { $c->name = "x"; throw new Exception("no error was thrown"); } catch (Error $e) {}
+expect_eq($c->name, "locked");` },
+  ],
+
+  solution: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        self::$count += 1;
+        return self::$count;
+    }
+
+    public static function current(): int {
+        return self::$count;
+    }
+}
+
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Static method</td><td><code>static f() {}</code>, <code>C.f()</code></td><td><code>public static function f()</code>, <code>C::f()</code></td></tr>
+  <tr><td>Static property</td><td><code>static x = 0</code>, <code>C.x</code></td><td><code>static int $x = 0</code>, <code>C::$x</code> / <code>self::$x</code></td></tr>
+  <tr><td>Class constant</td><td>(none — module <code>const</code>)</td><td><code>const MAX = 10;</code> → <code>C::MAX</code></td></tr>
+  <tr><td>Immutable property</td><td><code>Object.freeze(obj)</code>, whole object</td><td><code>readonly</code>, per property, enforced</td></tr>
+  <tr><td>Freeze violation</td><td>silent (or strict-mode throw)</td><td>always throws <code>Error</code></td></tr>
+  <tr><td>Self reference</td><td><code>ClassName.member</code></td><td><code>self::member</code> (or <code>static::</code> for late binding)</td></tr>
+</table>
+<p>The deep insight: <code>::</code> versus <code>-&gt;</code> isn't
+decoration — it tells the reader which world a member lives in.
+<code>-&gt;</code> means "this object's data", <code>::</code> means "the
+class itself": constants, statics, shared state. And <code>readonly</code>
+plus constructor promotion gives you the immutable value object JS
+approximates with <code>Object.freeze</code> — one line,
+<code>public function __construct(public readonly string $name) {}</code>,
+engine-enforced.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

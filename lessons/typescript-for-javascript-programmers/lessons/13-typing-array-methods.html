@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Typing Array Methods & Callbacks</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Typing Array Methods & Callbacks",
+
+  intro: `
+<p>Here is the pleasant surprise of this lesson: your
+<code>map</code>/<code>filter</code>/<code>reduce</code> chains barely change.
+Because the built-in array methods are generic (lesson 11 in action), the
+callback parameters are <em>inferred from the array's type</em>. If
+<code>products</code> is <code>Product[]</code>, then in
+<code>products.filter((p) =&gt; p.inStock)</code> the <code>p</code> is
+already a <code>Product</code> — no annotation needed, full autocomplete,
+and <code>p.inStok</code> is a compile error.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>products.map(p =&gt; p.name)</code></td><td>identical — <code>p</code> inferred as <code>Product</code>, result <code>string[]</code></td></tr>
+  <tr><td><code>items.reduce((sum, p) =&gt; sum + p.price, 0)</code></td><td>identical — accumulator typed by the initial value <code>0</code></td></tr>
+  <tr><td><code>arr.reduce(fn, {})</code></td><td><code>arr.reduce&lt;Record&lt;string, number&gt;&gt;(fn, {})</code> when <code>{}</code> is too vague</td></tr>
+  <tr><td><code>arr.sort(...)</code> mutates in place</td><td><code>[...arr].sort(...)</code> — copy first, comparator still <code>(a, b) =&gt; number</code></td></tr>
+</table>
+<p>Two spots need your attention. First, <code>reduce</code>: the accumulator's
+type comes from the <em>initial value</em>, so starting from <code>0</code>
+gives you a <code>number</code> accumulator for free — but an empty
+<code>{}</code> or <code>[]</code> is too vague, and you fix it by naming the
+type on the initial value (<code>[] as string[]</code>) or on the call
+(<code>reduce&lt;string[]&gt;(...)</code>). Second, <code>sort</code>: it
+mutates the array in place, in JS and TS alike — the types don't save you
+there, so the idiom is to spread into a copy first.</p>`,
+
+  javascript: `var products = [
+  { name: "Keyboard", price: 89, inStock: true },
+  { name: "Monitor", price: 349, inStock: false },
+  { name: "Mouse", price: 25, inStock: true },
+];
+
+var names = products
+  .filter(function (p) { return p.inStock; })
+  .map(function (p) { return p.name; });
+// ["Keyboard", "Mouse"] — but typo p.inStok and you find out in prod
+
+var total = products.reduce(function (sum, p) {
+  return sum + p.price;
+}, 0); // 463
+
+// .sort() mutates! products is now reordered for everyone else.
+products.sort(function (a, b) { return a.price - b.price; });`,
+
+  task: `
+<p>Build a typed pipeline over a product list. Define an interface
+<code>Product</code> with <code>name: string</code>,
+<code>price: number</code>, <code>inStock: boolean</code>, then write:</p>
+<ol>
+  <li><code>inStockNames(products: Product[]): string[]</code> — chain
+      <code>.filter(...)</code> then <code>.map(...)</code> to get the names
+      of in-stock products. Leave the callback parameters unannotated and let
+      inference type them.</li>
+  <li><code>totalValue(products: Product[]): number</code> — use
+      <code>.reduce(...)</code> with initial value <code>0</code> to sum the
+      prices. The <code>0</code> is what types the accumulator.</li>
+  <li><code>sortByPrice(products: Product[]): Product[]</code> — return a
+      <em>new</em> array sorted cheapest-first. Copy with
+      <code>[...products]</code> before calling <code>.sort(...)</code> so the
+      input is not mutated; the comparator is the usual
+      <code>(a, b) =&gt; a.price - b.price</code>.</li>
+</ol>`,
+
+  starter: `interface Product {
+  name: string;
+  price: number;
+  inStock: boolean;
+}
+
+// 1. filter + map — callbacks need no annotations, inference has them covered.
+function inStockNames(products: Product[]): string[] {
+  // TODO: return names of products where inStock is true
+  return [];
+}
+
+// 2. reduce — the initial value 0 gives the accumulator its number type.
+function totalValue(products: Product[]): number {
+  // TODO: sum the prices with .reduce(...)
+  return 0;
+}
+
+// 3. Non-mutating sort: spread into a copy, then sort cheapest-first.
+function sortByPrice(products: Product[]): Product[] {
+  // TODO: return [...products].sort(...)
+  return products;
+}
+`,
+
+  exportNames: ["inStockNames", "totalValue", "sortByPrice"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter(...) to keep only in-stock products" },
+    { pattern: /\.map\s*\(/, message: "Use .map(...) to turn products into names" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce(...) to sum the prices" },
+    { pattern: /\[\s*\.\.\.\s*products\s*\]/, message: "Copy the array with [...products] before sorting so the input is not mutated" },
+  ],
+
+  tests: [
+    {
+      name: 'inStockNames returns ["Keyboard", "Mouse"] for the sample list',
+      run: (x) => expectDeepEqual(
+        x.inStockNames([
+          { name: "Keyboard", price: 89, inStock: true },
+          { name: "Monitor", price: 349, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ]),
+        ["Keyboard", "Mouse"]
+      ),
+    },
+    {
+      name: "totalValue sums prices (463 for the sample list)",
+      run: (x) => expectEqual(
+        x.totalValue([
+          { name: "Keyboard", price: 89, inStock: true },
+          { name: "Monitor", price: 349, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ]),
+        463
+      ),
+    },
+    {
+      name: "totalValue of an empty list is 0",
+      run: (x) => expectEqual(x.totalValue([]), 0),
+    },
+    {
+      name: "sortByPrice orders cheapest-first",
+      run: (x) => {
+        const sorted = x.sortByPrice([
+          { name: "Keyboard", price: 89, inStock: true },
+          { name: "Monitor", price: 349, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ]);
+        expectDeepEqual(sorted.map((p) => p.name), ["Mouse", "Keyboard", "Monitor"]);
+      },
+    },
+    {
+      name: "sortByPrice does NOT mutate its input",
+      run: (x) => {
+        const original = [
+          { name: "Keyboard", price: 89, inStock: true },
+          { name: "Mouse", price: 25, inStock: true },
+        ];
+        x.sortByPrice(original);
+        expectEqual(original[0].name, "Keyboard");
+      },
+    },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  inStock: boolean;
+}
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter((p) => p.inStock).map((p) => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products.reduce((sum, p) => sum + p.price, 0);
+}
+
+function sortByPrice(products: Product[]): Product[] {
+  return [...products].sort((a, b) => a.price - b.price);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>map / filter callbacks</td><td><code>p =&gt; p.name</code></td><td>same code — <code>p</code> inferred from <code>Product[]</code></td></tr>
+  <tr><td>reduce accumulator</td><td>whatever you return</td><td>typed by the initial value; <code>reduce&lt;Acc&gt;(fn, init)</code> to override</td></tr>
+  <tr><td>Vague initial value</td><td><code>reduce(fn, {})</code></td><td><code>reduce(fn, {} as Record&lt;string, number&gt;)</code></td></tr>
+  <tr><td>sort comparator</td><td><code>(a, b) =&gt; a.price - b.price</code></td><td>same — typed as <code>(a: Product, b: Product) =&gt; number</code></td></tr>
+  <tr><td>Non-mutating sort</td><td><code>arr.slice().sort(...)</code></td><td><code>[...arr].sort(...)</code> (or <code>toSorted</code> in ES2023 targets)</td></tr>
+</table>
+<p>The rule of thumb: annotate the <em>data</em> (the array, the function
+boundary) and let inference handle the <em>callbacks</em>. A single
+<code>Product[]</code> at the top of a pipeline types every arrow function
+below it — writing <code>(p: Product) =&gt;</code> inside a
+<code>products.map(...)</code> is noise, not safety.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

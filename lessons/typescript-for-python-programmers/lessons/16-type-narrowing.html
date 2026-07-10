@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Type Narrowing & Guards</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Type Narrowing & Guards",
+
+  intro: `
+<p>In Python you check what something is with <code>isinstance()</code>, and a
+good checker narrows the type inside the branch. TypeScript does the same
+narrowing, but the checks are split across several operators because
+JavaScript's runtime types are quirkier: <code>typeof</code> handles the
+primitives, <code>Array.isArray()</code> handles arrays (because
+<code>typeof []</code> is <code>"object"</code> — and so is <code>typeof
+null</code>!), <code>in</code> checks whether an object has a property, and
+<code>instanceof</code> handles class instances.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>isinstance(x, str)</code></td><td><code>typeof x === "string"</code></td></tr>
+  <tr><td><code>isinstance(x, (int, float))</code></td><td><code>typeof x === "number"</code></td></tr>
+  <tr><td><code>isinstance(x, list)</code></td><td><code>Array.isArray(x)</code> (not typeof!)</td></tr>
+  <tr><td><code>isinstance(x, dict) and "name" in x</code></td><td><code>typeof x === "object" &amp;&amp; x !== null &amp;&amp; "name" in x</code></td></tr>
+  <tr><td><code>isinstance(x, User)</code> (a class)</td><td><code>x instanceof User</code></td></tr>
+  <tr><td><code>def is_user(x) -&gt; TypeGuard[User]:</code></td><td><code>function isUser(x: unknown): x is User</code></td></tr>
+</table>
+<p>The starting point for untrusted data is <code>unknown</code> — the honest
+version of <code>Any</code>. You cannot touch an <code>unknown</code> value
+until a check narrows it, which is exactly the discipline mypy imposes on
+<code>object</code>. And when a check is too complex for one condition, you
+write a <em>type predicate</em>: a function whose return type is <code>x is
+User</code> instead of <code>boolean</code>. That is precisely
+<code>typing.TypeGuard</code> — when it returns true, the compiler treats
+<code>x</code> as a <code>User</code> from then on.</p>`,
+
+  python: `from typing import TypeGuard
+
+def describe_value(value: object) -> str:
+    if isinstance(value, str):
+        return f"string of length {len(value)}"
+    if isinstance(value, (int, float)):
+        return f"number: {value}"
+    if isinstance(value, list):
+        return f"list of {len(value)} items"
+    if isinstance(value, dict):
+        return f"dict with {len(value)} keys"
+    return "something else"
+
+def is_user(x: object) -> TypeGuard[dict]:
+    return (isinstance(x, dict)
+            and isinstance(x.get("name"), str)
+            and isinstance(x.get("age"), int))`,
+
+  task: `
+<p>Work with values you know nothing about:</p>
+<ol>
+  <li><code>describeValue(value: unknown): string</code> — return, checking in
+      this order:
+      <ul>
+        <li><code>"string of length N"</code> for strings,</li>
+        <li><code>"number: N"</code> for numbers,</li>
+        <li><code>"array of N items"</code> for arrays (remember:
+            <code>Array.isArray</code>, and check it <em>before</em> the
+            object branch),</li>
+        <li><code>"object with N keys"</code> for other non-null objects
+            (<code>Object.keys(...).length</code>),</li>
+        <li><code>"something else"</code> for anything else — including
+            <code>null</code>, since <code>typeof null</code> is
+            <code>"object"</code>.</li>
+      </ul></li>
+  <li>An interface <code>User</code> with <code>name: string</code> and
+      <code>age: number</code>, plus a type-predicate guard
+      <code>isUser(x: unknown): x is User</code> that returns
+      <code>true</code> only for non-null objects whose <code>name</code> is a
+      string and whose <code>age</code> is a number — TypeScript's
+      <code>TypeGuard</code>.</li>
+</ol>`,
+
+  starter: `interface User {
+  name: string;
+  age: number;
+}
+
+// Python: a chain of isinstance() checks.
+function describeValue(value: unknown): string {
+  // TODO: typeof for string and number, Array.isArray for arrays,
+  // then non-null objects, then a fallback of "something else".
+  // Careful: typeof null === "object" and typeof [] === "object"!
+  return "something else";
+}
+
+// Python: def is_user(x: object) -> TypeGuard[User]:
+// The return type "x is User" makes this a custom guard the compiler trusts.
+function isUser(x: unknown): x is User {
+  // TODO: x must be a non-null object with a string name and a number age
+  return false;
+}
+`,
+
+  exportNames: ["describeValue", "isUser"],
+
+  requirements: [
+    { pattern: /unknown/, message: "Take the input as unknown — the honest Any" },
+    { pattern: /typeof/, message: "Use typeof to narrow the primitive cases" },
+    { pattern: /Array\.isArray\s*\(/, message: "Use Array.isArray for the array branch (typeof [] is \"object\")" },
+    { pattern: /\bis\s+\w+/, message: "Give isUser a type-predicate return type: x is User" },
+  ],
+
+  tests: [
+    { name: 'describeValue("hello") returns "string of length 5"', run: (x) => expectEqual(x.describeValue("hello"), "string of length 5") },
+    { name: 'describeValue(42) returns "number: 42"', run: (x) => expectEqual(x.describeValue(42), "number: 42") },
+    { name: 'describeValue([1, 2, 3]) returns "array of 3 items" — not the object branch', run: (x) => expectEqual(x.describeValue([1, 2, 3]), "array of 3 items") },
+    { name: 'describeValue({ a: 1, b: 2 }) returns "object with 2 keys"', run: (x) => expectEqual(x.describeValue({ a: 1, b: 2 }), "object with 2 keys") },
+    { name: 'describeValue(null) returns "something else" — typeof null is "object"!', run: (x) => expectEqual(x.describeValue(null), "something else") },
+    {
+      name: "isUser accepts a valid user and rejects impostors",
+      run: (x) => {
+        expectEqual(x.isUser({ name: "Ada", age: 36 }), true);
+        expectEqual(x.isUser({ name: "Ada" }), false);
+        expectEqual(x.isUser({ name: 36, age: "Ada" }), false);
+        expectEqual(x.isUser(null), false);
+        expectEqual(x.isUser("Ada"), false);
+      },
+    },
+  ],
+
+  solution: `interface User {
+  name: string;
+  age: number;
+}
+
+function describeValue(value: unknown): string {
+  if (typeof value === "string") {
+    return "string of length " + value.length;
+  }
+  if (typeof value === "number") {
+    return "number: " + value;
+  }
+  if (Array.isArray(value)) {
+    return "array of " + value.length + " items";
+  }
+  if (typeof value === "object" && value !== null) {
+    return "object with " + Object.keys(value).length + " keys";
+  }
+  return "something else";
+}
+
+function isUser(x: unknown): x is User {
+  return (
+    typeof x === "object" &&
+    x !== null &&
+    typeof (x as User).name === "string" &&
+    typeof (x as User).age === "number"
+  );
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Is it a string?</td><td><code>isinstance(x, str)</code></td><td><code>typeof x === "string"</code></td></tr>
+  <tr><td>Is it a number?</td><td><code>isinstance(x, (int, float))</code></td><td><code>typeof x === "number"</code></td></tr>
+  <tr><td>Is it a list/array?</td><td><code>isinstance(x, list)</code></td><td><code>Array.isArray(x)</code></td></tr>
+  <tr><td>Is it a dict-like object?</td><td><code>isinstance(x, dict)</code></td><td><code>typeof x === "object" &amp;&amp; x !== null</code></td></tr>
+  <tr><td>Does it have a key?</td><td><code>"name" in d</code></td><td><code>"name" in obj</code> (narrows the type!)</td></tr>
+  <tr><td>Is it an instance of a class?</td><td><code>isinstance(x, User)</code></td><td><code>x instanceof User</code></td></tr>
+  <tr><td>Custom reusable guard</td><td><code>-&gt; TypeGuard[User]</code></td><td><code>: x is User</code></td></tr>
+  <tr><td>Untrusted input type</td><td><code>object</code></td><td><code>unknown</code></td></tr>
+</table>
+<p>The compiler is watching your control flow: after <code>if (typeof value
+=== "string")</code>, <code>value</code> <em>is</em> a <code>string</code>
+inside that block — autocomplete offers <code>.length</code>, and the branches
+below know it is no longer a string. Prefer <code>unknown</code> over
+<code>any</code> at every boundary (JSON parsing, network responses, user
+input): <code>any</code> silences the compiler the way an untyped
+<code>Any</code> silences mypy, while <code>unknown</code> forces exactly the
+isinstance-style checks you already write in careful Python.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

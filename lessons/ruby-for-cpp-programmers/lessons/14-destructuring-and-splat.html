@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring & Splat</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>C++17's structured bindings — <code>auto [a, b] = pair;</code> — were a
+long-awaited quality-of-life win. Ruby's version drops the <code>auto</code>
+<em>and</em> the brackets: <code>a, b = pair</code>, and it works on any
+array, not just types the compiler can decompose. Multiple assignment also
+runs right-to-left as a unit, which makes <code>std::swap(a, b)</code>
+simply <code>a, b = b, a</code> — no temporary, no
+<code>&lt;utility&gt;</code>. Where you once reached for
+<code>std::tie</code> tricks, you write a <strong>splat</strong>:
+<code>first, *rest = list</code> soaks up the remainder into an array, and
+the splat can sit at the front too — <code>*init, last = list</code> —
+something no <code>std::tie</code> contortion ever managed.</p>
+<table>
+  <tr><th>C++</th><th>Ruby</th></tr>
+  <tr><td><code>auto [a, b] = pair;</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td><code>std::swap(a, b);</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td><code>std::tie(first, second) = t;</code> (fixed arity only)</td><td><code>first, *rest = list</code> (leading or trailing splat)</td></tr>
+  <tr><td><code>template &lt;typename... Args&gt; int sum(Args... ns)</code></td><td><code>def sum(*nums)</code> — <code>nums</code> is a plain Array</td></tr>
+  <tr><td>fold expression <code>(ns + ... + 0)</code></td><td><code>nums.sum</code></td></tr>
+</table>
+<p>The same star powers variadics. A C++ parameter pack is a compile-time
+creature — you fold it or recurse over it, and each call site stamps out a
+new instantiation. Ruby's <code>def sum(*nums)</code> just hands you the
+arguments as one ordinary <code>Array</code>: iterate it, call
+<code>.sum</code> on it, pass it along. Splat in an expression concatenates —
+<code>[*a, *b]</code> — and for hashes the analogous merge is a method:
+<code>defaults.merge(overrides)</code> returns a new hash where the
+overrides win, the standard options-handling idiom.</p>`,
+
+  cpp: `#include <tuple>
+#include <utility>
+#include <vector>
+
+std::pair<int, int> swap_pair(const std::pair<int, int>& p) {
+    auto [a, b] = p;                 // C++17 structured bindings
+    std::swap(a, b);
+    return {a, b};
+}
+
+template <typename... Args>          // a parameter pack: compile-time only,
+int sum(Args... nums) {              // one instantiation per call shape
+    return (nums + ... + 0);         // C++17 fold (pre-17: recursion)
+}
+
+int main() {
+    int first, second;
+    std::tie(first, second) = std::make_pair(1, 2);   // fixed arity only —
+    return sum(1, 2, 3) + first;                      // no "rest" possible
+}`,
+
+  task: `
+<p>Four star turns:</p>
+<ol>
+  <li><code>swap(pair)</code> — take a two-element array, return it swapped.
+      Destructure with <code>a, b = pair</code>, swap with
+      <code>a, b = b, a</code>, and make <code>[a, b]</code> the last
+      expression.</li>
+  <li><code>head_tail(list)</code> — split a list into its first element and
+      the rest: <code>first, *rest = list</code>, then return
+      <code>[first, rest]</code>. <code>rest</code> is a real Array —
+      <code>head_tail([1, 2, 3])</code> is <code>[1, [2, 3]]</code>.</li>
+  <li><code>sum(*nums)</code> — a variadic method: <code>sum(1, 2, 3)</code>
+      returns 6, <code>sum()</code> returns 0. No parameter pack, no fold
+      expression, no recursion — <code>nums</code> is an Array, so its body
+      is just <code>nums.sum</code>.</li>
+  <li><code>merge_settings(defaults, overrides)</code> — combine two option
+      hashes with <code>defaults.merge(overrides)</code>; keys present in
+      <code>overrides</code> win, and neither input is mutated.</li>
+</ol>`,
+
+  starter: `# 1. swap: a, b = pair to unpack; a, b = b, a to swap; [a, b] last.
+def swap(pair)
+  raise NotImplementedError, "TODO: implement swap"
+end
+
+# 2. head_tail: first, *rest = list — the splat soaks up the remainder
+#    as a plain Array. Return [first, rest].
+def head_tail(list)
+  raise NotImplementedError, "TODO: implement head_tail"
+end
+
+# 3. sum: *nums collects every argument into an Array. No parameter
+#    packs, no fold expressions — just call .sum on it.
+def sum(*nums)
+  raise NotImplementedError, "TODO: implement sum"
+end
+
+# 4. merge_settings: defaults.merge(overrides) — overrides win, and a
+#    NEW hash comes back; neither input is touched.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: implement merge_settings"
+end
+`,
+
+  requirements: [
+    { pattern: /\*\w+/, message: "Use a splat (*name) somewhere" },
+    { pattern: /,\s*\*/, message: "Destructure with a rest: first, *rest = list" },
+    { pattern: /\.merge/, message: "Combine the hashes with .merge" },
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Make sum variadic: def sum(*nums)" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "  expect_eq(swap([1, 2]), [2, 1])" },
+    { name: 'swap(["key", "value"]) returns ["value", "key"]',
+      code: '  expect_eq(swap(["key", "value"]), ["value", "key"])' },
+    { name: "head_tail([1, 2, 3, 4]) returns [1, [2, 3, 4]]",
+      code: "  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])" },
+    { name: "head_tail([7]) returns [7, []] — the splat can be empty",
+      code: "  expect_eq(head_tail([7]), [7, []])" },
+    { name: "sum(1, 2, 3) returns 6 and sum() returns 0 — one method, any arity",
+      code: "  expect_eq(sum(1, 2, 3), 6)\n  expect_eq(sum(10), 10)\n  expect_eq(sum(), 0)" },
+    { name: "merge_settings: overrides win, defaults survive untouched",
+      code: '  defaults = { theme: "dark", font_size: 10 }\n  merged = merge_settings(defaults, { font_size: 14 })\n  expect_eq(merged, { theme: "dark", font_size: 14 })\n  expect_eq(defaults, { theme: "dark", font_size: 10 })' },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  a, b = b, a
+  [a, b]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Unpack a pair</td><td><code>auto [a, b] = pair;</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td>Swap</td><td><code>std::swap(a, b)</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Head + rest</td><td>no direct equivalent</td><td><code>first, *rest = list</code></td></tr>
+  <tr><td>Init + last</td><td>no direct equivalent</td><td><code>*init, last = list</code> (leading splat!)</td></tr>
+  <tr><td>Variadic function</td><td><code>template &lt;typename... A&gt;</code> + fold/recursion</td><td><code>def sum(*nums)</code> — an Array at runtime</td></tr>
+  <tr><td>Spread into a call</td><td><code>std::apply(f, tuple)</code></td><td><code>f(*args)</code></td></tr>
+  <tr><td>Concatenate</td><td><code>insert(end, b.begin(), b.end())</code></td><td><code>[*a, *b]</code></td></tr>
+  <tr><td>Merge hashes</td><td>loop over <code>insert_or_assign</code></td><td><code>defaults.merge(overrides)</code> — new hash, overrides win</td></tr>
+</table>
+<p>The C++ features here are compile-time constructs: structured bindings
+need a decomposable type, <code>std::tie</code> needs exact arity, and a
+parameter pack isn't a value you can hold — hence the fold-expression and
+recursive-template folklore. Ruby flattens all of it to one runtime rule:
+<code>*</code> collects values into an Array, or spreads an Array into
+values, wherever it appears — assignment, parameter list, call site, or
+literal. Learn that one rule and every line in this lesson is a corollary.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

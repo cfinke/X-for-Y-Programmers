@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Enumerable: map, select &amp; Friends</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Enumerable: map, select & Friends",
+
+  intro: `
+<p>Good news first: <code>.map</code> is <code>.map</code>. The one rename to
+internalize is that <strong><code>.filter</code> is <code>.select</code></strong>
+in Ruby — <code>.filter</code> actually exists as an alias, but
+<code>select</code> is what idiomatic Ruby writes, and what you'll read in
+every codebase. Its mirror image <code>.reject</code> keeps the elements where
+the block is <em>false</em>, which kills the little <code>!</code> that would
+otherwise hide inside your filter.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>arr.map((x) =&gt; x * 2)</code></td><td><code>arr.map { |x| x * 2 }</code></td></tr>
+  <tr><td><code>arr.filter((p) =&gt; p.inStock)</code></td><td><code>arr.select { |p| p[:in_stock] }</code></td></tr>
+  <tr><td><code>arr.filter((p) =&gt; !p.inStock)</code></td><td><code>arr.reject { |p| p[:in_stock] }</code></td></tr>
+  <tr><td><code>arr.reduce((s, p) =&gt; s + p.price, 0)</code></td><td><code>arr.sum { |p| p[:price] }</code></td></tr>
+  <tr><td><code>[...arr].sort((a, b) =&gt; a.price - b.price)[0]</code></td><td><code>arr.min_by { |p| p[:price] }</code></td></tr>
+</table>
+<p>Where Ruby pulls ahead is the specialized verbs. The reduce-for-sum
+ceremony collapses to <code>.sum</code>. Sorting by a key needs no comparator
+juggling — <code>.sort_by(&amp;:price)</code> or <code>.sort_by { |p| p[:price] }</code>,
+and <code>.min_by</code>/<code>.max_by</code> skip the sort entirely when you
+only want one winner. And chains read exactly like the TS you already write:
+<code>products.select { ... }.map { ... }</code>.</p>`,
+
+  typescript: `interface Product { name: string; priceCents: number; inStock: boolean; }
+
+const products: Product[] = [
+  { name: "Desk", priceCents: 24900, inStock: true },
+  { name: "Chair", priceCents: 9900, inStock: false },
+  { name: "Lamp", priceCents: 3900, inStock: true },
+];
+
+const inStockNames = (ps: Product[]): string[] =>
+  ps.filter((p) => p.inStock).map((p) => p.name);
+
+const totalValue = (ps: Product[]): number =>
+  ps.reduce((sum, p) => sum + p.priceCents, 0);
+
+const cheapestName = (ps: Product[]): string =>
+  [...ps].sort((a, b) => a.priceCents - b.priceCents)[0].name;`,
+
+  task: `
+<p>The products arrive as an array of hashes with symbol keys, e.g.
+<code>{ name: "Desk", price_cents: 24900, in_stock: true }</code> — read a
+field with <code>p[:name]</code>. Write:</p>
+<ol>
+  <li><code>in_stock_names(products)</code> — the names of in-stock products,
+      via <code>.select { ... }.map { ... }</code>. Remember:
+      <em>select</em>, not filter.</li>
+  <li><code>total_value(products)</code> — the sum of every product's
+      <code>:price_cents</code>, via <code>.sum { |p| ... }</code> — no
+      reduce, no accumulator, no <code>0</code>.</li>
+  <li><code>cheapest_name(products)</code> — the name of the cheapest
+      product, via <code>.min_by { ... }</code>. No copying, no comparator,
+      no <code>[0]</code>.</li>
+</ol>`,
+
+  starter: `# Products look like: { name: "Desk", price_cents: 24900, in_stock: true }
+# Read fields with p[:name], p[:price_cents], p[:in_stock].
+
+# 1. select the in-stock ones, then map to names.
+def in_stock_names(products)
+  raise NotImplementedError, "TODO: .select { ... }.map { ... }"
+end
+
+# 2. sum replaces the whole reduce-with-0 dance.
+def total_value(products)
+  raise NotImplementedError, "TODO: .sum { |p| ... }"
+end
+
+# 3. min_by finds the winner without sorting.
+def cheapest_name(products)
+  raise NotImplementedError, "TODO: .min_by { ... } then take its :name"
+end
+`,
+
+  requirements: [
+    { pattern: /\.select/, message: "Use .select (Ruby's filter) in in_stock_names" },
+    { pattern: /\.map/, message: "Chain .map to pull out the names" },
+    { pattern: /\.sum/, message: "Use .sum in total_value — no reduce needed" },
+    { pattern: /min_by|sort_by/, message: "Find the cheapest with min_by (or sort_by)" },
+  ],
+
+  tests: [
+    { name: 'in_stock_names returns ["Desk", "Lamp"]',
+      code: `  products = [
+    { name: "Desk", price_cents: 24900, in_stock: true },
+    { name: "Chair", price_cents: 9900, in_stock: false },
+    { name: "Lamp", price_cents: 3900, in_stock: true }
+  ]
+  expect_eq(in_stock_names(products), ["Desk", "Lamp"])` },
+    { name: "in_stock_names returns [] when nothing is in stock",
+      code: '  expect_eq(in_stock_names([{ name: "Rug", price_cents: 100, in_stock: false }]), [])' },
+    { name: "total_value sums price_cents across all products",
+      code: `  products = [
+    { name: "Desk", price_cents: 24900, in_stock: true },
+    { name: "Chair", price_cents: 9900, in_stock: false },
+    { name: "Lamp", price_cents: 3900, in_stock: true }
+  ]
+  expect_eq(total_value(products), 38700)` },
+    { name: "total_value of an empty list is 0",
+      code: "  expect_eq(total_value([]), 0)" },
+    { name: 'cheapest_name returns "Lamp"',
+      code: `  products = [
+    { name: "Desk", price_cents: 24900, in_stock: true },
+    { name: "Chair", price_cents: 9900, in_stock: false },
+    { name: "Lamp", price_cents: 3900, in_stock: true }
+  ]
+  expect_eq(cheapest_name(products), "Lamp")` },
+  ],
+
+  solution: `def in_stock_names(products)
+  products.select { |p| p[:in_stock] }.map { |p| p[:name] }
+end
+
+def total_value(products)
+  products.sum { |p| p[:price_cents] }
+end
+
+def cheapest_name(products)
+  products.min_by { |p| p[:price_cents] }[:name]
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Transform</td><td><code>.map((x) =&gt; ...)</code></td><td><code>.map { |x| ... }</code></td></tr>
+  <tr><td>Keep matches</td><td><code>.filter(f)</code></td><td><code>.select { ... }</code> (<code>.filter</code> is an alias)</td></tr>
+  <tr><td>Drop matches</td><td><code>.filter((x) =&gt; !f(x))</code></td><td><code>.reject { ... }</code></td></tr>
+  <tr><td>Sum</td><td><code>.reduce((s, x) =&gt; s + x, 0)</code></td><td><code>.sum</code> or <code>.sum { |x| ... }</code></td></tr>
+  <tr><td>Sort by key</td><td><code>.sort((a, b) =&gt; a.k - b.k)</code></td><td><code>.sort_by { |x| x[:k] }</code></td></tr>
+  <tr><td>Smallest / largest by key</td><td>sort, then <code>[0]</code></td><td><code>.min_by { ... }</code> / <code>.max_by { ... }</code></td></tr>
+  <tr><td>Any / every</td><td><code>.some(f)</code> / <code>.every(f)</code></td><td><code>.any? { ... }</code> / <code>.all? { ... }</code></td></tr>
+</table>
+<p>These methods don't live on Array — they live in the <code>Enumerable</code>
+module, which Array, Hash, Range, and dozens of other classes mix in. Learn
+the vocabulary once and it works on everything that can <code>each</code>:
+<code>(1..5).select(&amp;:even?)</code>, hashes, files, your own classes. Also
+note <code>.sort_by</code> beats a hand-written comparator on both clarity
+<em>and</em> speed — it computes each key once, where a comparator recomputes
+on every comparison.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

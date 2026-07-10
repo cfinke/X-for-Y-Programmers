@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes & Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>Where Rust splits data (<code>struct</code>) from behavior
+(<code>impl</code>), PHP fuses them into one <code>class</code> block. Your
+<code>BankAccount::new()</code> convention becomes a real language feature:
+<code>new BankAccount(...)</code> calls the magic method
+<code>__construct</code>. Inside methods, <code>&amp;self</code> and
+<code>&amp;mut self</code> vanish — there's just <code>$this</code>, and
+every method can mutate. No borrow discipline, no
+<code>&amp;mut</code>-exclusivity: the compiler that made you justify every
+mutation has left the building.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>struct</code> + <code>impl</code> block</td><td>one <code>class</code> block (data + behavior)</td></tr>
+  <tr><td><code>BankAccount::new(owner)</code></td><td><code>new BankAccount($owner)</code> → <code>__construct</code></td></tr>
+  <tr><td><code>&amp;self</code> / <code>&amp;mut self</code></td><td><code>$this</code> (any method may mutate)</td></tr>
+  <tr><td><code>pub balance: i64</code> / private by default</td><td><code>public</code> / <code>private</code> keywords per member</td></tr>
+  <tr><td>fields + <code>new()</code> boilerplate</td><td>promoted ctor params: <code>__construct(private int $balance = 0)</code></td></tr>
+  <tr><td><code>Rc&lt;RefCell&lt;T&gt;&gt;</code></td><td>every object, implicitly (GC-managed handle)</td></tr>
+</table>
+<p>PHP 8's <em>constructor property promotion</em> collapses the struct
+definition and the constructor into one signature: declare a visibility
+keyword on a constructor parameter and it becomes a property, assigned
+automatically. And know what you're holding: PHP object variables are
+<em>shared handles</em>. Assigning or passing an object never copies it —
+you get <code>Rc&lt;RefCell&lt;T&gt;&gt;</code> semantics everywhere, with a
+garbage collector instead of reference counts you can see. Two variables,
+one object, and any alias can mutate it.</p>`,
+
+  rust: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: String) -> Self {
+        Self { owner, balance: 0 }
+    }
+    fn owner(&self) -> &str {
+        &self.owner
+    }
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+    fn withdraw(&mut self, amount: i64) -> bool {
+        if amount > self.balance { return false; }
+        self.balance -= amount;
+        true
+    }
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code> into a single class. The starter already has
+the promoted constructor — fill in the four methods:</p>
+<ol>
+  <li>Keep the promoted constructor:
+      <code>__construct(private string $owner, private int $balance = 0)</code>
+      — that one line is the whole struct <em>and</em> <code>new()</code>.</li>
+  <li><code>owner(): string</code> — return <code>$this-&gt;owner</code>.
+      Property access is <code>-&gt;</code>, not <code>.</code></li>
+  <li><code>deposit(int $amount): void</code> — add to the balance. Note the
+      signature: no <code>&amp;mut self</code> needed, or possible.</li>
+  <li><code>withdraw(int $amount): bool</code> — return <code>false</code> on
+      insufficient funds <em>without touching the balance</em>, otherwise
+      subtract and return <code>true</code>. (A bool where Rust wants a
+      <code>Result</code> — exceptions, PHP's real error channel, arrive in
+      lesson 16.)</li>
+  <li><code>balance(): int</code> — the getter.</li>
+</ol>`,
+
+  starter: `<?php
+
+class BankAccount {
+    // Promoted properties: struct fields + constructor, collapsed into
+    // one signature. private makes them invisible outside the class.
+    public function __construct(
+        private string $owner,
+        private int $balance = 0,
+    ) {}
+
+    public function owner(): string {
+        throw new Exception("TODO: return the owner");
+    }
+
+    public function deposit(int $amount): void {
+        throw new Exception("TODO: add amount to the balance");
+    }
+
+    public function withdraw(int $amount): bool {
+        throw new Exception("TODO: false if insufficient, else subtract and true");
+    }
+
+    public function balance(): int {
+        throw new Exception("TODO: return the balance");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /__construct\s*\(\s*(private|public)/, message: "Use constructor property promotion (visibility keyword on a constructor parameter)" },
+    { pattern: /private/, message: "Keep the account state private" },
+    { pattern: /->/, message: "Access properties and methods with ->" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("ada") stores the owner',
+      code: '$a = new BankAccount("ada");\nexpect_eq($a->owner(), "ada");' },
+    { name: "a fresh account has balance 0 (the default promoted param)",
+      code: 'expect_eq((new BankAccount("ada"))->balance(), 0);' },
+    { name: "deposit adds to the balance",
+      code: '$a = new BankAccount("ada");\n$a->deposit(100);\n$a->deposit(25);\nexpect_eq($a->balance(), 125);' },
+    { name: "withdraw within funds returns true and subtracts",
+      code: '$a = new BankAccount("ada");\n$a->deposit(100);\nexpect_true($a->withdraw(40));\nexpect_eq($a->balance(), 60);' },
+    { name: "failed withdraw returns false and leaves the balance unchanged",
+      code: '$a = new BankAccount("ada");\n$a->deposit(50);\nexpect_true(!$a->withdraw(100));\nexpect_eq($a->balance(), 50);' },
+    { name: "objects are shared handles: an alias sees the deposit",
+      code: '$a = new BankAccount("ada");\n$b = $a;\n$b->deposit(10);\nexpect_eq($a->balance(), 10);' },
+  ],
+
+  solution: `<?php
+
+class BankAccount {
+    public function __construct(
+        private string $owner,
+        private int $balance = 0,
+    ) {}
+
+    public function owner(): string {
+        return $this->owner;
+    }
+
+    public function deposit(int $amount): void {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): bool {
+        if ($amount > $this->balance) {
+            return false;
+        }
+        $this->balance -= $amount;
+        return true;
+    }
+
+    public function balance(): int {
+        return $this->balance;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Data + behavior</td><td><code>struct</code> + <code>impl</code></td><td>one <code>class</code></td></tr>
+  <tr><td>Construction</td><td><code>Type::new(args)</code></td><td><code>new Type($args)</code> → <code>__construct</code></td></tr>
+  <tr><td>Self reference</td><td><code>self</code> (borrowed per signature)</td><td><code>$this</code> (always mutable)</td></tr>
+  <tr><td>Member access</td><td><code>self.owner</code></td><td><code>$this-&gt;owner</code></td></tr>
+  <tr><td>Visibility</td><td>private unless <code>pub</code></td><td><code>public</code> / <code>protected</code> / <code>private</code> keyword</td></tr>
+  <tr><td>Field + ctor boilerplate</td><td>write both</td><td>promoted: <code>__construct(private int $x)</code></td></tr>
+  <tr><td>Assignment copies?</td><td>move / <code>Clone</code></td><td>never — objects are shared handles</td></tr>
+</table>
+<p>The last test is the one to internalize: <code>$b = $a</code> did not
+clone the account — both variables hold the same object, like cloning an
+<code>Rc</code>. Interior mutability isn't opt-in via <code>RefCell</code>;
+it's the only mode. That's liberating for quick code and exactly why
+<code>private</code> matters more here than in Rust: visibility is the only
+fence left around your invariants. (Actual copies exist — <code>clone $a</code>
+— but you must ask.)</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

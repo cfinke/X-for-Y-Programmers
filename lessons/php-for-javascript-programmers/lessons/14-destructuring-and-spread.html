@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: List Assignment &amp; Spread</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "List Assignment & Spread",
+
+  intro: `
+<p>Destructuring and spread made the jump to PHP almost verbatim — just add
+sigils. <code>const [a, b] = pair</code> becomes
+<code>[$a, $b] = $pair;</code>, and because PHP's associative arrays play
+the role of your objects, keyed destructuring
+<code>['name' =&gt; $name] = $user;</code> is the cousin of
+<code>const { name } = user</code>. Even the classic swap trick works:
+<code>[$a, $b] = [$b, $a];</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>const [a, b] = pair;</code></td><td><code>[$a, $b] = $pair;</code></td></tr>
+  <tr><td><code>const { name } = user;</code></td><td><code>['name' =&gt; $name] = $user;</code></td></tr>
+  <tr><td><code>[a, b] = [b, a];</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td><code>function sum(...nums)</code></td><td><code>function sum(int ...$nums)</code> — typed rest!</td></tr>
+  <tr><td><code>f(...args)</code></td><td><code>f(...$args)</code></td></tr>
+  <tr><td><code>{ ...defaults, ...overrides }</code></td><td><code>[...$defaults, ...$overrides]</code> (string keys: 8.1+)</td></tr>
+</table>
+<p>The <code>...</code> spread works on both ends, exactly like JS: in a
+signature it's a rest parameter collecting arguments into an array (and you
+can type it — <code>int ...$nums</code> checks <em>every</em> argument); at
+a call site or in an array literal it unpacks. One version note:
+<code>[...$a, ...$b]</code> has handled string keys since PHP 8.1, with
+later spreads overwriting earlier ones — precisely your
+<code>{ ...defaults, ...overrides }</code> merge idiom.</p>`,
+
+  javascript: `function swap([a, b]) {
+  return [b, a];
+}
+
+function sum(...nums) {
+  return nums.reduce((total, n) => total + n, 0);
+}
+
+function mergeSettings(defaults, overrides) {
+  return { ...defaults, ...overrides };
+}
+
+const [low, high] = swap([9, 3]);
+
+const settings = mergeSettings(
+  { theme: "light", lang: "en" },
+  { theme: "dark" },
+); // { theme: "dark", lang: "en" }`,
+
+  task: `
+<p>Port all three helpers:</p>
+<ol>
+  <li><code>swap(array $pair): array</code> — unpack with list assignment
+      (<code>[$a, $b] = $pair;</code>) and return the two elements in the
+      opposite order.</li>
+  <li><code>sum(int ...$nums): int</code> — a variadic; inside the body
+      <code>$nums</code> is a plain array (try <code>array_sum</code>, or a
+      <code>foreach</code>). Calling <code>sum()</code> with nothing must
+      return <code>0</code>.</li>
+  <li><code>merge_settings(array $defaults, array $overrides): array</code> —
+      merge with spread: <code>[...$defaults, ...$overrides]</code>. Later
+      keys win, just like object spread.</li>
+</ol>
+<p>The tests also call <code>sum(...[4, 5, 6])</code> — spreading an array
+into your variadic from the outside.</p>`,
+
+  starter: `<?php
+
+// 1. [$a, $b] = $pair; then return them flipped.
+function swap(array $pair): array {
+    throw new Exception("TODO: implement swap");
+}
+
+// 2. Rest parameter: inside, $nums is just an array of ints.
+function sum(int ...$nums): int {
+    throw new Exception("TODO: implement sum");
+}
+
+// 3. { ...defaults, ...overrides }  ->  [...$defaults, ...$overrides]
+function merge_settings(array $defaults, array $overrides): array {
+    throw new Exception("TODO: implement merge_settings");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\s*\$\w+\s*,\s*\$\w+\s*\]\s*=/, message: "Unpack the pair with list assignment: [$a, $b] = ..." },
+    { pattern: /\.\.\.\$/, message: "Use the ... token with a variable (rest parameter or spread)" },
+    { pattern: /\[\s*\.\.\./, message: "Merge the arrays with spread inside a literal: [...$defaults, ...$overrides]" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "expect_eq(swap([1, 2]), [2, 1]);" },
+    { name: "swap(['low', 'high']) returns ['high', 'low']",
+      code: "expect_eq(swap(['low', 'high']), ['high', 'low']);" },
+    { name: "sum(1, 2, 3) returns 6 and sum() returns 0",
+      code: "expect_eq(sum(1, 2, 3), 6);\nexpect_eq(sum(), 0);" },
+    { name: "sum(...[4, 5, 6]) — call-site spread — returns 15",
+      code: "expect_eq(sum(...[4, 5, 6]), 15);" },
+    { name: "merge_settings: overrides win, untouched defaults survive",
+      code: "$merged = merge_settings(['theme' => 'light', 'lang' => 'en'], ['theme' => 'dark']);\nexpect_eq($merged, ['theme' => 'dark', 'lang' => 'en']);" },
+    { name: "merge_settings with no overrides returns the defaults",
+      code: "expect_eq(merge_settings(['debug' => false], []), ['debug' => false]);" },
+  ],
+
+  solution: `<?php
+
+function swap(array $pair): array {
+    [$a, $b] = $pair;
+    return [$b, $a];
+}
+
+function sum(int ...$nums): int {
+    return array_sum($nums);
+}
+
+function merge_settings(array $defaults, array $overrides): array {
+    return [...$defaults, ...$overrides];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>List destructuring</td><td><code>const [a, b] = pair;</code></td><td><code>[$a, $b] = $pair;</code></td></tr>
+  <tr><td>Keyed destructuring</td><td><code>const { name } = user;</code></td><td><code>['name' =&gt; $name] = $user;</code></td></tr>
+  <tr><td>Skip an element</td><td><code>const [, second] = arr;</code></td><td><code>[, $second] = $arr;</code></td></tr>
+  <tr><td>Swap</td><td><code>[a, b] = [b, a];</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+  <tr><td>Rest parameter</td><td><code>function f(...args)</code></td><td><code>function f(int ...$args)</code> — typeable</td></tr>
+  <tr><td>Call-site spread</td><td><code>f(...args)</code></td><td><code>f(...$args)</code></td></tr>
+  <tr><td>Merge</td><td><code>{ ...a, ...b }</code></td><td><code>[...$a, ...$b]</code> or <code>array_merge($a, $b)</code></td></tr>
+  <tr><td>In a foreach</td><td><code>for (const [k, v] of pairs)</code></td><td><code>foreach ($pairs as [$k, $v])</code></td></tr>
+</table>
+<p>Differences worth filing away: PHP's list assignment has no rest element
+(<code>[$first, ...$rest] = $arr;</code> is a syntax error — use
+<code>array_slice</code>) and no defaults for missing elements
+(<code>const [a = 1] = []</code> has no PHP equivalent; a missing index just
+warns and yields <code>null</code>). You'll also still meet
+<code>list($a, $b) = $pair;</code> in older code — it's the exact same
+feature wearing its pre-7.1 syntax. And since one array type covers both
+worlds, <code>[...$a, ...$b]</code> is simultaneously your array spread
+<em>and</em> your object spread — with <code>array_merge</code> as the
+function-flavored spelling of the same merge.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

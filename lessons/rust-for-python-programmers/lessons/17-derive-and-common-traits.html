@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits & Derive</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>Every Python class is born with a full set of protocols: <code>==</code>
+works (by identity, until you override <code>__eq__</code>),
+<code>repr()</code> prints <em>something</em>, and <code>copy.copy</code>
+duplicates it. Rust structs are born with <em>none</em> of that. Equality,
+debug-printing, and copying are each a trait — <code>PartialEq</code>,
+<code>Debug</code>, <code>Clone</code> — and a fresh <code>struct</code>
+implements no traits until you say so. Try <code>p1 == p2</code> or
+<code>format!("{:?}", p)</code> on a bare struct and the compiler refuses.</p>
+<p>The fix is one line, and you already know its closest cousin:
+<code>@dataclass</code>. Just as <code>@dataclass</code> generates
+<code>__eq__</code> and <code>__repr__</code> from your field list,
+<code>#[derive(Debug, Clone, PartialEq)]</code> above a struct makes the
+compiler write those trait implementations for you, field by field.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>@dataclass</code> generates <code>__eq__</code>, <code>__repr__</code></td><td><code>#[derive(PartialEq, Debug)]</code> generates the impls</td></tr>
+  <tr><td><code>repr(p)</code> → <code>Point(x=1, y=2)</code></td><td><code>format!("{:?}", p)</code> → <code>Point { x: 1, y: 2 }</code></td></tr>
+  <tr><td><code>a == b</code> (identity unless <code>__eq__</code>)</td><td><code>a == b</code> (compile error unless <code>PartialEq</code>)</td></tr>
+  <tr><td><code>copy.deepcopy(p)</code></td><td><code>p.clone()</code> (needs <code>Clone</code>)</td></tr>
+  <tr><td><code>Point()</code> with field defaults</td><td><code>Point::default()</code> (needs <code>Default</code>)</td></tr>
+</table>
+<p>The everyday four: <code>Debug</code> gives you <code>{:?}</code> — Rust's
+<code>repr()</code>. <code>Clone</code> gives you <code>.clone()</code> — an
+explicit deep copy, like <code>copy.deepcopy</code>, never silent.
+<code>PartialEq</code> gives you <code>==</code> by field-wise comparison.
+<code>Default</code> gives you a zero-values constructor. Deriving is opt-in
+per struct, and you can always hand-write an <code>impl</code> instead when
+field-by-field isn't the behavior you want — exactly like overriding
+<code>__eq__</code> yourself.</p>`,
+
+  python: `import copy
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int
+    # @dataclass generates __eq__ and __repr__ from the fields --
+    # the closest cousin of Rust's #[derive(...)].
+
+def points_equal(a: Point, b: Point) -> bool:
+    return a == b            # generated __eq__: field-by-field
+
+def debug_string(p: Point) -> str:
+    return repr(p)           # generated __repr__: "Point(x=1, y=2)"
+
+def duplicate(p: Point) -> Point:
+    return copy.deepcopy(p)  # an independent copy
+
+print(points_equal(Point(1, 2), Point(1, 2)))  # True`,
+
+  task: `
+<p>The starter defines <code>struct Point</code> with <em>no</em> derives —
+so <code>==</code>, <code>{:?}</code>, and <code>.clone()</code> all refuse to
+compile until you add them. Fix that, then fill in the functions:</p>
+<ol>
+  <li>Add <code>#[derive(...)]</code> above <code>Point</code> with the traits
+      the three functions below need: <code>PartialEq</code>,
+      <code>Debug</code>, and <code>Clone</code>.</li>
+  <li><code>points_equal(a: &amp;Point, b: &amp;Point) -&gt; bool</code> —
+      compare with <code>==</code> (this is what <code>PartialEq</code>
+      unlocks).</li>
+  <li><code>debug_string(p: &amp;Point) -&gt; String</code> — return
+      <code>format!("{:?}", p)</code>, Rust's <code>repr()</code> (unlocked by
+      <code>Debug</code>).</li>
+  <li><code>duplicate(p: &amp;Point) -&gt; Point</code> — return
+      <code>p.clone()</code> (unlocked by <code>Clone</code>).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// A bare struct implements nothing: no ==, no {:?}, no .clone().
+// Add #[derive(...)] above it with the traits the functions need.
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// 1. Field-by-field equality via == (needs PartialEq derived).
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// 2. Rust's repr(): format!("{:?}", p) (needs Debug derived).
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// 3. An explicit copy: p.clone() (needs Clone derived).
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Add a #[derive(...)] attribute above Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == works on Point" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} works on Point" },
+    { pattern: /Clone/, message: "Derive Clone so .clone() works on Point" },
+  ],
+
+  tests: [
+    { name: "points_equal on two identical points returns true",
+      code: `let a = Point { x: 1, y: 2 };
+let b = Point { x: 1, y: 2 };
+assert_eq!(points_equal(&a, &b), true);` },
+    { name: "points_equal on different points returns false",
+      code: `let a = Point { x: 1, y: 2 };
+let b = Point { x: 1, y: 3 };
+assert_eq!(points_equal(&a, &b), false);` },
+    { name: 'debug_string(&Point { x: 1, y: 2 }) returns "Point { x: 1, y: 2 }"',
+      code: `let p = Point { x: 1, y: 2 };
+assert_eq!(debug_string(&p), "Point { x: 1, y: 2 }");` },
+    { name: "duplicate returns an equal, independent Point",
+      code: `let p = Point { x: 3, y: 4 };
+let d = duplicate(&p);
+assert_eq!(d.x, 3);
+assert_eq!(d.y, 4);
+assert_eq!(p.x, 3);` },
+  ],
+
+  solution: `#[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Capability</th><th>Python</th><th>Rust trait</th><th>Unlocks</th></tr>
+  <tr><td>Debug printing</td><td><code>__repr__</code> / <code>repr(p)</code></td><td><code>Debug</code></td><td><code>format!("{:?}", p)</code>, <code>println!("{:?}", p)</code></td></tr>
+  <tr><td>Equality</td><td><code>__eq__</code> (identity by default)</td><td><code>PartialEq</code></td><td><code>a == b</code>, <code>assert_eq!</code></td></tr>
+  <tr><td>Copying</td><td><code>copy.deepcopy(p)</code></td><td><code>Clone</code></td><td><code>p.clone()</code></td></tr>
+  <tr><td>Zero-arg constructor</td><td>field defaults</td><td><code>Default</code></td><td><code>Point::default()</code></td></tr>
+  <tr><td>Generate them all</td><td><code>@dataclass</code></td><td><code>#[derive(Debug, Clone, PartialEq, Default)]</code></td><td>—</td></tr>
+</table>
+<p>The philosophical difference: Python gives every object these behaviors
+implicitly and lets you override; Rust makes each one an explicit, opt-in
+contract. That sounds like more work, but it's one line per struct — and it
+means <code>==</code> on your types always does exactly what someone chose,
+never a surprise identity comparison. You'll type
+<code>#[derive(Debug, Clone, PartialEq)]</code> so often it becomes muscle
+memory; add <code>Default</code>, <code>Hash</code>, or <code>Eq</code> as
+needed (a <code>HashMap</code> key needs <code>Hash + Eq</code>).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

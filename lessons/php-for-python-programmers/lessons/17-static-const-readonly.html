@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Static, Constants & readonly</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Static, Constants & readonly",
+
+  intro: `
+<p>Python class attributes famously double as class-level <em>and</em>
+instance-level state — <code>Counter.count</code> and
+<code>self.count</code> start out as the same thing until an instance
+assignment quietly shadows it. PHP refuses the ambiguity and gives each job
+its own keyword: <code>const MAX = 10;</code> is a true constant read as
+<code>Config::MAX</code>; <code>static</code> properties and methods belong
+to the class alone, accessed with <code>::</code> from outside and
+<code>self::</code> from inside (a <code>@classmethod</code> without the
+decorator — there's no <code>cls</code> parameter, you just name the class);
+and instance state stays on <code>$this</code>.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>MAX = 10</code> (convention only)</td><td><code>const MAX = 10;</code> (actually immutable)</td></tr>
+  <tr><td><code>Config.MAX</code></td><td><code>Config::MAX</code></td></tr>
+  <tr><td><code>count = 0</code> class attribute</td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td><code>@classmethod def f(cls):</code></td><td><code>public static function f() {</code></td></tr>
+  <tr><td><code>cls.count += 1</code></td><td><code>self::$count += 1;</code></td></tr>
+  <tr><td><code>@dataclass(frozen=True)</code></td><td><code>readonly</code> properties (per property)</td></tr>
+</table>
+<p>The third piece is <code>readonly</code> (PHP 8.1): a property that can be
+written exactly once — normally in the constructor — and is an
+<code>Error</code> to reassign afterwards. It's the frozen-dataclass idea,
+but applied field by field rather than to the whole class, and enforced by
+the engine rather than by <code>__setattr__</code> gymnastics.</p>`,
+
+  python: `class Counter:
+    count = 0  # class attribute -- shared... until an instance shadows it
+
+    @classmethod
+    def increment(cls) -> int:
+        cls.count += 1
+        return cls.count
+
+    @classmethod
+    def current(cls) -> int:
+        return cls.count
+
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Config:
+    DEFAULT_NAME = "guest"   # class attribute posing as a constant
+    name: str
+
+print(Counter.increment())   # 1
+print(Counter.increment())   # 2
+print(Config("ada").name)    # ada  (assigning to it raises FrozenInstanceError)`,
+
+  task: `
+<p>Port both classes:</p>
+<ol>
+  <li><code>Counter</code> — keep the provided
+      <code>private static int $count = 0;</code>. Implement
+      <code>public static function increment(): int</code> (bump
+      <code>self::$count</code> and return it) and
+      <code>public static function current(): int</code> (return it).
+      No instance is ever created — the tests call
+      <code>Counter::increment()</code>.</li>
+  <li><code>Config</code> — add the class constant
+      <code>const DEFAULT_NAME = "guest";</code> and change the constructor
+      to a promoted <em>readonly</em> property:
+      <code>public function __construct(public readonly string $name) {}</code>.
+      The tests read <code>Config::DEFAULT_NAME</code>, read
+      <code>-&gt;name</code>, and verify that writing <code>-&gt;name</code>
+      throws an <code>Error</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    // cls.count += 1; return cls.count  ->  self::$count
+    public static function increment(): int {
+        throw new Exception("TODO: implement increment");
+    }
+
+    public static function current(): int {
+        throw new Exception("TODO: implement current");
+    }
+}
+
+class Config {
+    // TODO: add  const DEFAULT_NAME = "guest";
+
+    // TODO: make $name a promoted *readonly* property.
+    public function __construct(public string $name) {}
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+/, message: "Use static members in Counter" },
+    { pattern: /const\s+[A-Z_]+/, message: "Declare the class constant DEFAULT_NAME with const" },
+    { pattern: /readonly/, message: "Make Config::$name a readonly property" },
+  ],
+
+  tests: [
+    { name: "Counter::increment() counts 1, then 2",
+      code: 'expect_eq(Counter::increment(), 1);\nexpect_eq(Counter::increment(), 2);' },
+    { name: "Counter::current() reads the shared count without bumping it",
+      code: 'expect_eq(Counter::current(), 2);\nexpect_eq(Counter::increment(), 3);' },
+    { name: 'Config::DEFAULT_NAME is "guest"',
+      code: 'expect_eq(Config::DEFAULT_NAME, "guest");' },
+    { name: 'new Config("ada")->name reads back "ada"',
+      code: '$c = new Config("ada");\nexpect_eq($c->name, "ada");' },
+    { name: "writing to a readonly property throws Error",
+      code: '$c = new Config("ada");\ntry { $c->name = "x"; throw new Exception("no error"); } catch (Error $e) {}\nexpect_eq($c->name, "ada");' },
+  ],
+
+  solution: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        self::$count += 1;
+        return self::$count;
+    }
+
+    public static function current(): int {
+        return self::$count;
+    }
+}
+
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Constant</td><td><code>MAX = 10</code> + convention</td><td><code>const MAX = 10;</code> — reassignment is impossible</td></tr>
+  <tr><td>Read a constant</td><td><code>Config.MAX</code></td><td><code>Config::MAX</code></td></tr>
+  <tr><td>Class-level state</td><td>class attribute</td><td><code>static</code> property (never visible on instances)</td></tr>
+  <tr><td>Class method</td><td><code>@classmethod</code> + <code>cls</code></td><td><code>static function</code>, use <code>self::</code> inside</td></tr>
+  <tr><td>Call it</td><td><code>Counter.increment()</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td>Write-once field</td><td><code>@dataclass(frozen=True)</code></td><td><code>readonly</code> on the property</td></tr>
+  <tr><td>Violation raises</td><td><code>FrozenInstanceError</code></td><td><code>Error</code></td></tr>
+</table>
+<p>The insight: PHP splits Python's one overloaded mechanism into three.
+A class attribute in Python is simultaneously a default value, a shared
+mutable, and a pseudo-constant — which of those it <em>is</em> depends on how
+callers treat it. PHP makes you declare intent up front: <code>const</code>
+can never change, <code>static</code> is shared and mutable but reachable
+only through <code>::</code>, and <code>readonly</code> is per-instance,
+write-once. The instance-shadowing trap (<code>self.count = ...</code>
+silently detaching from <code>cls.count</code>) has no PHP equivalent —
+<code>$this-&gt;count</code> and <code>self::$count</code> are different
+namespaces entirely.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

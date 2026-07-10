@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p>Rust's <code>HashMap&lt;String, u32&gt;</code> is Kotlin's
+<code>HashMap&lt;String, Int&gt;</code>, and it carries a guarantee you already
+rely on: <code>.get</code> can't silently hand you a value that's secretly
+missing. In Kotlin, <code>map[key]</code> returns <code>V?</code> — the "might
+be missing" is written into the type, and the compiler won't let you touch it
+until you've dealt with the <code>null</code>. Rust does the exact same thing
+under a different name: <code>.get</code> returns <code>Option&lt;&amp;V&gt;</code>.
+It's the null-safety discipline you know from Kotlin's <code>?</code> types,
+just spelled <code>Option</code>.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>val m = HashMap&lt;String, Int&gt;()</code></td><td><code>let mut m: HashMap&lt;String, u32&gt; = HashMap::new();</code></td></tr>
+  <tr><td><code>m[k] = v</code></td><td><code>m.insert(k, v)</code></td></tr>
+  <tr><td><code>m[k]</code> → value or <code>null</code></td><td><code>m.get(k)</code> → <code>Option&lt;&amp;u32&gt;</code></td></tr>
+  <tr><td><code>m.getOrDefault(k, 0)</code></td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>m.merge(k, n, Int::plus)</code></td><td><code>*m.entry(k).or_insert(0) += n</code></td></tr>
+</table>
+<p>The other star is the <em>entry API</em>. Kotlin's
+"update-or-initialize" dance (<code>merge</code>,
+<code>getOrPut</code>, or the classic
+<code>containsKey</code>-then-<code>put</code>) becomes
+<code>m.entry(key).or_insert(0)</code>: look up the slot once, insert a
+default if it's vacant, and hand back a mutable reference you can add to.
+One lookup, no lambdas, no double hashing. Note the import — unlike
+<code>Vec</code>, <code>HashMap</code> isn't in the prelude, so you need
+<code>use std::collections::HashMap;</code>, a touch more ceremony than
+Kotlin, where <code>HashMap</code> is available out of the box.</p>`,
+
+  kotlin: `val inventory = HashMap<String, Int>()
+inventory["apples"] = 3
+inventory["bananas"] = 5
+
+val count: Int? = inventory["cherries"]                // null — the type says so
+val safe: Int = inventory.getOrDefault("cherries", 0)  // or: inventory["cherries"] ?: 0
+
+// Restocking: update-or-initialize, a few classic ways.
+inventory.merge("apples", 2, Int::plus)
+inventory.getOrPut("cherries") { 0 }
+inventory["pears"] = (inventory["pears"] ?: 0) + 4
+
+for ((name, qty) in inventory) {
+    println("$name -> $qty")
+}`,
+
+  task: `
+<p>Rewrite the Kotlin as Rust:</p>
+<ol>
+  <li>Write <code>build_inventory()</code> returning
+      <code>HashMap&lt;String, u32&gt;</code> with exactly two entries:
+      <code>"apples"</code> → <code>3</code> and <code>"bananas"</code> →
+      <code>5</code>, inserted with <code>.insert</code> (Kotlin's
+      <code>m[k] = v</code>). Keys are <code>String</code>s, so insert
+      <code>"apples".to_string()</code>.</li>
+  <li>Write <code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str) -&gt; u32</code>
+      — Kotlin's <code>getOrDefault(name, 0)</code>, spelled
+      <code>inv.get(name).copied().unwrap_or(0)</code>
+      (<code>.copied()</code> turns the <code>&amp;u32</code> loan into an
+      owned <code>u32</code>).</li>
+  <li>Write <code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str, n: u32)</code>
+      that adds <code>n</code> to the count for <code>name</code>, starting
+      from 0 if absent — one line with
+      <code>inv.entry(name.to_string()).or_insert(0)</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "apples" -> 3, "bananas" -> 5, via .insert.
+//    Keys are owned Strings: "apples".to_string().
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: getOrDefault(name, 0) in Rust is
+//    .get(name).copied().unwrap_or(0).
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: the entry API — or_insert(0) gives you a &mut u32
+//    you can += into. (Dereference it first: *slot += n.)
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Use the HashMap<K, V> type" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Use .insert (Kotlin's m[k] = v) and the .entry API" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or for the getOrDefault behavior" },
+  ],
+
+  tests: [
+    { name: "build_inventory() has exactly two entries",
+      code: 'let inv = build_inventory();\nassert_eq!(inv.len(), 2);' },
+    { name: 'get_count finds "apples" -> 3 and "bananas" -> 5',
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "apples"), 3);\nassert_eq!(get_count(&inv, "bananas"), 5);' },
+    { name: "get_count returns 0 for a missing key (no null, no throw)",
+      code: 'let inv = build_inventory();\nassert_eq!(get_count(&inv, "cherries"), 0);' },
+    { name: "add_stock adds to an existing count",
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "apples", 2);\nassert_eq!(get_count(&inv, "apples"), 5);' },
+    { name: "add_stock starts a missing key at 0 and adds",
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "cherries", 7);\nassert_eq!(get_count(&inv, "cherries"), 7);' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert("apples".to_string(), 3);
+    inv.insert("bananas".to_string(), 5);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Import</td><td><code>HashMap</code> (built-in, no import)</td><td><code>use std::collections::HashMap;</code></td></tr>
+  <tr><td>Insert</td><td><code>m[k] = v</code></td><td><code>m.insert(k, v)</code></td></tr>
+  <tr><td>Lookup</td><td><code>m[k]</code> → value or <code>null</code></td><td><code>m.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>With default</td><td><code>m.getOrDefault(k, 0)</code></td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Update-or-init</td><td><code>m.merge(k, n, Int::plus)</code> / <code>getOrPut</code></td><td><code>*m.entry(k).or_insert(0) += n</code></td></tr>
+  <tr><td>Contains</td><td><code>m.containsKey(k)</code></td><td><code>m.contains_key(k)</code></td></tr>
+</table>
+<p>Notice that both <code>.insert</code> and <code>.entry</code> take the key
+<em>by value</em> — the map takes ownership of the <code>String</code>, which
+is why the solutions call <code>.to_string()</code> — while <code>.get</code>
+happily borrows a <code>&amp;str</code>. And the <code>Option</code> that
+<code>.get</code> returns isn't a HashMap quirk: it's the same type you'll
+meet head-on in the next lesson, doing for every lookup in Rust what
+nullable <code>?</code> types do throughout Kotlin.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

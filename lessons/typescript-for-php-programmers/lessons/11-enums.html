@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Literal Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Literal Types",
+
+  intro: `
+<p>Before PHP 8.1, "enum" meant a class full of string constants —
+<code>OrderStatus::PENDING</code> — with nothing stopping a caller from passing
+<code>'pnding'</code> instead. PHP 8.1's backed enums fixed that:
+<code>enum OrderStatus: string { case Pending = 'pending'; }</code> is a real type,
+and <code>OrderStatus::from('bogus')</code> throws. TypeScript's <code>enum</code>
+keyword looks nearly identical: <code>enum OrderStatus { Pending = "pending" }</code>
+gives you a runtime object whose members are the backed values —
+<code>OrderStatus.Pending === "pending"</code>, like PHP's
+<code>OrderStatus::Pending-&gt;value</code>.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td><td><code>enum OrderStatus { Pending = "pending" }</code></td></tr>
+  <tr><td><code>OrderStatus::Pending-&gt;value</code></td><td><code>OrderStatus.Pending</code> (already the string)</td></tr>
+  <tr><td><code>class Status { const PENDING = 'pending'; }</code> (pre-8.1)</td><td><code>type OrderStatusLiteral = "pending" | "shipped" | ...</code></td></tr>
+  <tr><td><code>match($status) { ... }</code></td><td><code>switch (status) { ... }</code> (checked exhaustive over a union)</td></tr>
+</table>
+<p>But TypeScript has a second option PHP does not: <em>string-literal union
+types</em>. <code>type OrderStatusLiteral = "pending" | "shipped" | ...</code> makes
+the strings <em>themselves</em> the type — no import, no wrapper object, zero
+runtime code, and <code>statusLabel("pnding")</code> is a compile error anyway.
+Modern TS style generally recommends literal unions over <code>enum</code>; reach
+for <code>enum</code> mainly when you want a runtime value to iterate or attach
+docs to. This exercise has you build both so you can compare.</p>`,
+
+  php: `<?php
+// PHP 8.1 backed enum
+enum OrderStatus: string
+{
+    case Pending = 'pending';
+    case Shipped = 'shipped';
+    case Delivered = 'delivered';
+    case Cancelled = 'cancelled';
+
+    public function label(): string
+    {
+        return match($this) {
+            self::Pending   => 'Pending payment',
+            self::Shipped   => 'On its way',
+            self::Delivered => 'Delivered',
+            self::Cancelled => 'Cancelled',
+        };
+    }
+}
+
+// The pre-8.1 idiom: class constants, no type safety
+class LegacyOrderStatus
+{
+    const PENDING = 'pending';
+    const SHIPPED = 'shipped';
+}
+
+echo OrderStatus::Pending->value; // "pending"`,
+
+  task: `
+<p>Model the order status both ways:</p>
+<ol>
+  <li>Define <code>enum OrderStatus</code> with string members
+      <code>Pending = "pending"</code>, <code>Shipped = "shipped"</code>,
+      <code>Delivered = "delivered"</code>, <code>Cancelled = "cancelled"</code>.</li>
+  <li>Define a literal-union type alias
+      <code>type OrderStatusLiteral = "pending" | "shipped" | "delivered" | "cancelled"</code>
+      — the idiomatic TS alternative (type aliases are erased, so tests can only
+      see the enum).</li>
+  <li>Write <code>statusLabel(status: OrderStatusLiteral): string</code> mapping
+      <code>"pending"</code> → <code>"Pending payment"</code>,
+      <code>"shipped"</code> → <code>"On its way"</code>,
+      <code>"delivered"</code> → <code>"Delivered"</code>,
+      <code>"cancelled"</code> → <code>"Cancelled"</code>
+      (a <code>switch</code> is the closest cousin of PHP's <code>match</code>).</li>
+</ol>`,
+
+  starter: `// TODO: 1. Define enum OrderStatus with string values:
+//    Pending = "pending", Shipped = "shipped",
+//    Delivered = "delivered", Cancelled = "cancelled"
+enum OrderStatus {
+  Pending = "pending",
+  // TODO: add Shipped, Delivered, Cancelled
+}
+
+// TODO: 2. Define the literal-union alternative:
+//    type OrderStatusLiteral = the four status strings joined with |
+
+// TODO: 3. Map each status to its label:
+//    pending -> "Pending payment", shipped -> "On its way",
+//    delivered -> "Delivered", cancelled -> "Cancelled"
+function statusLabel(status: string): string {
+  return "";
+}
+`,
+
+  exportNames: ["OrderStatus", "statusLabel"],
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus/, message: "Define an enum named OrderStatus" },
+    { pattern: /"\w+"\s*\|\s*"/, message: "Define a string-literal union type (e.g. \"pending\" | \"shipped\" | ...)" },
+    { pattern: /type\s+OrderStatusLiteral\s*=/, message: "Name the literal union with a type alias: type OrderStatusLiteral = ..." },
+  ],
+
+  tests: [
+    { name: 'OrderStatus.Pending is the string "pending"', run: (x) => expectEqual(x.OrderStatus.Pending, "pending") },
+    { name: 'OrderStatus.Cancelled is the string "cancelled"', run: (x) => expectEqual(x.OrderStatus.Cancelled, "cancelled") },
+    { name: 'statusLabel("pending") returns "Pending payment"', run: (x) => expectEqual(x.statusLabel("pending"), "Pending payment") },
+    { name: 'statusLabel("shipped") returns "On its way"', run: (x) => expectEqual(x.statusLabel("shipped"), "On its way") },
+    { name: "statusLabel(OrderStatus.Delivered) works too — enum members ARE their strings", run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Delivered), "Delivered") },
+  ],
+
+  solution: `enum OrderStatus {
+  Pending = "pending",
+  Shipped = "shipped",
+  Delivered = "delivered",
+  Cancelled = "cancelled",
+}
+
+type OrderStatusLiteral = "pending" | "shipped" | "delivered" | "cancelled";
+
+function statusLabel(status: OrderStatusLiteral): string {
+  switch (status) {
+    case "pending":
+      return "Pending payment";
+    case "shipped":
+      return "On its way";
+    case "delivered":
+      return "Delivered";
+    case "cancelled":
+      return "Cancelled";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Backed enum</td><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td><td><code>enum OrderStatus { Pending = "pending" }</code></td></tr>
+  <tr><td>Get the backing value</td><td><code>OrderStatus::Pending-&gt;value</code></td><td><code>OrderStatus.Pending</code></td></tr>
+  <tr><td>Value → enum</td><td><code>OrderStatus::from('pending')</code></td><td>Usually unnecessary — the string already typechecks</td></tr>
+  <tr><td>Lightweight alternative</td><td>Class constants (pre-8.1, unchecked)</td><td><code>type S = "pending" | "shipped"</code> (fully checked)</td></tr>
+  <tr><td>Exhaustive branching</td><td><code>match($status)</code> (throws on miss)</td><td><code>switch</code> over a union (compiler flags missed cases)</td></tr>
+  <tr><td>Runtime footprint</td><td>Enum object exists at runtime</td><td><code>enum</code>: yes; literal union: erased, zero cost</td></tr>
+</table>
+<p>Rule of thumb for TS codebases: default to string-literal unions — they are
+plain strings on the wire and in JSON, need no imports at call sites, and the
+compiler still catches every typo. Choose <code>enum</code> when you genuinely
+need a runtime object (listing all cases, attaching a label method's worth of
+logic nearby) — the situations where PHP's richer 8.1 enums shine.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

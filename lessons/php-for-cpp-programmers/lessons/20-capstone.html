@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>The finale is a small inventory system, and its real subject is the one
+semantic split you must never forget in PHP: <strong>arrays are values,
+objects are handles</strong>. Assign or pass an array and it behaves like a
+<code>std::vector</code> copied by value — the callee cannot touch yours. But
+the <code>Item</code> objects <em>inside</em> that array are references with
+<code>shared_ptr</code> semantics: copying the array copies the handles, not
+the objects. So an "immutable update" takes two deliberate moves —
+<code>clone</code> the object you want to change (the copy constructor you
+must invoke by name), and build a fresh array around it with
+<code>array_map</code>.</p>
+<table>
+  <tr><th>C++17</th><th>PHP</th></tr>
+  <tr><td><code>std::vector&lt;Item&gt; b = a;</code> — deep, elements copied</td><td><code>$b = $a;</code> — array copied, but the Items inside are shared handles</td></tr>
+  <tr><td><code>Item</code> held by value</td><td>every object variable ≈ <code>shared_ptr&lt;Item&gt;</code></td></tr>
+  <tr><td>implicit copy constructor</td><td><code>clone $item</code> — explicit, or you mutate the original</td></tr>
+  <tr><td><code>const Item*</code> / <code>std::optional</code> for "maybe"</td><td><code>?Item</code> return type, <code>null</code> for absent</td></tr>
+  <tr><td><code>std::accumulate</code> / <code>std::transform</code> / <code>std::copy_if</code></td><td><code>array_reduce</code> / <code>array_map</code> / <code>array_filter</code></td></tr>
+  <tr><td>erase–remove then a dense vector</td><td><code>array_values(array_filter(...))</code> to reindex</td></tr>
+</table>
+<p>Everything else is a victory lap over the course: constructor property
+promotion (lesson 9), nullable return types (lesson 6), strict
+<code>===</code> comparison (lesson 7), and the <code>array_*</code> trio
+with its reindexing gotcha (lesson 13). The <code>Item</code> class is given
+to you complete — one promoted-property constructor is the entire class
+body.</p>`,
+
+  cpp: `struct Item {
+    std::string name;
+    int price_cents;
+    int count;
+};
+
+int total_value(const std::vector<Item>& items) {
+    return std::accumulate(items.begin(), items.end(), 0,
+        [](int acc, const Item& i) { return acc + i.price_cents * i.count; });
+}
+
+const Item* find_item(const std::vector<Item>& items,
+                      const std::string& name) {
+    auto it = std::find_if(items.begin(), items.end(),
+        [&](const Item& i) { return i.name == name; });
+    return it == items.end() ? nullptr : &*it;
+}
+// restock returns a modified copy: vector's value semantics
+// make that trivial — the copy owns its own Items.`,
+
+  task: `
+<p><code>Item</code> is provided. Implement the four inventory
+operations:</p>
+<ol>
+  <li><code>total_value(array $items): int</code> — sum of
+      <code>price_cents * count</code> over all items;
+      <code>array_reduce</code> is the <code>std::accumulate</code> here (a
+      <code>foreach</code> works too).</li>
+  <li><code>find_item(array $items, string $name): ?Item</code> — return the
+      first <code>Item</code> whose name matches (<code>===</code>), or
+      <code>null</code>. The <code>?Item</code> plays the role of
+      <code>const Item*</code>.</li>
+  <li><code>restock(array $items, string $name, int $amount): array</code> —
+      return a <em>new</em> array where the matching item's
+      <code>count</code> is increased — without mutating the original
+      object. <code>array_map</code> over the items: non-matches pass through
+      as-is; the match gets <code>$copy = clone $item;</code>, then bump
+      <code>$copy-&gt;count</code>. Skip the <code>clone</code> and you have
+      mutated the caller's Item through the shared handle.</li>
+  <li><code>names_in_stock(array $items): array</code> — the names of items
+      with <code>count &gt; 0</code>: <code>array_filter</code>, map to
+      <code>-&gt;name</code>, and <code>array_values</code> to reindex —
+      <code>array_filter</code> keeps original keys, and the tests expect a
+      dense list.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Provided complete — constructor property promotion from lesson 9.
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+// 1. Sum of price_cents * count (array_reduce or foreach).
+function total_value(array $items): int {
+    throw new Exception("TODO: implement total_value");
+}
+
+// 2. First Item whose name === $name, else null.
+function find_item(array $items, string $name): ?Item {
+    throw new Exception("TODO: implement find_item");
+}
+
+// 3. array_map; clone the matching Item before bumping its count.
+function restock(array $items, string $name, int $amount): array {
+    throw new Exception("TODO: implement restock");
+}
+
+// 4. array_filter (count > 0) -> names -> array_values to reindex.
+function names_in_stock(array $items): array {
+    throw new Exception("TODO: implement names_in_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /\?Item/, message: "find_item returns ?Item — nullable, like const Item*" },
+    { pattern: /array_(map|filter|reduce|values)/, message: "Use the array_* functions — this is std::transform/copy_if territory" },
+    { pattern: /clone/, message: "clone the matched Item in restock — objects are shared handles" },
+  ],
+
+  tests: [
+    { name: 'total_value sums price_cents * count',
+      code: `$items = [new Item("bolt", 50, 10), new Item("nut", 25, 4)];
+expect_eq(total_value($items), 600);
+expect_eq(total_value([]), 0);` },
+    { name: 'find_item returns the matching Item',
+      code: `$items = [new Item("bolt", 50, 10), new Item("nut", 25, 4)];
+$found = find_item($items, "nut");
+expect_true($found instanceof Item);
+expect_eq($found->price_cents, 25);` },
+    { name: 'find_item returns null when nothing matches',
+      code: `$items = [new Item("bolt", 50, 10)];
+expect_true(find_item($items, "gear") === null);` },
+    { name: 'restock bumps the count in the returned array',
+      code: `$items = [new Item("bolt", 50, 10), new Item("nut", 25, 4)];
+$after = restock($items, "nut", 6);
+expect_eq($after[1]->count, 10);
+expect_eq($after[0]->count, 10);` },
+    { name: 'restock does NOT mutate the original Item objects',
+      code: `$items = [new Item("bolt", 50, 10), new Item("nut", 25, 4)];
+$after = restock($items, "nut", 6);
+expect_eq($items[1]->count, 4);
+expect_true($after[1] !== $items[1]);` },
+    { name: 'restock with an unknown name changes nothing',
+      code: `$items = [new Item("bolt", 50, 10)];
+$after = restock($items, "gear", 5);
+expect_eq($after[0]->count, 10);
+expect_eq($items[0]->count, 10);` },
+    { name: 'names_in_stock filters count > 0 and reindexes',
+      code: `$items = [new Item("bolt", 50, 10), new Item("washer", 5, 0), new Item("nut", 25, 4)];
+expect_eq(names_in_stock($items), ["bolt", "nut"]);` },
+  ],
+
+  solution: `<?php
+
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+function total_value(array $items): int {
+    return array_reduce(
+        $items,
+        fn(int $sum, Item $i) => $sum + $i->price_cents * $i->count,
+        0,
+    );
+}
+
+function find_item(array $items, string $name): ?Item {
+    foreach ($items as $item) {
+        if ($item->name === $name) {
+            return $item;
+        }
+    }
+    return null;
+}
+
+function restock(array $items, string $name, int $amount): array {
+    return array_map(function (Item $item) use ($name, $amount) {
+        if ($item->name !== $name) {
+            return $item;
+        }
+        $copy = clone $item;
+        $copy->count += $amount;
+        return $copy;
+    }, $items);
+}
+
+function names_in_stock(array $items): array {
+    $in_stock = array_filter($items, fn(Item $i) => $i->count > 0);
+    return array_values(array_map(fn(Item $i) => $i->name, $in_stock));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+  <tr><td>Copy a container</td><td><code>auto b = a;</code> — elements copied too</td><td><code>$b = $a;</code> — array copied, objects inside shared</td></tr>
+  <tr><td>Copy an object</td><td>copy constructor, implicit</td><td><code>clone $obj</code> — always explicit</td></tr>
+  <tr><td>Deep-copy hook</td><td>write the copy ctor</td><td><code>__clone()</code> magic method</td></tr>
+  <tr><td>Maybe-a-value return</td><td><code>const T*</code> / <code>std::optional&lt;T&gt;</code></td><td><code>?T</code> and <code>null</code></td></tr>
+  <tr><td>Fold</td><td><code>std::accumulate</code></td><td><code>array_reduce($a, $fn, $init)</code></td></tr>
+  <tr><td>Transform</td><td><code>std::transform</code></td><td><code>array_map($fn, $a)</code></td></tr>
+  <tr><td>Filter + compact</td><td>erase–remove idiom</td><td><code>array_values(array_filter($a, $fn))</code></td></tr>
+  <tr><td>Identity test</td><td>compare pointers</td><td><code>$a === $b</code> on objects — same instance?</td></tr>
+</table>
+<p>The insight that ties the course together: PHP splits C++'s value
+semantics down the middle. Arrays kept them — copy-on-write under the hood,
+<code>std::vector</code>-by-value in behavior — while objects went the Java
+route of shared handles. Every function in this capstone leans on that split:
+<code>restock</code> can return <code>array_map</code>'s fresh array without
+fearing for the caller's array, but must <code>clone</code> before touching
+an <code>Item</code>, because that handle <em>is</em> the caller's object.
+Say "vectors by value, <code>shared_ptr</code> to objects" to yourself when
+reading any PHP code, and its aliasing behavior stops being surprising —
+it is the mental model this whole language runs on.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

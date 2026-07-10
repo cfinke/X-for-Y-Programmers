@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Sorting</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Sorting",
+
+  intro: `
+<p>In Rust you sort with methods on the slice itself, <code>sort()</code> or
+<code>sort_by</code>, the latter taking a closure that returns an
+<code>Ordering</code>. Go splits the job across the <code>sort</code> package.
+There are ready-made helpers for the common cases — <code>sort.Ints</code> and
+<code>sort.Strings</code> — and a general <code>sort.Slice</code> that takes a
+<em>less</em> function returning a <code>bool</code>, not an <code>Ordering</code>.</p>
+<table>
+  <tr><th>Rust</th><th>Go</th></tr>
+  <tr><td><code>v.sort()</code> (on <code>Vec&lt;i32&gt;</code>)</td><td><code>sort.Ints(s)</code></td></tr>
+  <tr><td><code>words.sort()</code> (lexicographic)</td><td><code>sort.Strings(s)</code></td></tr>
+  <tr><td><code>people.sort_by_key(|p| p.age)</code></td><td><code>sort.Slice(s, func(i, j int) bool { return s[i].Age &lt; s[j].Age })</code></td></tr>
+  <tr><td>mutates in place, returns nothing</td><td>sorts <strong>in place</strong>, returns nothing</td></tr>
+</table>
+<p>Two habits to unlearn. First, Go's comparator answers a yes/no question — "does
+element <code>i</code> come before element <code>j</code>?" — so you return
+<code>s[i] &lt; s[j]</code>, never an <code>Ordering</code> or a subtraction. Second, the
+less function receives <em>indices</em>, not the elements themselves; you index back
+into the slice with <code>s[i]</code> and <code>s[j]</code>. And where Rust's
+<code>sort</code> is guaranteed stable (it's a stable merge sort), <code>sort.Slice</code>
+is <strong>not</strong> — reach for <code>sort.SliceStable</code> when equal keys must
+keep their original order.</p>`,
+
+  rust: `let mut nums = vec![3, 1, 2];
+nums.sort(); // [1, 2, 3]
+
+struct Person {
+    name: String,
+    age: u32,
+}
+let mut people = vec![
+    Person { name: "Bob".to_string(), age: 30 },
+    Person { name: "Amy".to_string(), age: 20 },
+];
+people.sort_by_key(|p| p.age); // Amy, then Bob`,
+
+  task: `
+<p>Write these as package-level declarations (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>SortInts(nums []int) []int</code> — sort <code>nums</code> ascending with
+      <code>sort.Ints</code> and return it.</li>
+  <li><code>SortStrings(words []string) []string</code> — sort with
+      <code>sort.Strings</code> and return it.</li>
+  <li>A struct <code>type Person struct { Name string; Age int }</code> and
+      <code>SortByAge(people []Person) []Person</code> that sorts youngest-first with
+      <code>sort.Slice</code> and a less func comparing <code>Age</code>.</li>
+  <li><code>SortStableByAge(people []Person) []Person</code> — same ordering, but use
+      <code>sort.SliceStable</code> so people of equal age keep their input order.</li>
+</ol>
+<p>All four sort in place and return the same slice for convenient testing.</p>`,
+
+  starter: `func SortInts(nums []int) []int {
+	return nil // TODO: use sort.Ints
+}
+
+func SortStrings(words []string) []string {
+	return nil // TODO: use sort.Strings
+}
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+func SortByAge(people []Person) []Person {
+	return nil // TODO: use sort.Slice with a less func on Age
+}
+
+func SortStableByAge(people []Person) []Person {
+	return nil // TODO: use sort.SliceStable
+}
+`,
+
+  requirements: [
+    { pattern: /sort\.Ints/, message: "Use sort.Ints in SortInts" },
+    { pattern: /sort\.Slice\(/, message: "Use sort.Slice with a less func in SortByAge" },
+    { pattern: /sort\.SliceStable/, message: "Use sort.SliceStable in SortStableByAge" },
+  ],
+
+  tests: [
+    { name: "SortInts orders ascending", code: "\t\texpect_eq(SortInts([]int{3, 1, 2}), []int{1, 2, 3})" },
+    { name: "SortStrings orders lexicographically", code: "\t\texpect_eq(SortStrings([]string{\"pear\", \"apple\", \"fig\"}), []string{\"apple\", \"fig\", \"pear\"})" },
+    { name: "SortByAge puts youngest first", code: "\t\tpeople := []Person{{Name: \"Bob\", Age: 30}, {Name: \"Amy\", Age: 20}}\n\t\texpect_eq(SortByAge(people), []Person{{Name: \"Amy\", Age: 20}, {Name: \"Bob\", Age: 30}})" },
+    { name: "SortStableByAge keeps input order for equal ages", code: "\t\tpeople := []Person{{Name: \"Bob\", Age: 30}, {Name: \"Amy\", Age: 30}, {Name: \"Cy\", Age: 20}}\n\t\texpect_eq(SortStableByAge(people), []Person{{Name: \"Cy\", Age: 20}, {Name: \"Bob\", Age: 30}, {Name: \"Amy\", Age: 30}})" },
+  ],
+
+  solution: `func SortInts(nums []int) []int {
+	sort.Ints(nums)
+	return nums
+}
+
+func SortStrings(words []string) []string {
+	sort.Strings(words)
+	return words
+}
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+func SortByAge(people []Person) []Person {
+	sort.Slice(people, func(i, j int) bool {
+		return people[i].Age < people[j].Age
+	})
+	return people
+}
+
+func SortStableByAge(people []Person) []Person {
+	sort.SliceStable(people, func(i, j int) bool {
+		return people[i].Age < people[j].Age
+	})
+	return people
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Go</th></tr>
+  <tr><td>Sort numbers</td><td><code>v.sort()</code></td><td><code>sort.Ints(a)</code></td></tr>
+  <tr><td>Sort strings</td><td><code>v.sort()</code></td><td><code>sort.Strings(a)</code></td></tr>
+  <tr><td>Custom order</td><td><code>v.sort_by_key(|x| …)</code></td><td><code>sort.Slice(a, less)</code></td></tr>
+  <tr><td>Comparator result</td><td><code>Ordering</code> (Less, Equal, Greater)</td><td><code>bool</code> (i before j?)</td></tr>
+  <tr><td>Stable sort</td><td>always stable</td><td><code>sort.SliceStable(a, less)</code></td></tr>
+</table>
+<p>Because these functions mutate the slice in place, a caller who wants to keep the
+original untouched must copy first — <code>c := append([]int(nil), nums...)</code> —
+before sorting. Rust's <code>sort()</code> also mutates in place, and the borrow
+checker makes that obvious at the call site since you need a <code>&amp;mut</code>
+binding; Go's compiler enforces no such thing, so the in-place nature is easy to miss
+until you notice the function returns nothing new.</p>
+<p>Modern Go (1.21+) adds the generic <code>slices</code> package:
+<code>slices.Sort(nums)</code> works on any ordered type, and
+<code>slices.SortFunc</code> / <code>slices.SortStableFunc</code> take a comparator
+returning an <code>int</code> (use <code>cmp.Compare</code>) — closer to Rust's
+<code>Ordering</code>-based <code>sort_by</code>. The <code>sort.Slice</code> family
+remains the most common idiom in existing code, which is why it is worth knowing
+first.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

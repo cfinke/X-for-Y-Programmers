@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Slices</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Slices",
+
+  intro: `
+<p>A Go <strong>slice</strong> is the everyday list type — the thing you reach for
+whenever you'd write a plain indexed <code>array</code> in PHP. It's a growable view
+onto a backing array, described by a length (<code>len</code>) and a capacity
+(<code>cap</code>). Unlike a PHP array, a slice is homogeneous and typed:
+<code>[]int</code> holds ints and nothing else — no mixing types, and no string
+keys.</p>
+<table>
+  <tr><th>PHP</th><th>Go</th></tr>
+  <tr><td><code>$xs = [1, 2, 3];</code></td><td><code>xs := []int{1, 2, 3}</code></td></tr>
+  <tr><td><code>$xs[] = 4;</code></td><td><code>xs = append(xs, 4)</code></td></tr>
+  <tr><td><code>count($xs)</code></td><td><code>len(xs)</code></td></tr>
+  <tr><td><code>array_slice($xs, 1, 2)</code></td><td><code>xs[1:3]</code></td></tr>
+  <tr><td><code>foreach ($xs as $x)</code></td><td><code>for _, x := range xs</code></td></tr>
+</table>
+<p>The big surprise is <code>append</code>: it isn't a mutating call like
+<code>$xs[] = 4</code>. It <em>returns</em> a (possibly new) slice, so you must assign
+the result back: <code>xs = append(xs, 4)</code>. Alongside <code>len</code>,
+a slice also has a <code>cap</code> — the size of its backing array — and
+<code>make([]int, n)</code> pre-allocates a slice of <code>n</code> zero values.
+Ranging gives you an index and a value; use <code>_</code> to discard the index.</p>`,
+
+  php: `function doubled(array $xs): array {
+    $out = [];
+    foreach ($xs as $x) {
+        $out[] = $x * 2;
+    }
+    return $out;
+}
+
+function total(array $xs): int {
+    $sum = 0;
+    foreach ($xs as $x) {
+        $sum += $x;
+    }
+    return $sum;
+}`,
+
+  task: `
+<p>Write these as package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>Doubled(xs []int) []int</code> returns a <em>new</em> slice with every
+      element multiplied by 2. Build it with <code>make([]int, len(xs))</code>
+      or start from <code>[]int{}</code> and <code>append</code>. Use
+      <code>range</code> to iterate.</li>
+  <li><code>Total(xs []int) int</code> returns the sum of all elements
+      (<code>0</code> for an empty slice).</li>
+  <li><code>Middle(xs []int) []int</code> returns the slice with its first and
+      last elements dropped, using slicing: <code>xs[1 : len(xs)-1]</code>. You
+      may assume <code>len(xs) &gt;= 2</code>.</li>
+</ol>`,
+
+  starter: `func Doubled(xs []int) []int {
+	return nil // TODO
+}
+
+func Total(xs []int) int {
+	return 0 // TODO
+}
+
+func Middle(xs []int) []int {
+	return nil // TODO: use slicing xs[a:b]
+}
+`,
+
+  requirements: [
+    { pattern: /append|make\s*\(/, message: "Build the result slice with append or make" },
+    { pattern: /range/, message: "Iterate with range" },
+    { pattern: /xs\[1\s*:/, message: "Use slicing xs[1:...] in Middle" },
+  ],
+
+  tests: [
+    { name: "Doubled([1,2,3]) is [2,4,6]", code: "\t\texpect_eq(Doubled([]int{1, 2, 3}), []int{2, 4, 6})" },
+    { name: "Doubled([]) is []", code: "\t\texpect_eq(Doubled([]int{}), []int{})" },
+    { name: "Doubled does not mutate input", code: "\t\tin := []int{4, 5}\n\t\t_ = Doubled(in)\n\t\texpect_eq(in, []int{4, 5})" },
+    { name: "Total([1,2,3,4]) is 10", code: "\t\texpect_eq(Total([]int{1, 2, 3, 4}), 10)" },
+    { name: "Total([]) is 0", code: "\t\texpect_eq(Total([]int{}), 0)" },
+    { name: "Middle([1,2,3,4,5]) is [2,3,4]", code: "\t\texpect_eq(Middle([]int{1, 2, 3, 4, 5}), []int{2, 3, 4})" },
+    { name: "Middle([9,9]) is []", code: "\t\texpect_eq(len(Middle([]int{9, 9})), 0)" },
+  ],
+
+  solution: `func Doubled(xs []int) []int {
+	out := make([]int, len(xs))
+	for i, x := range xs {
+		out[i] = x * 2
+	}
+	return out
+}
+
+func Total(xs []int) int {
+	sum := 0
+	for _, x := range xs {
+		sum += x
+	}
+	return sum
+}
+
+func Middle(xs []int) []int {
+	return xs[1 : len(xs)-1]
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Go</th></tr>
+  <tr><td>Literal</td><td><code>[1, 2, 3]</code></td><td><code>[]int{1, 2, 3}</code></td></tr>
+  <tr><td>Append</td><td><code>$xs[] = $x;</code></td><td><code>xs = append(xs, x)</code></td></tr>
+  <tr><td>Length</td><td><code>count($xs)</code></td><td><code>len(xs)</code></td></tr>
+  <tr><td>Pre-size</td><td><code>array_fill(0, $n, 0)</code></td><td><code>make([]int, n)</code></td></tr>
+  <tr><td>Sub-slice</td><td><code>array_slice($xs, $a, $b - $a)</code></td><td><code>xs[a:b]</code></td></tr>
+  <tr><td>Iterate</td><td><code>foreach ($xs as $x)</code></td><td><code>for _, x := range xs</code></td></tr>
+</table>
+<p>Two habits to build. First, <code>append</code> returns a value — forgetting
+the assignment is the classic beginner bug. Second, slicing with <code>xs[a:b]</code>
+does <em>not</em> copy: the result shares the same backing array, so writing
+through one can be seen through the other. That's different from PHP arrays, which
+are copied by value on assignment (PHP's copy-on-write semantics make every array
+feel independent). That's why idiomatic Go functions that transform data build and
+return a <em>new</em> slice (via <code>make</code> or <code>append</code>) rather
+than mutating in place — exactly what <code>Doubled</code> does here. When you
+truly need an independent copy, use the built-in <code>copy(dst, src)</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Everything Is an Object</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Everything Is an Object",
+
+  intro: `
+<p>PHP scatters its functionality across a few thousand global functions, and
+half the daily friction is remembering their shape: is it
+<code>str_split($s)</code> or <code>split_str</code>? Does
+<code>strpos</code> take the haystack or the needle first? (Haystack. And
+<code>in_array</code> takes the needle first. Good luck.) Ruby deletes this
+entire category of anxiety with one rule: <strong>everything is an object, and
+you call methods on it.</strong></p>
+<p>A number is an object. <code>-3.abs</code> is <code>3</code>. A float knows
+how to round itself: <code>3.14159.round(2)</code>. A string can split itself
+into characters: <code>"cat".chars</code>. Even <code>2.even?</code> and
+<code>5.times { ... }</code> are just methods on integers. There is no global
+<code>abs()</code> function and no argument-order coin flip, because the value
+you are operating on is always the receiver, sitting to the left of the dot.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td><code>abs($n)</code></td><td><code>n.abs</code></td></tr>
+  <tr><td><code>round($f, 2)</code></td><td><code>f.round(2)</code></td></tr>
+  <tr><td><code>str_split($s)</code></td><td><code>s.chars</code></td></tr>
+  <tr><td><code>$n % 2 === 0</code></td><td><code>n.even?</code></td></tr>
+  <tr><td><code>strtoupper($s)</code></td><td><code>s.upcase</code></td></tr>
+  <tr><td><code>for ($i=0;$i&lt;5;$i++)</code></td><td><code>5.times { ... }</code></td></tr>
+</table>
+<p>Because every operation returns another object, methods <em>chain</em>. Where
+PHP nests calls inside-out — <code>array_sum(array_filter($nums, ...))</code>,
+read right-to-left — Ruby reads left-to-right in the order things happen:
+<code>nums.select { |n| n.even? }.sum</code>. Chaining is not a trick here; it
+is the core style of the language, and this lesson is where you start building
+the habit.</p>`,
+
+  php: `<?php
+$n = -3;
+$abs = abs($n);                  // 3 — global function, value goes inside
+
+$f = 3.14159;
+$rounded = round($f, 2);         // 3.14
+
+$s = "cat";
+$chars = str_split($s);          // ['c', 'a', 't']
+
+$nums = [1, 2, 3, 4];
+$evens = array_filter($nums, fn($x) => $x % 2 === 0); // [2, 4]
+
+// Needle first or haystack first? Every function is its own coin flip.
+$pos = strpos("hello", "l");     // 2  (haystack, then needle)
+$has = in_array(2, $nums);       // needle, then haystack`,
+
+  task: `
+<p>Turn four global-function calls into method calls on the value itself:</p>
+<ol>
+  <li><code>absolute(n)</code> — <code>abs($n)</code> becomes
+      <code>n.abs</code>.</li>
+  <li><code>even_numbers(nums)</code> — keep the even numbers with
+      <code>nums.select { |n| n.even? }</code>. No <code>% 2 == 0</code> needed;
+      integers answer <code>even?</code> themselves.</li>
+  <li><code>rounded(f, digits)</code> — <code>round($f, 2)</code> becomes
+      <code>f.round(digits)</code>.</li>
+  <li><code>char_list(s)</code> — <code>str_split($s)</code> becomes
+      <code>s.chars</code>.</li>
+</ol>`,
+
+  starter: `# 1. absolute: abs($n) -> n.abs
+def absolute(n)
+  raise NotImplementedError, "TODO: implement absolute"
+end
+
+# 2. even_numbers: nums.select { |n| n.even? }
+def even_numbers(nums)
+  raise NotImplementedError, "TODO: implement even_numbers"
+end
+
+# 3. rounded: round($f, 2) -> f.round(digits)
+def rounded(f, digits)
+  raise NotImplementedError, "TODO: implement rounded"
+end
+
+# 4. char_list: str_split($s) -> s.chars
+def char_list(s)
+  raise NotImplementedError, "TODO: implement char_list"
+end
+`,
+
+  requirements: [
+    { pattern: /\.abs/, message: "Call .abs on the number" },
+    { pattern: /\.even\?|&:even\?/, message: "Filter with .even? (as a block or &:even?)" },
+    { pattern: /\.round\(/, message: "Round with .round(digits)" },
+    { pattern: /\.chars/, message: "Split into characters with .chars" },
+  ],
+
+  tests: [
+    { name: "absolute(-3) is 3",
+      code: "  expect_eq(absolute(-3), 3)" },
+    { name: "absolute(5) is 5",
+      code: "  expect_eq(absolute(5), 5)" },
+    { name: "even_numbers keeps only the even values",
+      code: "  expect_eq(even_numbers([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "rounded(3.14159, 2) is 3.14",
+      code: "  expect_eq(rounded(3.14159, 2), 3.14)" },
+    { name: "rounded(2.71828, 3) is 2.718",
+      code: "  expect_eq(rounded(2.71828, 3), 2.718)" },
+    { name: "char_list(\"cat\") is [\"c\", \"a\", \"t\"]",
+      code: "  expect_eq(char_list(\"cat\"), [\"c\", \"a\", \"t\"])" },
+  ],
+
+  solution: `def absolute(n)
+  n.abs
+end
+
+def even_numbers(nums)
+  nums.select { |n| n.even? }
+end
+
+def rounded(f, digits)
+  f.round(digits)
+end
+
+def char_list(s)
+  s.chars
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Task</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Absolute value</td><td><code>abs($n)</code></td><td><code>n.abs</code></td></tr>
+  <tr><td>Round</td><td><code>round($f, 2)</code></td><td><code>f.round(2)</code></td></tr>
+  <tr><td>Characters</td><td><code>str_split($s)</code></td><td><code>s.chars</code></td></tr>
+  <tr><td>Even / odd</td><td><code>$n % 2 === 0</code></td><td><code>n.even?</code> / <code>n.odd?</code></td></tr>
+  <tr><td>Uppercase</td><td><code>strtoupper($s)</code></td><td><code>s.upcase</code></td></tr>
+  <tr><td>Repeat N times</td><td><code>for</code> loop</td><td><code>5.times { ... }</code></td></tr>
+  <tr><td>Filter</td><td><code>array_filter($a, $f)</code></td><td><code>a.select { ... }</code></td></tr>
+</table>
+<p>Two things follow from "everything is an object." First, there are no
+primitives hiding from you: <code>nil</code>, <code>true</code>, integers, and
+symbols all answer methods, so you can always ask a value what it can do
+(<code>3.methods</code>, or <code>respond_to?</code>, later). Second, the
+argument-order memory tax is gone — the value is the receiver, and any extra
+information goes in parentheses. When you catch yourself reaching for a global
+helper, flip it around: the value probably already knows how to do the thing to
+itself, and the answer is another object you can keep chaining.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

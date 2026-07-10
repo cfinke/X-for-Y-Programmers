@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Basic Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Basic Types",
+
+  intro: `
+<p>The first thing a C++ programmer notices in TypeScript is where the type
+went: <em>after</em> the name. <code>int age = 36;</code> becomes
+<code>let age: number = 36;</code> — the same information, flipped around a
+colon, exactly like a trailing return type. The second thing you notice is how
+much of your mental catalog collapses: <code>int</code>, <code>long</code>,
+<code>double</code>, <code>float</code>, <code>size_t</code>,
+<code>uint8_t</code> — all of them are just <code>number</code>, which is an
+IEEE-754 double. Integers are exact up to 2<sup>53</sup>&nbsp;−&nbsp;1, and past
+that you lose precision — but there is no overflow, no wrapping, and no
+undefined behavior.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>int age = 36;</code></td><td><code>let age: number = 36;</code></td></tr>
+  <tr><td><code>double price = 9.99;</code></td><td><code>let price: number = 9.99;</code> (one number type)</td></tr>
+  <tr><td><code>std::string name = "Ada";</code></td><td><code>const name: string = "Ada";</code></td></tr>
+  <tr><td><code>bool active = true;</code></td><td><code>let active: boolean = true;</code></td></tr>
+  <tr><td><code>auto count = 42;</code></td><td><code>let count = 42;</code> (inference is the default)</td></tr>
+  <tr><td><code>const int MAX = 10;</code></td><td><code>const max = 10;</code></td></tr>
+</table>
+<p>Two habits transfer directly, with a twist each. Type inference is like
+<code>auto</code>, except it is the default — you write <code>let x = 42</code>
+and annotate only when it helps. And <code>const</code> survives, but it is
+<em>binding</em>-const only: like <code>T* const</code> (a const pointer to
+non-const data), it stops reassignment of the name, not mutation of the object
+it refers to. There is no <code>const T&amp;</code> equivalent, no headers, no
+<code>#include</code>, and no manual memory — every non-primitive value is a
+garbage-collected reference. One cosmetic shift: the convention is
+<code>camelCase</code>, not <code>snake_case</code>.</p>`,
+
+  cpp: `#include <string>
+#include <iostream>
+
+const std::string name = "Ada";
+int age = 36;
+double price = 9.99;    // separate type from int
+bool is_active = true;
+auto count = 42;        // deduced as int
+
+std::string describe_user(const std::string& name, int age) {
+    return name + " is " + std::to_string(age) + " years old";
+}
+
+int main() {
+    std::cout << describe_user(name, age) << "\\n";
+}`,
+
+  task: `
+<p>Rewrite the C++ as TypeScript:</p>
+<ol>
+  <li>Declare a constant <code>userName</code> of type <code>string</code>
+      with the value <code>"Ada"</code>, and a variable <code>userAge</code>
+      (declared with <code>let</code>) of type <code>number</code> with the
+      value <code>36</code>. Write the annotations explicitly, after the name:
+      <code>userAge: number</code>, not <code>int userAge</code>.
+      Note the camelCase.</li>
+  <li>Write a function <code>describeUser</code> that takes
+      <code>name: string</code> and <code>age: number</code> and returns a
+      <code>string</code> like <code>"Ada is 36 years old"</code>.
+      The return type goes after the parameter list — trailing-return-type
+      style, but with a colon instead of <code>-&gt;</code>. No
+      <code>std::to_string</code> needed: <code>+</code> with a string
+      converts the number for you.</li>
+</ol>
+<p>No <code>#include</code>, no <code>main</code>, no semicolon debates —
+top-level statements just run.</p>`,
+
+  starter: `// 1. Declare userName (string) and userAge (number) with explicit types.
+//    C++: const std::string name = "Ada";  ->  const userName: string = "Ada";
+//    C++: int age = 36;                    ->  let userAge: number = 36;
+
+
+// 2. Write describeUser with typed parameters and a typed return value.
+//    C++: std::string describe_user(const std::string& name, int age)
+function describeUser(name, age) {
+  // TODO: return "<name> is <age> years old"
+  return "";
+}
+`,
+
+  exportNames: ["userName", "userAge", "describeUser"],
+
+  requirements: [
+    { pattern: /const\s+userName\s*:\s*string/, message: "Declare userName as a const with an explicit : string annotation" },
+    { pattern: /let\s+userAge\s*:\s*number/, message: "Declare userAge with let and an explicit : number annotation" },
+    { pattern: /describeUser\s*\(\s*name\s*:\s*string\s*,\s*age\s*:\s*number\s*\)\s*:\s*string/, message: "Give describeUser typed parameters (name: string, age: number) and a : string return type" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', run: (x) => expectEqual(x.userName, "Ada") },
+    { name: "userAge is 36", run: (x) => expectEqual(x.userAge, 36) },
+    { name: 'describeUser("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.describeUser("Ada", 36), "Ada is 36 years old") },
+    { name: 'describeUser("Bjarne", 74) returns "Bjarne is 74 years old"', run: (x) => expectEqual(x.describeUser("Bjarne", 74), "Bjarne is 74 years old") },
+  ],
+
+  solution: `const userName: string = "Ada";
+let userAge: number = 36;
+
+function describeUser(name: string, age: number): string {
+  return name + " is " + age + " years old";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Declaration</td><td><code>int x = 1;</code></td><td><code>let x: number = 1;</code> (type after name)</td></tr>
+  <tr><td>All numeric types</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>float</code>, <code>size_t</code>…</td><td><code>number</code> (an IEEE-754 double)</td></tr>
+  <tr><td>Strings</td><td><code>std::string</code></td><td><code>string</code></td></tr>
+  <tr><td>Booleans</td><td><code>bool</code></td><td><code>boolean</code></td></tr>
+  <tr><td>Inference</td><td><code>auto x = 42;</code></td><td><code>let x = 42;</code> (the default)</td></tr>
+  <tr><td>Constant binding</td><td><code>T* const p</code> (const pointer)</td><td><code>const x = …;</code> (no reassignment; contents still mutable)</td></tr>
+  <tr><td>Return type</td><td><code>auto f() -&gt; std::string</code></td><td><code>function f(): string { }</code></td></tr>
+  <tr><td>Integer overflow</td><td>Signed overflow is UB</td><td>No overflow; precision loss beyond 2<sup>53</sup>&nbsp;−&nbsp;1</td></tr>
+</table>
+<p>The deepest shift is not syntax but the memory model: there are no value
+types for objects, no copies-by-default, no references vs. pointers vs.
+values. Every object is heap-allocated, garbage-collected, and handled by
+reference — as if everything were a <code>std::shared_ptr</code> you never
+have to spell out or think about cycles with. What survives from C++ is the
+part worth keeping: a static type checker that runs before your code does,
+and <code>const</code> discipline as your default.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

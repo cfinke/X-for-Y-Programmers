@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Streams → Array Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Streams → Array Methods",
+
+  intro: `
+<p>Everything you do with the Streams API, TypeScript arrays do directly —
+no <code>.stream()</code> to open the pipeline, no
+<code>.collect(Collectors.toList())</code> to close it. Arrays carry
+<code>filter</code>, <code>map</code>, <code>reduce</code>, and friends as
+methods that each return a new array, so they chain immediately. Your
+pipeline shrinks to exactly the part that mattered:</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>products.stream().filter(p -&gt; p.isInStock())</code></td><td><code>products.filter(p =&gt; p.inStock)</code></td></tr>
+  <tr><td><code>.map(Product::getName)</code></td><td><code>.map(p =&gt; p.name)</code></td></tr>
+  <tr><td><code>.collect(Collectors.toList())</code></td><td>nothing — you already have an array</td></tr>
+  <tr><td><code>.mapToDouble(...).sum()</code></td><td><code>.reduce((sum, p) =&gt; sum + ..., 0)</code></td></tr>
+  <tr><td><code>.sorted(Comparator.comparingDouble(Product::getPrice))</code></td><td><code>[...arr].sort((a, b) =&gt; a.price - b.price)</code></td></tr>
+</table>
+<p>Two adjustments. First, there are no primitive streams — no
+<code>mapToDouble</code>, no <code>IntStream</code> — because there is only
+<code>number</code>; summing is a plain <code>reduce</code> with a seed value,
+just like <code>reduce(0.0, (a, b) -&gt; a + b)</code>. Second, the one trap:
+<strong><code>.sort()</code> mutates the array in place</strong>, unlike
+<code>stream().sorted()</code> which leaves the source untouched. The idiom is
+to copy first with spread — <code>[...products].sort(...)</code> — and note
+that the comparator returns a number (negative/zero/positive), the same
+contract as <code>Comparator.compare</code>.</p>`,
+
+  java: `List<String> inStockNames = products.stream()
+    .filter(p -> p.isInStock())
+    .map(Product::getName)
+    .collect(Collectors.toList());
+
+double totalValue = products.stream()
+    .filter(Product::isInStock)
+    .mapToDouble(p -> p.getPrice() * p.getQuantity())
+    .sum();
+
+// sorted() streams a copy; the source list is untouched.
+List<Product> byPrice = products.stream()
+    .sorted(Comparator.comparingDouble(Product::getPrice))
+    .collect(Collectors.toList());`,
+
+  task: `
+<p>The <code>Product</code> interface is already in the starter. Port the
+three pipelines:</p>
+<ol>
+  <li><code>inStockNames(products: Product[]): string[]</code> — the names of
+      in-stock products, via <code>.filter(...)</code> chained straight into
+      <code>.map(...)</code>.</li>
+  <li><code>totalValue(products: Product[]): number</code> — the sum of
+      <code>price * quantity</code> over in-stock products, using
+      <code>.reduce(...)</code> with <code>0</code> as the initial value
+      (Java's <code>mapToDouble(...).sum()</code>).</li>
+  <li><code>sortByPrice(products: Product[]): Product[]</code> — a
+      <strong>new</strong> array sorted by ascending price. Copy with
+      <code>[...products]</code> before calling <code>.sort(...)</code>, or
+      you will mutate the caller's array — the tests check for this.</li>
+</ol>`,
+
+  starter: `interface Product {
+  name: string;
+  price: number;
+  quantity: number;
+  inStock: boolean;
+}
+
+// 1. No .stream(), no .collect() — filter and map chain directly.
+function inStockNames(products: Product[]): string[] {
+  // TODO: filter to in-stock products, then map to their names
+  return [];
+}
+
+// 2. mapToDouble(...).sum() becomes a single reduce with a seed of 0.
+function totalValue(products: Product[]): number {
+  // TODO: filter in-stock, then reduce price * quantity into a total
+  return 0;
+}
+
+// 3. CAREFUL: .sort() mutates in place, unlike stream().sorted().
+//    Copy first with [...products].
+function sortByPrice(products: Product[]): Product[] {
+  // TODO: return a NEW array sorted by ascending price
+  return [];
+}
+`,
+
+  exportNames: ["inStockNames", "totalValue", "sortByPrice"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter(...) — the direct equivalent of stream().filter(...)" },
+    { pattern: /\.map\s*\(/, message: "Use .map(...) — the direct equivalent of stream().map(...)" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce(...) for the total — TypeScript's mapToDouble(...).sum()" },
+    { pattern: /\[\s*\.\.\.\w+\s*\]\s*\.sort/, message: "Copy before sorting: [...products].sort(...) — .sort() mutates in place" },
+  ],
+
+  tests: [
+    {
+      name: 'inStockNames returns ["Keyboard", "Mouse"]',
+      run: (x) => expectDeepEqual(
+        x.inStockNames([
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ]),
+        ["Keyboard", "Mouse"]
+      ),
+    },
+    {
+      name: "totalValue sums price * quantity for in-stock products (280)",
+      run: (x) => expectEqual(
+        x.totalValue([
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ]),
+        280
+      ),
+    },
+    {
+      name: "totalValue of an empty array is 0 (the reduce seed)",
+      run: (x) => expectEqual(x.totalValue([]), 0),
+    },
+    {
+      name: "sortByPrice orders ascending: Mouse, Keyboard, Monitor",
+      run: (x) => expectDeepEqual(
+        x.sortByPrice([
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ]).map((p) => p.name),
+        ["Mouse", "Keyboard", "Monitor"]
+      ),
+    },
+    {
+      name: "sortByPrice does NOT mutate the input array",
+      run: (x) => {
+        const original = [
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ];
+        const sorted = x.sortByPrice(original);
+        expectTruthy(sorted !== original);
+        expectDeepEqual(original.map((p) => p.name), ["Keyboard", "Monitor", "Mouse"]);
+      },
+    },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  quantity: number;
+  inStock: boolean;
+}
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter(p => p.inStock).map(p => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products
+    .filter(p => p.inStock)
+    .reduce((sum, p) => sum + p.price * p.quantity, 0);
+}
+
+function sortByPrice(products: Product[]): Product[] {
+  return [...products].sort((a, b) => a.price - b.price);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Open / close pipeline</td><td><code>.stream()</code> … <code>.collect(toList())</code></td><td>nothing — arrays chain directly</td></tr>
+  <tr><td>Filter</td><td><code>.filter(p -&gt; p.isInStock())</code></td><td><code>.filter(p =&gt; p.inStock)</code></td></tr>
+  <tr><td>Map</td><td><code>.map(Product::getName)</code></td><td><code>.map(p =&gt; p.name)</code></td></tr>
+  <tr><td>Sum</td><td><code>.mapToDouble(...).sum()</code></td><td><code>.reduce((sum, p) =&gt; sum + ..., 0)</code></td></tr>
+  <tr><td>Sort (non-mutating)</td><td><code>.sorted(Comparator.comparing(...))</code></td><td><code>[...arr].sort((a, b) =&gt; a.x - b.x)</code> — copy first!</td></tr>
+  <tr><td>anyMatch / allMatch</td><td><code>.anyMatch(...)</code> / <code>.allMatch(...)</code></td><td><code>.some(...)</code> / <code>.every(...)</code></td></tr>
+  <tr><td>findFirst</td><td><code>.findFirst()</code> → <code>Optional</code></td><td><code>.find(...)</code> → <code>T | undefined</code></td></tr>
+</table>
+<p>The mental model shift: Java streams are lazy pipelines that do nothing
+until a terminal operation; TypeScript's array methods are eager — each call
+allocates and returns a real array immediately. For typical collection sizes
+this is a wash, and the payoff is that every intermediate result is a value
+you can inspect, log, or return. Just remember the two mutators hiding among
+the pure methods: <code>.sort()</code> and <code>.reverse()</code> change the
+array in place — spread-copy first, exactly as you did here.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

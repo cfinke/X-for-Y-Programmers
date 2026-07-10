@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Structs &amp; Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A PHP class with typed properties and a constructor splits into two pieces
+in Rust: a <code>struct</code> holds the data (just the property list), and an
+<code>impl</code> block holds the behavior (the methods). There's no special
+constructor syntax — the convention is an associated function called
+<code>new</code>, called as <code>BankAccount::new("Ada")</code>. If that
+sounds like boilerplate PHP already solved, notice you've had this instinct
+before: constructor property promotion in PHP 8 existed precisely to stop
+writing the same field list three times. Rust writes it once in the struct,
+once in <code>new</code>, done.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>class BankAccount { private int $balance; }</code></td><td><code>struct BankAccount { balance: i64 }</code></td></tr>
+  <tr><td><code>public function __construct(...)</code></td><td><code>fn new(...) -&gt; BankAccount</code> (convention, in <code>impl</code>)</td></tr>
+  <tr><td><code>new BankAccount('Ada')</code></td><td><code>BankAccount::new("Ada")</code></td></tr>
+  <tr><td><code>public function balance(): int</code></td><td><code>fn balance(&amp;self) -&gt; i64</code></td></tr>
+  <tr><td><code>$this-&gt;balance += $amount;</code></td><td><code>self.balance += amount;</code> — needs <code>&amp;mut self</code></td></tr>
+  <tr><td><code>private</code>/<code>public</code> keywords</td><td>private by default; <code>pub</code> opts out</td></tr>
+</table>
+<p>The genuinely new idea is the first parameter of each method.
+<code>&amp;self</code> is a read-only <code>$this</code>: the method promises
+not to change the object. <code>&amp;mut self</code> is a writable
+<code>$this</code>: callers can see, from the signature alone, that this
+method mutates — and can only call it on a <code>mut</code> binding. PHP has
+no way to say "this method doesn't modify the object"; in Rust every method
+declares it. Visibility, meanwhile, simply inverts: fields and methods are
+private to their module by default, and <code>pub</code> is the keyword you
+add, replacing the <code>private</code> you used to sprinkle everywhere.</p>`,
+
+  php: `class BankAccount {
+    public function __construct(
+        private string $owner,
+        private int $balance = 0,
+    ) {}
+
+    public function deposit(int $amount): void {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): void {
+        if ($amount > $this->balance) {
+            throw new RuntimeException('insufficient funds');
+        }
+        $this->balance -= $amount;
+    }
+
+    public function balance(): int {
+        return $this->balance;
+    }
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code> to a struct plus an <code>impl</code> block
+(the struct definition is already in the starter):</p>
+<ol>
+  <li><code>new(owner: &amp;str) -&gt; BankAccount</code> — the
+      <code>__construct</code>: build a <code>BankAccount</code> with the
+      given owner (<code>owner.to_string()</code> to own it) and a balance
+      of 0.</li>
+  <li><code>deposit(&amp;mut self, amount: i64)</code> — add
+      <code>amount</code> to the balance. <code>&amp;mut self</code>, because
+      it changes the account.</li>
+  <li><code>withdraw(&amp;mut self, amount: i64) -&gt; Result&lt;(), String&gt;</code>
+      — if <code>amount</code> exceeds the balance, return an
+      <code>Err</code> with a message (last lesson's <code>throw</code>, as a
+      value); otherwise subtract and return <code>Ok(())</code>.</li>
+  <li><code>balance(&amp;self) -&gt; i64</code> — return the balance.
+      Plain <code>&amp;self</code>: reading needs no mutation rights.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your methods
+directly.</p>`,
+
+  starter: `// The data half: the property list, and nothing else.
+struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+// The behavior half: methods live in an impl block.
+impl BankAccount {
+    // 1. new — the __construct. Build the struct: owner from the &str,
+    //    balance starting at 0.
+    fn new(owner: &str) -> BankAccount {
+        todo!()
+    }
+
+    // 2. deposit — mutates, so it takes &mut self.
+    fn deposit(&mut self, amount: i64) {
+        todo!()
+    }
+
+    // 3. withdraw — the throw becomes a return value:
+    //    Err(message) if amount > balance, else subtract and Ok(()).
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        todo!()
+    }
+
+    // 4. balance — read-only, so plain &self is enough.
+    fn balance(&self) -> i64 {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /struct\s+BankAccount/, message: "Define the BankAccount struct (the data half)" },
+    { pattern: /impl\s+BankAccount/, message: "Put the methods in an impl BankAccount block" },
+    { pattern: /&mut\s+self/, message: "Mutating methods (deposit, withdraw) must take &mut self" },
+  ],
+
+  tests: [
+    { name: 'BankAccount::new("Ada") stores the owner and starts at balance 0',
+      code: 'let acct = BankAccount::new("Ada");\nassert_eq!(acct.owner, "Ada");\nassert_eq!(acct.balance(), 0);' },
+    { name: "deposit(100) raises the balance to 100",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert_eq!(acct.balance(), 100);' },
+    { name: "withdraw(40) after deposit(100) is Ok and leaves 60",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert!(acct.withdraw(40).is_ok());\nassert_eq!(acct.balance(), 60);' },
+    { name: "overdrawing returns an Err instead of throwing",
+      code: 'let mut acct = BankAccount::new("Ada");\nassert!(acct.withdraw(100).is_err());' },
+    { name: "a failed withdrawal leaves the balance untouched",
+      code: 'let mut acct = BankAccount::new("Grace");\nacct.deposit(50);\nassert!(acct.withdraw(80).is_err());\nassert_eq!(acct.balance(), 50);' },
+  ],
+
+  solution: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: &str) -> BankAccount {
+        BankAccount {
+            owner: owner.to_string(),
+            balance: 0,
+        }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        if amount > self.balance {
+            return Err(String::from("insufficient funds"));
+        }
+        self.balance -= amount;
+        Ok(())
+    }
+
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Data</td><td><code>class</code> with typed properties</td><td><code>struct</code> — fields only</td></tr>
+  <tr><td>Behavior</td><td>methods in the same class body</td><td><code>impl BankAccount { ... }</code></td></tr>
+  <tr><td>Constructor</td><td><code>__construct</code> + <code>new BankAccount(...)</code></td><td><code>fn new(...)</code> by convention + <code>BankAccount::new(...)</code></td></tr>
+  <tr><td>Read-only <code>$this</code></td><td>(no way to say it)</td><td><code>&amp;self</code></td></tr>
+  <tr><td>Mutating <code>$this</code></td><td>every method, implicitly</td><td><code>&amp;mut self</code> — declared, checked</td></tr>
+  <tr><td>Visibility</td><td><code>private</code>/<code>protected</code>/<code>public</code> keywords</td><td>private by default, <code>pub</code> to expose</td></tr>
+  <tr><td>Failure in a method</td><td><code>throw new RuntimeException(...)</code></td><td><code>-&gt; Result&lt;(), String&gt;</code></td></tr>
+</table>
+<p>The <code>&amp;self</code> / <code>&amp;mut self</code> split is the
+borrowing lesson landing inside your objects: a method's signature now
+documents — and the compiler enforces — whether it mutates. Try calling
+<code>deposit</code> on an account bound with plain <code>let</code> and Rust
+refuses: immutability flows from the binding through every method call. And
+<code>withdraw</code> completes the arc from Lesson 9 — where PHP throws
+across an invisible channel, the Rust version returns
+<code>Result&lt;(), String&gt;</code>, so a caller can't invoke it without
+the failure case staring back from the signature.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

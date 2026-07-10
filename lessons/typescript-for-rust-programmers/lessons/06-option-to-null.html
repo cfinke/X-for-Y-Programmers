@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Option → Null & Undefined</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Option → Null & Undefined",
+
+  intro: `
+<p><code>Option&lt;T&gt;</code> is Rust's proudest answer to the
+billion-dollar mistake: absence is a separate type, and the compiler refuses
+to let you touch the value until you have handled <code>None</code>.
+TypeScript keeps that exact guarantee but drops the wrapper. Instead of
+<code>Option&lt;User&gt;</code> you write the union
+<code>User | null</code> — absence is baked into the type itself. There is no
+<code>Some</code>, no <code>unwrap</code>, no <code>?</code> operator, yet
+under strict mode the compiler still rejects <code>user.name</code> when
+<code>user</code> might be <code>null</code>. Same guarantee, different
+spelling.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>Option&lt;User&gt;</code></td><td><code>User | null</code> (or <code>User | undefined</code>)</td></tr>
+  <tr><td><code>Some(user)</code></td><td>just <code>user</code> — no wrapper</td></tr>
+  <tr><td><code>None</code></td><td><code>null</code> (deliberate) / <code>undefined</code> (never set)</td></tr>
+  <tr><td><code>opt.unwrap_or(default)</code></td><td><code>x ?? default</code></td></tr>
+  <tr><td><code>opt.map(|u| u.name)</code></td><td><code>u?.name</code></td></tr>
+  <tr><td><code>if let Some(u) = opt { ... }</code></td><td><code>if (u !== null) { ... }</code> — narrowing</td></tr>
+</table>
+<p>The combinators map over directly: <code>?.</code> (optional chaining) is
+your <code>.map()</code>/<code>.and_then()</code> chain — it short-circuits
+to <code>undefined</code> if anything along the way is absent — and
+<code>??</code> (nullish coalescing) is <code>unwrap_or</code>. One honest
+wrinkle Rust spared you: JavaScript has <em>two</em> absent values.
+<code>null</code> is a deliberate "nothing here", the <code>None</code> you
+assign on purpose; <code>undefined</code> is what you get when something was
+never set — a missing field, a function that returns nothing. Idiomatic code
+handles both at once with <code>?.</code> and <code>??</code>, which treat
+them identically. (All of this safety assumes <code>strictNullChecks</code>
+is on — it is in every modern project, but legacy configs without it are
+back in pre-Option darkness.)</p>`,
+
+  rust: `struct User {
+    name: String,
+    nickname: Option<String>,
+}
+
+fn find_user(id: u32) -> Option<User> {
+    match id {
+        1 => Some(User { name: "Ada".to_string(),
+                         nickname: Some("The Countess".to_string()) }),
+        2 => Some(User { name: "Grace".to_string(), nickname: None }),
+        _ => None,
+    }
+}
+
+fn display_name(user: Option<&User>) -> String {
+    // Combinators all the way down — no touching the value unchecked.
+    user.map(|u| u.nickname.clone().unwrap_or_else(|| u.name.clone()))
+        .unwrap_or_else(|| "anonymous".to_string())
+}`,
+
+  task: `
+<p>Port the lookup to TypeScript, with the absence in the union instead of a
+wrapper:</p>
+<ol>
+  <li>Define an interface <code>User</code> with <code>name: string</code>
+      and an <em>optional</em> <code>nickname?: string</code> — the
+      field-level <code>Option</code>.</li>
+  <li>Write <code>findUser(id: number): User | null</code>. For id
+      <code>1</code> return <code>{ name: "Ada", nickname: "The Countess" }</code>,
+      for id <code>2</code> return <code>{ name: "Grace" }</code> (no
+      nickname), otherwise return <code>null</code>. Note the return type:
+      the <code>| null</code> <em>is</em> the <code>Option</code>.</li>
+  <li>Write <code>displayName(user: User | null): string</code> returning the
+      nickname if present, else the name, else <code>"anonymous"</code> when
+      the user is <code>null</code>. Do it in one expression with
+      <code>?.</code> and <code>??</code> — the whole
+      <code>.map(...).unwrap_or(...)</code> chain collapses.</li>
+</ol>`,
+
+  starter: `interface User {
+  name: string;
+  nickname?: string; // Option<String> as an optional field — no wrapper
+}
+
+// 1. Give findUser the return type User | null.
+//    Rust: fn find_user(id: u32) -> Option<User>
+function findUser(id: number) {
+  // TODO: id 1 -> { name: "Ada", nickname: "The Countess" }
+  //       id 2 -> { name: "Grace" }
+  //       anything else -> null
+  return null;
+}
+
+// 2. nickname if present, else name, else "anonymous".
+//    Rust: user.map(|u| ...).unwrap_or(...)  ->  ?. and ??
+function displayName(user: User | null): string {
+  // TODO: one expression using ?. and ??
+  return "";
+}
+`,
+
+  exportNames: ["findUser", "displayName"],
+
+  requirements: [
+    { pattern: /\|\s*(null|undefined)/, message: "Bake absence into a union type: User | null (or | undefined)" },
+    { pattern: /\?\./, message: "Use optional chaining (?.) — the .map()/.and_then() chain" },
+    { pattern: /\?\?/, message: "Use nullish coalescing (??) — this is unwrap_or(default)" },
+  ],
+
+  tests: [
+    { name: 'findUser(1) returns Ada', run: (x) => { const u = x.findUser(1); expectTruthy(u); expectEqual(u.name, "Ada"); } },
+    { name: "findUser(2) has no nickname set", run: (x) => { const u = x.findUser(2); expectTruthy(u); expectEqual(u.nickname, undefined); } },
+    { name: "findUser(99) returns null", run: (x) => expectEqual(x.findUser(99), null) },
+    { name: 'displayName(findUser(1)) is "The Countess"', run: (x) => expectEqual(x.displayName(x.findUser(1)), "The Countess") },
+    { name: 'displayName(findUser(2)) falls back to "Grace"', run: (x) => expectEqual(x.displayName(x.findUser(2)), "Grace") },
+    { name: 'displayName(null) is "anonymous"', run: (x) => expectEqual(x.displayName(null), "anonymous") },
+  ],
+
+  solution: `interface User {
+  name: string;
+  nickname?: string;
+}
+
+function findUser(id: number): User | null {
+  if (id === 1) return { name: "Ada", nickname: "The Countess" };
+  if (id === 2) return { name: "Grace" };
+  return null;
+}
+
+function displayName(user: User | null): string {
+  return user?.nickname ?? user?.name ?? "anonymous";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Maybe-absent value</td><td><code>Option&lt;T&gt;</code></td><td><code>T | null</code> or <code>T | undefined</code></td></tr>
+  <tr><td>Present</td><td><code>Some(v)</code></td><td><code>v</code> — no wrapper to build or unwrap</td></tr>
+  <tr><td>Absent</td><td><code>None</code></td><td><code>null</code> (deliberate) / <code>undefined</code> (never set)</td></tr>
+  <tr><td>Default on absence</td><td><code>opt.unwrap_or(d)</code></td><td><code>v ?? d</code></td></tr>
+  <tr><td>Project a field</td><td><code>opt.map(|u| u.name)</code></td><td><code>u?.name</code></td></tr>
+  <tr><td>Chained lookups</td><td><code>a.and_then(|x| x.b).map(|b| b.c)</code></td><td><code>a?.b?.c</code></td></tr>
+  <tr><td>Check-then-use</td><td><code>if let Some(u) = opt</code></td><td><code>if (u !== null)</code> — the compiler narrows the type</td></tr>
+  <tr><td>Optional struct field</td><td><code>nickname: Option&lt;String&gt;</code></td><td><code>nickname?: string</code></td></tr>
+</table>
+<p>One trap for the road: JavaScript also has <code>||</code>, which looks
+like <code>??</code> but falls back on <em>any</em> falsy value — so
+<code>0 || 10</code> is <code>10</code> and <code>"" || "n/a"</code> is
+<code>"n/a"</code>. <code>??</code> only falls back on <code>null</code> and
+<code>undefined</code>, which makes it the faithful translation of
+<code>unwrap_or</code>. Reach for <code>??</code> by default; treat
+<code>||</code> as a deliberate "replace anything falsy" tool.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

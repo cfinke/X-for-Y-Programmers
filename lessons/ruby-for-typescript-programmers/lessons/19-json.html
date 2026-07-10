@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>JSON support ships in Ruby's standard library — <code>require "json"</code>
+once at the top. Serializing reads the Ruby way: instead of a static
+<code>JSON.stringify(data)</code>, serialization is a method <em>on the
+data itself</em> — <code>data.to_json</code> — like everything else in an
+everything-is-an-object language. Parsing is <code>JSON.parse(s)</code>,
+same name as JS.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>built in, global</td><td><code>require "json"</code></td></tr>
+  <tr><td><code>JSON.stringify(data)</code></td><td><code>data.to_json</code></td></tr>
+  <tr><td><code>JSON.parse(s)</code> → object, dot access</td><td><code>JSON.parse(s)</code> → hash with <strong>string</strong> keys</td></tr>
+  <tr><td>—</td><td><code>JSON.parse(s, symbolize_names: true)</code> → <code>:symbol</code> keys</td></tr>
+  <tr><td><code>obj?.a?.b</code></td><td><code>hash.dig(:a, :b)</code></td></tr>
+  <tr><td>bad input throws <code>SyntaxError</code></td><td>bad input raises <code>JSON::ParserError</code></td></tr>
+</table>
+<p>Here is the trap lesson 4 warned you about: <code>JSON.parse</code> returns
+hashes keyed by <strong>strings</strong>, so <code>parsed[:name]</code> is
+<code>nil</code> even though the data is right there under
+<code>"name"</code>. Pass <code>symbolize_names: true</code> to get the
+idiomatic symbol-keyed hash back. For deep access,
+<code>hash.dig(:user, :address, :city)</code> is your optional chain — it
+returns <code>nil</code> instead of exploding partway down. And since bad
+input <em>raises</em> (<code>JSON::ParserError</code>) rather than returning
+anything, safe parsing is a one-rescue method — exactly the def-level
+<code>rescue</code> from lesson 16.</p>`,
+
+  typescript: `const raw = '{"name":"Ada","age":36}';
+
+const user = JSON.parse(raw); // any — hope for the best
+const name = user.name ?? "unknown";
+const age = user.age ?? 0;
+
+function safeParse(s: string): unknown {
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    return {}; // SyntaxError on bad input
+  }
+}
+
+function pluckNames(json: string): string[] {
+  const users = JSON.parse(json) as { name: string }[];
+  return users.map((u) => u.name);
+}
+
+const wire = JSON.stringify({ name, tags: [1, 2] });`,
+
+  task: `
+<p>Port the JSON round-trip to Ruby (the starter already has
+<code>require "json"</code>):</p>
+<ol>
+  <li><code>to_json_string(data)</code> — serialize with the
+      <code>.to_json</code> method on the data.</li>
+  <li><code>parse_user(json)</code> — parse with
+      <code>symbolize_names: true</code>, then return a hash
+      <code>{ name: ..., age: ... }</code> using <code>fetch</code> defaults:
+      <code>"unknown"</code> for a missing <code>:name</code>, <code>0</code>
+      for a missing <code>:age</code>.</li>
+  <li><code>pluck_names(json)</code> — parse an array of user objects
+      (symbolized) and <code>map</code> out each <code>[:name]</code>.</li>
+  <li><code>safe_parse(json)</code> — parse (symbolized), and rescue
+      <code>JSON::ParserError</code> at the def level to return
+      <code>{}</code> on bad input.</li>
+</ol>`,
+
+  starter: `require "json"
+
+# 1. to_json_string: serialization is a method ON the data.
+def to_json_string(data)
+  raise NotImplementedError, "TODO: implement to_json_string"
+end
+
+# 2. parse_user: symbolize_names: true, then fetch with defaults
+#    (name -> "unknown", age -> 0).
+def parse_user(json)
+  raise NotImplementedError, "TODO: implement parse_user"
+end
+
+# 3. pluck_names: parse an array of {"name": ...} objects, map the names.
+def pluck_names(json)
+  raise NotImplementedError, "TODO: implement pluck_names"
+end
+
+# 4. safe_parse: bad JSON raises JSON::ParserError — rescue it, return {}.
+def safe_parse(json)
+  raise NotImplementedError, "TODO: implement safe_parse"
+end
+`,
+
+  requirements: [
+    { pattern: /require\s+["']json["']/, message: 'Keep require "json" at the top' },
+    { pattern: /to_json/, message: "Serialize with the .to_json method" },
+    { pattern: /symbolize_names:\s*true/, message: "Parse with symbolize_names: true" },
+    { pattern: /JSON::ParserError|rescue/, message: "Rescue JSON::ParserError in safe_parse" },
+  ],
+
+  tests: [
+    { name: "to_json_string round-trips a hash with an array",
+      code: `  expect_eq(to_json_string({ "name" => "Ada", "tags" => [1, 2] }), '{"name":"Ada","tags":[1,2]}')` },
+    { name: `parse_user('{"name":"Ada","age":36}') returns { name: "Ada", age: 36 }`,
+      code: `  expect_eq(parse_user('{"name":"Ada","age":36}'), { name: "Ada", age: 36 })` },
+    { name: "parse_user('{}') fills in the defaults",
+      code: `  expect_eq(parse_user("{}"), { name: "unknown", age: 0 })` },
+    { name: "pluck_names extracts every :name",
+      code: `  expect_eq(pluck_names('[{"name":"Ada"},{"name":"Grace"}]'), ["Ada", "Grace"])` },
+    { name: "safe_parse returns {} on garbage input",
+      code: `  expect_eq(safe_parse("not json at all"), {})` },
+    { name: "safe_parse parses valid JSON with symbol keys",
+      code: `  expect_eq(safe_parse('{"ok":true}'), { ok: true })` },
+  ],
+
+  solution: `require "json"
+
+def to_json_string(data)
+  data.to_json
+end
+
+def parse_user(json)
+  user = JSON.parse(json, symbolize_names: true)
+  { name: user.fetch(:name, "unknown"), age: user.fetch(:age, 0) }
+end
+
+def pluck_names(json)
+  JSON.parse(json, symbolize_names: true).map { |u| u[:name] }
+end
+
+def safe_parse(json)
+  JSON.parse(json, symbolize_names: true)
+rescue JSON::ParserError
+  {}
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Load support</td><td>built in</td><td><code>require "json"</code></td></tr>
+  <tr><td>Serialize</td><td><code>JSON.stringify(data)</code></td><td><code>data.to_json</code></td></tr>
+  <tr><td>Parse</td><td><code>JSON.parse(s)</code></td><td><code>JSON.parse(s)</code> — string keys!</td></tr>
+  <tr><td>Symbol keys</td><td>n/a</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+  <tr><td>Safe deep access</td><td><code>obj?.a?.b</code></td><td><code>hash.dig(:a, :b)</code></td></tr>
+  <tr><td>Missing key default</td><td><code>x ?? fallback</code></td><td><code>hash.fetch(:x, fallback)</code></td></tr>
+  <tr><td>Bad input</td><td>throws <code>SyntaxError</code></td><td>raises <code>JSON::ParserError</code></td></tr>
+</table>
+<p>Why string keys by default? JSON keys are strings on the wire, and
+symbols are the caller's choice — historically also a defense, since symbols
+were never garbage-collected and parsing attacker-controlled keys into
+symbols could leak memory. In practice: use <code>symbolize_names:
+true</code> at the boundary, then enjoy <code>user[:name]</code> and
+<code>dig</code> everywhere inside. The whole safe-parse pattern —
+<code>rescue JSON::ParserError</code> hanging off the <code>def</code> — is
+lesson 16 paying rent.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null, Undefined &amp; strictNullChecks</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null, Undefined & strictNullChecks",
+
+  intro: `
+<p>The most common runtime error in JavaScript is
+<code>TypeError: Cannot read properties of undefined</code>. You know the
+drill: <code>Array.find</code> returns <code>undefined</code> when nothing
+matches, an object is missing an optional property, and three function calls
+later something explodes far from where the real mistake happened. With
+<code>strictNullChecks</code> on (the default in strict mode), TypeScript
+turns that whole category of bug into a <em>compile error</em>.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>users.find(...)</code> — maybe a user, maybe <code>undefined</code>; you find out in production</td><td>Return type is <code>User | undefined</code> — the "maybe" is written down</td></tr>
+  <tr><td><code>user.address.city</code> — 💥 <code>TypeError</code> at runtime</td><td>Compile error: <em>'user' is possibly 'undefined'</em></td></tr>
+  <tr><td><code>user?.address?.city</code> — available, but easy to forget</td><td>Same syntax — but the compiler <em>refuses to build</em> until you use it (or narrow with <code>if</code>)</td></tr>
+  <tr><td><code>city || "Unknown"</code> — also swallows <code>""</code> and <code>0</code></td><td><code>city ?? "Unknown"</code> — only <code>null</code>/<code>undefined</code> fall through</td></tr>
+</table>
+<p>The key idea: under strict null checks, <code>string</code> means
+<em>string, definitely, always</em>. A value that might be absent must say so
+in its type — <code>string | undefined</code> or <code>string | null</code> —
+and the compiler then blocks every property access until you have handled the
+absent case. You already know the tools (<code>?.</code>, <code>??</code>,
+plain <code>if</code> checks); the news is that using them is no longer
+optional.</p>`,
+
+  javascript: `const users = [
+  { name: "Ada", address: { city: "London" } },
+  { name: "Grace" }, // no address yet
+];
+
+function findUser(name) {
+  return users.find((u) => u.name === name);
+}
+
+function getCity(name) {
+  const user = findUser(name);
+  return user.address.city; // looks fine, reviews fine...
+}
+
+getCity("Ada");    // "London"
+getCity("Grace");  // 💥 Cannot read properties of undefined (reading 'city')
+getCity("Linus");  // 💥 Cannot read properties of undefined (reading 'address')`,
+
+  task: `
+<p>Write the typed version, where both crashes above are compile errors:</p>
+<ol>
+  <li>A <code>type User</code> is provided in the starter: <code>name</code>
+      is required, <code>address</code> is optional (that is what the
+      <code>?</code> after the property name means).</li>
+  <li>Write <code>findUser(users: User[], name: string)</code> and annotate
+      its return type honestly: it produces a <code>User</code> <em>or</em>
+      <code>undefined</code>, joined with a union pipe.</li>
+  <li>Write <code>getCity(users: User[], name: string): string</code>. It
+      calls <code>findUser</code>, then reaches for the city using optional
+      chaining (<code>?.</code>) and falls back to <code>"Unknown"</code>
+      using nullish coalescing (<code>??</code>) when the user or the address
+      is missing.</li>
+</ol>
+<p>Try writing <code>user.address.city</code> without the question marks
+first, if you like — it still compiles here (this playground only transpiles),
+but in a real strict-mode project that exact line is the compile error that
+saves you the 2 a.m. page.</p>`,
+
+  starter: `// address is optional: some users have one, some do not.
+type User = { name: string; address?: { city: string } };
+
+// 1. Annotate the return type: a User, or possibly nothing at all.
+//    (Array.prototype.find already returns exactly that.)
+function findUser(users: User[], name: string) {
+  // TODO: return the user whose name matches
+  return undefined;
+}
+
+// 2. Reach the city safely with optional chaining, and use nullish
+//    coalescing to fall back to "Unknown".
+function getCity(users: User[], name: string): string {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["findUser", "getCity"],
+
+  requirements: [
+    { pattern: /\|\s*(null|undefined)/, message: "Annotate findUser's return type as a union that includes undefined (or null)" },
+    { pattern: /\?\./, message: "Use optional chaining (?.) to reach the nested city" },
+    { pattern: /\?\?/, message: 'Use nullish coalescing (??) to fall back to "Unknown"' },
+  ],
+
+  tests: [
+    { name: 'findUser finds "Ada"', run: (x) => {
+        const users = [{ name: "Ada", address: { city: "London" } }, { name: "Grace" }];
+        expectEqual(x.findUser(users, "Ada").name, "Ada");
+      } },
+    { name: "findUser returns undefined for a missing name", run: (x) => {
+        const users = [{ name: "Ada", address: { city: "London" } }, { name: "Grace" }];
+        expectEqual(x.findUser(users, "Linus"), undefined);
+      } },
+    { name: 'getCity returns "London" for Ada', run: (x) => {
+        const users = [{ name: "Ada", address: { city: "London" } }, { name: "Grace" }];
+        expectEqual(x.getCity(users, "Ada"), "London");
+      } },
+    { name: 'getCity returns "Unknown" when the user has no address', run: (x) => {
+        const users = [{ name: "Ada", address: { city: "London" } }, { name: "Grace" }];
+        expectEqual(x.getCity(users, "Grace"), "Unknown");
+      } },
+    { name: 'getCity returns "Unknown" when the user does not exist', run: (x) => {
+        const users = [{ name: "Ada", address: { city: "London" } }, { name: "Grace" }];
+        expectEqual(x.getCity(users, "Linus"), "Unknown");
+      } },
+  ],
+
+  solution: `type User = { name: string; address?: { city: string } };
+
+function findUser(users: User[], name: string): User | undefined {
+  return users.find((u) => u.name === name);
+}
+
+function getCity(users: User[], name: string): string {
+  const user = findUser(users, name);
+  return user?.address?.city ?? "Unknown";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript (strict)</th></tr>
+  <tr><td>A value that may be absent</td><td>Just is <code>undefined</code> sometimes; nothing warns you</td><td>Must be typed <code>T | undefined</code> or <code>T | null</code></td></tr>
+  <tr><td>Optional property</td><td>May or may not exist on the object</td><td><code>address?: { city: string }</code> — the <code>?</code> makes it official</td></tr>
+  <tr><td>Property access on a maybe-value</td><td>💥 <code>TypeError</code> at runtime</td><td>Compile error until you narrow or use <code>?.</code></td></tr>
+  <tr><td>Fallback value</td><td><code>x || fallback</code> (also catches <code>0</code>, <code>""</code>, <code>false</code>)</td><td><code>x ?? fallback</code> (only <code>null</code>/<code>undefined</code>)</td></tr>
+  <tr><td>Plain if-check</td><td><code>if (user) { ... }</code></td><td>Same code — and inside the block, the type narrows from <code>User | undefined</code> to <code>User</code></td></tr>
+</table>
+<p>Note that <code>?.</code> and <code>??</code> are plain JavaScript
+(ES2020) — TypeScript did not add them. What TypeScript adds is the
+bookkeeping: it tracks which values might be <code>null</code> or
+<code>undefined</code> and refuses to compile code that forgets. Tony Hoare
+called null his "billion-dollar mistake"; <code>strictNullChecks</code> is
+the industry's refund claim.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Generics</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Generics",
+
+  intro: `
+<p>You already write generic functions in JavaScript — you just don't call
+them that. A helper like <code>firstItem(items)</code> works on an array of
+anything: strings, numbers, user objects. The problem shows up on the
+<em>way out</em>. If you annotate it as <code>firstItem(items: any[]): any</code>,
+TypeScript shrugs: pass in an array of strings, and the result is
+<code>any</code> — no autocomplete, no checking, the type information is gone.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>function firstItem(items)</code></td><td><code>function firstItem&lt;T&gt;(items: T[]): T | undefined</code></td></tr>
+  <tr><td><code>firstItem(["a", "b"])</code> → who knows</td><td><code>firstItem(["a", "b"])</code> → <code>string | undefined</code></td></tr>
+  <tr><td><code>firstItem([1, 2, 3])</code> → who knows</td><td><code>firstItem([1, 2, 3])</code> → <code>number | undefined</code></td></tr>
+  <tr><td>Result type lost at the call site</td><td>Result type flows from the argument</td></tr>
+</table>
+<p>A <em>generic</em> fixes this with a type parameter: <code>&lt;T&gt;</code>
+declares a placeholder type, and the signature reuses it —
+<code>items: T[]</code> in, <code>T | undefined</code> out. You almost never
+write <code>T</code> explicitly at the call site; TypeScript <em>infers</em> it
+from the argument. Think of <code>T</code> as a variable that holds a type
+instead of a value: whatever type goes in is the type that comes out.</p>`,
+
+  javascript: `// Works on any array — but what comes back? Who knows.
+function firstItem(items) {
+  return items.length > 0 ? items[0] : undefined;
+}
+
+function wrapInArray(value) {
+  return [value];
+}
+
+var first = firstItem(["a", "b", "c"]);
+// first is... a string? Your editor can't tell you.
+// first.toUpperCase() — fingers crossed at runtime.
+
+var wrapped = wrapInArray(42);
+// wrapped is an array of... something. Hopefully numbers.`,
+
+  task: `
+<p>Make both helpers generic so the element type survives the call:</p>
+<ol>
+  <li>Write <code>firstItem&lt;T&gt;(items: T[]): T | undefined</code> —
+      return the first element, or <code>undefined</code> when the array is
+      empty. The <code>&lt;T&gt;</code> goes right after the function name,
+      before the parameter list.</li>
+  <li>Write <code>wrapInArray&lt;T&gt;(value: T): T[]</code> — return the
+      value wrapped in a one-element array. Whatever <code>T</code> comes in,
+      <code>T[]</code> goes out.</li>
+</ol>
+<p>The bodies are already correct JavaScript — this lesson is purely about
+the signatures. Notice you never name <code>T</code> when calling:
+<code>firstItem([1, 2, 3])</code> infers <code>T = number</code> on its own.</p>`,
+
+  starter: `// 1. Add a type parameter <T> so the element type survives the call.
+//    JS:  function firstItem(items) { ... }
+//    TS:  function firstItem<T>(items: T[]): T | undefined { ... }
+function firstItem(items: any[]): any {
+  // TODO: replace every "any" with the type parameter T
+  return items.length > 0 ? items[0] : undefined;
+}
+
+// 2. Same trick: whatever T comes in, T[] goes out.
+function wrapInArray(value: any): any[] {
+  // TODO: make this generic too
+  return [value];
+}
+`,
+
+  exportNames: ["firstItem", "wrapInArray"],
+
+  requirements: [
+    { pattern: /<T\b/, message: "Declare a type parameter with <T>" },
+    { pattern: /firstItem\s*<\s*T\s*>\s*\(\s*items\s*:\s*T\s*\[\s*\]\s*\)\s*:\s*T\s*\|\s*undefined/, message: "Give firstItem the signature firstItem<T>(items: T[]): T | undefined" },
+    { pattern: /wrapInArray\s*<\s*T\s*>\s*\(\s*value\s*:\s*T\s*\)\s*:\s*T\s*\[\s*\]/, message: "Give wrapInArray the signature wrapInArray<T>(value: T): T[]" },
+  ],
+
+  tests: [
+    { name: "firstItem([10, 20, 30]) returns 10", run: (x) => expectEqual(x.firstItem([10, 20, 30]), 10) },
+    { name: 'firstItem(["ts", "js"]) returns "ts"', run: (x) => expectEqual(x.firstItem(["ts", "js"]), "ts") },
+    { name: "firstItem([]) returns undefined", run: (x) => expectEqual(x.firstItem([]), undefined) },
+    { name: "wrapInArray(42) returns [42]", run: (x) => expectDeepEqual(x.wrapInArray(42), [42]) },
+    { name: 'wrapInArray("hi") returns ["hi"]', run: (x) => expectDeepEqual(x.wrapInArray("hi"), ["hi"]) },
+  ],
+
+  solution: `function firstItem<T>(items: T[]): T | undefined {
+  return items.length > 0 ? items[0] : undefined;
+}
+
+function wrapInArray<T>(value: T): T[] {
+  return [value];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Utility that takes anything</td><td><code>function f(x)</code></td><td><code>function f&lt;T&gt;(x: T)</code></td></tr>
+  <tr><td>Array of the same anything</td><td>just an array</td><td><code>T[]</code></td></tr>
+  <tr><td>Result keeps the input type</td><td>lost — you remember it</td><td><code>(items: T[]): T</code> — compiler remembers it</td></tr>
+  <tr><td>Naming the type at the call</td><td>n/a</td><td>usually inferred; explicit is <code>firstItem&lt;string&gt;([])</code></td></tr>
+  <tr><td>Several placeholders</td><td>n/a</td><td><code>function pair&lt;A, B&gt;(a: A, b: B): [A, B]</code></td></tr>
+</table>
+<p>The mental model: <code>any</code> turns the type checker <em>off</em> for
+that value, while <code>&lt;T&gt;</code> keeps it <em>on</em> and threads the
+real type through the function. Every built-in you already use —
+<code>Array&lt;T&gt;</code>, <code>Promise&lt;T&gt;</code>,
+<code>Map&lt;K, V&gt;</code> — is exactly this mechanism, which is why
+<code>[1, 2].map(...)</code> knows its callback receives numbers.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

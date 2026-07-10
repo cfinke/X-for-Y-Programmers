@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Vectors → Arrays</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Vectors → Arrays",
+
+  intro: `
+<p>Your workhorse container survives the move almost intact.
+<code>std::vector&lt;int&gt;</code> becomes <code>number[]</code> — a
+growable, heap-allocated sequence with the API you already know under
+slightly different names: <code>push_back</code> → <code>push</code>,
+<code>.size()</code> → <code>.length</code>, and the same <code>v[i]</code>
+indexing. Literals are built with square brackets —
+<code>const v: number[] = [1, 2, 3];</code> — no initializer-list headers,
+no allocators, ever.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>std::vector&lt;int&gt; v = {1, 2, 3};</code></td><td><code>const v: number[] = [1, 2, 3];</code></td></tr>
+  <tr><td><code>v.push_back(4);</code></td><td><code>v.push(4);</code></td></tr>
+  <tr><td><code>v.size()</code></td><td><code>v.length</code></td></tr>
+  <tr><td><code>v[i]</code> / <code>v.at(i)</code></td><td><code>v[i]</code> (out of range → <code>undefined</code>, never UB)</td></tr>
+  <tr><td><code>std::find(v.begin(), v.end(), x) != v.end()</code></td><td><code>v.includes(x)</code></td></tr>
+  <tr><td><code>for (int x : v)</code></td><td><code>for (const x of v)</code></td></tr>
+</table>
+<p>What disappears is the iterator machinery. There is no
+<code>begin()</code>/<code>end()</code> pair to thread through every
+algorithm call — membership is <code>v.includes(x)</code>, and the range-for
+you already write becomes <code>for (const x of v)</code>. Bounds behavior is
+the biggest safety upgrade: <code>v[i]</code> out of range is not undefined
+behavior and not an exception — it simply yields <code>undefined</code>, a
+real value you can test for. And since <code>const v</code> is only
+binding-const, <code>v.push(4)</code> on a <code>const</code> array is legal:
+the binding can't be reseated, but the contents are mutable.</p>`,
+
+  cpp: `#include <vector>
+#include <string>
+#include <algorithm>
+
+int sum_values(const std::vector<int>& values) {
+    int total = 0;
+    for (int v : values) {
+        total += v;
+    }
+    return total;
+}
+
+std::vector<int> append_value(std::vector<int> values, int v) {
+    values.push_back(v);
+    return values;
+}
+
+bool contains_name(const std::vector<std::string>& names,
+                   const std::string& target) {
+    return std::find(names.begin(), names.end(), target)
+        != names.end();
+}`,
+
+  task: `
+<p>Rewrite the three functions in TypeScript, with explicit array type
+annotations:</p>
+<ol>
+  <li><code>sumValues(values: number[]): number</code> — add up the elements
+      with a <code>for (const v of values)</code> loop, the direct translation
+      of your range-for. An empty array sums to 0.</li>
+  <li><code>appendValue(values: number[], v: number): number[]</code> — append
+      <code>v</code> with <code>.push(…)</code> and return the array. (Arrays
+      are passed by reference — there is no copy to worry about, and no move
+      semantics to spell out.)</li>
+  <li><code>containsName(names: string[], target: string): boolean</code> —
+      return whether the array contains <code>target</code>, using
+      <code>.includes(…)</code>. No <code>begin()</code>/<code>end()</code>,
+      no iterators.</li>
+</ol>`,
+
+  starter: `// 1. sumValues: range-for becomes for..of.
+//    C++: for (int v : values) total += v;
+function sumValues(values: number[]): number {
+  // TODO: loop with for (const v of values)
+  return 0;
+}
+
+// 2. appendValue: push_back becomes push.
+function appendValue(values: number[], v: number): number[] {
+  // TODO
+  return values;
+}
+
+// 3. containsName: std::find(...) != end() becomes .includes().
+//    Note the parameter type: string[], not vector<string>.
+function containsName(names, target): boolean {
+  // TODO
+  return false;
+}
+`,
+
+  exportNames: ["sumValues", "appendValue", "containsName"],
+
+  requirements: [
+    { pattern: /:\s*number\[\]/, message: "Annotate the number arrays explicitly as number[]" },
+    { pattern: /:\s*string\[\]/, message: "Annotate the names parameter explicitly as string[]" },
+    { pattern: /\.push\s*\(/, message: "Use .push(…) — the new name for push_back" },
+    { pattern: /for\s*\(\s*(const|let)\s+\w+\s+of\b/, message: "Use a for (const x of values) loop, the range-for equivalent" },
+  ],
+
+  tests: [
+    { name: "sumValues([1, 2, 3]) returns 6", run: (x) => expectEqual(x.sumValues([1, 2, 3]), 6) },
+    { name: "sumValues([]) returns 0", run: (x) => expectEqual(x.sumValues([]), 0) },
+    { name: "appendValue([1, 2], 3) returns [1, 2, 3]", run: (x) => expectDeepEqual(x.appendValue([1, 2], 3), [1, 2, 3]) },
+    { name: "appendValue([], 7) returns [7]", run: (x) => expectDeepEqual(x.appendValue([], 7), [7]) },
+    { name: 'containsName(["Ada", "Bjarne"], "Ada") is true', run: (x) => expectEqual(x.containsName(["Ada", "Bjarne"], "Ada"), true) },
+    { name: 'containsName(["Ada", "Bjarne"], "Dennis") is false', run: (x) => expectEqual(x.containsName(["Ada", "Bjarne"], "Dennis"), false) },
+  ],
+
+  solution: `function sumValues(values: number[]): number {
+  let total: number = 0;
+  for (const v of values) {
+    total += v;
+  }
+  return total;
+}
+
+function appendValue(values: number[], v: number): number[] {
+  values.push(v);
+  return values;
+}
+
+function containsName(names: string[], target: string): boolean {
+  return names.includes(target);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Declare</td><td><code>std::vector&lt;int&gt; v = {1, 2};</code></td><td><code>const v: number[] = [1, 2];</code></td></tr>
+  <tr><td>Append</td><td><code>v.push_back(x);</code></td><td><code>v.push(x);</code></td></tr>
+  <tr><td>Remove last</td><td><code>v.pop_back();</code></td><td><code>v.pop()</code> (also returns the element)</td></tr>
+  <tr><td>Size</td><td><code>v.size()</code></td><td><code>v.length</code></td></tr>
+  <tr><td>Index</td><td><code>v[i]</code> (UB) / <code>v.at(i)</code> (throws)</td><td><code>v[i]</code> (→ <code>undefined</code> if out of range)</td></tr>
+  <tr><td>Membership</td><td><code>std::find(begin, end, x) != end</code></td><td><code>v.includes(x)</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (const auto&amp; x : v)</code></td><td><code>for (const x of v)</code></td></tr>
+  <tr><td>Slice / subrange</td><td><code>std::span</code> or iterator pairs</td><td><code>v.slice(from, to)</code> (returns a copy)</td></tr>
+</table>
+<p>Arrays are heterogeneous at runtime but homogeneous to the type checker:
+<code>number[]</code> is enforced at compile time exactly like
+<code>vector&lt;int&gt;</code>, so <code>v.push("oops")</code> is a compile
+error. Remember the reference semantics, though — passing an array to a
+function passes a handle to the <em>same</em> array (like taking
+<code>vector&lt;int&gt;&amp;</code>), so in-place mutations are visible to the
+caller. If you want value semantics, copy explicitly with
+<code>[...v]</code> or <code>v.slice()</code>.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

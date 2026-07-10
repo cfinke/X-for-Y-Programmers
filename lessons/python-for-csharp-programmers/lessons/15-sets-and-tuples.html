@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Sets &amp; Tuples</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Sets & Tuples",
+
+  intro: `
+<p>C# gives you <code>HashSet&lt;T&gt;</code> as a generic class you construct and
+mutate with methods, and while C# does have a real tuple type
+(<code>ValueTuple</code>, with the <code>(a, b)</code> literal syntax and
+deconstruction since C# 7), it is just an ordinary value type whose slots
+(<code>Item1</code>, <code>Item2</code>, ...) can still be reassigned. Python
+bakes both into the language as first-class types with their own literal syntax.
+A <em>set</em> is an unordered collection of unique, hashable values written
+with braces. A <em>tuple</em> is an immutable, ordered sequence written with
+commas (usually wrapped in parentheses).</p>
+<table>
+  <tr><th>C#</th><th>Python</th></tr>
+  <tr><td><code>new HashSet&lt;int&gt; { 1, 2, 2 }</code></td><td><code>{1, 2, 2}</code> &rarr; <code>{1, 2}</code></td></tr>
+  <tr><td><code>s.Add(3)</code></td><td><code>s.add(3)</code></td></tr>
+  <tr><td><code>a.Intersect(b)</code> (LINQ)</td><td><code>a &amp; b</code></td></tr>
+  <tr><td><code>items.Distinct().ToList()</code></td><td><code>list(set(items))</code></td></tr>
+  <tr><td><code>(string, int) t = ("a", 1);</code></td><td><code>t = ("a", 1)</code></td></tr>
+  <tr><td><code>var (x, y) = t;</code></td><td><code>x, y = t</code></td></tr>
+</table>
+<p>Because tuples are immutable and hashable, Python lets you use them as
+dictionary keys or set members — something a mutable list (or a C#
+<code>List&lt;T&gt;</code>) can never do. Set algebra has operator sugar:
+<code>|</code> union, <code>&amp;</code> intersection, <code>-</code> difference
+— no <code>.Intersect()</code>/<code>.Union()</code> call and no
+<code>IEnumerable</code> round trip required. And when a tuple's positions
+start to carry meaning, <code>collections.namedtuple</code> gives each slot a
+name while staying a real, immutable tuple — the closest C# analog is a named
+<code>ValueTuple</code> like <code>(int X, int Y)</code>, except that one can
+still be mutated.</p>`,
+
+  csharp: `var tags = new HashSet<string> { "a", "b", "a" };   // {"a", "b"}
+tags.Add("c");
+
+var a = new HashSet<int> { 1, 2, 3 };
+var b = new HashSet<int> { 2, 3, 4 };
+// LINQ set operations return IEnumerable<T>, not a HashSet<T>
+var both = new HashSet<int>(a.Intersect(b)); // {2, 3}
+
+static List<T> Dedupe<T>(IEnumerable<T> items) {
+  return items.Distinct().ToList();
+}
+
+// tuple: fixed positions, unpacked by position
+var point = (3, 4);
+var (px, py) = point;`,
+
+  task: `
+<p>Write the Python versions:</p>
+<ol>
+  <li><code>dedupe(items)</code> &mdash; return a <code>list</code> of the unique
+      values in <code>items</code>, using a <code>set</code>.</li>
+  <li><code>common_tags(a, b)</code> &mdash; take two lists and return a
+      <code>set</code> of the tags that appear in <strong>both</strong>, using set
+      intersection (<code>&amp;</code>).</li>
+  <li><code>midpoint(p, q)</code> &mdash; each point is a <code>(x, y)</code>
+      tuple; unpack them and return the midpoint as a new tuple
+      <code>((x1 + x2) / 2, (y1 + y2) / 2)</code>.</li>
+  <li>Define a namedtuple <code>Point</code> with fields <code>x</code> and
+      <code>y</code>, and write <code>make_point(x, y)</code> that returns a
+      <code>Point</code>.</li>
+</ol>`,
+
+  starter: `from collections import namedtuple
+
+
+# 1. dedupe(items) -> list of unique values
+def dedupe(items):
+    return []  # TODO
+
+
+# 2. common_tags(a, b) -> set of tags in both lists
+def common_tags(a, b):
+    return set()  # TODO
+
+
+# 3. midpoint(p, q) -> (mx, my) tuple
+def midpoint(p, q):
+    return (0, 0)  # TODO
+
+
+# 4. Point namedtuple with fields x, y
+Point = None  # TODO
+
+
+def make_point(x, y):
+    return None  # TODO
+`,
+
+  requirements: [
+    { pattern: /set\s*\(|\{[^}]*\}/, message: "Use a set to remove duplicates" },
+    { pattern: /&/, message: "Use set intersection (&) in common_tags" },
+    { pattern: /namedtuple\s*\(/, message: "Define Point with collections.namedtuple" },
+  ],
+
+  tests: [
+    { name: "dedupe removes duplicates", code: "    expect_eq(sorted(dedupe([1, 2, 2, 3, 3, 3])), [1, 2, 3])" },
+    { name: "dedupe on already-unique list", code: "    expect_eq(sorted(dedupe([\"a\", \"b\", \"c\"])), [\"a\", \"b\", \"c\"])" },
+    { name: "common_tags returns a set of the overlap", code: "    expect_eq(common_tags([\"py\", \"web\", \"cli\"], [\"web\", \"cli\", \"db\"]), {\"web\", \"cli\"})" },
+    { name: "common_tags with no overlap is empty", code: "    expect_eq(common_tags([\"a\"], [\"b\"]), set())" },
+    { name: "midpoint unpacks and averages", code: "    expect_eq(midpoint((0, 0), (4, 6)), (2.0, 3.0))" },
+    { name: "Point has named fields", code: "    p = make_point(3, 4)\n    expect_eq(p.x, 3)\n    expect_eq(p.y, 4)" },
+    { name: "Point is a real tuple", code: "    p = make_point(3, 4)\n    expect_eq(tuple(p), (3, 4))\n    expect_true(p == (3, 4))" },
+  ],
+
+  solution: `from collections import namedtuple
+
+
+def dedupe(items):
+    return list(set(items))
+
+
+def common_tags(a, b):
+    return set(a) & set(b)
+
+
+def midpoint(p, q):
+    x1, y1 = p
+    x2, y2 = q
+    return ((x1 + x2) / 2, (y1 + y2) / 2)
+
+
+Point = namedtuple("Point", ["x", "y"])
+
+
+def make_point(x, y):
+    return Point(x, y)
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Python</th></tr>
+  <tr><td>Set literal</td><td><code>new HashSet&lt;int&gt; { 1, 2 }</code></td><td><code>{1, 2}</code> (but <code>{}</code> is an empty dict &mdash; use <code>set()</code>)</td></tr>
+  <tr><td>Membership</td><td><code>s.Contains(x)</code></td><td><code>x in s</code></td></tr>
+  <tr><td>Union / intersection / diff</td><td><code>a.Union(b)</code>, <code>a.Intersect(b)</code>, <code>a.Except(b)</code> (LINQ, return <code>IEnumerable&lt;T&gt;</code>)</td><td><code>a | b</code>, <code>a &amp; b</code>, <code>a - b</code></td></tr>
+  <tr><td>Tuple</td><td><code>(string, int)</code> (fields are still reassignable)</td><td><code>("a", 1)</code> (truly immutable)</td></tr>
+  <tr><td>Unpack</td><td><code>var (x, y) = t;</code></td><td><code>x, y = t</code></td></tr>
+  <tr><td>Named fields</td><td>named <code>ValueTuple</code>, class, or <code>record</code></td><td><code>namedtuple("P", ["x", "y"])</code></td></tr>
+</table>
+<p>Two gotchas. First, <code>{}</code> is an empty <em>dict</em>, not a set &mdash;
+the empty set is <code>set()</code>. Second, set elements and tuple entries must be
+<em>hashable</em>: numbers, strings, and tuples qualify, but a <code>list</code> or
+<code>dict</code> does not, so <code>{[1, 2]}</code> raises <code>TypeError</code>.
+That is exactly why tuples make great dictionary keys and set members while lists
+cannot &mdash; e.g. <code>seen = {(0, 0), (1, 2)}</code> to track visited grid
+cells. A <code>namedtuple</code> is still a plain tuple under the hood, so
+<code>make_point(3, 4) == (3, 4)</code> is <code>True</code> and it unpacks and
+indexes like any tuple, but you also get <code>.x</code> / <code>.y</code> access
+and a readable <code>repr</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Prototypes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Prototypes",
+
+  intro: `
+<p>The <code>class</code> keyword you reach for in Kotlin compiles to a real
+JVM class: methods live in the class's method table and each instance carries
+only its fields. JavaScript's <code>class</code> keyword looks similar but is
+only a thin layer of sugar. At runtime there are no classes — there are
+<em>constructor functions</em> and <em>prototype objects</em>. When you write
+<code>class Animal { speak() {} }</code>, what actually exists is a function
+<code>Animal</code> whose <code>.prototype</code> object holds <code>speak</code>.
+Every instance you create with <code>new</code> gets a hidden link to that one
+shared object.</p>
+<table>
+  <tr><th>Kotlin</th><th>JavaScript (runtime)</th></tr>
+  <tr><td><code>class Animal { fun speak(): String {} }</code></td><td><code>function Animal() {}</code> + <code>Animal.prototype.speak = ...</code></td></tr>
+  <tr><td><code>Animal("Rex")</code> (no <code>new</code> needed)</td><td><code>new Animal()</code> (links to <code>Animal.prototype</code>)</td></tr>
+  <tr><td>method dispatch via the JVM vtable</td><td>walk the prototype chain at run time</td></tr>
+  <tr><td><code>x::class</code></td><td><code>Object.getPrototypeOf(x)</code></td></tr>
+</table>
+<p>The key runtime fact: a method like <code>speak</code> is <strong>not</strong>
+copied onto each instance. It lives once on <code>Animal.prototype</code>, and
+every instance looks it up through its prototype link. That is why
+<code>a.speak === b.speak</code> is <code>true</code> for two different instances —
+they share the exact same function object.</p>`,
+
+  kotlin: `class Animal(val name: String) {
+    fun speak(): String {
+        return "$name makes a sound"
+    }
+}
+
+val rex: Animal = Animal("Rex")
+rex.speak() // "Rex makes a sound"`,
+
+  task: `
+<p>Build the same thing the way it exists at runtime — with a constructor
+function and a prototype — instead of the <code>class</code> keyword:</p>
+<ol>
+  <li>Write a constructor function <code>Animal(name)</code> that sets
+      <code>this.name</code>. Put <code>speak()</code> on
+      <code>Animal.prototype</code> (not inside the constructor); it returns
+      <code>"&lt;name&gt; makes a sound"</code>.</li>
+  <li><code>makeAnimal(name)</code> returns a new instance using
+      <code>new Animal(name)</code>.</li>
+  <li><code>speakIsShared(a, b)</code> returns <code>true</code> when two
+      instances use the same <code>speak</code> function object.</li>
+  <li><code>getProto(obj)</code> returns that object's prototype via
+      <code>Object.getPrototypeOf</code>.</li>
+  <li><code>withProto(proto, props)</code> creates a fresh object whose prototype
+      is <code>proto</code> using <code>Object.create</code>, then copies
+      <code>props</code> onto it and returns it.</li>
+</ol>`,
+
+  starter: `// 1. Constructor function + method on the prototype
+function Animal(name) {
+  // TODO: set this.name
+}
+// TODO: Animal.prototype.speak = ...
+
+// 2. makeAnimal(name) -> new Animal(name)
+function makeAnimal(name) {
+  // TODO
+}
+
+// 3. speakIsShared(a, b) -> true if they share the same speak function
+function speakIsShared(a, b) {
+  // TODO
+  return false;
+}
+
+// 4. getProto(obj) -> the prototype of obj
+function getProto(obj) {
+  // TODO
+}
+
+// 5. withProto(proto, props) -> new object with prototype = proto, plus props
+function withProto(proto, props) {
+  // TODO
+}
+`,
+
+  exportNames: ["Animal", "makeAnimal", "speakIsShared", "getProto", "withProto"],
+
+  requirements: [
+    { pattern: /Animal\.prototype\s*\.\s*speak/, message: "Define speak on Animal.prototype, not inside the constructor" },
+    { pattern: /new\s+Animal/, message: "Create instances with new Animal(...)" },
+    { pattern: /Object\.create\s*\(/, message: "Use Object.create in withProto" },
+    { pattern: /Object\.getPrototypeOf\s*\(/, message: "Use Object.getPrototypeOf in getProto" },
+  ],
+
+  tests: [
+    { name: 'makeAnimal("Rex").name is "Rex"', run: (x) => expectEqual(x.makeAnimal("Rex").name, "Rex") },
+    { name: 'speak() returns "Rex makes a sound"', run: (x) => expectEqual(x.makeAnimal("Rex").speak(), "Rex makes a sound") },
+    { name: "speak is not an own property of the instance", run: (x) => expectEqual(Object.prototype.hasOwnProperty.call(x.makeAnimal("Rex"), "speak"), false) },
+    { name: "name IS an own property of the instance", run: (x) => expectEqual(Object.prototype.hasOwnProperty.call(x.makeAnimal("Rex"), "name"), true) },
+    { name: "two instances share the same speak function", run: (x) => expectEqual(x.speakIsShared(x.makeAnimal("a"), x.makeAnimal("b")), true) },
+    { name: "getProto(instance) is Animal.prototype", run: (x) => expectEqual(x.getProto(x.makeAnimal("a")), x.Animal.prototype) },
+    { name: "withProto links prototype and copies props", run: (x) => {
+        const obj = x.withProto(x.Animal.prototype, { name: "Bo" });
+        expectEqual(Object.getPrototypeOf(obj), x.Animal.prototype);
+        expectEqual(obj.name, "Bo");
+        expectEqual(obj.speak(), "Bo makes a sound");
+        expectEqual(Object.prototype.hasOwnProperty.call(obj, "speak"), false);
+      } },
+  ],
+
+  solution: `function Animal(name) {
+  this.name = name;
+}
+Animal.prototype.speak = function () {
+  return this.name + " makes a sound";
+};
+
+function makeAnimal(name) {
+  return new Animal(name);
+}
+
+function speakIsShared(a, b) {
+  return a.speak === b.speak;
+}
+
+function getProto(obj) {
+  return Object.getPrototypeOf(obj);
+}
+
+function withProto(proto, props) {
+  const obj = Object.create(proto);
+  return Object.assign(obj, props);
+}
+`,
+
+  notes: `
+<p>The prototype link is what class inheritance is built on. Looking up a
+property walks the chain: the instance first, then its prototype, then that
+prototype's prototype, up to <code>Object.prototype</code> and finally
+<code>null</code>. Methods sit on the shared prototype so instances stay small —
+they carry only their own data (<code>name</code> here), never their methods.</p>
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>JavaScript (runtime)</th></tr>
+  <tr><td>Declare a method</td><td><code>class C { fun m() {} }</code></td><td><code>C.prototype.m = function () {}</code></td></tr>
+  <tr><td>Instance data</td><td><code>class C(val name: String)</code></td><td><code>this.name = name</code> (own property)</td></tr>
+  <tr><td>Read the "type" of an instance</td><td><code>x::class</code></td><td><code>Object.getPrototypeOf(x)</code></td></tr>
+  <tr><td>Object with a chosen prototype</td><td>no equivalent — a class's shape is fixed at compile time</td><td><code>Object.create(proto)</code></td></tr>
+  <tr><td>Is it the instance's own?</td><td>—</td><td><code>obj.hasOwnProperty("m")</code></td></tr>
+</table>
+<p>Two traps worth remembering: <code>Object.create(null)</code> makes an object
+with <em>no</em> prototype (no <code>hasOwnProperty</code>, no
+<code>toString</code>) — handy as a clean dictionary. And an instance's
+<code>__proto__</code> is the same thing as <code>Object.getPrototypeOf(it)</code>,
+but the constructor's <code>.prototype</code> property is a different concept: it
+is the object that <em>future</em> instances will link to. When you understand
+that <code>class</code> is just this machinery with nicer syntax, nothing about
+JavaScript objects surprises you anymore.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

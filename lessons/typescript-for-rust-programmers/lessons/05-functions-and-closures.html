@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions & Closures</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions & Closures",
+
+  intro: `
+<p>Function signatures translate almost mechanically: <code>fn f(x: i32)
+-&gt; String</code> becomes <code>function f(x: number): string</code> —
+the arrow turns into a colon and the types swap spelling. Closures shrink
+too: <code>|x| x * 2</code> is <code>(x) =&gt; x * 2</code>. What
+disappears entirely is the taxonomy around them. There is no
+<code>Fn</code>/<code>FnMut</code>/<code>FnOnce</code> split, no
+<code>move</code>, no boxing to return one: a closure is just a value, and
+the garbage collector keeps whatever it captures alive for as long as the
+closure exists. Passing a closure to a function needs no trait bound —
+the parameter type is written like the closure itself:
+<code>f: (n: number) =&gt; number</code>.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>fn f(x: i32) -&gt; String</code></td><td><code>function f(x: number): string</code></td></tr>
+  <tr><td><code>|x| x * 2</code></td><td><code>(x) =&gt; x * 2</code></td></tr>
+  <tr><td><code>fn apply&lt;F: Fn(i32) -&gt; i32&gt;(f: F)</code></td><td><code>function apply(f: (n: number) =&gt; number)</code></td></tr>
+  <tr><td><code>move |x| ...</code>, <code>Box&lt;dyn Fn...&gt;</code></td><td>not a thing — the GC keeps captures alive</td></tr>
+  <tr><td>default args: none (builders, <code>Option</code> params)</td><td><code>greeting: string = "Hello"</code>, <code>last?: string</code></td></tr>
+</table>
+<p>And TypeScript has the two features Rust deliberately left out: default
+parameters (<code>greeting: string = "Hello"</code>) and optional
+parameters (<code>last?: string</code>, which types as <code>string |
+undefined</code> inside the body). Where Rust pushes you toward a builder
+or an <code>Option&lt;&amp;str&gt;</code> argument, here you just write
+the default into the signature and callers omit it.</p>`,
+
+  rust: `fn apply_twice<F: Fn(i32) -> i32>(f: F, x: i32) -> i32 {
+    f(f(x))
+}
+
+let double = |x: i32| x * 2;
+let n = apply_twice(double, 5); // 20
+
+// No default or optional parameters in Rust --
+// you simulate them with Option and unwrap_or:
+fn greet(name: &str, greeting: Option<&str>) -> String {
+    let greeting = greeting.unwrap_or("Hello");
+    format!("{greeting}, {name}!")
+}
+
+let a = greet("Ferris", None);          // "Hello, Ferris!"
+let b = greet("Ferris", Some("Howdy")); // "Howdy, Ferris!"
+println!("{n} {a} {b}");`,
+
+  task: `
+<p>Port the functions, using the parameter features Rust
+doesn't have:</p>
+<ol>
+  <li>Write <code>greet(name: string, greeting: string = "Hello"): string</code>
+      returning <code>"Hello, Ferris!"</code>-style output — the
+      <code>Option&lt;&amp;str&gt;</code>/<code>unwrap_or</code> dance
+      becomes a <em>default parameter</em> in the signature.</li>
+  <li>Write <code>fullName(first: string, last?: string): string</code> —
+      an <em>optional parameter</em>. Return <code>"first last"</code> when
+      <code>last</code> is given, otherwise just <code>first</code>. Inside
+      the body, <code>last</code> is <code>string | undefined</code>: check
+      it before use, just as you'd match an <code>Option</code>.</li>
+  <li>Declare <code>double</code> as a <code>const</code> holding an
+      <em>arrow function</em>: <code>|x: i32| x * 2</code> becomes
+      <code>(x: number) =&gt; x * 2</code>.</li>
+  <li>Write <code>applyTwice(f: (n: number) =&gt; number, x: number): number</code>
+      returning <code>f(f(x))</code> — no <code>&lt;F: Fn(...)&gt;</code>
+      bound, the function type is written inline.</li>
+</ol>`,
+
+  starter: `// 1. Option<&str> + unwrap_or("Hello")  ->  a default parameter
+//    fn greet(name: &str, greeting: Option<&str>) -> String
+function greet(name: string): string {
+  // TODO: add greeting: string = "Hello" and return "greeting, name!"
+  return "";
+}
+
+// 2. Optional parameter: last?: string (string | undefined inside)
+function fullName(first: string): string {
+  // TODO: add last?: string; return "first last" or just first
+  return first;
+}
+
+// 3. |x: i32| x * 2  ->  an arrow function stored in a const
+// TODO: const double = ...
+
+
+// 4. fn apply_twice<F: Fn(i32) -> i32>(f: F, x: i32) -> i32
+function applyTwice(f: (n: number) => number, x: number): number {
+  return x; // TODO: f(f(x))
+}
+`,
+
+  exportNames: ["greet", "fullName", "double", "applyTwice"],
+
+  requirements: [
+    { pattern: /greeting\s*:\s*string\s*=\s*["']Hello["']/, message: 'Give greet a default parameter: greeting: string = "Hello"' },
+    { pattern: /last\s*\?\s*:\s*string/, message: "Give fullName an optional parameter: last?: string" },
+    { pattern: /const\s+double\s*=\s*\(\s*x\s*:\s*number\s*\)[^=]*=>/, message: "Declare double as a const arrow function taking (x: number)" },
+  ],
+
+  tests: [
+    { name: 'greet("Ferris") is "Hello, Ferris!" — the default filled in, no None to pass', run: (x) => expectEqual(x.greet("Ferris"), "Hello, Ferris!") },
+    { name: 'greet("Ferris", "Howdy") is "Howdy, Ferris!"', run: (x) => expectEqual(x.greet("Ferris", "Howdy"), "Howdy, Ferris!") },
+    { name: 'fullName("Grace", "Hopper") is "Grace Hopper"; fullName("Prince") is "Prince"', run: (x) => { expectEqual(x.fullName("Grace", "Hopper"), "Grace Hopper"); expectEqual(x.fullName("Prince"), "Prince"); } },
+    { name: "double(21) is 42", run: (x) => expectEqual(x.double(21), 42) },
+    { name: "applyTwice(double, 5) is 20 — closures pass without Fn bounds", run: (x) => expectEqual(x.applyTwice(x.double, 5), 20) },
+    { name: "applyTwice((n) => n + 1, 0) is 2", run: (x) => expectEqual(x.applyTwice((n) => n + 1, 0), 2) },
+  ],
+
+  solution: `function greet(name: string, greeting: string = "Hello"): string {
+  return \`\${greeting}, \${name}!\`;
+}
+
+function fullName(first: string, last?: string): string {
+  // last is string | undefined here -- check it like an Option
+  if (last !== undefined) {
+    return \`\${first} \${last}\`;
+  }
+  return first;
+}
+
+const double = (x: number): number => x * 2;
+
+function applyTwice(f: (n: number) => number, x: number): number {
+  return f(f(x));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Function</td><td><code>fn f(x: i32) -&gt; String</code></td><td><code>function f(x: number): string</code></td></tr>
+  <tr><td>Closure</td><td><code>|x| x * 2</code></td><td><code>(x) =&gt; x * 2</code></td></tr>
+  <tr><td>Closure as param</td><td><code>&lt;F: Fn(i32) -&gt; i32&gt;(f: F)</code></td><td><code>f: (n: number) =&gt; number</code></td></tr>
+  <tr><td>Capture semantics</td><td><code>Fn</code>/<code>FnMut</code>/<code>FnOnce</code>, <code>move</code></td><td>one kind; GC keeps captures alive</td></tr>
+  <tr><td>Default argument</td><td>builder pattern / <code>Option</code> + <code>unwrap_or</code></td><td><code>greeting: string = "Hello"</code></td></tr>
+  <tr><td>Optional argument</td><td><code>Option&lt;T&gt;</code> parameter</td><td><code>last?: string</code> → <code>string | undefined</code> in the body</td></tr>
+</table>
+<p>The liberating part: closures here are just values with no lifetime
+paperwork — return them, store them in arrays, capture whatever you like;
+the GC does what the borrow checker made you prove. The discipline to
+keep: an optional parameter is still an <code>Option</code> in disguise.
+The compiler types <code>last</code> as <code>string | undefined</code>
+and (under <code>strictNullChecks</code>) refuses to let you use it as a
+plain <code>string</code> until you've narrowed it — the same
+honesty-about-absence you rely on at home, enforced by <code>if</code>
+instead of <code>match</code>.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

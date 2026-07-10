@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>No new concepts — this is the course's vocabulary doing real work. You'll
+build a small inventory module: a class with <code>attr_reader</code> and
+<code>initialize</code> (lesson 9), queried and transformed with the
+Enumerable methods (<code>sum</code>, <code>find</code>, <code>select</code>,
+<code>map</code> — lessons 12–13) and blocks everywhere (lesson 11).</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>items.reduce((s, i) =&gt; s + ..., 0)</code></td><td><code>items.sum { |i| ... }</code></td></tr>
+  <tr><td><code>items.find(...)</code> → <code>undefined</code> on miss</td><td><code>items.find { ... }</code> → <code>nil</code> on miss</td></tr>
+  <tr><td><code>items.filter(...).map(...)</code></td><td><code>items.select { }.map { }</code></td></tr>
+  <tr><td><code>{ ...item, count: n }</code> to avoid mutation</td><td><code>Item.new(i.name, i.price_cents, i.count + n)</code></td></tr>
+</table>
+<p>One semantic carries over from JavaScript unchanged, and the exercise
+tests it: arrays and objects are <strong>references</strong>. If
+<code>restock</code> reached in and did <code>item.count += 1</code>, every
+other holder of that array would see the change — the same spooky action
+you guard against with spread syntax in JS. So do the Ruby equivalent of
+<code>{ ...item }</code>: <code>map</code> to a <em>new</em> array,
+building a <em>new</em> <code>Item</code> for the one that changes and
+passing the others through untouched. The tests check the originals
+afterward.</p>`,
+
+  javascript: `class Item {
+  constructor(name, priceCents, count) {
+    this.name = name;
+    this.priceCents = priceCents;
+    this.count = count;
+  }
+}
+
+const totalValue = (items) =>
+  items.reduce((sum, i) => sum + i.priceCents * i.count, 0);
+
+const findItem = (items, name) =>
+  items.find((i) => i.name === name);        // undefined on miss
+
+const restock = (items, name, amount) =>
+  items.map((i) =>                           // new array, new object —
+    i.name === name                          // never mutate shared state
+      ? new Item(i.name, i.priceCents, i.count + amount)
+      : i);
+
+const namesInStock = (items) =>
+  items.filter((i) => i.count > 0).map((i) => i.name);`,
+
+  task: `
+<p>The <code>Item</code> class is complete in the starter — write the four
+functions that work on arrays of items:</p>
+<ol>
+  <li><code>total_value(items)</code> — <code>sum</code> with a block:
+      <code>i.price_cents * i.count</code> across all items.</li>
+  <li><code>find_item(items, name)</code> — <code>.find</code> the item with
+      that name; Ruby's find returns <code>nil</code> on a miss (not
+      <code>undefined</code>), and that's the correct return here.</li>
+  <li><code>restock(items, name, amount)</code> — return a <strong>new</strong>
+      array where the matching item is replaced by
+      <code>Item.new(i.name, i.price_cents, i.count + amount)</code> and all
+      others pass through unchanged. Do not mutate <code>items</code> or any
+      item in it — the tests check the originals afterward.</li>
+  <li><code>names_in_stock(items)</code> — <code>select</code> the items with
+      <code>count &gt; 0</code>, then <code>map</code> to their names.</li>
+</ol>`,
+
+  starter: `# Item is complete — attr_reader + initialize, straight from lesson 9.
+class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+def total_value(items)
+  raise NotImplementedError, "TODO: sum of price_cents * count"
+end
+
+def find_item(items, name)
+  raise NotImplementedError, "TODO: find by name (nil when absent)"
+end
+
+def restock(items, name, amount)
+  raise NotImplementedError, "TODO: NEW array with a NEW Item for the match"
+end
+
+def names_in_stock(items)
+  raise NotImplementedError, "TODO: select count > 0, map to names"
+end
+`,
+
+  requirements: [
+    { pattern: /\.sum/, message: "Compute total_value with .sum and a block" },
+    { pattern: /\.find\b/, message: "Locate the item with .find" },
+    { pattern: /Item\.new/, message: "restock builds a fresh Item.new rather than mutating" },
+    { pattern: /\.select/, message: "Filter in-stock items with .select" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count across the inventory",
+      code: '  items = [Item.new("apple", 150, 4), Item.new("pen", 300, 2)]\n  expect_eq(total_value(items), 1200)\n  expect_eq(total_value([]), 0)' },
+    { name: "find_item returns the matching item, or nil on a miss",
+      code: '  items = [Item.new("apple", 150, 4), Item.new("pen", 300, 2)]\n  expect_eq(find_item(items, "pen").price_cents, 300)\n  expect_eq(find_item(items, "ghost"), nil)' },
+    { name: "restock returns a new array with the count bumped",
+      code: '  items = [Item.new("apple", 150, 4), Item.new("pen", 300, 2)]\n  restocked = restock(items, "apple", 6)\n  expect_eq(restocked.map { |i| [i.name, i.count] }, [["apple", 10], ["pen", 2]])' },
+    { name: "restock does NOT mutate the original items",
+      code: '  items = [Item.new("apple", 150, 4), Item.new("pen", 300, 2)]\n  restock(items, "apple", 6)\n  expect_eq(items.first.count, 4)\n  expect_eq(items.map { |i| i.count }, [4, 2])' },
+    { name: "restock with an unknown name changes nothing",
+      code: '  items = [Item.new("apple", 150, 4), Item.new("pen", 300, 2)]\n  expect_eq(restock(items, "ghost", 5).map { |i| i.count }, [4, 2])' },
+    { name: "names_in_stock selects count > 0 and maps to names",
+      code: '  items = [Item.new("apple", 150, 4), Item.new("pen", 300, 0), Item.new("ink", 90, 2)]\n  expect_eq(names_in_stock(items), ["apple", "ink"])' },
+  ],
+
+  solution: `class Item
+  attr_reader :name, :price_cents, :count
+
+  def initialize(name, price_cents, count)
+    @name = name
+    @price_cents = price_cents
+    @count = count
+  end
+end
+
+def total_value(items)
+  items.sum { |i| i.price_cents * i.count }
+end
+
+def find_item(items, name)
+  items.find { |i| i.name == name }
+end
+
+def restock(items, name, amount)
+  items.map do |i|
+    i.name == name ? Item.new(i.name, i.price_cents, i.count + amount) : i
+  end
+end
+
+def names_in_stock(items)
+  items.select { |i| i.count > 0 }.map { |i| i.name }
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Sum with a projection</td><td><code>reduce((s, i) =&gt; s + f(i), 0)</code></td><td><code>sum { |i| f(i) }</code></td></tr>
+  <tr><td>First match</td><td><code>find</code> → <code>undefined</code></td><td><code>find</code> → <code>nil</code></td></tr>
+  <tr><td>Filter + project</td><td><code>filter().map()</code></td><td><code>select { }.map { }</code></td></tr>
+  <tr><td>Non-mutating update</td><td><code>map</code> + <code>{ ...i, count }</code></td><td><code>map</code> + <code>Item.new(...)</code></td></tr>
+  <tr><td>Reference semantics</td><td>objects/arrays are references</td><td>same! — copy on write is on you</td></tr>
+  <tr><td>Block shorthand</td><td>—</td><td><code>map(&amp;:name)</code> when the block just calls a method</td></tr>
+</table>
+<p>Read the finished solution top to bottom: <code>snake_case</code> names,
+<code>def ... end</code>, every method body a single expression whose value
+is the implicit return, blocks where JS reaches for arrow functions, and
+<code>nil</code> where JS says <code>undefined</code>. That
+<code>select { }.map { }</code> chain could also be written
+<code>select { |i| i.count &gt; 0 }.map(&amp;:name)</code> — the
+<code>&amp;:symbol</code> shorthand from lesson 11 — which is how you'll
+see it in the wild. That's the course: the semantics you already knew from
+JavaScript, wearing considerably less punctuation.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>In Rust, JSON means serde: define a struct, add
+<code>#[derive(Serialize, Deserialize)]</code>, and the shape of the data is
+checked at the type level — a missing field is a compile-visible,
+handleable <code>Err</code>. Ruby needs none of that ceremony:
+<code>require "json"</code> and every object answers <code>to_json</code>;
+<code>JSON.parse</code> turns a string into plain hashes and arrays. No
+derive, no schema — and, the trade again, <em>no compile-time shape checking
+either</em>. The parsed hash has whatever keys the JSON had, and nothing
+promises they are the ones you expect.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>#[derive(Serialize, Deserialize)] struct User</code></td><td>none — plain <code>Hash</code> in, plain <code>Hash</code> out</td></tr>
+  <tr><td><code>serde_json::to_string(&amp;user)?</code></td><td><code>data.to_json</code></td></tr>
+  <tr><td><code>serde_json::from_str(s)?</code></td><td><code>JSON.parse(s)</code> — string-keyed <code>Hash</code></td></tr>
+  <tr><td><code>#[serde(default)]</code></td><td><code>hash.fetch(:age, 0)</code> at read time</td></tr>
+  <tr><td><code>Err(serde_json::Error)</code></td><td>raises <code>JSON::ParserError</code></td></tr>
+</table>
+<p>Two idioms make it livable. <code>JSON.parse(s, symbolize_names: true)</code>
+gives you symbol keys (<code>user[:name]</code>) instead of string keys.
+And <code>hash.dig(:a, :b)</code> walks nested structures returning
+<code>nil</code> at the first miss — safe traversal with no
+<code>Option</code> chain. Malformed input <strong>raises</strong>
+<code>JSON::ParserError</code>: the <code>rescue</code> is your
+<code>Err</code> arm, exactly the pattern from lesson 16.</p>`,
+
+  rust: `use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct User {
+    #[serde(default = "unknown_name")]
+    name: String,
+    #[serde(default)]
+    age: u32,
+}
+
+fn unknown_name() -> String {
+    "unknown".to_string()
+}
+
+fn parse_user(json: &str) -> Result<User, serde_json::Error> {
+    serde_json::from_str(json) // failure is an Err, not an exception
+}
+
+fn to_json_string(user: &User) -> Result<String, serde_json::Error> {
+    serde_json::to_string(user)
+}`,
+
+  task: `
+<p>Do the same work without a single type definition:</p>
+<ol>
+  <li><code>to_json_string(data)</code> — just <code>data.to_json</code>.
+      Any hash or array serializes; no derive required.</li>
+  <li><code>parse_user(json)</code> — <code>JSON.parse(json,
+      symbolize_names: true)</code>, then return a hash
+      <code>{ name: ..., age: ... }</code> using <code>fetch</code> with
+      defaults <code>"unknown"</code> and <code>0</code> — serde's
+      <code>#[serde(default)]</code>, applied at read time.</li>
+  <li><code>pluck_names(json)</code> — parse an array of user objects and
+      map out each <code>:name</code>.</li>
+  <li><code>safe_parse(json)</code> — <code>JSON.parse(json)</code>, but
+      rescue <code>JSON::ParserError</code> (def-level) and return
+      <code>{}</code>. The rescue is the <code>Err</code> arm.</li>
+</ol>`,
+
+  starter: `require "json"
+
+# 1. Serialization needs no derive: every Hash/Array answers to_json.
+def to_json_string(data)
+  raise NotImplementedError, "TODO: data.to_json"
+end
+
+# 2. symbolize_names: true gives :symbol keys; fetch supplies the
+#    defaults serde would have derived.
+def parse_user(json)
+  raise NotImplementedError, "TODO: JSON.parse + fetch(:name, ...), fetch(:age, ...)"
+end
+
+# 3. Parse an array of users, map out the names.
+def pluck_names(json)
+  raise NotImplementedError, "TODO: parse, then map { |u| u[:name] }"
+end
+
+# 4. Malformed JSON raises JSON::ParserError — rescue it, return {}.
+def safe_parse(json)
+  raise NotImplementedError, "TODO: JSON.parse with a def-level rescue"
+end
+`,
+
+  requirements: [
+    { pattern: /require\s+["']json["']/, message: 'Keep require "json" at the top' },
+    { pattern: /to_json/, message: "Serialize with to_json" },
+    { pattern: /symbolize_names:\s*true/, message: "Parse with symbolize_names: true for symbol keys" },
+    { pattern: /JSON::ParserError|rescue/, message: "Rescue JSON::ParserError in safe_parse" },
+  ],
+
+  tests: [
+    { name: 'to_json_string({ "a" => 1 }) produces {"a":1}',
+      code: `  expect_eq(to_json_string({ "a" => 1 }), '{"a":1}')` },
+    { name: "parse_user reads name and age",
+      code: `  expect_eq(parse_user('{"name":"Ada","age":36}'), { name: "Ada", age: 36 })` },
+    { name: 'parse_user fills defaults for missing fields ("unknown" / 0)',
+      code: `  expect_eq(parse_user('{"name":"Grace"}'), { name: "Grace", age: 0 })
+  expect_eq(parse_user('{}'), { name: "unknown", age: 0 })` },
+    { name: "pluck_names extracts every user's name",
+      code: `  expect_eq(pluck_names('[{"name":"Ada"},{"name":"Grace"}]'), ["Ada", "Grace"])` },
+    { name: "safe_parse returns parsed data on valid JSON",
+      code: `  expect_eq(safe_parse('{"a":1}'), { "a" => 1 })` },
+    { name: "safe_parse returns {} on malformed JSON instead of raising",
+      code: `  expect_eq(safe_parse("not json at all"), {})` },
+  ],
+
+  solution: `require "json"
+
+def to_json_string(data)
+  data.to_json
+end
+
+def parse_user(json)
+  user = JSON.parse(json, symbolize_names: true)
+  { name: user.fetch(:name, "unknown"), age: user.fetch(:age, 0) }
+end
+
+def pluck_names(json)
+  JSON.parse(json, symbolize_names: true).map { |u| u[:name] }
+end
+
+def safe_parse(json)
+  JSON.parse(json)
+rescue JSON::ParserError
+  {}
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust (serde)</th><th>Ruby</th></tr>
+  <tr><td>Setup</td><td><code>serde</code> + <code>serde_json</code> crates, derives</td><td><code>require "json"</code> (stdlib)</td></tr>
+  <tr><td>Serialize</td><td><code>serde_json::to_string(&amp;v)?</code></td><td><code>v.to_json</code></td></tr>
+  <tr><td>Deserialize</td><td><code>from_str::&lt;User&gt;(s)?</code> into a typed struct</td><td><code>JSON.parse(s)</code> into hashes/arrays</td></tr>
+  <tr><td>Symbol keys</td><td>struct fields</td><td><code>symbolize_names: true</code></td></tr>
+  <tr><td>Defaults</td><td><code>#[serde(default)]</code></td><td><code>fetch(:key, default)</code></td></tr>
+  <tr><td>Nested access</td><td>field access (checked at compile time)</td><td><code>data.dig(:a, :b, :c)</code> — <code>nil</code> on any miss</td></tr>
+  <tr><td>Malformed input</td><td><code>Err(serde_json::Error)</code></td><td>raises <code>JSON::ParserError</code></td></tr>
+</table>
+<p>What serde bought you was a guarantee: past <code>from_str</code>, the data
+<em>has</em> the declared shape. Ruby's <code>JSON.parse</code> guarantees
+only valid JSON — shape errors surface later, as <code>nil</code>s or
+<code>NoMethodError</code>s wherever the data is first touched. The idiomatic
+defense is to normalize at the boundary, exactly like
+<code>parse_user</code> does: parse, then immediately <code>fetch</code> with
+defaults so the rest of the program sees one known shape.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

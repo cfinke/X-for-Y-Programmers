@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Interfaces</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Interfaces",
+
+  intro: `
+<p>Go interfaces describe behavior — a set of method signatures — just like in
+C#. The one big difference is <strong>implicit satisfaction</strong>:
+there is no <code>: IShape</code> declaration and no <code>interface</code>
+keyword on the implementing type. If a type has the methods an
+interface names, it satisfies that interface automatically. You never write down
+the relationship; the compiler infers it at every use site.</p>
+<table>
+  <tr><th>C#</th><th>Go</th></tr>
+  <tr><td><code>interface IShape { double Area(); }</code></td><td><code>type Shape interface { Area() float64 }</code></td></tr>
+  <tr><td><code>class Rectangle : IShape {…}</code></td><td><code>func (r Rectangle) Area() float64 {…}</code> (no <code>: IShape</code>)</td></tr>
+  <tr><td><code>double Total(IEnumerable&lt;IShape&gt; s)</code></td><td><code>func TotalArea(s []Shape)</code></td></tr>
+  <tr><td><code>object</code></td><td><code>interface{}</code> (the empty interface)</td></tr>
+</table>
+<p>Because satisfaction is structural, a <code>Rectangle</code> becomes a
+<code>Shape</code> the moment it gains an <code>Area()</code> method — no
+base interface list, no declaration linking the two. A function that takes a
+<code>Shape</code> parameter accepts any such value and calls the method
+through the interface, dispatching to the concrete type at runtime. The empty
+interface <code>interface{}</code> names <em>zero</em> methods, so
+<em>every</em> value satisfies it — it is Go's <code>object</code>.</p>`,
+
+  csharp: `interface IShape
+{
+    double Area();
+}
+
+class Rectangle : IShape
+{
+    public double Width { get; }
+    public double Height { get; }
+    public Rectangle(double width, double height)
+    {
+        Width = width;
+        Height = height;
+    }
+    public double Area() => Width * Height;
+}
+
+double TotalArea(IEnumerable<IShape> shapes)
+{
+    return shapes.Sum(s => s.Area());
+}`,
+
+  task: `
+<p>Build a small shape system. Write these package-level declarations (no
+<code>package</code>, <code>import</code>, or <code>main</code> — those are added
+for you):</p>
+<ol>
+  <li>An interface <code>Shape</code> with one method <code>Area() float64</code>.</li>
+  <li>A struct <code>Rectangle</code> with <code>Width, Height float64</code> and a
+      method <code>Area() float64</code> returning <code>Width * Height</code>.</li>
+  <li>A struct <code>Triangle</code> with <code>Base, Height float64</code> and a
+      method <code>Area() float64</code> returning <code>0.5 * Base * Height</code>.
+      (Note: neither type says <code>: IShape</code> — having the method is enough.)</li>
+  <li><code>TotalArea(shapes []Shape) float64</code> that sums <code>Area()</code>
+      over every shape, calling it <em>through the interface</em>.</li>
+  <li><code>Stringify(v interface{}) string</code> that accepts a value of any type
+      and returns <code>fmt.Sprintf("%v", v)</code>.</li>
+</ol>`,
+
+  starter: `type Shape interface {
+	Area() float64
+}
+
+type Rectangle struct {
+	Width, Height float64
+}
+
+func (r Rectangle) Area() float64 {
+	return 0 // TODO
+}
+
+type Triangle struct {
+	Base, Height float64
+}
+
+func (t Triangle) Area() float64 {
+	return 0 // TODO
+}
+
+func TotalArea(shapes []Shape) float64 {
+	return 0 // TODO
+}
+
+func Stringify(v interface{}) string {
+	return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /type\s+Shape\s+interface/, message: "Define an interface type named Shape" },
+    { pattern: /\[\]Shape/, message: "TotalArea should take a []Shape parameter and call Area() through the interface" },
+    { pattern: /interface\{\}/, message: "Stringify should take an empty interface (interface{}) parameter" },
+  ],
+
+  tests: [
+    { name: "Rectangle{3,4}.Area() is 12", code: "\t\texpect_eq(Rectangle{Width: 3, Height: 4}.Area(), 12.0)" },
+    { name: "Triangle{3,4}.Area() is 6", code: "\t\texpect_eq(Triangle{Base: 3, Height: 4}.Area(), 6.0)" },
+    { name: "Area() via a Shape variable", code: "\t\tvar s Shape = Rectangle{Width: 2, Height: 5}\n\t\texpect_eq(s.Area(), 10.0)" },
+    { name: "TotalArea sums through the interface", code: "\t\texpect_eq(TotalArea([]Shape{Rectangle{Width: 3, Height: 4}, Triangle{Base: 3, Height: 4}}), 18.0)" },
+    { name: "TotalArea of empty slice is 0", code: "\t\texpect_eq(TotalArea([]Shape{}), 0.0)" },
+    { name: "Stringify accepts an int", code: "\t\texpect_eq(Stringify(42), \"42\")" },
+    { name: "Stringify accepts a bool", code: "\t\texpect_eq(Stringify(true), \"true\")" },
+  ],
+
+  solution: `type Shape interface {
+	Area() float64
+}
+
+type Rectangle struct {
+	Width, Height float64
+}
+
+func (r Rectangle) Area() float64 {
+	return r.Width * r.Height
+}
+
+type Triangle struct {
+	Base, Height float64
+}
+
+func (t Triangle) Area() float64 {
+	return 0.5 * t.Base * t.Height
+}
+
+func TotalArea(shapes []Shape) float64 {
+	total := 0.0
+	for _, s := range shapes {
+		total += s.Area()
+	}
+	return total
+}
+
+func Stringify(v interface{}) string {
+	return fmt.Sprintf("%v", v)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+  <tr><td>Declare interface</td><td><code>interface IShape { double Area(); }</code></td><td><code>type Shape interface { Area() float64 }</code></td></tr>
+  <tr><td>Satisfy it</td><td><code>class C : IShape</code></td><td>just define the method — no keyword</td></tr>
+  <tr><td>Interface parameter</td><td><code>void F(IShape s)</code></td><td><code>func f(s Shape)</code></td></tr>
+  <tr><td>Any value</td><td><code>object</code></td><td><code>interface{}</code> (or <code>any</code> in Go 1.18+)</td></tr>
+</table>
+<p>Implicit satisfaction is the mental shift. In C# a class must explicitly
+list <code>: IShape</code> in its declaration for the compiler to check it
+against that interface; Go instead checks method sets structurally, so a
+concrete type can satisfy an interface defined in a package it has never heard
+of — no reference to that interface anywhere in the type's own declaration.
+Interfaces stay small — often one method — and callers depend on behavior, not
+on a class hierarchy.</p>
+<p>Go 1.18 added <code>any</code> as an alias for <code>interface{}</code>, so
+you will see both; they are identical. To recover the concrete value out of an
+<code>interface{}</code>, you use a type assertion (<code>v.(int)</code>) or a
+type switch — the same job C# does with a pattern match (<code>if (v is int i)</code>)
+or an <code>is</code>/<code>switch</code> expression on the runtime type.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

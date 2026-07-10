@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays as Lists</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays as Lists",
+
+  intro: `
+<p>Kotlin gives you a menu: <code>IntArray</code> for fixed-size primitives,
+<code>List&lt;Int&gt;</code> versus <code>MutableList&lt;Int&gt;</code> for
+read-only versus growable, and a choice to make about mutability. PHP has one
+data structure — the <code>array</code> — and this lesson covers its list half.
+<code>[90, 85, 72]</code> is growable, heterogeneous if you like, and there is
+no boxing distinction to think about: ints go in as ints.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>val a = intArrayOf(1, 2, 3)</code> or <code>mutableListOf(1, 2, 3)</code></td><td><code>$a = [1, 2, 3];</code></td></tr>
+  <tr><td><code>list.add(x)</code></td><td><code>$arr[] = $x;</code></td></tr>
+  <tr><td><code>list.size</code></td><td><code>count($arr)</code></td></tr>
+  <tr><td><code>x in list</code></td><td><code>in_array($x, $arr, true)</code></td></tr>
+  <tr><td><code>list[i]</code></td><td><code>$arr[$i]</code></td></tr>
+  <tr><td><code>list.toList()</code> (defensive copy)</td><td>unnecessary — arrays copy on assignment</td></tr>
+</table>
+<p>The biggest conceptual shift is <strong>value semantics</strong>. A Kotlin
+<code>MutableList</code> is a reference: pass it to a function and the function
+can mutate your list. A PHP array is a value: passing or assigning it (logically)
+copies it — efficiently, via copy-on-write — so a function that appends to its
+parameter changes only its own copy. Defensive copies, a Kotlin habit when you
+hand out a mutable collection, are simply unnecessary; instead, functions that
+"modify" an array typically return the modified copy, as you'll do below. In
+signatures the type is just <code>array</code> — no generics, no element type
+(PHPDoc and static analyzers fill that gap).</p>`,
+
+  kotlin: `val fixed = intArrayOf(90, 85, 72)          // fixed length, primitives
+
+val scores = mutableListOf<Int>()          // growable list of Int
+scores.add(90)
+scores.add(85)
+scores.add(72)
+
+val size = scores.size                     // 3
+val has = 90 in scores                     // true
+
+var total = 0
+for (s in scores) {
+    total += s
+}
+
+// callers can mutate a shared list, so we copy defensively:
+val safe = scores.toList()`,
+
+  task: `
+<p>Rebuild the score list in PHP — one array type, value semantics:</p>
+<ol>
+  <li><code>make_scores(): array</code> — return the literal list
+      <code>[90, 85, 72]</code>. Note the return type is just
+      <code>array</code>.</li>
+  <li><code>append(array $arr, int $x): array</code> — push <code>$x</code>
+      onto the array with <code>$arr[] = $x;</code> (PHP's
+      <code>list.add</code>) and <em>return</em> the array. Because
+      <code>$arr</code> is a copy, the caller's array is untouched — the tests
+      check this.</li>
+  <li><code>total(array $nums): int</code> — sum the list with
+      <code>array_sum($nums)</code>; no loop needed.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. One literal replaces int[] and ArrayList<Integer> both.
+function make_scores(): array {
+    throw new Exception("TODO: implement make_scores");
+}
+
+// 2. $arr[] = $x appends; return the modified copy.
+//    (The caller's array is safe — $arr is a value, not a reference.)
+function append(array $arr, int $x): array {
+    throw new Exception("TODO: implement append");
+}
+
+// 3. array_sum does the for-loop for you.
+function total(array $nums): int {
+    throw new Exception("TODO: implement total");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\]\s*=/, message: "Append with $arr[] = $x (PHP's list.add)" },
+    { pattern: /count\(|array_sum\(/, message: "Use array_sum (or count) instead of a hand-rolled loop" },
+    { pattern: /:\s*array/, message: "Declare : array return types on the signatures" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [90, 85, 72]",
+      code: "expect_eq(make_scores(), [90, 85, 72]);" },
+    { name: "append([1, 2], 3) returns [1, 2, 3]",
+      code: "expect_eq(append([1, 2], 3), [1, 2, 3]);" },
+    { name: "append does not mutate the caller's array (value semantics)",
+      code: "$mine = [1, 2];\nappend($mine, 3);\nexpect_eq($mine, [1, 2]);" },
+    { name: "total([90, 85, 72]) returns 247",
+      code: "expect_eq(total([90, 85, 72]), 247);" },
+    { name: "total([]) returns 0",
+      code: "expect_eq(total([]), 0);" },
+  ],
+
+  solution: `<?php
+
+function make_scores(): array {
+    return [90, 85, 72];
+}
+
+function append(array $arr, int $x): array {
+    $arr[] = $x;
+    return $arr;
+}
+
+function total(array $nums): int {
+    return array_sum($nums);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Create a list</td><td><code>mutableListOf(1, 2)</code></td><td><code>[1, 2]</code></td></tr>
+  <tr><td>Append</td><td><code>list.add(x)</code></td><td><code>$arr[] = $x;</code></td></tr>
+  <tr><td>Size</td><td><code>list.size</code></td><td><code>count($arr)</code></td></tr>
+  <tr><td>Membership</td><td><code>x in list</code></td><td><code>in_array($x, $arr, true)</code> (pass <code>true</code> for strict)</td></tr>
+  <tr><td>Sum</td><td><code>list.sum()</code></td><td><code>array_sum($arr)</code></td></tr>
+  <tr><td>Element type</td><td><code>List&lt;Int&gt;</code>, generic</td><td>untyped — just <code>array</code></td></tr>
+  <tr><td>Passing to a function</td><td>shares the reference</td><td>copies the value (copy-on-write)</td></tr>
+</table>
+<p>Value semantics is the sleeper feature here. In Kotlin, any function that
+receives a <code>MutableList</code> can mutate the caller's data, which is why
+you hand out read-only <code>List</code> or call <code>toList()</code> to copy
+defensively. In PHP, <code>append($mine, 3)</code> cannot touch
+<code>$mine</code> — the function got its own (copy-on-write) copy, so the idiom
+is to return the new array. The third argument to
+<code>in_array($x, $arr, true)</code> requests <code>===</code> comparison;
+make it a habit now, for the same type-juggling reasons as
+<code>===</code> itself.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

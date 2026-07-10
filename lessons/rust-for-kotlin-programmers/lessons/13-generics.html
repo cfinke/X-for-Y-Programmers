@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Generics &amp; Trait Bounds</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Generics & Trait Bounds",
+
+  intro: `
+<p>Your <code>List&lt;T&gt;</code> instincts transfer almost unchanged:
+<code>fn first&lt;T&gt;(items: &amp;[T])</code> reads just like
+<code>fun &lt;T&gt; first(items: List&lt;T&gt;): T?</code>.
+Where Kotlin constrains a type parameter with
+<code>&lt;T : Comparable&lt;T&gt;&gt;</code>, Rust writes a
+<em>trait bound</em>: <code>&lt;T: PartialOrd&gt;</code>. Same idea — the
+bound declares which operations the function body is allowed to use on
+<code>T</code>. No bound, no comparing: <code>item &gt; best</code> only
+compiles because <code>PartialOrd</code> says it can.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>fun &lt;T&gt; first(items: List&lt;T&gt;): T?</code></td><td><code>fn first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code></td></tr>
+  <tr><td><code>&lt;T : Comparable&lt;T&gt;&gt;</code></td><td><code>&lt;T: PartialOrd&gt;</code></td></tr>
+  <tr><td><code>a &gt; b</code> (operator maps to <code>compareTo</code>)</td><td><code>a &gt; b</code> (operators come with the trait)</td></tr>
+  <tr><td>Erasure: one function on <code>Object</code> at runtime</td><td>Monomorphization: a specialized copy per type</td></tr>
+</table>
+<p>The big difference is what happens after the type check. Kotlin runs on the
+JVM and <em>erases</em> generics: at runtime there is one <code>first</code>,
+operating on <code>Object</code>, boxing every <code>Int</code> into an
+<code>Integer</code> on the way in. Rust <em>monomorphizes</em>: the compiler
+stamps out a specialized copy of the function for each concrete type you use
+it with — <code>first::&lt;i32&gt;</code>, <code>first::&lt;&amp;str&gt;</code>
+— so generic code runs exactly as fast as hand-written code, with no boxing.
+And because borrows already express "read-only view", there's no variance
+zoo: no <code>out T</code>, no <code>in T</code>, just
+<code>&amp;[T]</code>.</p>`,
+
+  kotlin: `fun <T> first(items: List<T>): T? =
+    items.firstOrNull()
+
+fun <T : Comparable<T>> largest(items: List<T>): T {
+    var best = items[0]
+    for (item in items) {
+        if (item > best) best = item
+    }
+    return best
+}
+
+// Erasure: at runtime both calls run the SAME bytecode on Object,
+// and the ints below are boxed into Integers to get there.
+println(largest(listOf(1, 5, 3)))            // 5
+println(largest(listOf("apple", "zebra")))   // zebra`,
+
+  task: `
+<p>Port both generic functions:</p>
+<ol>
+  <li><code>first&lt;T&gt;(items: &amp;[T]) -&gt; Option&lt;&amp;T&gt;</code>
+      — return <code>Some</code> of a reference to the first element, or
+      <code>None</code> for an empty slice. (The slice method
+      <code>.first()</code> does exactly this, or write the
+      <code>if</code> yourself.)</li>
+  <li><code>largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -&gt; &amp;T</code>
+      — return a reference to the largest element, comparing with
+      <code>&gt;</code>. Assume the slice is non-empty. Note the bound: remove
+      <code>: PartialOrd</code> and watch the comparison stop compiling.</li>
+</ol>
+<p>The tests call both functions with <code>i32</code> and <code>&amp;str</code>
+slices — two monomorphized copies each. Don't write <code>fn main</code> —
+the lesson's tests call your functions directly.</p>`,
+
+  starter: `// 1. first: Optional.of(items.get(0)) / Optional.empty() -> Some / None.
+//    No bound needed: we never compare, only hand back a reference.
+fn first<T>(items: &[T]) -> Option<&T> {
+    todo!()
+}
+
+// 2. largest: <T extends Comparable<T>> becomes <T: PartialOrd>,
+//    and item.compareTo(best) > 0 becomes item > best.
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<T\s*:\s*PartialOrd>/, message: "Bound largest with <T: PartialOrd>" },
+    { pattern: /<T>/, message: "Make first generic over <T> with no bound" },
+    { pattern: /Option<&T>/, message: "first should return Option<&T>" },
+  ],
+
+  tests: [
+    { name: "first(&[1, 2, 3]) returns Some(&1)",
+      code: "assert_eq!(first(&[1, 2, 3]), Some(&1));" },
+    { name: "first on an empty i32 slice returns None",
+      code: "assert_eq!(first::<i32>(&[]), None);" },
+    { name: 'first(&["a", "b"]) returns Some(&"a")',
+      code: 'assert_eq!(first(&["a", "b"]), Some(&"a"));' },
+    { name: "largest(&[1, 5, 3]) returns 5",
+      code: "assert_eq!(*largest(&[1, 5, 3]), 5);" },
+    { name: 'largest(&["apple", "zebra", "mango"]) returns "zebra"',
+      code: 'assert_eq!(*largest(&["apple", "zebra", "mango"]), "zebra");' },
+  ],
+
+  solution: `fn first<T>(items: &[T]) -> Option<&T> {
+    if items.is_empty() {
+        None
+    } else {
+        Some(&items[0])
+    }
+}
+
+fn largest<T: PartialOrd>(items: &[T]) -> &T {
+    let mut best = &items[0];
+    for item in items {
+        if item > best {
+            best = item;
+        }
+    }
+    best
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>Generic function</td><td><code>fun &lt;T&gt; pick(xs: List&lt;T&gt;): T</code></td><td><code>fn pick&lt;T&gt;(xs: &amp;[T]) -&gt; &amp;T</code></td></tr>
+  <tr><td>Constraint</td><td><code>&lt;T : Comparable&lt;T&gt;&gt;</code></td><td><code>&lt;T: PartialOrd&gt;</code></td></tr>
+  <tr><td>Several constraints</td><td><code>&lt;T&gt;</code> with <code>where T : A, T : B</code></td><td><code>&lt;T: A + B&gt;</code></td></tr>
+  <tr><td>Runtime model</td><td>erasure + boxing (one <code>Object</code> version)</td><td>monomorphization (a copy per type, zero overhead)</td></tr>
+  <tr><td>Variance</td><td><code>out T</code>, <code>in T</code></td><td>not needed — borrows cover it</td></tr>
+</table>
+<p>Because each instantiation is real compiled code, <code>largest</code> over
+<code>i32</code> compares machine integers directly — no
+<code>compareTo</code> call, no unboxing. That's also why
+<code>first::&lt;i32&gt;(&amp;[])</code> in the tests names its type
+explicitly (the "turbofish"): with an empty slice there's nothing for
+inference to look at, the same reason Kotlin sometimes needs
+<code>emptyList&lt;String&gt;()</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

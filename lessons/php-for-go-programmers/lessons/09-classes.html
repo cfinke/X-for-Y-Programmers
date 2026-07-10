@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes & Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>Everything you build in Go from three parts — a struct, receiver methods
+floating beside it, and a <code>NewBankAccount()</code> constructor function
+by convention — PHP packs into one <code>class</code> block: fields and
+methods live inside it, and <code>__construct</code> is the built-in,
+always-called-by-<code>new</code> constructor. The arrow <code>-></code> is
+your dot, and like Go's dot it auto-dereferences — there's no
+<code>(*a).owner</code> dance. Inside methods, <code>$this</code> is the
+receiver, except it's implicit in the signature and <em>mandatory</em> in the
+body: PHP never lets you shorten <code>$this->balance</code> to
+<code>$balance</code>.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>type BankAccount struct { ... }</code> + methods outside</td><td><code>class BankAccount { ... }</code> — methods inside</td></tr>
+  <tr><td><code>func NewBankAccount(o string) *BankAccount</code></td><td><code>public function __construct(...)</code>, invoked by <code>new BankAccount(...)</code></td></tr>
+  <tr><td><code>func (a *BankAccount) Deposit(n int)</code></td><td><code>public function deposit(int $n): void</code> — <code>$this</code> is the receiver</td></tr>
+  <tr><td><code>a.balance</code> (auto-deref dot)</td><td><code>$a->balance</code>, and inside methods always <code>$this->balance</code></td></tr>
+  <tr><td>exported = <code>Capitalized</code></td><td><code>public</code> / <code>private</code> keywords — case carries no meaning</td></tr>
+  <tr><td>value vs pointer receivers</td><td>objects are always reference-like — every method is a <code>*T</code> receiver</td></tr>
+</table>
+<p>Two upgrades worth savoring. PHP 8's <em>promoted properties</em> collapse
+the struct definition and constructor into one line:
+<code>public function __construct(private int $balance = 0)</code> declares
+the field, types it, and assigns it — Go's struct block plus
+<code>NewBankAccount</code> in a single signature. And the value/pointer
+receiver decision is gone: PHP objects are handles, so passing one around
+never copies it and mutations are always visible — every method behaves like
+a <code>*T</code> receiver.</p>`,
+
+  go: `type BankAccount struct {
+    owner   string
+    balance int
+}
+
+func NewBankAccount(owner string) *BankAccount {
+    return &BankAccount{owner: owner}
+}
+
+func (a *BankAccount) Owner() string { return a.owner }
+func (a *BankAccount) Balance() int  { return a.balance }
+
+func (a *BankAccount) Deposit(amount int) {
+    a.balance += amount
+}
+
+func (a *BankAccount) Withdraw(amount int) bool {
+    if amount > a.balance {
+        return false
+    }
+    a.balance -= amount
+    return true
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code> as a single class (the starter's promoted
+constructor already replaces the struct and <code>NewBankAccount</code>):</p>
+<ol>
+  <li>Keep the promoted <code>__construct(private string $owner, private int
+      $balance = 0)</code> — struct fields, types, and constructor in one
+      line.</li>
+  <li><code>owner(): string</code> and <code>balance(): int</code> — the
+      getters; unexported-field-with-accessor is the same pattern as Go,
+      spelled <code>private</code> + <code>public function</code>.</li>
+  <li><code>deposit(int $amount): void</code> — add to
+      <code>$this->balance</code>. Note <code>: void</code>, PHP's explicit
+      "no return value".</li>
+  <li><code>withdraw(int $amount): bool</code> — return <code>false</code> if
+      funds are insufficient <em>without touching the balance</em>, otherwise
+      subtract and return <code>true</code>. This bool is your
+      <code>(ok bool)</code> error return; lesson 16 upgrades it to an
+      exception.</li>
+</ol>`,
+
+  starter: `<?php
+
+class BankAccount {
+    // Promoted properties: struct fields + NewBankAccount in one line.
+    // "private" replaces Go's lowercase-means-unexported.
+    public function __construct(private string $owner, private int $balance = 0) {}
+
+    public function owner(): string {
+        throw new Exception("TODO: implement owner");
+    }
+
+    public function deposit(int $amount): void {
+        // Remember: $this->balance, never just $balance.
+        throw new Exception("TODO: implement deposit");
+    }
+
+    public function withdraw(int $amount): bool {
+        throw new Exception("TODO: implement withdraw");
+    }
+
+    public function balance(): int {
+        throw new Exception("TODO: implement balance");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /__construct\s*\(\s*(private|public)/, message: "Use constructor property promotion (visibility keyword on the __construct parameter)" },
+    { pattern: /private/, message: "Keep the fields private — visibility keywords replace Go's capitalization rule" },
+    { pattern: /->/, message: "Access properties and methods with -> (including $this-> inside methods)" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada") stores the owner',
+      code: '$a = new BankAccount("Ada");\nexpect_eq($a->owner(), "Ada");' },
+    { name: "a fresh account has the default balance 0",
+      code: 'expect_eq((new BankAccount("Ada"))->balance(), 0);' },
+    { name: "deposits accumulate",
+      code: '$a = new BankAccount("Ada");\n$a->deposit(100);\n$a->deposit(50);\nexpect_eq($a->balance(), 150);' },
+    { name: "withdraw returns true and subtracts when covered",
+      code: '$a = new BankAccount("Ada");\n$a->deposit(100);\nexpect_true($a->withdraw(30));\nexpect_eq($a->balance(), 70);' },
+    { name: "failed withdraw returns false and leaves the balance unchanged",
+      code: '$a = new BankAccount("Ada");\n$a->deposit(50);\nexpect_true(!$a->withdraw(100));\nexpect_eq($a->balance(), 50);' },
+  ],
+
+  solution: `<?php
+
+class BankAccount {
+    public function __construct(private string $owner, private int $balance = 0) {}
+
+    public function owner(): string {
+        return $this->owner;
+    }
+
+    public function deposit(int $amount): void {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): bool {
+        if ($amount > $this->balance) {
+            return false;
+        }
+        $this->balance -= $amount;
+        return true;
+    }
+
+    public function balance(): int {
+        return $this->balance;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Define a type</td><td><code>type T struct {...}</code> + external methods</td><td><code>class T { ... }</code> — everything inside</td></tr>
+  <tr><td>Construct</td><td><code>NewT(...)</code> (convention)</td><td><code>new T(...)</code> → <code>__construct</code> (language feature)</td></tr>
+  <tr><td>Fields + constructor</td><td>struct block + assignment in <code>NewT</code></td><td>promoted: <code>__construct(private int $x = 0)</code></td></tr>
+  <tr><td>Receiver</td><td><code>func (a *T) M()</code> — named, explicit</td><td><code>$this</code>, implicit in signature, mandatory in body</td></tr>
+  <tr><td>Member access</td><td><code>a.field</code> (auto-deref)</td><td><code>$a->field</code> (also auto-deref)</td></tr>
+  <tr><td>Visibility</td><td><code>Exported</code> / <code>unexported</code> case</td><td><code>public</code> / <code>private</code> / <code>protected</code></td></tr>
+  <tr><td>Copy semantics</td><td>value receivers copy; pointers don't</td><td>objects are handles — never copied on assignment or call</td></tr>
+</table>
+<p>Visibility is also <em>per-class</em>, not per-package: <code>private</code>
+members are visible to other instances of the same class (a method can read
+<code>$other->balance</code> when <code>$other</code> is also a
+<code>BankAccount</code>), which is narrower than Go's package scope in one
+way and looser in another. And because objects are always handles, the "did I
+mean to mutate the caller's copy?" question Go answers with receiver choice
+simply doesn't exist — if you truly need a copy, you ask for one explicitly
+with <code>clone $obj</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

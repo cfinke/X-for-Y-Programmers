@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Optional &amp; Exceptions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Optional & Exceptions",
+
+  intro: `
+<p>Two everyday situations: a value might be missing, or an operation might fail.
+In TypeScript you lean on <code>T | undefined</code> for the first and
+<code>throw</code> for the second. C++ has a dedicated type for a maybe-absent
+value, <code>std::optional&lt;T&gt;</code>, and a full exception system for the
+failure case.</p>
+<p>An <code>std::optional&lt;T&gt;</code> either holds a <code>T</code> or holds
+nothing (<code>std::nullopt</code>). Unlike <code>T | undefined</code>, there is
+no separate "absent" value living inside <code>T</code> — the emptiness is
+tracked by the optional wrapper itself, so an <code>optional&lt;int&gt;</code>
+can be empty even though every <code>int</code> is a valid number. Ask whether it
+is present with <code>has_value()</code> (or by testing the optional in a boolean
+context), read the contained value with <code>*opt</code> or
+<code>opt.value()</code>, and supply a fallback in one step with
+<code>opt.value_or(fallback)</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>C++</th></tr>
+  <tr><td><code>number | undefined</code></td><td><code>std::optional&lt;int&gt;</code></td></tr>
+  <tr><td><code>return undefined;</code></td><td><code>return std::nullopt;</code></td></tr>
+  <tr><td><code>x !== undefined</code></td><td><code>opt.has_value()</code></td></tr>
+  <tr><td><code>x ?? fallback</code></td><td><code>opt.value_or(fallback)</code></td></tr>
+  <tr><td><code>throw new Error("bad")</code></td><td><code>throw std::runtime_error("bad")</code></td></tr>
+  <tr><td><code>catch (e) { … }</code></td><td><code>catch (const std::exception&amp; e) { … }</code></td></tr>
+</table>
+<p>Exceptions work much like TypeScript's, with one big difference: what you
+throw is <em>typed</em>, and you catch by type. <code>std::runtime_error</code>
+(from <code>&lt;stdexcept&gt;</code>) is the workhorse; its message is read back
+with <code>e.what()</code>. You catch a whole family at once by catching a base
+class reference — <code>const std::exception&amp;</code> catches everything in the
+standard hierarchy. A custom exception is just a class that derives from
+<code>std::runtime_error</code>.</p>`,
+
+  typescript: `function findUser(id: number): string | undefined {
+  const users: Record<number, string> = { 1: "Ada", 2: "Rob" };
+  return users[id];   // undefined if missing
+}
+
+const name = findUser(3) ?? "guest";
+
+class ValidationError extends Error {}
+
+function validateAge(age: number): number {
+  if (age < 0) throw new ValidationError("age must be non-negative");
+  return age;
+}`,
+
+  task: `
+<p>Build the same two patterns in C++.</p>
+<ol>
+  <li><code>findUser(int id)</code> returns <code>std::optional&lt;std::string&gt;</code>.
+      Look the id up in a <code>std::map&lt;int, std::string&gt;</code> of
+      <code>{1, "Ada"}, {2, "Rob"}</code>; return the name if found, otherwise
+      <code>std::nullopt</code>.</li>
+  <li><code>greet(int id)</code> returns a <code>std::string</code>. Call
+      <code>findUser</code> and use <code>value_or("guest")</code> to pick a
+      fallback, then return <code>"Hi " + name</code>.</li>
+  <li>Define a custom exception:
+      <code>struct ValidationError : std::runtime_error</code> that forwards a
+      message string to the <code>std::runtime_error</code> constructor.</li>
+  <li><code>validateAge(int age)</code> returns the age unchanged, but
+      <code>throw</code>s a <code>ValidationError</code> with the message
+      <code>"age must be non-negative"</code> when <code>age &lt; 0</code>.</li>
+</ol>`,
+
+  starter: `std::optional<std::string> findUser(int id) {
+  return std::nullopt; // TODO: look up in a map
+}
+
+std::string greet(int id) {
+  return ""; // TODO: use value_or
+}
+
+struct ValidationError : std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
+int validateAge(int age) {
+  return age; // TODO: throw ValidationError when age < 0
+}
+`,
+
+  requirements: [
+    { pattern: /std::optional\s*<\s*std::string\s*>/, message: "findUser should return std::optional<std::string>" },
+    { pattern: /value_or/, message: "Use value_or to supply the \"guest\" fallback in greet" },
+    { pattern: /throw\s+ValidationError/, message: "Throw a ValidationError from validateAge" },
+  ],
+
+  tests: [
+    { name: "findUser(1) is Ada", code: "    expect_eq(findUser(1).value(), std::string(\"Ada\"));" },
+    { name: "findUser(2) has a value", code: "    expect_true(findUser(2).has_value());" },
+    { name: "findUser(3) is empty", code: "    expect_true(!findUser(3).has_value());" },
+    { name: "greet(1) is \"Hi Ada\"", code: "    expect_eq(greet(1), std::string(\"Hi Ada\"));" },
+    { name: "greet(99) falls back to guest", code: "    expect_eq(greet(99), std::string(\"Hi guest\"));" },
+    { name: "validateAge(30) returns 30", code: "    expect_eq(validateAge(30), 30);" },
+    { name: "validateAge(-1) throws ValidationError", code: "    bool threw = false;\n    try { validateAge(-1); } catch (const ValidationError& e) { threw = true; expect_eq(std::string(e.what()), std::string(\"age must be non-negative\")); }\n    expect_true(threw);" },
+  ],
+
+  solution: `std::optional<std::string> findUser(int id) {
+  std::map<int, std::string> users{{1, "Ada"}, {2, "Rob"}};
+  auto it = users.find(id);
+  if (it == users.end()) {
+    return std::nullopt;
+  }
+  return it->second;
+}
+
+std::string greet(int id) {
+  std::string name = findUser(id).value_or("guest");
+  return "Hi " + name;
+}
+
+struct ValidationError : std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
+int validateAge(int age) {
+  if (age < 0) {
+    throw ValidationError("age must be non-negative");
+  }
+  return age;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>C++</th></tr>
+  <tr><td>Maybe-absent type</td><td><code>T | undefined</code></td><td><code>std::optional&lt;T&gt;</code></td></tr>
+  <tr><td>Absent value</td><td><code>undefined</code></td><td><code>std::nullopt</code></td></tr>
+  <tr><td>Is it present?</td><td><code>x !== undefined</code></td><td><code>opt.has_value()</code> / <code>if (opt)</code></td></tr>
+  <tr><td>Read the value</td><td><code>x</code> (after narrow)</td><td><code>*opt</code> / <code>opt.value()</code></td></tr>
+  <tr><td>Fallback</td><td><code>x ?? d</code></td><td><code>opt.value_or(d)</code></td></tr>
+  <tr><td>Throw</td><td><code>throw new Error(m)</code></td><td><code>throw std::runtime_error(m)</code></td></tr>
+  <tr><td>Custom error</td><td><code>class E extends Error {}</code></td><td><code>struct E : std::runtime_error {}</code></td></tr>
+  <tr><td>Catch by type</td><td><code>catch (e) { … }</code></td><td><code>catch (const E&amp; e) { … }</code></td></tr>
+  <tr><td>Read the message</td><td><code>e.message</code></td><td><code>e.what()</code></td></tr>
+</table>
+<p>Two things to keep in mind. First, <code>opt.value()</code> throws
+<code>std::bad_optional_access</code> when the optional is empty, and
+<code>*opt</code> on an empty optional is undefined behavior — so guard with
+<code>has_value()</code> or reach for <code>value_or</code>, which never throws.
+<code>value_or</code> is the direct analogue of <code>??</code> and is usually
+the cleanest way to collapse "maybe a value" down to "definitely a value."</p>
+<p>Second, always catch exceptions by <code>const</code> reference
+(<code>catch (const std::exception&amp; e)</code>), never by value — catching by
+value slices a derived exception down to its base and copies it needlessly.
+Because <code>ValidationError</code> derives from <code>std::runtime_error</code>
+(which derives from <code>std::exception</code>), a single
+<code>catch (const std::exception&amp;)</code> higher up will still catch it; the
+inheritance chain is what makes catch-by-base work. The
+<code>using std::runtime_error::runtime_error;</code> line inherits the base
+constructor so your custom type accepts a message string with no extra
+boilerplate.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

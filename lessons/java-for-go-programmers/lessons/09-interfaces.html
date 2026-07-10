@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Interfaces</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Interfaces",
+
+  intro: `
+<p>You already think in interfaces. In Go an <code>interface</code> is a
+structural contract — anything with the right method set satisfies it, no
+declaration required. Java interfaces are the same idea with one big
+difference: they are <em>nominal</em>. A class only satisfies an interface
+if it explicitly says <code>implements</code>.</p>
+<table>
+  <tr><th>Go</th><th>Java</th></tr>
+  <tr><td><code>type Shape interface { Area() float64 }</code></td><td><code>interface Shape { double area(); }</code></td></tr>
+  <tr><td>structural — method set is enough</td><td>nominal — must write <code>implements Shape</code></td></tr>
+  <tr><td>interfaces can't have a body — write a free function</td><td><code>default</code> methods carry a body</td></tr>
+  <tr><td>a type with the right methods satisfies both <code>A</code> and <code>B</code></td><td><code>class C implements A, B</code></td></tr>
+</table>
+<p>Two Java specifics worth internalizing. First, an interface method with no body
+is implicitly <code>public abstract</code>; the implementing class must mark its
+version <code>public</code>. Second, a <code>default</code> method lets the
+interface ship a real implementation — the Java answer to a mixin — so every
+implementer gets it for free unless it overrides. Go has no equivalent: shared
+behavior for an interface is usually just a package-level function that takes
+the interface as a parameter, like <code>Describe(s Shape)</code> below. As in
+Go, the payoff is <em>programming to the interface</em>: declare variables and
+parameters as the interface type and let the concrete class vary underneath.</p>`,
+
+  go: `type Shape interface {
+	Area() float64
+}
+
+type Rectangle struct {
+	Width, Height float64
+}
+
+func (r Rectangle) Area() float64 { return r.Width * r.Height }
+
+func Describe(s Shape) string {
+	return fmt.Sprintf("A shape with area %v", s.Area())
+}
+
+var s Shape = Rectangle{Width: 3, Height: 4}
+fmt.Println(s.Area()) // 12`,
+
+  task: `
+<p>Model shapes behind an interface, then program to that interface.</p>
+<ol>
+  <li>Declare an interface <code>Shape</code> with an abstract method
+      <code>double area()</code> and a <code>default</code> method
+      <code>String describe()</code> that returns
+      <code>"A shape with area " + area()</code>.</li>
+  <li>Declare an interface <code>Named</code> with a method
+      <code>String name()</code>.</li>
+  <li><code>Rectangle</code> implements <code>Shape</code> (constructor takes
+      <code>width</code> and <code>height</code>).</li>
+  <li><code>Circle</code> implements <em>both</em> <code>Shape</code> and
+      <code>Named</code> (constructor takes <code>radius</code>;
+      <code>name()</code> returns <code>"circle"</code>).</li>
+  <li>Remember: methods that satisfy an interface must be declared
+      <code>public</code>.</li>
+</ol>`,
+
+  starter: `interface Shape {
+  double area();
+
+  default String describe() {
+    return ""; // TODO: use area()
+  }
+}
+
+interface Named {
+  String name();
+}
+
+class Rectangle implements Shape {
+  Rectangle(double width, double height) {
+    // TODO: store the dimensions
+  }
+
+  public double area() {
+    return 0; // TODO
+  }
+}
+
+class Circle implements Shape, Named {
+  Circle(double radius) {
+    // TODO: store the radius
+  }
+
+  public double area() {
+    return 0; // TODO
+  }
+
+  public String name() {
+    return ""; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /interface\s+Shape/, message: "Declare an interface named Shape" },
+    { pattern: /default\s+String\s+describe\s*\(/, message: "Give Shape a default describe() method" },
+    { pattern: /class\s+Circle\s+implements\s+Shape\s*,\s*Named/, message: "Circle must implement both Shape and Named" },
+  ],
+
+  tests: [
+    { name: "Rectangle area via the Shape type is 12.0", code: "      Shape r = new Rectangle(3, 4);\n      expect_eq(r.area(), 12.0);" },
+    { name: "default describe() reports the area", code: "      Shape r = new Rectangle(3, 4);\n      expect_eq(r.describe(), \"A shape with area 12.0\");" },
+    { name: "Circle area via the Shape type is about PI*r^2", code: "      Shape c = new Circle(2);\n      expect_true(Math.abs(c.area() - Math.PI * 4) < 1e-9);" },
+    { name: "Circle satisfies Named", code: "      Named n = new Circle(2);\n      expect_eq(n.name(), \"circle\");" },
+    { name: "program to the interface: sum a List<Shape>", code: "      List<Shape> shapes = List.of(new Rectangle(2, 3), new Rectangle(4, 5), new Circle(0));\n      double total = shapes.stream().mapToDouble(Shape::area).sum();\n      expect_eq(total, 26.0);" },
+  ],
+
+  solution: `interface Shape {
+  double area();
+
+  default String describe() {
+    return "A shape with area " + area();
+  }
+}
+
+interface Named {
+  String name();
+}
+
+class Rectangle implements Shape {
+  private final double width;
+  private final double height;
+
+  Rectangle(double width, double height) {
+    this.width = width;
+    this.height = height;
+  }
+
+  public double area() {
+    return width * height;
+  }
+}
+
+class Circle implements Shape, Named {
+  private final double radius;
+
+  Circle(double radius) {
+    this.radius = radius;
+  }
+
+  public double area() {
+    return Math.PI * radius * radius;
+  }
+
+  public String name() {
+    return "circle";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+  <tr><td>Satisfy a contract</td><td>structural (implicit)</td><td><code>implements Shape</code> (explicit)</td></tr>
+  <tr><td>Abstract method</td><td><code>Area() float64</code> in the interface</td><td><code>double area();</code></td></tr>
+  <tr><td>Method with a body</td><td>not allowed in an interface — write a free function</td><td><code>default</code> method in the interface</td></tr>
+  <tr><td>Multiple contracts</td><td>just implement both method sets, no declaration</td><td><code>implements A, B</code></td></tr>
+  <tr><td>Implementer visibility</td><td>n/a — exported by capitalization</td><td>must be <code>public</code></td></tr>
+</table>
+<p>Because Java interfaces are nominal, the compiler catches a missing
+<code>implements</code> immediately — unlike Go, where any type with a
+matching method set satisfies a <code>Shape</code> whether you meant it to or
+not. <code>default</code> methods are how the standard library evolves
+without breaking implementers (<code>List</code> gained <code>sort</code>,
+<code>Iterable</code> gained <code>forEach</code>); Go has no counterpart, so
+shared behavior for an interface typically lives in a package-level function
+that takes the interface, the way <code>Describe(s Shape)</code> does above.
+And once a variable is typed as <code>Shape</code>, the call site neither
+knows nor cares whether it holds a <code>Circle</code> or a
+<code>Rectangle</code> — that is polymorphism, exactly as in Go, just with
+the contract spelled out.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

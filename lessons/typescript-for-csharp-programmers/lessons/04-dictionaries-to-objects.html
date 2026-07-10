@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Dictionaries → Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Dictionaries → Objects",
+
+  intro: `
+<p>Where C# reaches for <code>Dictionary&lt;string, int&gt;</code>, TypeScript
+usually reaches for a plain object typed as
+<code>Record&lt;string, number&gt;</code>. The literal syntax is friendlier
+than C#'s collection initializer — <code>{ apple: 3, banana: 0 }</code> — and
+the indexer works the same way: <code>stock["cherry"] = 12</code> both inserts
+and updates, no <code>Add</code>-throws-on-duplicate to remember.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>new Dictionary&lt;string, int&gt; { ["apple"] = 3 }</code></td><td><code>const stock: Record&lt;string, number&gt; = { apple: 3 };</code></td></tr>
+  <tr><td><code>stock["cherry"] = 12;</code></td><td><code>stock["cherry"] = 12;</code> (identical)</td></tr>
+  <tr><td><code>stock.ContainsKey("apple")</code></td><td><code>"apple" in stock</code></td></tr>
+  <tr><td><code>stock.TryGetValue(k, out var v)</code> else default</td><td><code>stock[k] ?? fallback</code> (no out params!)</td></tr>
+  <tr><td><code>foreach (var (k, v) in stock)</code></td><td><code>for (const [k, v] of Object.entries(stock))</code></td></tr>
+</table>
+<p>The big quality-of-life win is lookup: a missing key does not throw a
+<code>KeyNotFoundException</code> — it returns <code>undefined</code>. So the
+whole <code>TryGetValue</code>/<code>out</code> dance collapses into one
+expression with the null-coalescing operator you already know:
+<code>stock[key] ?? 0</code>. For existence checks use the <code>in</code>
+operator, and for the <code>KeyValuePair</code> loop use
+<code>Object.entries()</code> (or <code>Object.keys()</code> /
+<code>Object.values()</code> for just one side).</p>`,
+
+  csharp: `var stock = new Dictionary<string, int>
+{
+    ["apple"] = 3,
+    ["banana"] = 0,
+};
+
+stock["cherry"] = 12;                       // indexer insert/update
+
+bool hasBanana = stock.ContainsKey("banana");
+
+if (!stock.TryGetValue("mango", out var mangoCount))
+{
+    mangoCount = 0;                         // default when missing
+}
+
+foreach (var (name, count) in stock)
+{
+    Console.WriteLine($"{name}: {count}");
+}`,
+
+  task: `
+<p>Port the dictionary code:</p>
+<ol>
+  <li>Declare <code>stock</code> as a <code>Record&lt;string, number&gt;</code>
+      containing <code>apple: 3</code> and <code>banana: 0</code>, then add
+      <code>cherry</code> with count <code>12</code> using the indexer:
+      <code>stock["cherry"] = 12;</code></li>
+  <li>Write <code>getCount(inv: Record&lt;string, number&gt;, name: string): number</code>
+      that returns the count, or <code>0</code> when the key is missing — the
+      entire <code>TryGetValue</code> block becomes
+      <code>inv[name] ?? 0</code>.</li>
+  <li>Write <code>hasItem(inv: Record&lt;string, number&gt;, name: string): boolean</code>
+      — the <code>ContainsKey</code> check, using the <code>in</code>
+      operator.</li>
+  <li>Write <code>listInventory(inv: Record&lt;string, number&gt;): string[]</code>
+      that returns one <code>"name: count"</code> string per entry — the
+      <code>KeyValuePair</code> loop becomes <code>Object.entries(inv)</code>.</li>
+</ol>`,
+
+  starter: `// 1. Dictionary<string, int> -> Record<string, number>
+const stock: Record<string, number> = {
+  // TODO: apple: 3, banana: 0
+};
+// TODO: add cherry (12) with the indexer, same syntax as C#
+
+// 2. The whole TryGetValue/out dance -> inv[name] ?? 0
+function getCount(inv: Record<string, number>, name: string): number {
+  // TODO
+  return 0;
+}
+
+// 3. ContainsKey -> the "in" operator
+function hasItem(inv: Record<string, number>, name: string): boolean {
+  // TODO
+  return false;
+}
+
+// 4. foreach (var (name, count) in inv) -> Object.entries(inv)
+function listInventory(inv: Record<string, number>): string[] {
+  // TODO: return ["apple: 3", ...] — one string per entry
+  return [];
+}
+`,
+
+  exportNames: ["stock", "getCount", "hasItem", "listInventory"],
+
+  requirements: [
+    { pattern: /Record\s*<\s*string\s*,\s*number\s*>/, message: "Type the dictionary as Record<string, number>" },
+    { pattern: /\?\?/, message: "Use the ?? operator for the missing-key default (replaces TryGetValue)" },
+    { pattern: /\w\s+in\s+\w/, message: 'Use the "in" operator for the key-existence check (replaces ContainsKey)' },
+    { pattern: /Object\.(entries|keys)\s*\(/, message: "Use Object.entries() (or Object.keys()) to loop over the entries" },
+  ],
+
+  tests: [
+    { name: "stock.apple is 3", run: (x) => expectEqual(x.stock.apple, 3) },
+    { name: 'stock["cherry"] was added via the indexer', run: (x) => expectEqual(x.stock["cherry"], 12) },
+    { name: 'getCount({ apple: 3 }, "apple") returns 3', run: (x) => expectEqual(x.getCount({ apple: 3 }, "apple"), 3) },
+    { name: 'getCount({ apple: 3 }, "mango") returns 0 for a missing key', run: (x) => expectEqual(x.getCount({ apple: 3 }, "mango"), 0) },
+    { name: 'hasItem({ banana: 0 }, "banana") is true even at count 0', run: (x) => expectEqual(x.hasItem({ banana: 0 }, "banana"), true) },
+    { name: 'listInventory({ apple: 3, banana: 0 }) returns ["apple: 3", "banana: 0"]', run: (x) => expectDeepEqual(x.listInventory({ apple: 3, banana: 0 }), ["apple: 3", "banana: 0"]) },
+  ],
+
+  solution: `const stock: Record<string, number> = {
+  apple: 3,
+  banana: 0,
+};
+stock["cherry"] = 12;
+
+function getCount(inv: Record<string, number>, name: string): number {
+  return inv[name] ?? 0;
+}
+
+function hasItem(inv: Record<string, number>, name: string): boolean {
+  return name in inv;
+}
+
+function listInventory(inv: Record<string, number>): string[] {
+  const lines: string[] = [];
+  for (const [name, count] of Object.entries(inv)) {
+    lines.push(\`\${name}: \${count}\`);
+  }
+  return lines;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Type</td><td><code>Dictionary&lt;string, int&gt;</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+  <tr><td>Literal</td><td><code>new() { ["a"] = 1 }</code></td><td><code>{ a: 1 }</code></td></tr>
+  <tr><td>Insert / update</td><td><code>d["k"] = v;</code></td><td><code>d["k"] = v;</code> (or <code>d.k = v</code>)</td></tr>
+  <tr><td>Missing key</td><td><code>d["k"]</code> throws</td><td><code>d["k"]</code> is <code>undefined</code></td></tr>
+  <tr><td>Lookup with default</td><td><code>TryGetValue(k, out var v)</code></td><td><code>d[k] ?? fallback</code></td></tr>
+  <tr><td>Has key?</td><td><code>d.ContainsKey("k")</code></td><td><code>"k" in d</code></td></tr>
+  <tr><td>Remove</td><td><code>d.Remove("k")</code></td><td><code>delete d["k"]</code></td></tr>
+  <tr><td>Iterate</td><td><code>foreach (var (k, v) in d)</code></td><td><code>for (const [k, v] of Object.entries(d))</code></td></tr>
+</table>
+<p>Note the difference between <code>"k" in d</code> and
+<code>d["k"] !== undefined</code>: like <code>ContainsKey</code>, the
+<code>in</code> operator answers "is the key present?", which matters when a
+present key maps to a falsy value such as <code>0</code>. That is also why the
+default idiom is <code>??</code> and not <code>||</code> — exactly the same
+reason C# gave you <code>??</code> in the first place: <code>0 || 5</code> is
+<code>5</code>, but <code>0 ?? 5</code> is <code>0</code>.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

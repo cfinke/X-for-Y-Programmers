@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null Safety</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null Safety",
+
+  intro: `
+<p>Kotlin bakes nullability into the type system — something C++ has never done
+at the language level. A raw pointer or reference in C++ can silently be
+<code>nullptr</code> (or dangling), and dereferencing it is undefined
+behavior with no compiler safety net; even <code>std::optional</code> is a
+library type you have to opt into. Kotlin closes that hole for good: a plain
+<code>String</code> can <em>never</em> hold <code>null</code>; if a value
+might be absent you must say so with a trailing <code>?</code> —
+<code>String?</code> is Kotlin's answer to C++'s
+<code>std::optional&lt;std::string&gt;</code>. The compiler then forces you to
+deal with the null before you can call anything on it.</p>
+<table>
+  <tr><th>C++</th><th>Kotlin</th></tr>
+  <tr><td><code>std::optional&lt;std::string&gt;</code></td><td><code>String?</code></td></tr>
+  <tr><td><code>user.transform([](auto&amp; u){ return u.name; })</code></td><td><code>user?.name</code></td></tr>
+  <tr><td><code>name.value_or("guest")</code></td><td><code>name ?: "guest"</code></td></tr>
+  <tr><td><code>name.value()</code></td><td><code>name!!</code></td></tr>
+  <tr><td><code>if (x) { x-&gt;f(); }</code></td><td><code>x?.let { it.f() }</code></td></tr>
+</table>
+<p>The tools are familiar once you've used <code>std::optional</code>. Safe
+call <code>?.</code> evaluates to <code>null</code> instead of throwing when
+the receiver is null — the same shape as guarding a pointer with
+<code>if (x)</code> before touching it, but enforced by the compiler instead
+of by discipline. The Elvis operator <code>?:</code> supplies a fallback
+(C++'s <code>value_or()</code>). The non-null assertion <code>!!</code> is
+Kotlin's loud opt-out — it throws a <code>NullPointerException</code> if you
+are wrong, much like calling <code>.value()</code> on an empty
+<code>std::optional</code> throws <code>std::bad_optional_access</code>, so
+reach for it rarely. And <code>value?.let { ... }</code> runs a block only
+when the value is non-null, binding it to <code>it</code>.</p>`,
+
+  cpp: `#include <optional>
+#include <string>
+
+std::optional<std::string> lookupName(int id) {
+    if (id == 1) return "Ada";
+    if (id == 2) return "Rob";
+    return std::nullopt;
+}
+
+std::string greeting = "Hello, " + lookupName(id).value_or("stranger");
+std::optional<char> firstChar =
+    lookupName(id).transform([](const std::string& s) { return s[0]; });`,
+
+  task: `
+<p>Build a tiny name directory and handle the missing cases idiomatically. All
+declarations are top-level (no class or <code>main</code> needed):</p>
+<ol>
+  <li>Write <code>lookupName(id: Int): String?</code> that returns
+      <code>"Ada"</code> for <code>1</code>, <code>"Rob"</code> for <code>2</code>,
+      and <code>null</code> otherwise.</li>
+  <li>Write <code>greet(id: Int): String</code> that returns
+      <code>"Hello, &lt;name&gt;"</code>, falling back to <code>"stranger"</code>
+      with the Elvis operator <code>?:</code> when the name is null.</li>
+  <li>Write <code>initial(id: Int): Char?</code> that returns the first character
+      of the name using a safe call <code>?.</code> (so a missing name yields
+      <code>null</code>).</li>
+  <li>Write <code>shout(name: String?): String</code> that returns the uppercased
+      name plus <code>"!"</code> using <code>name?.let { ... }</code>, or
+      <code>"(silence)"</code> when <code>name</code> is null.</li>
+</ol>`,
+
+  starter: `// 1. lookupName(id) -> a name, or null if unknown
+fun lookupName(id: Int): String? {
+    return null // TODO
+}
+
+// 2. greet(id) -> "Hello, <name>", or "Hello, stranger" (use ?:)
+fun greet(id: Int): String {
+    return "" // TODO
+}
+
+// 3. initial(id) -> first char of the name, or null (use ?.)
+fun initial(id: Int): Char? {
+    return null // TODO
+}
+
+// 4. shout(name) -> "<NAME>!", or "(silence)" if null (use ?.let)
+fun shout(name: String?): String {
+    return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\?:/, message: "Use the Elvis operator ?: to supply a fallback" },
+    { pattern: /\?\./, message: "Use a safe call ?. on a nullable value" },
+    { pattern: /\.let\s*\{/, message: "Use ?.let { ... } to handle the nullable name" },
+  ],
+
+  tests: [
+    { name: 'lookupName(1) is "Ada"', code: "        expect_eq(lookupName(1), \"Ada\")" },
+    { name: 'lookupName(2) is "Rob"', code: "        expect_eq(lookupName(2), \"Rob\")" },
+    { name: "lookupName(9) is null", code: "        expect_eq(lookupName(9), null)" },
+    { name: 'greet(1) is "Hello, Ada"', code: "        expect_eq(greet(1), \"Hello, Ada\")" },
+    { name: 'greet(9) falls back to "stranger"', code: "        expect_eq(greet(9), \"Hello, stranger\")" },
+    { name: "initial(2) is 'R'", code: "        expect_eq(initial(2), 'R')" },
+    { name: "initial(9) is null", code: "        expect_eq(initial(9), null)" },
+    { name: 'shout("hi") is "HI!"', code: "        expect_eq(shout(\"hi\"), \"HI!\")" },
+    { name: 'shout(null) is "(silence)"', code: "        expect_eq(shout(null), \"(silence)\")" },
+  ],
+
+  solution: `fun lookupName(id: Int): String? {
+    return when (id) {
+        1 -> "Ada"
+        2 -> "Rob"
+        else -> null
+    }
+}
+
+fun greet(id: Int): String {
+    return "Hello, " + (lookupName(id) ?: "stranger")
+}
+
+fun initial(id: Int): Char? {
+    return lookupName(id)?.first()
+}
+
+fun shout(name: String?): String {
+    return name?.let { "\${it.uppercase()}!" } ?: "(silence)"
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Kotlin</th></tr>
+  <tr><td>Nullable type</td><td><code>std::optional&lt;std::string&gt;</code></td><td><code>String?</code></td></tr>
+  <tr><td>Safe call</td><td><code>x.transform(f)</code></td><td><code>x?.f()</code></td></tr>
+  <tr><td>Fallback</td><td><code>x.value_or(y)</code></td><td><code>x ?: y</code></td></tr>
+  <tr><td>Assert non-null</td><td><code>x.value()</code> (throws <code>bad_optional_access</code>)</td><td><code>x!!</code> (throws at runtime)</td></tr>
+  <tr><td>Run if non-null</td><td><code>if (x) { f(*x); }</code></td><td><code>x?.let { f(it) }</code></td></tr>
+</table>
+<p>The key mental shift from C++: Kotlin's nullability is enforced everywhere,
+not just when you remember to reach for <code>std::optional</code>. In C++,
+nothing stops a raw pointer, reference, or plain value from secretly being
+invalid — <code>std::optional</code> is opt-in, and the moment you drop to a
+raw pointer the compiler stops helping. In Kotlin, <code>String</code> is
+never null, full stop, so <code>?</code> is not a defensive habit but a
+documented, checked fact in the type signature. <code>!!</code> is a real
+runtime check, just like <code>.value()</code> throwing
+<code>std::bad_optional_access</code> — deliberate, so an "impossible" null
+fails loudly at the source instead of leaking downstream as a null-pointer
+dereference. Prefer <code>?.</code>, <code>?:</code>, and
+<code>?.let { }</code> for everyday handling and save <code>!!</code> for the
+rare spot where you can prove non-null. Chaining <code>?.</code>
+short-circuits the whole chain to <code>null</code> the moment any link is
+null, much like chaining <code>.transform()</code> calls on an
+<code>std::optional</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

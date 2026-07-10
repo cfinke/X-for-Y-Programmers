@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>You know the rule: never return a <code>std::string_view</code> or
+<code>std::span</code> that outlives what it points into. You also know the
+compiler won't stop you — the C++ on the left compiles clean at
+<code>-Wall -Wextra</code>, and the dangling view is a sanitizer finding at
+best, a 3 a.m. production mystery at worst. Rust makes that rule
+<em>checkable</em>. A lifetime like <code>&lt;'a&gt;</code> is nothing more
+than a name for "how long this borrow is valid", written into the type so
+the compiler can verify it. Returning a reference into a dead temporary is
+a compile error, full stop.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>string_view longest(string_view, string_view)</code></td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>"Don't let the view outlive the string" (comment, code review, prayer)</td><td><code>'a</code> in the signature — checked by the compiler</td></tr>
+  <tr><td>View into a dead temporary</td><td>Does not compile</td></tr>
+  <tr><td><code>[[clang::lifetimebound]]</code> (opt-in, partial)</td><td>Built into the type system, everywhere</td></tr>
+</table>
+<p>Read <code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+as a contract: "the result borrows from the arguments, so it stays valid
+only as long as <em>both</em> arguments do." That's the exact discipline you
+already follow with <code>string_view</code> — now it's in the signature
+instead of your head. And here's the relief: you rarely write these. When a
+function takes one reference and returns one, the compiler fills the
+lifetime in itself (<em>elision</em>) — <code>fn first_word(s: &amp;str) -&gt; &amp;str</code>
+needs no annotation at all. You only spell out <code>'a</code> when there
+are multiple inputs and the compiler genuinely can't tell which one the
+output borrows from.</p>`,
+
+  cpp: `#include <string>
+#include <string_view>
+
+// Compiles clean at -Wall -Wextra. Both bugs ship.
+std::string_view longest(std::string_view a, std::string_view b) {
+    return a.size() > b.size() ? a : b;
+}
+
+std::string_view first_word(const std::string& s) {
+    return std::string_view(s).substr(0, s.find(' '));
+}
+
+void use() {
+    std::string_view w = first_word(std::string("hello world"));
+    // The temporary string died at the semicolon above.
+    // w dangles. ASan *might* notice. The compiler never will.
+}`,
+
+  task: `
+<p>Write the same two functions, with the borrow rules in the signature:</p>
+<ol>
+  <li><code>longest</code> — declare a lifetime parameter <code>&lt;'a&gt;</code>,
+      take <code>a: &amp;'a str</code> and <code>b: &amp;'a str</code>, and return
+      <code>&amp;'a str</code>: whichever argument is longer by
+      <code>.len()</code> (return <code>a</code> on a tie). The <code>'a</code>
+      says "the result borrows from the arguments".</li>
+  <li><code>first_word</code> — takes <code>s: &amp;str</code> and returns
+      <code>&amp;str</code>: the first whitespace-separated word, or
+      <code>""</code> if there isn't one. Use
+      <code>s.split_whitespace().next().unwrap_or("")</code>. One reference
+      in, one reference out — elision handles the lifetime, so write
+      <em>no</em> annotation here.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. longest: the result borrows from the arguments — say so with <'a>.
+//    Return the longer of a and b by .len(); return a on a tie.
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// 2. first_word: one reference in, one out — elision fills the lifetime in.
+//    s.split_whitespace().next().unwrap_or("")
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a named lifetime parameter <'a> on longest" },
+    { pattern: /&'a\s+str/, message: "Tie longest's parameters and return type together with &'a str" },
+  ],
+
+  tests: [
+    { name: 'longest("hello", "hi") returns "hello"',
+      code: 'assert_eq!(longest("hello", "hi"), "hello");' },
+    { name: 'longest("a", "abc") returns "abc"',
+      code: 'assert_eq!(longest("a", "abc"), "abc");' },
+    { name: "longest borrows from a String just as well as a literal",
+      code: 'let owned = String::from("longer string");\nassert_eq!(longest(owned.as_str(), "short"), "longer string");' },
+    { name: 'first_word("hello world") returns "hello"',
+      code: 'assert_eq!(first_word("hello world"), "hello");' },
+    { name: 'first_word("  spaced   out") skips leading whitespace',
+      code: 'assert_eq!(first_word("  spaced   out"), "spaced");' },
+    { name: 'first_word("") returns ""',
+      code: 'assert_eq!(first_word(""), "");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() >= b.len() {
+        a
+    } else {
+        b
+    }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Non-owning view</td><td><code>std::string_view</code>, <code>std::span</code></td><td><code>&amp;str</code>, <code>&amp;[T]</code></td></tr>
+  <tr><td>How long is it valid?</td><td>Documentation and discipline</td><td><code>'a</code> — a name in the type, checked</td></tr>
+  <tr><td>Return borrows from args</td><td>Implicit; hope callers read the docs</td><td><code>fn f&lt;'a&gt;(x: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>One ref in, one ref out</td><td>Same hope</td><td>Elided — no annotation needed</td></tr>
+  <tr><td>View outlives owner</td><td>UB; maybe ASan catches it</td><td>Compile error, every time</td></tr>
+</table>
+<p>The key reframe: <code>'a</code> doesn't <em>change</em> how long anything
+lives — it <em>describes</em> lifetimes that already exist so the compiler
+can check them, the way a type describes a value that already exists. Most
+Rust code has the same annotation density as <code>first_word</code>: none.
+When the compiler does ask you for a lifetime, it's asking the question you
+used to answer in a code-review comment: "which argument does this returned
+view point into?"</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

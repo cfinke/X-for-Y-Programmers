@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Union Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Union Types",
+
+  intro: `
+<p>"This ID can be an <code>int</code> or a <code>string</code>" is a sentence
+C# has never had a great answer for. You write two overloads and duplicate the
+shared logic, or you take <code>object</code> and cast your type safety away,
+or you pull in a library like <code>OneOf&lt;T1, T2&gt;</code> and pattern-match
+on it. TypeScript makes the sentence a type: <code>number | string</code>,
+written natively, no package required.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Two overloads: <code>F(int id)</code> / <code>F(string id)</code></td><td>One function: <code>f(id: number | string)</code></td></tr>
+  <tr><td><code>object id</code> + casts</td><td><code>id: number | string</code>, still fully typed</td></tr>
+  <tr><td><code>OneOf&lt;int, string&gt;</code> (library)</td><td><code>number | string</code> (built in)</td></tr>
+  <tr><td><code>id is int n</code> pattern</td><td><code>typeof id === "number"</code> narrows the type</td></tr>
+</table>
+<p>Inside the function, the compiler plays the same game as C#'s pattern
+matching: <code>typeof id === "number"</code> acts like <code>id is int n</code>
+— in that branch, <code>id</code> <em>is</em> a <code>number</code> and
+number members are available; in the <code>else</code> branch the compiler has
+eliminated <code>number</code>, so <code>id</code> is a <code>string</code>
+and string members appear. This is called <em>narrowing</em>, and it is the
+core move of idiomatic TypeScript — you will meet richer forms of it in the
+type-narrowing and discriminated-union lessons.</p>`,
+
+  csharp: `// One concept, two overloads — and the shared logic gets duplicated:
+string FormatId(int id)    => $"ID-{id}";
+string FormatId(string id) => $"ID-{id.ToUpper()}";
+
+// Or: erase the type and pattern-match it back...
+string FormatIdObj(object id) => id switch
+{
+    int n    => $"ID-{n}",
+    string s => $"ID-{s.ToUpper()}",
+    _        => throw new ArgumentException("int or string only"),
+};
+
+// Or: bring in a NuGet package.
+// string FormatId(OneOf<int, string> id) => id.Match(...);
+
+Console.WriteLine(FormatId(42));       // ID-42
+Console.WriteLine(FormatId("a1b2"));   // ID-A1B2`,
+
+  task: `
+<p>Replace the whole overload set with a single union-typed function
+(camelCase: <code>FormatId</code> becomes <code>formatId</code>):</p>
+<ol>
+  <li>Write <code>formatId</code> taking <code>id: number | string</code> and
+      returning a <code>string</code>. For a number, return
+      <code>"ID-42"</code>-style output; for a string, uppercase it first:
+      <code>formatId("a1b2")</code> is <code>"ID-A1B2"</code>. Use
+      <code>typeof id === "number"</code> to narrow — notice that
+      <code>.toUpperCase()</code> only compiles in the string branch.</li>
+  <li>Write <code>idKind</code>, also taking <code>id: number | string</code>,
+      returning <code>"numeric"</code> for numbers and <code>"text"</code>
+      for strings.</li>
+</ol>
+<p><code>typeof</code> yields the <em>runtime</em> type name as a string
+(<code>"number"</code>, <code>"string"</code>, <code>"boolean"</code>…) —
+think <code>id is int</code>, not <code>id.GetType()</code>.</p>`,
+
+  starter: `// 1. Both C# overloads collapse into one function with a union type.
+//    C#: string FormatId(int id) / string FormatId(string id)
+function formatId(id: number | string): string {
+  // TODO: if typeof id === "number", return "ID-" + id
+  // TODO: otherwise return "ID-" + id.toUpperCase()
+  return "";
+}
+
+// 2. Report which side of the union we got.
+function idKind(id: number | string): string {
+  // TODO: "numeric" for numbers, "text" for strings
+  return "";
+}
+`,
+
+  exportNames: ["formatId", "idKind"],
+
+  requirements: [
+    { pattern: /formatId\s*\(\s*id\s*:\s*number\s*\|\s*string\s*\)/, message: "Give formatId a single parameter typed as the union number | string" },
+    { pattern: /typeof\s+id/, message: "Narrow the union with a typeof check on id" },
+  ],
+
+  tests: [
+    { name: 'formatId(42) returns "ID-42"', run: (x) => expectEqual(x.formatId(42), "ID-42") },
+    { name: 'formatId(7) returns "ID-7"', run: (x) => expectEqual(x.formatId(7), "ID-7") },
+    { name: 'formatId("a1b2") returns "ID-A1B2"', run: (x) => expectEqual(x.formatId("a1b2"), "ID-A1B2") },
+    { name: 'idKind(99) returns "numeric"', run: (x) => expectEqual(x.idKind(99), "numeric") },
+    { name: 'idKind("abc") returns "text"', run: (x) => expectEqual(x.idKind("abc"), "text") },
+  ],
+
+  solution: `function formatId(id: number | string): string {
+  if (typeof id === "number") {
+    return "ID-" + id;
+  }
+  return "ID-" + id.toUpperCase();
+}
+
+function idKind(id: number | string): string {
+  return typeof id === "number" ? "numeric" : "text";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>"int or string"</td><td>Overloads / <code>object</code> / <code>OneOf&lt;int, string&gt;</code></td><td><code>number | string</code></td></tr>
+  <tr><td>Type test</td><td><code>id is int n</code></td><td><code>typeof id === "number"</code></td></tr>
+  <tr><td>Exhaustive branch</td><td><code>switch</code> expression + <code>_</code> arm</td><td><code>if</code>/<code>else</code> — compiler tracks what is left</td></tr>
+  <tr><td>Nullable as union</td><td><code>string?</code> is compiler magic</td><td><code>string | null</code> is just another union</td></tr>
+  <tr><td>Union of many</td><td>More overloads / bigger OneOf</td><td><code>number | string | boolean | Date</code>, no ceiling</td></tr>
+</table>
+<p>Last lesson's <code>string | null</code> was a union all along — TypeScript
+has no special nullable machinery, just this one general feature. One caveat
+carried over from JavaScript: <code>typeof</code> distinguishes only the
+primitive categories (<code>"number"</code>, <code>"string"</code>,
+<code>"boolean"</code>, <code>"object"</code>…). For unions of your own
+classes you will reach for <code>instanceof</code>, and for unions of plain
+object shapes, discriminated unions — both get their own lessons.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

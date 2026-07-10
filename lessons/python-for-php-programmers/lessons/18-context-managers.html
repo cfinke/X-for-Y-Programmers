@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Context Managers</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Context Managers",
+
+  intro: `
+<p>Whenever you open something you must later close — a file, a lock, a database
+transaction — you want the cleanup to run no matter how the block exits. In
+PHP you reach for <code>try { … } finally { cleanup(); }</code>, since PHP has
+no built-in equivalent of automatic scope-based disposal (destructors run on
+garbage collection, not on a predictable schedule tied to a block). Python
+bakes deterministic cleanup into the language with the <code>with</code>
+statement and the <em>context manager protocol</em>: any object with
+<code>__enter__</code> and <code>__exit__</code> can be used with
+<code>with</code>, and <code>__exit__</code> is guaranteed to run on the way
+out — normal exit or exception.</p>
+<table>
+  <tr><th>PHP</th><th>Python</th></tr>
+  <tr><td><code>try { … } finally { cleanup(); }</code></td><td><code>with cm: …</code></td></tr>
+  <tr><td><code>$r = fopen(...); ... fclose($r);</code></td><td><code>with open() as r:</code></td></tr>
+  <tr><td>no equivalent (or <code>__destruct()</code>, non-deterministic)</td><td><code>def __exit__(self, *a):</code></td></tr>
+  <tr><td>constructor / setup</td><td><code>def __enter__(self):</code></td></tr>
+  <tr><td>value returned by an opening call</td><td>value after <code>as</code> (what <code>__enter__</code> returns)</td></tr>
+</table>
+<p>The value bound by <code>as</code> is whatever <code>__enter__</code> returns —
+often <code>self</code>. <code>__exit__(self, exc_type, exc, tb)</code> receives
+information about any exception that escaped the block (all <code>None</code> on a
+clean exit); return a falsy value to let exceptions propagate. Writing a whole
+class is overkill for simple setup/teardown, so Python offers a shortcut:
+decorate a generator with <code>@contextmanager</code> from
+<code>contextlib</code>. Everything before the single <code>yield</code> is the
+setup, the yielded value is what <code>as</code> binds, and everything after
+<code>yield</code> — placed in a <code>finally</code> — is the teardown.</p>`,
+
+  php: `// The portable way: try/finally
+function track(array &$log, string $name, callable $body): void {
+  $log[] = "enter {$name}";
+  try {
+    $body();
+  } finally {
+    $log[] = "exit {$name}";
+  }
+}
+
+// A class that manages its own setup/teardown by convention
+class Resource {
+  public array $events = [];
+
+  public function open(): static {
+    $this->events[] = "open";
+    return $this;
+  }
+
+  public function use(): void {
+    $this->events[] = "use";
+  }
+
+  public function close(): void {
+    $this->events[] = "close";
+  }
+}
+
+$r = new Resource();
+$r->open();
+try {
+  $r->use();
+} finally {
+  $r->close(); // must remember to call this yourself
+}`,
+
+  task: `
+<p>Build two managers that record their setup/teardown so tests can observe them:</p>
+<ol>
+  <li>Write a <strong>class-based</strong> context manager <code>Resource(name)</code>
+      with an <code>events</code> list. <code>__enter__</code> appends
+      <code>"open"</code> and returns <code>self</code>; a method
+      <code>use()</code> appends <code>"use"</code>; <code>__exit__</code> appends
+      <code>"close"</code>. <code>__exit__</code> must run even when the block
+      raises, and should let the exception propagate (return a falsy value).</li>
+  <li>Write a <strong>generator-based</strong> context manager
+      <code>tracking(log, name)</code> using <code>@contextmanager</code>. Before
+      <code>yield</code> it appends <code>f"enter {name}"</code> to
+      <code>log</code>; it yields <code>name</code>; in a <code>finally</code> it
+      appends <code>f"exit {name}"</code> so cleanup runs even on error.</li>
+</ol>`,
+
+  starter: `from contextlib import contextmanager
+
+
+# 1. Class-based context manager
+class Resource:
+    def __init__(self, name):
+        self.name = name
+        self.events = []
+
+    # TODO: __enter__ appends "open" and returns self
+
+    def use(self):
+        pass  # TODO: append "use"
+
+    # TODO: __exit__ appends "close" and returns a falsy value
+
+
+# 2. Generator-based context manager
+def tracking(log, name):
+    return None  # TODO: decorate with @contextmanager and yield name
+`,
+
+  requirements: [
+    { pattern: /def\s+__enter__/, message: "Define __enter__ on the class-based context manager" },
+    { pattern: /def\s+__exit__/, message: "Define __exit__ on the class-based context manager" },
+    { pattern: /@contextmanager/, message: "Use @contextmanager for the generator-based context manager" },
+  ],
+
+  tests: [
+    { name: "Resource records open, use, close in order", code: "    r = Resource(\"db\")\n    with r as res:\n        res.use()\n    expect_eq(r.events, [\"open\", \"use\", \"close\"])" },
+    { name: "as binds what __enter__ returns (self)", code: "    r = Resource(\"db\")\n    with r as res:\n        expect_true(res is r)" },
+    { name: "Resource still closes when the block raises", code: "    r = Resource(\"db\")\n    try:\n        with r:\n            raise ValueError(\"boom\")\n    except ValueError:\n        pass\n    expect_eq(r.events, [\"open\", \"close\"])" },
+    { name: "tracking yields name and brackets the body", code: "    log = []\n    with tracking(log, \"task\") as t:\n        log.append(f\"body {t}\")\n    expect_eq(log, [\"enter task\", \"body task\", \"exit task\"])" },
+    { name: "tracking nests correctly", code: "    log = []\n    with tracking(log, \"outer\"):\n        with tracking(log, \"inner\"):\n            log.append(\"work\")\n    expect_eq(log, [\"enter outer\", \"enter inner\", \"work\", \"exit inner\", \"exit outer\"])" },
+    { name: "tracking cleans up on exception", code: "    log = []\n    try:\n        with tracking(log, \"risky\"):\n            raise RuntimeError(\"x\")\n    except RuntimeError:\n        pass\n    expect_eq(log, [\"enter risky\", \"exit risky\"])" },
+  ],
+
+  solution: `from contextlib import contextmanager
+
+
+class Resource:
+    def __init__(self, name):
+        self.name = name
+        self.events = []
+
+    def __enter__(self):
+        self.events.append("open")
+        return self
+
+    def use(self):
+        self.events.append("use")
+
+    def __exit__(self, exc_type, exc, tb):
+        self.events.append("close")
+        return False
+
+
+@contextmanager
+def tracking(log, name):
+    log.append(f"enter {name}")
+    try:
+        yield name
+    finally:
+        log.append(f"exit {name}")
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Python</th></tr>
+  <tr><td>Scoped cleanup</td><td><code>try…finally</code></td><td><code>with cm:</code></td></tr>
+  <tr><td>Auto-dispose</td><td>no equivalent — must call cleanup by hand</td><td><code>with … as r:</code></td></tr>
+  <tr><td>Setup</td><td>constructor</td><td><code>__enter__</code></td></tr>
+  <tr><td>Teardown</td><td>manual method call in <code>finally</code></td><td><code>__exit__(self, et, e, tb)</code></td></tr>
+  <tr><td>Quick manager</td><td>—</td><td><code>@contextmanager</code> + <code>yield</code></td></tr>
+</table>
+<p>The four-argument <code>__exit__(self, exc_type, exc, tb)</code> is the one
+place where the class form earns its keep: those arguments describe the exception
+that escaped the block (or three <code>None</code>s on a clean exit), so you can
+inspect it, log it, or roll back a transaction. If <code>__exit__</code> returns a
+<em>truthy</em> value, Python treats the exception as handled and swallows it —
+returning <code>False</code> (or nothing) lets it propagate, which is almost
+always what you want. For the common case where you just need to run some code
+before and after, the <code>@contextmanager</code> generator is far less
+ceremony: the <code>try/finally</code> around <code>yield</code> is what
+guarantees teardown, so always put the cleanup in a <code>finally</code>, not
+just after the <code>yield</code>. And since <code>with</code> accepts several
+managers at once — <code>with a() as x, b() as y:</code> — you rarely need to nest
+blocks by hand, unlike PHP where nested <code>try…finally</code> blocks are the
+only option.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

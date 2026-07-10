@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Iterators → Array Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Iterators → Array Methods",
+
+  intro: `
+<p>Your iterator-chain muscle memory transfers almost intact — it just sheds
+syllables. <code>products.iter().filter(|p| p.in_stock).map(|p|
+p.name.clone()).collect::&lt;Vec&lt;_&gt;&gt;()</code> collapses to
+<code>products.filter(p =&gt; p.inStock).map(p =&gt; p.name)</code>. No
+<code>.iter()</code> to enter the pipeline, no <code>.collect()</code> to
+leave it, no turbofish to name the destination, and no <code>.clone()</code> —
+the garbage collector means you never pay ownership out of a closure.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>.iter()</code></td><td>— (the array is already the pipeline)</td></tr>
+  <tr><td><code>.filter(|p| p.in_stock)</code></td><td><code>.filter(p =&gt; p.inStock)</code></td></tr>
+  <tr><td><code>.map(|p| p.name.clone())</code></td><td><code>.map(p =&gt; p.name)</code> — no clone, ever</td></tr>
+  <tr><td><code>.collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td>— (each step already returns an array)</td></tr>
+  <tr><td><code>.fold(0.0, |acc, p| acc + p.price)</code></td><td><code>.reduce((acc, p) =&gt; acc + p.price, 0)</code></td></tr>
+  <tr><td><code>.sort_by(|a, b| a.price.partial_cmp(&amp;b.price).unwrap())</code></td><td><code>[...arr].sort((a, b) =&gt; a.price - b.price)</code></td></tr>
+</table>
+<p>The trade hiding under the brevity: Rust iterators are <em>lazy</em> — the
+chain compiles into a single fused loop. Array methods are <em>eager</em> —
+every <code>.filter</code> and <code>.map</code> allocates a whole new array
+before the next step runs. At application scale this is fine; just know the
+chain is doing real work at each dot. Two more instincts to retune:
+<code>.reduce</code> takes the initial value <em>last</em>, and
+<code>.sort</code> wants a plain number (negative / zero / positive) instead of
+an <code>Ordering</code> — and it <em>mutates in place</em>, so copy first
+(<code>[...arr]</code>) when the caller's array must survive.</p>`,
+
+  rust: `struct Product {
+    name: String,
+    price: f64,
+    in_stock: bool,
+}
+
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    products.iter()
+        .filter(|p| p.in_stock)
+        .map(|p| p.name.clone())
+        .collect::<Vec<_>>()
+}
+
+fn total_value(products: &[Product]) -> f64 {
+    products.iter()
+        .filter(|p| p.in_stock)
+        .fold(0.0, |acc, p| acc + p.price)
+}
+
+fn sort_by_price(products: &mut Vec<Product>) {
+    products.sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap());
+}`,
+
+  task: `
+<p>Port the product pipeline. Start from the <code>Product</code> interface in
+the starter:</p>
+<ol>
+  <li>Write <code>inStockNames(products: Product[]): string[]</code> —
+      filter to in-stock products, map to their names. No <code>iter</code>,
+      no <code>collect</code>, no <code>clone</code>.</li>
+  <li>Write <code>totalValue(products: Product[]): number</code> — the total
+      price of the in-stock products, using <code>.reduce</code> (your
+      <code>.fold</code>, with the initial value moved to the second
+      argument).</li>
+  <li>Write <code>sortByPrice(products: Product[]): Product[]</code> —
+      return a <em>new</em> array sorted by ascending price, leaving the
+      argument untouched. <code>.sort</code> mutates, so copy first; the
+      comparator returns a number, not an <code>Ordering</code>, so
+      <code>a.price - b.price</code> is the whole thing.</li>
+</ol>
+<p>The tests check that <code>sortByPrice</code> does not reorder the caller's
+array — the mutation the borrow checker would have caught for you.</p>`,
+
+  starter: `interface Product {
+  name: string;
+  price: number;
+  inStock: boolean;
+}
+
+// 1. .iter().filter().map().collect::<Vec<_>>() -> .filter().map()
+function inStockNames(products: Product[]): string[] {
+  // TODO
+  return [];
+}
+
+// 2. .fold(0.0, |acc, p| acc + p.price) -> .reduce((acc, p) => ..., 0)
+function totalValue(products: Product[]): number {
+  // TODO: sum the prices of in-stock products
+  return 0;
+}
+
+// 3. sort_by + Ordering -> a number comparator. And .sort() mutates: copy first!
+function sortByPrice(products: Product[]): Product[] {
+  // TODO: return a NEW sorted array; do not touch the argument
+  return products;
+}
+`,
+
+  exportNames: ["inStockNames", "totalValue", "sortByPrice"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter — same name as Rust, arrow instead of |p|" },
+    { pattern: /\.map\s*\(/, message: "Use .map to transform the filtered products" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce (Rust's .fold, initial value last) in totalValue" },
+  ],
+
+  tests: [
+    { name: 'inStockNames returns ["Laptop", "Mouse", "Monitor"]', run: (x) => {
+        const products = [
+          { name: "Laptop", price: 1200, inStock: true },
+          { name: "Mouse", price: 25, inStock: true },
+          { name: "Keyboard", price: 75, inStock: false },
+          { name: "Monitor", price: 300, inStock: true },
+        ];
+        expectDeepEqual(x.inStockNames(products), ["Laptop", "Mouse", "Monitor"]);
+      } },
+    { name: "inStockNames([]) returns []", run: (x) => expectDeepEqual(x.inStockNames([]), []) },
+    { name: "totalValue sums only in-stock prices (1525)", run: (x) => {
+        const products = [
+          { name: "Laptop", price: 1200, inStock: true },
+          { name: "Mouse", price: 25, inStock: true },
+          { name: "Keyboard", price: 75, inStock: false },
+          { name: "Monitor", price: 300, inStock: true },
+        ];
+        expectEqual(x.totalValue(products), 1525);
+      } },
+    { name: "totalValue([]) returns 0", run: (x) => expectEqual(x.totalValue([]), 0) },
+    { name: "sortByPrice orders ascending by price", run: (x) => {
+        const products = [
+          { name: "Monitor", price: 300, inStock: true },
+          { name: "Mouse", price: 25, inStock: true },
+          { name: "Keyboard", price: 75, inStock: false },
+        ];
+        const sorted = x.sortByPrice(products);
+        expectDeepEqual(sorted.map((p) => p.name), ["Mouse", "Keyboard", "Monitor"]);
+      } },
+    { name: "sortByPrice does NOT mutate the caller's array", run: (x) => {
+        const products = [
+          { name: "Monitor", price: 300, inStock: true },
+          { name: "Mouse", price: 25, inStock: true },
+        ];
+        x.sortByPrice(products);
+        expectDeepEqual(products.map((p) => p.name), ["Monitor", "Mouse"]);
+      } },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  inStock: boolean;
+}
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter((p) => p.inStock).map((p) => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products
+    .filter((p) => p.inStock)
+    .reduce((acc, p) => acc + p.price, 0);
+}
+
+function sortByPrice(products: Product[]): Product[] {
+  return [...products].sort((a, b) => a.price - b.price);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Enter the pipeline</td><td><code>.iter()</code></td><td>Nothing — call methods on the array</td></tr>
+  <tr><td>Filter / map</td><td><code>.filter(|p| ...)</code> / <code>.map(|p| ...)</code></td><td><code>.filter(p =&gt; ...)</code> / <code>.map(p =&gt; ...)</code></td></tr>
+  <tr><td>Materialize</td><td><code>.collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td>Nothing — every step returns an array</td></tr>
+  <tr><td>Fold</td><td><code>.fold(init, |acc, x| ...)</code></td><td><code>.reduce((acc, x) =&gt; ..., init)</code> — init goes last</td></tr>
+  <tr><td>Sort comparator</td><td>Returns <code>Ordering</code></td><td>Returns a number: <code>a.price - b.price</code></td></tr>
+  <tr><td>Sort safety</td><td><code>&amp;mut</code> makes mutation explicit</td><td><code>.sort</code> silently mutates — <code>[...arr].sort(...)</code> to copy</td></tr>
+  <tr><td>Evaluation</td><td>Lazy, fused into one loop</td><td>Eager — each step allocates a new array</td></tr>
+</table>
+<p>The deeper shift: Rust's iterator adapters build a <em>plan</em> that
+<code>collect</code> executes; array methods <em>execute immediately</em>,
+step by step. That eagerness is what lets the syntax be so short, and it is
+also why nothing warns you when <code>.sort</code> mutates a shared array —
+there is no borrow checker watching. Copy-then-sort is the reflex to build,
+and lesson 15's spread syntax makes it a three-character habit.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Closures &amp; Iterators</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Closures & Iterators",
+
+  intro: `
+<p>You know the drill: make a slice, range-loop over the input,
+<code>if</code> the ones you want, <code>append</code>. Three lines of
+bookkeeping around one line of intent. Go left <code>filter</code> and
+<code>map</code> out of the language for years because without generics
+they'd have cost an <code>interface{}</code> box per element. Rust has had
+them from the start, generic and unboxed:
+<code>products.iter().filter(|p| p.in_stock).map(|p| p.name.clone()).collect()</code>.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>func(p Product) bool { return p.InStock }</code></td><td><code>|p| p.in_stock</code></td></tr>
+  <tr><td><code>for _, p := range products { if ... { append } }</code></td><td><code>.iter().filter(...).map(...).collect()</code></td></tr>
+  <tr><td><code>var total uint32; for ... { total += ... }</code></td><td><code>.map(|p| p.price_cents).sum()</code></td></tr>
+  <tr><td>each helper allocates or boxes (pre-generics)</td><td>zero-cost — compiles to the loop you'd write by hand</td></tr>
+</table>
+<p>Closures are Go's func literals with the ceremony removed:
+<code>|x| x * 2</code> instead of <code>func(x int) int { return x * 2 }</code>,
+parameter types inferred, and they capture surrounding variables just like
+Go's do. The chain itself is <em>lazy</em> — <code>filter</code> and
+<code>map</code> build a description, and nothing iterates until
+<code>.collect()</code> (gather into a <code>Vec</code>) or
+<code>.sum()</code> (fold into a number) consumes it. The compiler then
+fuses the whole pipeline into a single pass: same machine code as the
+range-loop, none of the intermediate slices, and <code>.sum()</code>
+retires the <code>var total</code> accumulator for good.</p>`,
+
+  go: `type Product struct {
+	Name       string
+	PriceCents uint32
+	InStock    bool
+}
+
+func inStockNames(products []Product) []string {
+	names := make([]string, 0)
+	for _, p := range products {
+		if p.InStock {
+			names = append(names, p.Name)
+		}
+	}
+	return names
+}
+
+func totalValue(products []Product) uint32 {
+	var total uint32
+	for _, p := range products {
+		total += p.PriceCents
+	}
+	return total
+}`,
+
+  task: `
+<p>Replace every loop with a chain. The <code>Product</code> struct is
+already in the starter:</p>
+<ol>
+  <li><code>in_stock_names</code> takes <code>products: &amp;[Product]</code>
+      and returns <code>Vec&lt;String&gt;</code> — the names of in-stock
+      products, in order. Chain <code>.iter()</code>,
+      <code>.filter(|p| p.in_stock)</code>,
+      <code>.map(|p| p.name.clone())</code> (clone: the iterator only
+      borrows each product), then <code>.collect()</code>.</li>
+  <li><code>total_value</code> takes <code>products: &amp;[Product]</code>
+      and returns <code>u32</code> — the sum of every product's
+      <code>price_cents</code>. Map to the field, then <code>.sum()</code>.
+      No accumulator variable.</li>
+  <li><code>evens_doubled</code> takes <code>nums: &amp;[i32]</code> and
+      returns <code>Vec&lt;i32&gt;</code> — keep the even numbers, double
+      them. In the filter closure the item is a reference, so test
+      <code>**n % 2 == 0</code> (or destructure with
+      <code>|&amp;&amp;n|</code>).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+// 1. Keep in-stock products, take their names:
+//    .iter().filter(...).map(...).collect()
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    todo!()
+}
+
+// 2. Sum of all price_cents — .map(...).sum(), no accumulator.
+fn total_value(products: &[Product]) -> u32 {
+    todo!()
+}
+
+// 3. Keep evens, double them.
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.iter\(\)/, message: "Start your chains with .iter()" },
+    { pattern: /\.filter\(/, message: "Use .filter() with a closure instead of an if inside a loop" },
+    { pattern: /\.map\(/, message: "Use .map() to transform each element" },
+    { pattern: /\.collect/, message: "Finish the Vec-producing chains with .collect()" },
+  ],
+
+  tests: [
+    { name: 'in_stock_names returns ["keyboard", "mouse"] (skips the out-of-stock monitor)',
+      code: 'let products = vec![\n    Product { name: String::from("keyboard"), price_cents: 4500, in_stock: true },\n    Product { name: String::from("monitor"), price_cents: 12000, in_stock: false },\n    Product { name: String::from("mouse"), price_cents: 2500, in_stock: true },\n];\nassert_eq!(in_stock_names(&products), vec!["keyboard", "mouse"]);' },
+    { name: "in_stock_names returns an empty Vec when nothing is in stock",
+      code: 'let products = vec![\n    Product { name: String::from("cable"), price_cents: 900, in_stock: false },\n];\nassert_eq!(in_stock_names(&products), Vec::<String>::new());' },
+    { name: "total_value sums price_cents: 4500 + 12000 + 2500 = 19000",
+      code: 'let products = vec![\n    Product { name: String::from("keyboard"), price_cents: 4500, in_stock: true },\n    Product { name: String::from("monitor"), price_cents: 12000, in_stock: false },\n    Product { name: String::from("mouse"), price_cents: 2500, in_stock: true },\n];\nassert_eq!(total_value(&products), 19000);' },
+    { name: "evens_doubled(&[1, 2, 3, 4, 5]) returns [4, 8]",
+      code: "assert_eq!(evens_doubled(&[1, 2, 3, 4, 5]), vec![4, 8]);" },
+    { name: "evens_doubled(&[]) returns an empty Vec",
+      code: "assert_eq!(evens_doubled(&[]), Vec::<i32>::new());" },
+  ],
+
+  solution: `struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    products
+        .iter()
+        .filter(|p| p.in_stock)
+        .map(|p| p.name.clone())
+        .collect()
+}
+
+fn total_value(products: &[Product]) -> u32 {
+    products.iter().map(|p| p.price_cents).sum()
+}
+
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    nums.iter().filter(|n| **n % 2 == 0).map(|n| n * 2).collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Anonymous function</td><td><code>func(x int) int { return x * 2 }</code></td><td><code>|x| x * 2</code> — types inferred</td></tr>
+  <tr><td>Filter</td><td>range loop + <code>if</code> + <code>append</code></td><td><code>.filter(|p| p.in_stock)</code></td></tr>
+  <tr><td>Transform</td><td>range loop + <code>append</code></td><td><code>.map(|p| p.name.clone())</code></td></tr>
+  <tr><td>Sum</td><td><code>var total ...; total += ...</code></td><td><code>.map(...).sum()</code></td></tr>
+  <tr><td>Materialize</td><td><code>make</code> + <code>append</code> as you go</td><td><code>.collect()</code> at the end, once</td></tr>
+</table>
+<p>Laziness is the part worth internalizing: an iterator chain does
+<em>nothing</em> until a consumer like <code>.collect()</code>,
+<code>.sum()</code>, or a <code>for</code> loop pulls it — the compiler
+will even warn "iterators are lazy" if you build one and drop it. That's
+also why it's free: because nothing materializes between stages, rustc
+fuses <code>filter</code> and <code>map</code> into one loop with no
+intermediate <code>Vec</code>s and no boxing — the abstraction genuinely
+costs what the hand-written Go loop costs.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

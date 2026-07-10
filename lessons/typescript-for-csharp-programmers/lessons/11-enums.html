@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums & Literal Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums & Literal Types",
+
+  intro: `
+<p>A C# <code>enum</code> is an int in a trenchcoat. <code>OrderStatus.Shipped</code>
+is really <code>1</code>, which is why you spend so much time on the ceremony around
+it: <code>(int)status</code> to get the number out,
+<code>Enum.Parse&lt;OrderStatus&gt;("Shipped")</code> to get back from a string,
+<code>status.ToString()</code> before anything human-readable touches a log or a
+JSON payload. TypeScript's <em>numeric</em> enums copy that design — but its
+<em>string enums</em> fix it: <code>Shipped = "shipped"</code> means the member
+<em>is</em> its value at runtime. No casts, no parsing, and your JSON is readable.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>enum OrderStatus { Pending, Shipped }</code></td><td><code>enum OrderStatus { Pending = "pending", Shipped = "shipped" }</code></td></tr>
+  <tr><td><code>(int)OrderStatus.Shipped</code> → <code>1</code></td><td><code>OrderStatus.Shipped</code> already is <code>"shipped"</code></td></tr>
+  <tr><td><code>Enum.Parse&lt;OrderStatus&gt;("Shipped")</code></td><td>Not needed — the string is the value</td></tr>
+  <tr><td>No direct equivalent</td><td><code>type Speed = "standard" | "express";</code> (literal union)</td></tr>
+</table>
+<p>And often the most idiomatic TypeScript skips <code>enum</code> entirely. A
+<em>string-literal union</em> like <code>type Speed = "standard" | "express" |
+"overnight"</code> gives you the same compile-time safety — pass
+<code>"expres"</code> and the compiler rejects it — with <em>zero</em> runtime
+footprint, because type aliases are erased when the code compiles. Rule of thumb:
+reach for the literal union first; use a string enum when you want a runtime
+object to iterate or a single place that maps names to wire values. (Convention
+check: members stay PascalCase like C#, but functions such as
+<code>statusLabel</code> are camelCase.)</p>`,
+
+  csharp: `enum OrderStatus { Pending, Shipped, Delivered }
+
+class Program
+{
+    static string StatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Pending   => "Order is pending",
+        OrderStatus.Shipped   => "Order is shipped",
+        OrderStatus.Delivered => "Order is delivered",
+        _ => throw new ArgumentOutOfRangeException(nameof(status)),
+    };
+
+    static void Main()
+    {
+        Console.WriteLine((int)OrderStatus.Shipped);       // 1 — just an int
+        var parsed = Enum.Parse<OrderStatus>("Delivered"); // string round-trip
+        Console.WriteLine(StatusLabel(parsed));
+    }
+}`,
+
+  task: `
+<p>Model order statuses both ways — string enum and literal union:</p>
+<ol>
+  <li>Declare a string enum <code>OrderStatus</code> with members
+      <code>Pending = "pending"</code>, <code>Shipped = "shipped"</code>, and
+      <code>Delivered = "delivered"</code>.</li>
+  <li>Declare a type alias <code>ShippingSpeed</code> as the literal union
+      <code>"standard" | "express" | "overnight"</code> — no enum, no runtime
+      code at all.</li>
+  <li>Write <code>statusLabel(status: OrderStatus): string</code> that returns
+      <code>"Order is pending"</code>, <code>"Order is shipped"</code>, or
+      <code>"Order is delivered"</code>. Tip: because string enum members carry
+      their value, you may not need a switch at all.</li>
+  <li>Write <code>shippingCost(speed: ShippingSpeed): number</code> that returns
+      <code>0</code> for <code>"standard"</code>, <code>10</code> for
+      <code>"express"</code>, and <code>25</code> for <code>"overnight"</code>.</li>
+</ol>`,
+
+  starter: `// 1. A string enum — each member carries its value at runtime.
+enum OrderStatus {
+  // TODO: Pending = "pending", Shipped = "shipped", Delivered = "delivered"
+  Pending = "todo",
+}
+
+// 2. The more idiomatic option: a literal union type alias.
+//    It vanishes at compile time — pure type-level safety.
+type ShippingSpeed = string; // TODO: replace string with "standard" | "express" | "overnight"
+
+// 3. Label an order status.
+function statusLabel(status: OrderStatus): string {
+  // TODO: "Order is pending" / "Order is shipped" / "Order is delivered"
+  return "";
+}
+
+// 4. Price a shipping speed: standard 0, express 10, overnight 25.
+function shippingCost(speed: ShippingSpeed): number {
+  // TODO
+  return -1;
+}
+`,
+
+  exportNames: ["OrderStatus", "statusLabel", "shippingCost"],
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus/, message: "Declare an enum named OrderStatus" },
+    { pattern: /=\s*"pending"/, message: 'Make it a string enum: give each member an explicit string value like Pending = "pending"' },
+    { pattern: /type\s+ShippingSpeed\s*=/, message: "Declare a type alias named ShippingSpeed" },
+    { pattern: /"\w+"\s*\|\s*"/, message: 'Define ShippingSpeed as a union of string literals ("standard" | "express" | ...)' },
+  ],
+
+  tests: [
+    { name: 'OrderStatus.Pending is the string "pending" at runtime', run: (x) => expectEqual(x.OrderStatus.Pending, "pending") },
+    { name: 'OrderStatus.Delivered is "delivered"', run: (x) => expectEqual(x.OrderStatus.Delivered, "delivered") },
+    { name: 'statusLabel(OrderStatus.Shipped) returns "Order is shipped"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Shipped), "Order is shipped") },
+    { name: 'statusLabel(OrderStatus.Pending) returns "Order is pending"', run: (x) => expectEqual(x.statusLabel(x.OrderStatus.Pending), "Order is pending") },
+    { name: 'shippingCost("express") is 10', run: (x) => expectEqual(x.shippingCost("express"), 10) },
+    { name: 'shippingCost("standard") is 0 and shippingCost("overnight") is 25', run: (x) => { expectEqual(x.shippingCost("standard"), 0); expectEqual(x.shippingCost("overnight"), 25); } },
+  ],
+
+  solution: `enum OrderStatus {
+  Pending = "pending",
+  Shipped = "shipped",
+  Delivered = "delivered",
+}
+
+type ShippingSpeed = "standard" | "express" | "overnight";
+
+function statusLabel(status: OrderStatus): string {
+  // The member IS its value — no ToString(), no cast.
+  return "Order is " + status;
+}
+
+function shippingCost(speed: ShippingSpeed): number {
+  const costs: Record<ShippingSpeed, number> = {
+    standard: 0,
+    express: 10,
+    overnight: 25,
+  };
+  return costs[speed];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Enum declaration</td><td><code>enum Status { Pending }</code></td><td><code>enum Status { Pending = "pending" }</code> (string enum)</td></tr>
+  <tr><td>Underlying value</td><td>Always integral; <code>(int)status</code></td><td>Whatever you assign — string enums carry the string</td></tr>
+  <tr><td>String → enum</td><td><code>Enum.Parse&lt;Status&gt;("Pending")</code></td><td>Unnecessary for string enums / literal unions</td></tr>
+  <tr><td>Lightweight alternative</td><td>—</td><td><code>type Status = "pending" | "shipped";</code></td></tr>
+  <tr><td>Runtime footprint</td><td>Enum type exists at runtime</td><td><code>enum</code> emits an object; a literal union emits <em>nothing</em></td></tr>
+  <tr><td>Exhaustive switch</td><td><code>switch</code> expression + compiler warning</td><td><code>switch</code> + <code>never</code> check (Lesson 17)</td></tr>
+</table>
+<p>The deeper shift: in C# an enum is a distinct runtime type you convert to and
+from. In TypeScript, a literal union is just a <em>constraint on plain
+strings</em> — the values flowing through your program are ordinary strings the
+whole time, and only the compiler knows some of them are special. That is why
+literal unions cost nothing in the bundle, and why they compose so well with
+JSON APIs: no parsing step, ever.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

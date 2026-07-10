@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Structs &amp; Comparable</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Structs & Comparable",
+
+  intro: `
+<p>Every JavaScript codebase has that hand-written value-object class:
+constructor that copies arguments to fields, an <code>equals()</code> method
+because <code>===</code> only compares references, maybe a
+<code>toString()</code>. Ruby collapses the whole thing to one line:
+<code>Point = Struct.new(:x, :y)</code> builds a real class with accessors,
+<strong>value equality</strong> (<code>Point.new(1, 2) == Point.new(1, 2)</code>
+is <code>true</code>), destructuring support (<code>x, y = *point</code>),
+and a readable <code>inspect</code>. Need methods too? Pass a block:
+<code>Struct.new(:x, :y) do ... end</code> and define them inside.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>class + constructor + fields</td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td><code>a.equals(b)</code> (hand-written)</td><td><code>a == b</code> (value equality, free)</td></tr>
+  <tr><td><code>a.compareTo(b)</code> (a convention)</td><td><code>def &lt;=&gt;(other)</code> (a real operator)</td></tr>
+  <tr><td><code>arr.sort((a, b) =&gt; a.compareTo(b))</code></td><td><code>arr.sort</code></td></tr>
+  <tr><td>write <code>lt</code>/<code>gt</code>/<code>eq</code> helpers yourself</td><td><code>include Comparable</code> — all derived from <code>&lt;=&gt;</code></td></tr>
+</table>
+<p>The second half is the operator overloading JavaScript never shipped.
+Define <em>one</em> method, <code>&lt;=&gt;</code> (the "spaceship":
+return -1, 0, or 1 like a sort comparator), then
+<code>include Comparable</code> — and Ruby derives <code>&lt;</code>,
+<code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>==</code>,
+<code>between?</code>, and <code>clamp</code> for you, and <code>sort</code>,
+<code>min</code>, <code>max</code> all just work. Handy trick: arrays already
+compare element-by-element, so <code>[major, minor] &lt;=&gt;
+[other.major, other.minor]</code> is a whole multi-key comparison in one
+expression.</p>`,
+
+  javascript: `class Point {
+  constructor(x, y) { this.x = x; this.y = y; }
+  equals(other) {                    // === compares references
+    return other instanceof Point &&
+      this.x === other.x && this.y === other.y;
+  }
+  distanceTo(other) {
+    return Math.hypot(this.x - other.x, this.y - other.y);
+  }
+}
+
+class Version {
+  constructor(major, minor) { this.major = major; this.minor = minor; }
+  compareTo(other) {                 // no operator overloading in JS
+    if (this.major !== other.major) return this.major - other.major;
+    return this.minor - other.minor;
+  }
+}
+
+versions.sort((a, b) => a.compareTo(b));  // wired up by hand, every time`,
+
+  task: `
+<p>Build both value objects the Ruby way:</p>
+<ol>
+  <li><code>Point = Struct.new(:x, :y)</code> with a block that defines
+      <code>distance_to(other)</code> —
+      <code>Math.sqrt((x - other.x)**2 + (y - other.y)**2)</code>. Inside the
+      block, <code>x</code> and <code>y</code> are the accessors the Struct
+      generated for you.</li>
+  <li><code>class Version</code> with <code>include Comparable</code>,
+      <code>attr_reader :major, :minor</code>, an
+      <code>initialize(major, minor)</code>, and one
+      <code>def &lt;=&gt;(other)</code> comparing
+      <code>[major, minor] &lt;=&gt; [other.major, other.minor]</code>.
+      That single method must make <code>&lt;</code>, <code>sort</code>, and
+      <code>between?</code> all pass.</li>
+</ol>`,
+
+  starter: `# 1. One line builds the class; the block adds behavior.
+Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    raise NotImplementedError, "TODO: sqrt of squared dx + squared dy"
+  end
+end
+
+# 2. include Comparable, define <=>, and the operators appear.
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    raise NotImplementedError, "TODO: store @major and @minor"
+  end
+
+  def <=>(other)
+    raise NotImplementedError, "TODO: compare [major, minor] pairs"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /Struct\.new/, message: "Build Point with Struct.new(:x, :y)" },
+    { pattern: /include\s+Comparable/, message: "include Comparable in Version" },
+    { pattern: /<=>/, message: "Define the spaceship operator <=>" },
+    { pattern: /def\s+distance_to/, message: "Define distance_to in the Struct's block" },
+  ],
+
+  tests: [
+    { name: "distance_to: a 3-4-5 triangle measures 5.0",
+      code: "  expect_eq(Point.new(0, 0).distance_to(Point.new(3, 4)), 5.0)" },
+    { name: "Struct gives VALUE equality: Point.new(1, 2) == Point.new(1, 2)",
+      code: "  expect_true(Point.new(1, 2) == Point.new(1, 2))\n  expect_true(Point.new(1, 2) != Point.new(2, 1))" },
+    { name: "Version.new(1, 2) < Version.new(1, 10) (no string-compare trap)",
+      code: "  expect_true(Version.new(1, 2) < Version.new(1, 10))\n  expect_true(Version.new(2, 0) > Version.new(1, 10))" },
+    { name: "sort orders versions with no comparator argument",
+      code: "  sorted = [Version.new(2, 0), Version.new(1, 10), Version.new(1, 2)].sort\n  expect_eq(sorted.map { |v| [v.major, v.minor] }, [[1, 2], [1, 10], [2, 0]])" },
+    { name: "between? comes free from Comparable",
+      code: "  expect_true(Version.new(1, 5).between?(Version.new(1, 0), Version.new(2, 0)))" },
+  ],
+
+  solution: `Point = Struct.new(:x, :y) do
+  def distance_to(other)
+    Math.sqrt((x - other.x)**2 + (y - other.y)**2)
+  end
+end
+
+class Version
+  include Comparable
+
+  attr_reader :major, :minor
+
+  def initialize(major, minor)
+    @major = major
+    @minor = minor
+  end
+
+  def <=>(other)
+    [major, minor] <=> [other.major, other.minor]
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Value object</td><td>class + constructor + <code>equals()</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+  <tr><td>Equality</td><td><code>===</code> is reference identity</td><td>Struct <code>==</code> compares values</td></tr>
+  <tr><td>Destructure</td><td><code>const { x, y } = point;</code></td><td><code>x, y = *point</code></td></tr>
+  <tr><td>Add methods</td><td>in the class body</td><td><code>Struct.new(...) do ... end</code></td></tr>
+  <tr><td>Comparator</td><td><code>(a, b) =&gt; a - b</code> passed to <code>sort</code></td><td><code>def &lt;=&gt;(other)</code> on the class</td></tr>
+  <tr><td>Derived operators</td><td>write each one yourself</td><td><code>include Comparable</code>: <code>&lt; &gt; == between? clamp</code></td></tr>
+  <tr><td>Multi-key compare</td><td>nested if / <code>||</code> chains</td><td><code>[a, b] &lt;=&gt; [c, d]</code></td></tr>
+</table>
+<p>This is the Comparable pattern in miniature: one primitive operation
+(<code>&lt;=&gt;</code>) plus a mixin yields a whole family of behavior —
+the same shape as lesson 12's Enumerable, where defining <code>each</code>
+unlocked <code>map</code>, <code>select</code>, and friends. And note what
+the <code>Version</code> test dodges: comparing <code>"1.2" &lt; "1.10"</code>
+as strings gives the wrong answer in both languages; comparing
+<code>[1, 2] &lt;=&gt; [1, 10]</code> as integer arrays is correct by
+construction.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

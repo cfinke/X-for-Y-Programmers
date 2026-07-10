@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>In PHP, a helper that works on "any array" has to declare its parameter as
+<code>array</code> and its return as <code>mixed</code> — and the moment a value
+passes through it, the type information is gone. Feed <code>firstItem()</code>
+an array of <code>Product</code> objects and PHP hands you back a
+<code>mixed</code>; your IDE shrugs. The community workaround is docblock
+generics: Psalm and PHPStan understand <code>@template T</code> annotations,
+but they live in comments, only exist when a static analyzer runs, and the
+engine itself never sees them.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>function firstItem(array $items): mixed</code></td><td><code>function firstItem&lt;T&gt;(items: T[]): T | undefined</code></td></tr>
+  <tr><td><code>/** @template T @param T[] $items @return T|null */</code></td><td>The type parameter is real syntax, checked by the compiler</td></tr>
+  <tr><td><code>@template T of Countable</code> (constraint in a docblock)</td><td><code>&lt;T extends Countable&gt;</code></td></tr>
+  <tr><td><code>$items[0]['name'] ?? null</code> and hope</td><td><code>&lt;K extends keyof T&gt;</code> — the key must exist on T</td></tr>
+</table>
+<p>In TypeScript, generics are first-class: <code>&lt;T&gt;</code> declares a
+<em>type parameter</em> that gets filled in at each call site. Call
+<code>firstItem([1, 2, 3])</code> and <code>T</code> is inferred as
+<code>number</code>; the return type is <code>number | undefined</code>, no
+annotation or docblock needed. Constraints use <code>extends</code>:
+<code>&lt;K extends keyof T&gt;</code> says "K must be a property name of T",
+which turns the classic PHP bug of plucking a misspelled array key into a
+compile error.</p>`,
+
+  php: `<?php
+// The classic "generic" PHP helper: types go in, mixed comes out.
+function firstItem(array $items): mixed
+{
+    return $items[0] ?? null;
+}
+
+/**
+ * The static-analysis workaround (Psalm/PHPStan only):
+ * @template T
+ * @param array<T> $items
+ * @return T|null
+ */
+function firstItemDocblock(array $items): mixed
+{
+    return $items[0] ?? null;
+}
+
+function pluck(array $items, string $key): array
+{
+    // Nothing checks that $key exists on the items.
+    return array_map(fn($item) => $item[$key], $items);
+}
+
+$prices = pluck($products, 'pricce'); // typo — fails at runtime, if ever`,
+
+  task: `
+<p>Rewrite the helpers with real generics:</p>
+<ol>
+  <li>Write <code>firstItem&lt;T&gt;(items: T[]): T | undefined</code> that
+      returns the first element of the array, or <code>undefined</code> if the
+      array is empty — the typed version of <code>$items[0] ?? null</code>.</li>
+  <li>Write <code>wrap&lt;T&gt;(value: T): { value: T }</code> that wraps any
+      value in an object with a single <code>value</code> property. The
+      wrapper must remember the type it was given.</li>
+  <li>Write <code>pluck&lt;T, K extends keyof T&gt;(items: T[], key: K): T[K][]</code>
+      that extracts one property from every object in the array. The
+      <code>K extends keyof T</code> constraint makes a misspelled key a
+      compile-time error instead of a runtime surprise.</li>
+</ol>`,
+
+  starter: `// 1. Make firstItem generic: <T>(items: T[]): T | undefined
+function firstItem(items: unknown[]): unknown {
+  // TODO: return the first item, or undefined for an empty array
+  return undefined;
+}
+
+// 2. Make wrap generic: <T>(value: T): { value: T }
+function wrap(value: unknown): { value: unknown } {
+  // TODO
+  return { value: value };
+}
+
+// 3. Make pluck generic with a constraint: <T, K extends keyof T>
+function pluck(items: unknown[], key: string): unknown[] {
+  // TODO: return the value of \`key\` from every item
+  return [];
+}
+`,
+
+  exportNames: ["firstItem", "wrap", "pluck"],
+
+  requirements: [
+    { pattern: /<\s*T\b/, message: "Declare a generic type parameter <T>" },
+    { pattern: /firstItem\s*<\s*T\s*>\s*\(\s*items\s*:\s*T\s*\[\s*\]\s*\)\s*:\s*T\s*\|\s*undefined/, message: "Give firstItem the signature <T>(items: T[]): T | undefined" },
+    { pattern: /wrap\s*<\s*T\s*>/, message: "Make wrap generic: wrap<T>(value: T)" },
+    { pattern: /extends\s+keyof\s+T/, message: "Constrain pluck's key with K extends keyof T" },
+  ],
+
+  tests: [
+    { name: "firstItem([10, 20, 30]) returns 10", run: (x) => expectEqual(x.firstItem([10, 20, 30]), 10) },
+    { name: 'firstItem(["a", "b"]) returns "a"', run: (x) => expectEqual(x.firstItem(["a", "b"]), "a") },
+    { name: "firstItem([]) returns undefined", run: (x) => expectEqual(x.firstItem([]), undefined) },
+    { name: 'wrap("hello") returns { value: "hello" }', run: (x) => expectDeepEqual(x.wrap("hello"), { value: "hello" }) },
+    { name: "wrap(42) returns { value: 42 }", run: (x) => expectDeepEqual(x.wrap(42), { value: 42 }) },
+    { name: 'pluck(products, "name") returns the names', run: (x) => expectDeepEqual(
+        x.pluck([{ name: "Keyboard", price: 49 }, { name: "Mouse", price: 29 }], "name"),
+        ["Keyboard", "Mouse"]) },
+  ],
+
+  solution: `function firstItem<T>(items: T[]): T | undefined {
+  return items.length > 0 ? items[0] : undefined;
+}
+
+function wrap<T>(value: T): { value: T } {
+  return { value: value };
+}
+
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Type-preserving helper</td><td><code>@template T</code> docblock (Psalm/PHPStan)</td><td><code>function f&lt;T&gt;(x: T): T</code> — real syntax</td></tr>
+  <tr><td>Where it is checked</td><td>Only when a static analyzer runs</td><td>By the compiler, always</td></tr>
+  <tr><td>Constraint</td><td><code>@template T of SomeInterface</code></td><td><code>&lt;T extends SomeInterface&gt;</code></td></tr>
+  <tr><td>"Key must exist"</td><td>Not expressible; runtime notice on typo</td><td><code>&lt;K extends keyof T&gt;</code></td></tr>
+  <tr><td>Calling</td><td><code>firstItem($products)</code> returns <code>mixed</code></td><td><code>firstItem(products)</code> — T inferred, typed result</td></tr>
+</table>
+<p>You rarely write the type argument explicitly — <code>firstItem([1, 2, 3])</code>
+infers <code>T = number</code> from the argument, just like Psalm infers it from
+your docblock. The difference is that in TypeScript the inference is part of the
+language, so every caller, every IDE, and every refactor sees the precise type
+flowing through, with no analyzer plugin required.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

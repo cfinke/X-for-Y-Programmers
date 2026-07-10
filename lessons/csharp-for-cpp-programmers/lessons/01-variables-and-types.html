@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>C++ and C# share a C-family syntax — braces, semicolons, and a similar set
+of numeric types — and both are statically typed and compiled. But C#'s types
+are managed by a runtime (no manual memory management, no pointers required),
+and every method lives inside a class or struct rather than floating free at
+file scope.</p>
+<table>
+  <tr><th>C++</th><th>C#</th></tr>
+  <tr><td><code>int age = 36;</code></td><td><code>int age = 36;</code></td></tr>
+  <tr><td><code>const auto name = std::string("Ada");</code></td><td><code>var name = "Ada";</code> (inferred)</td></tr>
+  <tr><td><code>std::format("{} is {}", name, age)</code></td><td><code>$"{name} is {age}"</code></td></tr>
+  <tr><td><code>int</code>, <code>long</code>, <code>double</code>, …</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>decimal</code>, …</td></tr>
+</table>
+<p>Two adjustments. First, C#'s <code>var</code> is like C++'s <code>auto</code> —
+inference from the initializer — but the type is fixed once chosen, and it can
+only be used for local variables. Second, the numeric split matters the same
+way it does in C++: <code>7 / 2</code> is <code>3</code> (integer division),
+while <code>7 / 2.0</code> is <code>3.5</code>. Interpolated strings wear a
+<code>$</code> prefix, and there are no free functions — helpers become
+<code>static</code> methods on a class.</p>`,
+
+  cpp: `int age = 36;
+const std::string userName = "Ada";
+
+std::string describe(const std::string& name, int age) {
+  return std::format("{} is {}", name, age);
+}`,
+
+  task: `
+<p>Write the C# version. C# has no top-level functions, so put your methods in a
+class:</p>
+<ol>
+  <li>Declare a <code>static class Basics</code> holding <code>static</code>
+      methods.</li>
+  <li><code>Add(int a, int b)</code> returns their sum.</li>
+  <li><code>Describe(string name, int age)</code> returns a string like
+      <code>"Ada is 36"</code> — use an interpolated string
+      <code>$"{name} is {age}"</code>.</li>
+  <li><code>Divide(int a, int b)</code> returns a <code>double</code>, so
+      <code>Divide(7, 2)</code> is <code>3.5</code>. Cast one operand:
+      <code>(double)a / b</code>.</li>
+</ol>`,
+
+  starter: `static class Basics {
+  public static int Add(int a, int b) {
+    return 0; // TODO
+  }
+
+  public static string Describe(string name, int age) {
+    return ""; // TODO
+  }
+
+  public static double Divide(int a, int b) {
+    return 0; // TODO: watch out for integer division
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /\$"/, message: "Build the string with an interpolated string ($\"...\")" },
+    { pattern: /\(double\)/, message: "Cast to (double) so Divide returns a fractional result" },
+  ],
+
+  tests: [
+    { name: "Add(2, 3) is 5", code: "      expect_eq(Basics.Add(2, 3), 5);" },
+    { name: "Describe(\"Ada\", 36) is \"Ada is 36\"", code: "      expect_eq(Basics.Describe(\"Ada\", 36), \"Ada is 36\");" },
+    { name: "Describe(\"Rob\", 68) is \"Rob is 68\"", code: "      expect_eq(Basics.Describe(\"Rob\", 68), \"Rob is 68\");" },
+    { name: "Divide(7, 2) is 3.5", code: "      expect_eq(Basics.Divide(7, 2), 3.5);" },
+    { name: "Divide(10, 4) is 2.5", code: "      expect_eq(Basics.Divide(10, 4), 2.5);" },
+  ],
+
+  solution: `static class Basics {
+  public static int Add(int a, int b) {
+    return a + b;
+  }
+
+  public static string Describe(string name, int age) {
+    return $"{name} is {age}";
+  }
+
+  public static double Divide(int a, int b) {
+    return (double)a / b;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>C#</th></tr>
+  <tr><td>Typed variable</td><td><code>int x = 1;</code></td><td><code>int x = 1;</code></td></tr>
+  <tr><td>Inferred variable</td><td><code>auto x = 1;</code></td><td><code>var x = 1;</code></td></tr>
+  <tr><td>Constant</td><td><code>const int x = 1;</code></td><td><code>const int x = 1;</code></td></tr>
+  <tr><td>Interpolation</td><td><code>std::format("{}", x)</code></td><td><code>$"{x}"</code></td></tr>
+  <tr><td>Free function</td><td><code>int f() { … }</code></td><td><code>static</code> method in a class</td></tr>
+</table>
+<p>The integer-division gotcha is the classic first surprise, and it behaves
+identically to C++: <code>int / int</code> truncates. Promote one side to
+<code>double</code> — a cast, a literal like <code>2.0</code>, or a
+<code>double</code> variable — and the whole expression becomes floating
+point. For money, reach for <code>decimal</code> instead of <code>double</code>
+to avoid binary rounding error — C++ has no built-in equivalent, so this is
+one place C# gives you more out of the box.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

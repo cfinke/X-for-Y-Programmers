@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes &amp; Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>A Go type is assembled from parts scattered around the package: a
+<code>struct</code> for the data, receiver methods declared alongside it, and
+a <code>NewBankAccount()</code> constructor that is only a naming convention.
+Ruby's <code>class</code> gathers all of it in one place. Methods live
+<em>inside</em> the class body — no receiver declarations, and inside them the
+receiver is implicit (like an always-available <code>this</code>).</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>func NewBankAccount(o string) *BankAccount</code></td><td><code>def initialize(owner)</code> — the real constructor</td></tr>
+  <tr><td><code>&amp;BankAccount{owner: o}</code></td><td><code>BankAccount.new(o)</code> (calls initialize)</td></tr>
+  <tr><td><code>a.balance</code> (lowercase = package-private)</td><td><code>@balance</code> — always private to the object</td></tr>
+  <tr><td><code>func (a *BankAccount) Balance() int</code></td><td><code>attr_reader :balance</code> — generated getter</td></tr>
+</table>
+<p><code>initialize</code> <em>is</em> the constructor — <code>Foo.new(...)</code>
+allocates the object and hands your arguments to it; no naming convention
+required. Fields are instance variables, spelled <code>@balance</code>, and
+they are <strong>truly private</strong>: no capitalization rules, no exported
+fields — the only way out is a method. Rather than hand-writing getters, you
+declare them: <code>attr_reader :owner, :balance</code> generates the reader
+methods for you (<code>attr_accessor</code> adds writers).</p>`,
+
+  go: `type BankAccount struct {
+	owner   string
+	balance int
+}
+
+// Constructor by convention only — nothing enforces it.
+func NewBankAccount(owner string) *BankAccount {
+	return &BankAccount{owner: owner}
+}
+
+func (a *BankAccount) Owner() string  { return a.owner }
+func (a *BankAccount) Balance() int   { return a.balance }
+
+func (a *BankAccount) Deposit(amount int) {
+	a.balance += amount
+}
+
+func (a *BankAccount) Withdraw(amount int) bool {
+	if amount > a.balance {
+		return false
+	}
+	a.balance -= amount
+	return true
+}`,
+
+  task: `
+<p>Port the account type into one <code>class BankAccount</code>:</p>
+<ol>
+  <li><code>initialize(owner)</code> — store <code>@owner</code> and start
+      <code>@balance</code> at <code>0</code>. Callers will write
+      <code>BankAccount.new("Ada")</code>.</li>
+  <li><code>attr_reader :owner, :balance</code> — one line replaces both
+      hand-written getters.</li>
+  <li><code>deposit(amount)</code> — add to <code>@balance</code>.</li>
+  <li><code>withdraw(amount)</code> — if <code>amount</code> exceeds the
+      balance return <code>false</code> and change nothing; otherwise subtract
+      and return <code>true</code>. (Yes, a boolean "error return" — Ruby
+      would usually raise here, but exceptions wait until lesson 16.)</li>
+</ol>`,
+
+  starter: `class BankAccount
+  # Getters, generated: attr_reader :owner, :balance
+  attr_reader :owner, :balance
+
+  # 1. The constructor. Set @owner from the argument; @balance starts at 0.
+  def initialize(owner)
+    raise NotImplementedError, "TODO: implement initialize"
+  end
+
+  # 2. Add amount to @balance.
+  def deposit(amount)
+    raise NotImplementedError, "TODO: implement deposit"
+  end
+
+  # 3. Return false (leaving @balance untouched) if amount > @balance;
+  #    otherwise subtract and return true.
+  def withdraw(amount)
+    raise NotImplementedError, "TODO: implement withdraw"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Define class BankAccount" },
+    { pattern: /def\s+initialize/, message: "Define initialize — it IS the constructor" },
+    { pattern: /attr_reader|attr_accessor/, message: "Generate the getters with attr_reader (or attr_accessor)" },
+    { pattern: /@balance/, message: "Keep state in the @balance instance variable" },
+  ],
+
+  tests: [
+    { name: 'BankAccount.new("Ada") sets owner and starts balance at 0',
+      code: '  a = BankAccount.new("Ada")\n  expect_eq(a.owner, "Ada")\n  expect_eq(a.balance, 0)' },
+    { name: "deposit(50) then deposit(25) leaves balance at 75",
+      code: '  a = BankAccount.new("Ada")\n  a.deposit(50)\n  a.deposit(25)\n  expect_eq(a.balance, 75)' },
+    { name: "withdraw(30) from 50 returns true and leaves 20",
+      code: '  a = BankAccount.new("Ada")\n  a.deposit(50)\n  expect_true(a.withdraw(30))\n  expect_eq(a.balance, 20)' },
+    { name: "withdraw(100) from 50 returns false and the balance is unchanged",
+      code: '  a = BankAccount.new("Ada")\n  a.deposit(50)\n  expect_eq(a.withdraw(100), false)\n  expect_eq(a.balance, 50)' },
+  ],
+
+  solution: `class BankAccount
+  attr_reader :owner, :balance
+
+  def initialize(owner)
+    @owner = owner
+    @balance = 0
+  end
+
+  def deposit(amount)
+    @balance += amount
+  end
+
+  def withdraw(amount)
+    return false if amount > @balance
+
+    @balance -= amount
+    true
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Define a type</td><td><code>type Foo struct { ... }</code></td><td><code>class Foo ... end</code></td></tr>
+  <tr><td>Construct</td><td><code>Foo{...}</code> / <code>NewFoo(...)</code></td><td><code>Foo.new(...)</code> → calls <code>initialize</code></td></tr>
+  <tr><td>Field</td><td><code>balance int</code></td><td><code>@balance</code> (springs into being on first assignment)</td></tr>
+  <tr><td>Field visibility</td><td>capitalization, per package</td><td>@ivars are always private; expose via methods</td></tr>
+  <tr><td>Getter</td><td>hand-written method</td><td><code>attr_reader :balance</code></td></tr>
+  <tr><td>Getter + setter</td><td>two hand-written methods</td><td><code>attr_accessor :balance</code></td></tr>
+  <tr><td>Method</td><td><code>func (a *Foo) Bar()</code>, outside the struct</td><td><code>def bar</code>, inside the class</td></tr>
+</table>
+<p>Two Go anxieties you can drop: there is no pointer-vs-value receiver choice
+(every Ruby object is a reference, so mutation in a method always sticks), and
+there is no zero-value backdoor — an object cannot exist without
+<code>initialize</code> having run, so "invalid until someone calls the
+constructor function" is impossible by construction.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

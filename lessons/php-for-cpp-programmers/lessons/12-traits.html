@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>When you want to share an implementation across unrelated C++ classes, you
+reach for a mixin — either CRTP (<code>class Dog : public Describable&lt;Dog&gt;</code>,
+with the base <code>static_cast</code>-ing <code>this</code> down to call the
+derived class) or plain multiple inheritance, at which point diamonds, virtual
+bases, and the MRO enter the room. PHP keeps single inheritance for
+<code>extends</code> and adds <strong>traits</strong> for exactly this job: a
+trait is a named bundle of methods that gets <em>flattened into</em> any class
+that says <code>use TraitName;</code>, as if you had pasted the methods in by
+hand.</p>
+<table>
+  <tr><th>C++17</th><th>PHP</th></tr>
+  <tr><td>CRTP: <code>class Dog : public Describable&lt;Dog&gt;</code></td><td><code>class Dog { use Describable; }</code></td></tr>
+  <tr><td><code>static_cast&lt;Derived*&gt;(this)-&gt;name()</code></td><td><code>$this-&gt;name()</code> — already the real object</td></tr>
+  <tr><td>diamond problem, virtual bases</td><td>no diamond — traits flatten, no hierarchy</td></tr>
+  <tr><td>ambiguity resolved by qualification</td><td>conflicts resolved explicitly with <code>insteadof</code></td></tr>
+  <tr><td>mixin participates in the type</td><td>a trait is not a type — you can't type-hint it</td></tr>
+</table>
+<p>Inside a trait, <code>$this</code> is the using class's instance — no
+template parameter, no downcast. A trait method may freely call methods it
+doesn't define, like <code>$this-&gt;name()</code>, on the honor-system
+expectation that the class provides them (you can formalize it with
+<code>abstract public function name(): string;</code> inside the trait). If
+two traits bring a method with the same name, the class won't compile until
+you pick one with <code>insteadof</code> — explicit, boring, and diamond-free.
+Your single <code>extends</code> slot stays untouched.</p>`,
+
+  cpp: `#include <string>
+
+// CRTP mixin: the base needs a template parameter just to
+// call back into the derived class.
+template <typename Derived>
+class Describable {
+public:
+    std::string describe() const {
+        return "This is " +
+            static_cast<const Derived*>(this)->name();
+    }
+};
+
+class Dog : public Describable<Dog> {
+public:
+    std::string name() const { return "Rex"; }
+};
+
+class Robot : public Describable<Robot> {
+public:
+    std::string name() const { return "Unit 7"; }
+};`,
+
+  task: `
+<p>Replace the CRTP dance with a trait:</p>
+<ol>
+  <li>Write <code>trait Describable</code> with a method
+      <code>describe(): string</code> that returns <code>"This is "</code>
+      followed by <code>$this-&gt;name()</code> — the trait calls a method it
+      doesn't define, and <code>$this</code> needs no cast.</li>
+  <li>Write <code>class Dog</code> that mixes it in with
+      <code>use Describable;</code> and defines
+      <code>name(): string</code> returning <code>"Rex"</code>.</li>
+  <li>Write <code>class Robot</code> the same way, with
+      <code>name(): string</code> returning <code>"Unit 7"</code>. Two
+      unrelated classes, one shared implementation, zero templates.</li>
+</ol>
+<p>The tests construct both classes and call <code>-&gt;describe()</code> and
+<code>-&gt;name()</code> on each.</p>`,
+
+  starter: `<?php
+
+// 1. The mixin: one method, shared by anyone who says "use Describable".
+//    Inside a trait, $this is the using class's object — call $this->name().
+trait Describable {
+    public function describe(): string {
+        throw new Exception("TODO: implement describe");
+    }
+}
+
+// 2. Mix it in (already wired) and implement name().
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: implement Dog::name");
+    }
+}
+
+// 3. Same trait, totally unrelated class.
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: implement Robot::name");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describable/, message: "Define trait Describable (trait, not class)" },
+    { pattern: /use\s+Describable/, message: "Mix the trait into each class with use Describable;" },
+  ],
+
+  tests: [
+    { name: '(new Dog())->describe() returns "This is Rex"',
+      code: 'expect_eq((new Dog())->describe(), "This is Rex");' },
+    { name: '(new Robot())->describe() returns "This is Unit 7"',
+      code: 'expect_eq((new Robot())->describe(), "This is Unit 7");' },
+    { name: '(new Dog())->name() returns "Rex"',
+      code: 'expect_eq((new Dog())->name(), "Rex");' },
+    { name: '(new Robot())->name() returns "Unit 7"',
+      code: 'expect_eq((new Robot())->name(), "Unit 7");' },
+    { name: "Dog and Robot share no base class — the trait flattens in",
+      code: "expect_true(!(new Dog() instanceof Robot));\nexpect_true(method_exists('Dog', 'describe') && method_exists('Robot', 'describe'));" },
+  ],
+
+  solution: `<?php
+
+trait Describable {
+    public function describe(): string {
+        return "This is " . $this->name();
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        return "Rex";
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        return "Unit 7";
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+  <tr><td>Mixin</td><td>CRTP or multiple inheritance</td><td><code>trait X { ... }</code> + <code>use X;</code></td></tr>
+  <tr><td>Call back into the class</td><td><code>static_cast&lt;Derived*&gt;(this)</code></td><td><code>$this</code> — it's already the real object</td></tr>
+  <tr><td>Multiple mixins</td><td>multiple bases, diamond risk</td><td><code>use A, B;</code> — flat, no hierarchy</td></tr>
+  <tr><td>Name collision</td><td>ambiguity error, qualify at call site</td><td>error until <code>use A, B { A::f insteadof B; }</code></td></tr>
+  <tr><td>Require a method</td><td>implicit (template won't instantiate)</td><td><code>abstract public function name(): string;</code> in the trait</td></tr>
+  <tr><td>Is it a type?</td><td>the base is a real type</td><td>no — pair a trait with an <code>interface</code> for the type</td></tr>
+  <tr><td><code>extends</code> budget</td><td>n/a (multiple bases)</td><td>still exactly one — traits don't spend it</td></tr>
+</table>
+<p>The insight: traits are compile-time copy-paste with a name — code reuse
+<em>without</em> a subtype relationship. Nothing about <code>Dog</code> says
+"is-a Describable" afterward, which is why the idiomatic PHP pairing is an
+interface for the contract plus a trait for the default implementation: the
+interface gives you the type to hint against, the trait spares each class from
+retyping the method.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

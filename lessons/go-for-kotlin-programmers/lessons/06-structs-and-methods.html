@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Structs & Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A Go <code>struct</code> is the closest thing to a Kotlin <code>data class</code>
+or <code>class</code>: a named bundle of typed fields. But Go keeps data and behavior
+loosely coupled — you define the fields with <code>struct</code>, then attach methods
+separately by naming a <em>receiver</em> before the function name. There is no
+<code>class</code> keyword and no <code>this</code>; you pick the receiver's name.</p>
+<table>
+  <tr><th>Kotlin</th><th>Go</th></tr>
+  <tr><td><code>data class P(val x: Int, val y: Int)</code></td><td><code>type P struct { X, Y int }</code></td></tr>
+  <tr><td><code>val p = P(1, 2)</code></td><td><code>p := P{X: 1, Y: 2}</code></td></tr>
+  <tr><td><code>class C { fun m() {…} }</code></td><td><code>func (c C) M() {…}</code></td></tr>
+  <tr><td><code>this.x</code></td><td><code>c.X</code> (receiver name is yours)</td></tr>
+</table>
+<p>The big new idea is the <strong>receiver kind</strong>. A <em>value receiver</em>
+(<code>func (c C) M()</code>) operates on a copy of the struct, so it cannot change
+the caller's data. A <em>pointer receiver</em> (<code>func (c *C) M()</code>)
+operates on the original, so it is required to mutate. This is like the difference
+between a Kotlin <code>data class</code> with <code>val</code> properties (immutable
+copy-on-write via <code>.copy()</code>) versus one with <code>var</code> properties
+mutated through a normal object reference — except Go makes the choice explicit and
+per-method.</p>`,
+
+  kotlin: `class Counter(private var count: Int) {
+    fun value(): Int = count
+    fun increment() { count++ }
+}
+
+val c = Counter(0)
+c.increment()
+c.value() // 1`,
+
+  task: `
+<p>Write these as package-level declarations (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li>A struct <code>type Counter struct { Count int }</code>.</li>
+  <li>A <strong>value-receiver</strong> method <code>func (c Counter) Value() int</code>
+      that returns <code>c.Count</code>.</li>
+  <li>A <strong>pointer-receiver</strong> method <code>func (c *Counter) Increment()</code>
+      that does <code>c.Count++</code>. It must be a pointer receiver so the mutation
+      sticks.</li>
+</ol>
+<p>Construct with a field literal: <code>c := Counter{Count: 0}</code>, then call
+<code>c.Increment()</code> — Go automatically takes the address of an addressable
+value, so you do not write <code>(&amp;c).Increment()</code>.</p>`,
+
+  starter: `type Counter struct {
+	Count int
+}
+
+func (c Counter) Value() int {
+	return 0 // TODO
+}
+
+func (c *Counter) Increment() {
+	// TODO: mutate c.Count
+}
+`,
+
+  requirements: [
+    { pattern: /type\s+Counter\s+struct/, message: "Define a struct type Counter" },
+    { pattern: /func\s+\(c\s+Counter\)\s+Value/, message: "Value must use a value receiver (c Counter)" },
+    { pattern: /func\s+\(c\s+\*Counter\)\s+Increment/, message: "Increment must use a pointer receiver (c *Counter)" },
+  ],
+
+  tests: [
+    { name: "Value reads the constructed field", code: "\t\tc := Counter{Count: 5}\n\t\texpect_eq(c.Value(), 5)" },
+    { name: "Increment mutates through the pointer receiver", code: "\t\tc := Counter{Count: 0}\n\t\tc.Increment()\n\t\texpect_eq(c.Value(), 1)" },
+    { name: "Increment is repeatable", code: "\t\tc := Counter{Count: 0}\n\t\tc.Increment()\n\t\tc.Increment()\n\t\tc.Increment()\n\t\texpect_eq(c.Count, 3)" },
+  ],
+
+  solution: `type Counter struct {
+	Count int
+}
+
+func (c Counter) Value() int {
+	return c.Count
+}
+
+func (c *Counter) Increment() {
+	c.Count++
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Go</th></tr>
+  <tr><td>Define shape</td><td><code>class C(var x: Int)</code></td><td><code>type C struct { X int }</code></td></tr>
+  <tr><td>Construct</td><td><code>C(1)</code> / <code>data class C(val x: Int)</code></td><td><code>C{X: 1}</code></td></tr>
+  <tr><td>Read method</td><td><code>fun m() = this.x</code></td><td><code>func (c C) M() int {…}</code></td></tr>
+  <tr><td>Mutating method</td><td><code>fun m() { this.x++ }</code></td><td><code>func (c *C) M() {…}</code></td></tr>
+  <tr><td>Receiver name</td><td><code>this</code> (fixed)</td><td><code>c</code> (you choose)</td></tr>
+</table>
+<p>Rule of thumb: if a method changes the struct — or the struct is large enough that
+copying it is wasteful — use a pointer receiver. Otherwise a value receiver is fine.
+In practice Go programmers keep receiver kinds consistent across a type, so once one
+method needs a pointer, most of them use a pointer too.</p>
+<p>A subtle payoff: because <code>Increment</code> has a pointer receiver, calling
+<code>c.Increment()</code> on a value variable works only because <code>c</code> is
+<em>addressable</em>. Go silently rewrites it to <code>(&amp;c).Increment()</code>.
+A value receiver would have incremented a throwaway copy and the counter would never
+move — which is exactly the bug pointer receivers exist to prevent.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

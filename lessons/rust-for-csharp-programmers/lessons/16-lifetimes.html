@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>Here's a question you've never had to ask in C#: if a method returns a
+reference, whose data does it point into, and how long is that data valid?
+The GC answered it for you — whatever you return stays alive as long as
+someone holds it. The one corner of C# where the question leaks through is
+<code>Span&lt;T&gt;</code>: because a span may point into a stack frame, the
+compiler slaps it with ref-struct restrictions — no class fields, no boxing,
+no <code>async</code>. Those restrictions are C#'s crude answer to exactly
+the question Rust asks everywhere: "could this reference outlive the data
+it points into?"</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td>GC keeps returned references alive</td><td>Borrows must not outlive their owner — checked at compile time</td></tr>
+  <tr><td><code>Span&lt;T&gt;</code> ref-struct restrictions (blunt)</td><td>Lifetimes <code>&lt;'a&gt;</code> (precise)</td></tr>
+  <tr><td>Nothing to annotate</td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>—</td><td>Usually inferred ("elision") — written only when ambiguous</td></tr>
+</table>
+<p>A lifetime parameter like <code>&lt;'a&gt;</code> doesn't <em>change</em>
+how long anything lives — it just <em>names</em> the relationship so the
+compiler can check it. <code>fn longest&lt;'a&gt;(a: &amp;'a str, b:
+&amp;'a str) -&gt; &amp;'a str</code> says: "the result borrows from
+<code>a</code> or <code>b</code>, so it's only valid while both are." The
+good news: most of the time you write nothing at all. When a function takes
+one reference and returns one, the compiler infers the connection — that's
+<em>lifetime elision</em>, and it's why the fifteen lessons before this one
+never needed an <code>'a</code>.</p>`,
+
+  csharp: `// C#: return a reference, never wonder how long it lives —
+// the GC keeps the data alive for as long as anyone points at it.
+string Longest(string a, string b) =>
+    a.Length > b.Length ? a : b;
+
+// The one place C# makes you feel the question: ref structs.
+// A Span may point into a stack frame, so the compiler forbids
+// storing it anywhere that could outlive that frame.
+ReadOnlySpan<char> FirstWord(ReadOnlySpan<char> s)
+{
+    int i = s.IndexOf(' ');
+    return i < 0 ? s : s.Slice(0, i);  // a view into s —
+                                       // only valid while s is
+}
+
+// class Holder { ReadOnlySpan<char> Field; }  // compile error:
+// a span can't be a class field. That's a lifetime rule in disguise.`,
+
+  task: `
+<p>Write the two functions, one with an explicit lifetime and one where
+elision does the work:</p>
+<ol>
+  <li><code>longest&lt;'a&gt;</code>: takes <code>a: &amp;'a str</code> and
+      <code>b: &amp;'a str</code>, returns <code>&amp;'a str</code> — whichever
+      input is longer by <code>.len()</code> (return <code>b</code> on a tie).
+      Two input references could each be the result, so the compiler can't
+      infer the connection — you name it with <code>'a</code>.</li>
+  <li><code>first_word</code>: takes <code>s: &amp;str</code>, returns
+      <code>&amp;str</code> — the first whitespace-separated word, or
+      <code>""</code> if there isn't one. Use
+      <code>s.split_whitespace().next().unwrap_or("")</code>. One reference
+      in, one out: elision applies, no annotation needed.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. longest: return whichever input is longer (by .len()).
+//    Two inputs could each be the result, so the shared lifetime 'a
+//    must be spelled out: the result lives as long as BOTH inputs do.
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// 2. first_word: one reference in, one reference out — the compiler
+//    infers the lifetime (elision), so no 'a appears here.
+//    split_whitespace().next() gives an Option<&str>; unwrap_or("")
+//    turns the empty case into "".
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a lifetime parameter <'a> on longest" },
+    { pattern: /&'a\s+str/, message: "Tie the parameters and return type together with &'a str" },
+  ],
+
+  tests: [
+    { name: 'longest("longer string", "short") returns the first argument',
+      code: 'assert_eq!(longest("longer string", "short"), "longer string");' },
+    { name: 'longest("hi", "hello") returns the second argument',
+      code: 'assert_eq!(longest("hi", "hello"), "hello");' },
+    { name: 'first_word("hello world") returns "hello"',
+      code: 'assert_eq!(first_word("hello world"), "hello");' },
+    { name: 'first_word("") returns ""',
+      code: 'assert_eq!(first_word(""), "");' },
+    { name: 'first_word("single") returns the whole word',
+      code: 'assert_eq!(first_word("single"), "single");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() > b.len() { a } else { b }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Returned reference validity</td><td>GC handles it — never asked</td><td>Checked at compile time via lifetimes</td></tr>
+  <tr><td>Naming the relationship</td><td>— (ref-struct rules are all-or-nothing)</td><td><code>fn f&lt;'a&gt;(x: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>When you write it</td><td>never</td><td>only when inference is ambiguous (2+ input refs, ref output)</td></tr>
+  <tr><td>When you don't</td><td>always</td><td>elision: one ref in, ref out — inferred</td></tr>
+  <tr><td>Closest C# cousin</td><td><code>Span&lt;T&gt;</code> escape rules</td><td>the general mechanism those rules approximate</td></tr>
+</table>
+<p>Read <code>&lt;'a&gt;</code> the way you read <code>&lt;T&gt;</code>: a
+generic parameter, except it ranges over <em>scopes</em> instead of types.
+<code>longest</code> needs it because the compiler can't know whether the
+result borrows from <code>a</code> or <code>b</code> — so you declare "either
+way, it's valid while both are." <code>first_word</code> doesn't, because
+with a single input reference there's only one possible answer, and the
+compiler fills it in. In practice you'll write lifetimes rarely; when the
+compiler asks for one, it's asking the Span question — "whose data is this,
+and could the view outlive it?"</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

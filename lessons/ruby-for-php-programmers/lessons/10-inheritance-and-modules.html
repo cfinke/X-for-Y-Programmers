@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Modules</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Modules",
+
+  intro: `
+<p>Inheritance shrinks to a single character. PHP's <code>class Circle extends
+Shape</code> becomes <code>class Circle &lt; Shape</code> — the <code>&lt;</code>
+reads as "is a kind of." Calling up to the parent is <code>super</code> instead
+of <code>parent::__construct()</code>, with one Ruby twist worth flagging: a
+<strong>bare <code>super</code></strong> (no parentheses) forwards <em>all</em>
+of the current method's arguments to the parent automatically. Write
+<code>super()</code> with empty parentheses to forward nothing — the difference
+is easy to trip over.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td><code>class C extends P</code></td><td><code>class C &lt; P</code></td></tr>
+  <tr><td><code>parent::__construct($x)</code></td><td><code>super(x)</code> (or bare <code>super</code>)</td></tr>
+  <tr><td><code>abstract public function area()</code></td><td><code>raise NotImplementedError</code> in the base</td></tr>
+  <tr><td><code>interface</code> + <code>implements</code></td><td><code>module</code> + <code>include</code></td></tr>
+  <tr><td><code>trait</code> + <code>use</code></td><td><code>module</code> + <code>include</code></td></tr>
+</table>
+<p>Ruby has no <code>abstract</code> keyword. The convention is to define the
+method in the base class and have it <code>raise NotImplementedError</code>, so
+any subclass that forgets to override it fails loudly. This pairs with the
+<em>template method</em> pattern: a base method like <code>describe</code> can
+call <code>area</code> — filled in by each subclass — even though the base has
+no idea how to compute it.</p>
+<p>The bigger idea is <strong>modules</strong>. PHP splits code sharing into two
+features: interfaces (a contract, no implementation) and traits (implementation,
+no contract). A Ruby <code>module</code> does both jobs. <code>include
+Greetable</code> mixes the module's real methods into your class — that is the
+trait half — and the module name also serves as a contract marker you can check
+with <code>is_a?</code>. Ruby has single inheritance (one <code>&lt;</code> per
+class), and modules are how a class gains behavior from more than one source.</p>`,
+
+  php: `<?php
+abstract class Shape {
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "This shape has an area of {$this->area()}.";
+    }
+}
+
+class Circle extends Shape {
+    public function __construct(private float $radius) {}
+
+    public function area(): float {
+        return round(M_PI * $this->radius ** 2, 2);
+    }
+}
+
+interface Greetable {                 // the contract half
+    public function greet(): string;
+}
+
+trait GreetableTrait {                // the implementation half
+    public function greet(): string {
+        return "Hi, I'm {$this->name}.";
+    }
+}`,
+
+  task: `
+<p>Build a small hierarchy plus a mixin module:</p>
+<ol>
+  <li><code>class Shape</code> — <code>area</code> should
+      <code>raise NotImplementedError, "..."</code> (the abstract convention),
+      and <code>describe</code> should use it in a string:
+      <code>"This shape has an area of #{area}."</code>.</li>
+  <li><code>class Circle &lt; Shape</code> — <code>initialize(radius)</code>
+      stores <code>@radius</code>; <code>area</code> returns
+      <code>(Math::PI * @radius ** 2).round(2)</code>.</li>
+  <li><code>class Rectangle &lt; Shape</code> —
+      <code>initialize(width, height)</code>; <code>area</code> returns
+      <code>@width * @height</code>.</li>
+  <li><code>module Greetable</code> — a <code>greet</code> method returning
+      <code>"Hi, I'm #{self.name}."</code>.</li>
+  <li><code>class Robot</code> — <code>include Greetable</code>, expose
+      <code>attr_reader :name</code>, and store the name in
+      <code>initialize(name)</code>.</li>
+</ol>`,
+
+  starter: `class Shape
+  # Abstract: subclasses must override this.
+  def area
+    raise NotImplementedError, "TODO: subclasses must implement area"
+  end
+
+  # Template method: uses area (defined by the subclass).
+  def describe
+    raise NotImplementedError, "TODO: use area in a string"
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    @radius = radius
+  end
+
+  def area
+    raise NotImplementedError, "TODO: Math::PI * @radius ** 2, rounded to 2"
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    @width = width
+    @height = height
+  end
+
+  def area
+    raise NotImplementedError, "TODO: @width * @height"
+  end
+end
+
+module Greetable
+  def greet
+    raise NotImplementedError, "TODO: greeting using self.name"
+  end
+end
+
+class Robot
+  include Greetable
+
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /<\s*Shape/, message: "Subclass Shape with < Shape" },
+    { pattern: /NotImplementedError/, message: "Mark the abstract area with raise NotImplementedError" },
+    { pattern: /module\s+Greetable/, message: "Define module Greetable" },
+    { pattern: /include\s+Greetable/, message: "Mix the module in with include Greetable" },
+  ],
+
+  tests: [
+    { name: "Circle#area computes pi * r^2 rounded to 2 places",
+      code: "  expect_eq(Circle.new(2).area, 12.57)" },
+    { name: "Rectangle#area is width * height",
+      code: "  expect_eq(Rectangle.new(3, 4).area, 12)" },
+    { name: "describe (a template method) uses the subclass's area",
+      code: "  expect_eq(Circle.new(1).describe, \"This shape has an area of 3.14.\")" },
+    { name: "Rectangle reuses the same inherited describe",
+      code: "  expect_eq(Rectangle.new(2, 5).describe, \"This shape has an area of 10.\")" },
+    { name: "the base Shape#area raises NotImplementedError",
+      code: "  raised = false\n  begin\n    Shape.new.area\n  rescue NotImplementedError\n    raised = true\n  end\n  expect_true(raised)" },
+    { name: "Robot mixes in greet from the Greetable module",
+      code: "  expect_eq(Robot.new(\"R2\").greet, \"Hi, I'm R2.\")" },
+  ],
+
+  solution: `class Shape
+  def area
+    raise NotImplementedError, "#{self.class} must implement area"
+  end
+
+  def describe
+    "This shape has an area of #{area}."
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    @radius = radius
+  end
+
+  def area
+    (Math::PI * @radius ** 2).round(2)
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    @width = width
+    @height = height
+  end
+
+  def area
+    @width * @height
+  end
+end
+
+module Greetable
+  def greet
+    "Hi, I'm #{self.name}."
+  end
+end
+
+class Robot
+  include Greetable
+
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Inherit</td><td><code>extends P</code></td><td><code>&lt; P</code></td></tr>
+  <tr><td>Call parent</td><td><code>parent::__construct($x)</code></td><td><code>super(x)</code></td></tr>
+  <tr><td>Forward all args</td><td>restate them</td><td>bare <code>super</code></td></tr>
+  <tr><td>Forward nothing</td><td>—</td><td><code>super()</code></td></tr>
+  <tr><td>Abstract method</td><td><code>abstract public function</code></td><td><code>raise NotImplementedError</code></td></tr>
+  <tr><td>Contract</td><td><code>interface</code></td><td><code>module</code> (marker + <code>is_a?</code>)</td></tr>
+  <tr><td>Shared behavior</td><td><code>trait</code> + <code>use</code></td><td><code>module</code> + <code>include</code></td></tr>
+</table>
+<p>Keep the <code>super</code> distinction handy: bare <code>super</code> passes
+along whatever arguments the current method received, <code>super()</code>
+passes none, and <code>super(a, b)</code> passes exactly those. Because a class
+can only inherit from one parent, modules carry most of the reuse load in Ruby:
+one class can <code>include</code> many modules, each contributing methods, and
+you check membership with <code>robot.is_a?(Greetable)</code> just as you would
+<code>instanceof</code> an interface in PHP. That is the whole trick — the
+single feature the language calls a module quietly does both jobs PHP splits
+across interfaces and traits.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

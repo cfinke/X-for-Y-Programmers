@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>Here is a question Python never asks you. When a function returns one of
+its string arguments, Python doesn't care which one — reference counting
+keeps whichever object you return alive for as long as anyone still holds it.
+Return <code>a</code>, return <code>b</code>, return a brand-new string: all
+the same to the garbage collector. Rust has no garbage collector, so when a
+function returns a <em>reference</em>, the compiler must answer: <strong>whose
+data does this borrow?</strong> The returned <code>&amp;str</code> is a view
+into someone else's string, and Rust needs to prove that string outlives the
+view.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>def longest(a: str, b: str) -&gt; str</code> — GC keeps the result alive</td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>"Whose data?" — never asked</td><td><code>'a</code> names the answer: "borrowed from these inputs"</td></tr>
+  <tr><td><code>def first_word(s: str) -&gt; str</code></td><td><code>fn first_word(s: &amp;str) -&gt; &amp;str</code> — inferred, no annotation</td></tr>
+</table>
+<p>The answer is spelled with a <em>lifetime parameter</em>: <code>&lt;'a&gt;</code>
+declares a name (read it as "lifetime a", like a generic <code>&lt;T&gt;</code>
+but for durations), and <code>&amp;'a str</code> tags each reference with it.
+The signature <code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+says: "the result borrows from <code>a</code> and/or <code>b</code>, so it's
+valid only while both are." That's it — lifetimes don't change what your code
+does, they <em>describe</em> what it already does. And most of the time you
+write nothing: when a function takes one reference and returns one, Rust
+infers the connection (this is called <em>elision</em>). You only write
+<code>'a</code> when there are two possible sources and the compiler can't
+tell which one the result came from.</p>`,
+
+  python: `def longest(a: str, b: str) -> str:
+    # Return a or b -- Python doesn't care which. Refcounting
+    # keeps whichever one we return alive as long as the caller
+    # holds it. "Whose data is this?" is never asked.
+    if len(a) >= len(b):
+        return a
+    return b
+
+def first_word(s: str) -> str:
+    words = s.split()
+    return words[0] if words else ""
+
+winner = longest("hello", "hi")
+print(winner)                     # "hello"
+print(first_word("fearless concurrency"))  # "fearless"`,
+
+  task: `
+<p>Write the Rust versions. One needs a lifetime annotation; one doesn't:</p>
+<ol>
+  <li><code>longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code> —
+      return whichever string is longer by <code>.len()</code>; if they tie,
+      return <code>a</code>. Two input references, one returned reference:
+      the compiler can't tell which input it borrows from, so the signature
+      names the answer with <code>'a</code>.</li>
+  <li><code>first_word(s: &amp;str) -&gt; &amp;str</code> — return the first
+      whitespace-separated word, or <code>""</code> if there isn't one. Use
+      <code>s.split_whitespace().next().unwrap_or("")</code>. One input
+      reference, so <em>elision</em> connects it to the output — write no
+      annotation at all.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. longest: two possible sources for the returned reference,
+//    so the signature names the borrow with 'a. Return the longer
+//    string by .len(); on a tie, return a.
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// 2. first_word: one input reference -> elision fills in the
+//    lifetime for you. No annotation needed.
+//    Hint: s.split_whitespace().next().unwrap_or("")
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a lifetime parameter <'a> on longest" },
+    { pattern: /&'a\s+str/, message: "Tag longest's references with &'a str" },
+  ],
+
+  tests: [
+    { name: 'longest("hello", "hi") returns "hello"',
+      code: 'assert_eq!(longest("hello", "hi"), "hello");' },
+    { name: 'longest("py", "rust") returns "rust"',
+      code: 'assert_eq!(longest("py", "rust"), "rust");' },
+    { name: 'longest("tie", "abc") returns the first on a tie',
+      code: 'assert_eq!(longest("tie", "abc"), "tie");' },
+    { name: 'first_word("fearless concurrency") returns "fearless"',
+      code: 'assert_eq!(first_word("fearless concurrency"), "fearless");' },
+    { name: 'first_word("") returns ""',
+      code: 'assert_eq!(first_word(""), "");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() >= b.len() {
+        a
+    } else {
+        b
+    }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>Who keeps returned data alive?</td><td>the GC / refcounting</td><td>the owner it was borrowed from</td></tr>
+  <tr><td>Naming a borrow's source</td><td>never needed</td><td><code>&lt;'a&gt;</code> + <code>&amp;'a str</code></td></tr>
+  <tr><td>One ref in, one ref out</td><td>—</td><td>elision: no annotation needed</td></tr>
+  <tr><td>Two refs in, one ref out</td><td>—</td><td>ambiguous: write <code>'a</code> yourself</td></tr>
+</table>
+<p>The key insight: lifetimes are <em>descriptions</em>, not instructions.
+Writing <code>'a</code> doesn't make anything live longer — it tells the
+compiler which input the output borrows from, so it can check that the
+source outlives the view at every call site. In practice you'll write them
+rarely: elision covers the common shapes, and when it doesn't, the compiler
+error tells you exactly where an annotation is missing. This lesson is the
+whole gentle introduction — one rule, one annotation, and you already know
+the hard part (borrowing) from Lesson 5.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

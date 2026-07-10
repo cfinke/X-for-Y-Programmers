@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Iterators</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Iterators",
+
+  intro: `
+<p>In Ruby, iteration is invisible: <code>each</code>, <code>map</code>, and the
+rest of <code>Enumerable</code> all lean on internal iteration through a block,
+and you rarely touch a raw iterator object (Ruby's <code>Enumerator</code> exists
+for that, but it is a specialty tool). In C++ the iterator is front and center.
+Every standard container exposes <code>begin()</code> — pointing at the first
+element — and <code>end()</code> — a sentinel <em>one past</em> the last element.
+An iterator is a cursor you move with <code>++it</code> and read with
+<code>*it</code>, and that <code>[begin, end)</code> half-open range is the
+common currency every algorithm speaks.</p>
+<table>
+  <tr><th>Ruby</th><th>C++</th></tr>
+  <tr><td><code>v.each { |x| ... }</code></td><td><code>for (auto x : v)</code></td></tr>
+  <tr><td><code>it = v.each</code> (no block)</td><td><code>auto it = v.begin();</code></td></tr>
+  <tr><td><code>it.next</code></td><td><code>*it</code> then <code>++it</code></td></tr>
+  <tr><td>done when <code>StopIteration</code> raised</td><td>done when <code>it == v.end()</code></td></tr>
+  <tr><td><code>v.length</code></td><td><code>std::distance(v.begin(), v.end())</code></td></tr>
+</table>
+<p>Two habits to carry over. First, <code>end()</code> is not an element — never
+dereference it; it only marks where to stop, exactly like an
+<code>Enumerator</code> running dry and raising <code>StopIteration</code>.
+Second, because algorithms take a raw <code>(begin, end)</code> pair, a
+function that accepts <em>iterators</em> instead of a specific container works on
+any range — a slice of a vector, a whole <code>std::set</code>, whatever. Reach
+for a range-based <code>for</code> as your everyday default; drop to explicit
+iterators when you need the cursor itself.</p>`,
+
+  ruby: `nums = [10, 20, 30, 40]
+
+# The idiomatic default: each hides the iterator.
+total = 0
+nums.each { |n| total += n }             # 100
+
+# The explicit protocol, which C++ makes you see:
+it = nums.each                           # an Enumerator, no block given
+loop { it.next }                         # walk to the end (StopIteration ends loop)
+
+count = nums.length                      # 4`,
+
+  task: `
+<p>Work with <code>std::vector&lt;int&gt;</code> and its iterators. Write these
+free functions:</p>
+<ol>
+  <li><code>sumWithIterator(const std::vector&lt;int&gt;&amp; v)</code> — total the
+      elements by walking an explicit iterator from <code>v.begin()</code> to
+      <code>v.end()</code> with a <code>for</code> loop (<code>++it</code>,
+      <code>*it</code>). No range-based <code>for</code> here.</li>
+  <li><code>countElements(const std::vector&lt;int&gt;&amp; v)</code> — return the
+      element count as an <code>int</code> using
+      <code>std::distance(v.begin(), v.end())</code>.</li>
+  <li><code>thirdElement(const std::vector&lt;int&gt;&amp; v)</code> — start at
+      <code>v.begin()</code>, use <code>std::advance(it, 2)</code> to move two
+      steps forward, and return <code>*it</code> (the third element).</li>
+  <li><code>sumRange(std::vector&lt;int&gt;::const_iterator begin,
+      std::vector&lt;int&gt;::const_iterator end)</code> — total whatever range
+      the two <code>const_iterator</code>s mark. This is the range-based building
+      block the others could be written in terms of.</li>
+  <li><code>maxOf(const std::vector&lt;int&gt;&amp; v)</code> — return the largest
+      element by passing <code>v.begin()</code> and <code>v.end()</code> to
+      <code>std::max_element</code>, then dereferencing the returned iterator.</li>
+</ol>`,
+
+  starter: `int sumWithIterator(const std::vector<int>& v) {
+  return 0; // TODO: loop with an explicit iterator (++it, *it)
+}
+
+int countElements(const std::vector<int>& v) {
+  return 0; // TODO: std::distance
+}
+
+int thirdElement(const std::vector<int>& v) {
+  return 0; // TODO: std::advance an iterator, then dereference
+}
+
+int sumRange(std::vector<int>::const_iterator begin,
+             std::vector<int>::const_iterator end) {
+  return 0; // TODO: walk [begin, end)
+}
+
+int maxOf(const std::vector<int>& v) {
+  return 0; // TODO: std::max_element, then dereference
+}
+`,
+
+  requirements: [
+    { pattern: /\.begin\s*\(\s*\)/, message: "Use begin() to get a starting iterator" },
+    { pattern: /std::distance\s*\(/, message: "Use std::distance to count the elements" },
+    { pattern: /std::advance\s*\(/, message: "Use std::advance to move an iterator forward" },
+    { pattern: /std::max_element\s*\(/, message: "Use std::max_element over the iterator range" },
+  ],
+
+  tests: [
+    { name: "sumWithIterator totals via an explicit iterator", code: "    expect_eq(sumWithIterator({10, 20, 30, 40}), 100);" },
+    { name: "sumWithIterator of empty vector is 0", code: "    expect_eq(sumWithIterator({}), 0);" },
+    { name: "countElements returns the size", code: "    expect_eq(countElements({10, 20, 30, 40}), 4);" },
+    { name: "thirdElement returns the element at index 2", code: "    expect_eq(thirdElement({10, 20, 30, 40}), 30);" },
+    { name: "sumRange totals a sub-range", code: "    std::vector<int> v{10, 20, 30, 40};\n    expect_eq(sumRange(v.begin() + 1, v.begin() + 3), 50);" },
+    { name: "sumRange over the whole vector", code: "    std::vector<int> v{1, 2, 3, 4, 5};\n    expect_eq(sumRange(v.begin(), v.end()), 15);" },
+    { name: "maxOf finds the largest element", code: "    expect_eq(maxOf({3, 9, 2, 7, 5}), 9);" },
+  ],
+
+  solution: `int sumWithIterator(const std::vector<int>& v) {
+  int total = 0;
+  for (auto it = v.begin(); it != v.end(); ++it) {
+    total += *it;
+  }
+  return total;
+}
+
+int countElements(const std::vector<int>& v) {
+  return static_cast<int>(std::distance(v.begin(), v.end()));
+}
+
+int thirdElement(const std::vector<int>& v) {
+  auto it = v.begin();
+  std::advance(it, 2);
+  return *it;
+}
+
+int sumRange(std::vector<int>::const_iterator begin,
+             std::vector<int>::const_iterator end) {
+  int total = 0;
+  for (auto it = begin; it != end; ++it) {
+    total += *it;
+  }
+  return total;
+}
+
+int maxOf(const std::vector<int>& v) {
+  return *std::max_element(v.begin(), v.end());
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>C++</th></tr>
+  <tr><td>Idiomatic loop</td><td><code>v.each { |x| ... }</code></td><td><code>for (auto x : v)</code></td></tr>
+  <tr><td>Get a cursor</td><td><code>v.each</code> (no block)</td><td><code>v.begin()</code></td></tr>
+  <tr><td>Read / advance</td><td><code>it.next</code></td><td><code>*it</code>, <code>++it</code></td></tr>
+  <tr><td>End sentinel</td><td><code>StopIteration</code> raised</td><td><code>it == v.end()</code></td></tr>
+  <tr><td>Distance / size</td><td><code>v.length</code></td><td><code>std::distance(b, e)</code></td></tr>
+  <tr><td>Jump forward</td><td><code>—</code></td><td><code>std::advance(it, n)</code></td></tr>
+  <tr><td>Read-only cursor</td><td>frozen array (<code>.freeze</code>)</td><td><code>const_iterator</code></td></tr>
+</table>
+<p>A few things that surprise Ruby folks. <code>const_iterator</code> is
+what you get from a <code>const</code> container (or from <code>cbegin()</code>):
+you can move it and read through it, but not write — checked at compile time,
+unlike Ruby's <code>.freeze</code>, which blocks mutation of an array only at
+runtime, with a <code>FrozenError</code>. <code>std::distance</code>
+and <code>std::advance</code> are cheap O(1) pointer math on a vector, but O(n)
+on a <code>std::list</code> or <code>std::set</code>, because those iterators can
+only step one link at a time — the algorithm adapts to what the iterator
+supports. Writing a function against a <code>(begin, end)</code> pair, like
+<code>sumRange</code>, is the generic-programming payoff: the same code totals a
+whole vector, a slice of one, or any other range. Still, prefer range-based
+<code>for</code> for straightforward whole-container work — it is the clearest
+default, and you only reach for explicit iterators when you genuinely need the
+cursor.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

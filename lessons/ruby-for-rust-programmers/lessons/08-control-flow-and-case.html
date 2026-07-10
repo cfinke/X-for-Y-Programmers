@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; case</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & case",
+
+  intro: `
+<p>Your instinct from Rust that <code>if</code> is an <em>expression</em>
+carries straight over. In Rust <code>let x = if cond { a } else { b };</code>;
+in Ruby the same idea is <code>x = if cond then a else b end</code> — the whole
+<code>if</code> evaluates to its last branch, so you assign it directly. Ruby
+adds a form Rust has no syntax for: the <strong>modifier</strong>, where the
+condition trails the statement — <code>return x if cond</code>,
+<code>puts "hi" unless quiet</code>. <code>unless</code> is simply
+<code>if !cond</code> spelled as a word, and it reads best as an early-exit
+guard.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>let x = if c { a } else { b };</code></td><td><code>x = if c then a else b end</code></td></tr>
+  <tr><td><code>if c { return v; }</code></td><td><code>return v if c</code></td></tr>
+  <tr><td><code>if !ok { ... }</code></td><td><code>... unless ok</code></td></tr>
+  <tr><td><code>match n { 90..=u32::MAX =&gt; "A", ... }</code></td><td><code>case n; when 90.. then "A" ... end</code></td></tr>
+  <tr><td><code>"Sat" | "Sun" =&gt; ...</code></td><td><code>when "Sat", "Sun" then ...</code></td></tr>
+</table>
+<p>Rust's <code>match</code> becomes Ruby's <code>case</code>/<code>when</code>,
+and the pattern shapes map cleanly: a <strong>range</strong> arm
+(<code>when 90..</code> is the beginless-friendly cousin of
+<code>90..=u32::MAX</code>), a <strong>grouped</strong> arm listing several
+values separated by commas (Rust's <code>|</code> alternatives), and an arm
+that yields an expression you can assign. The one guarantee you lose is
+exhaustiveness: there is no compiler checking that every case is covered, so
+the trailing <code>else</code> is a matter of discipline, not a proof. Forget
+it and an unmatched <code>case</code> quietly returns <code>nil</code>.</p>`,
+
+  rust: `fn grade(score: u32) -> &'static str {
+    match score {
+        90..=u32::MAX => "A",
+        80..=89 => "B",
+        70..=79 => "C",
+        _ => "F",
+    }
+}
+
+fn day_type(day: &str) -> &'static str {
+    match day {
+        "Saturday" | "Sunday" => "weekend",
+        "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" => "weekday",
+        _ => "unknown",
+    }
+}
+
+fn describe_number(n: i32) -> &'static str {
+    if n == 0 {
+        return "zero";
+    }
+    if n > 0 { "positive" } else { "negative" }
+}`,
+
+  task: `
+<p>Port the three Rust functions, matching each pattern shape to its Ruby
+equivalent:</p>
+<ol>
+  <li><code>grade(score)</code> — a <code>case</code> over <code>score</code>
+      with <strong>range</strong> arms: <code>when 90..</code> for
+      <code>"A"</code>, <code>when 80...90</code> for <code>"B"</code>,
+      <code>when 70...80</code> for <code>"C"</code>, and <code>else</code>
+      <code>"F"</code>.</li>
+  <li><code>day_type(day)</code> — a <code>case</code> with <strong>grouped</strong>
+      <code>when</code> arms: list the weekend days in one arm and the weekdays
+      in another (comma-separated), with <code>else</code> <code>"unknown"</code>.</li>
+  <li><code>describe_number(n)</code> — start with a modifier-<code>if</code>
+      guard (<code>return "zero" if n == 0</code>), then assign from an
+      <code>if</code>/<code>else</code> expression to return <code>"positive"</code>
+      or <code>"negative"</code>.</li>
+</ol>`,
+
+  starter: `# 1. case/when with range arms. Note: 90.. is an endless range (>= 90),
+#    and 80...90 excludes 90 (three dots = exclusive end).
+def grade(score)
+  raise NotImplementedError, "TODO: implement grade"
+end
+
+# 2. case/when where one arm lists several values, comma-separated.
+def day_type(day)
+  raise NotImplementedError, "TODO: implement day_type"
+end
+
+# 3. A modifier-if guard, then an if/else expression you can assign.
+def describe_number(n)
+  raise NotImplementedError, "TODO: implement describe_number"
+end
+`,
+
+  requirements: [
+    { pattern: /case\b/, message: "Use case in grade and day_type" },
+    { pattern: /when\s+/, message: "Match with when arms" },
+    { pattern: /if\s+\w|unless/, message: "Use a modifier if (or unless) in describe_number" },
+  ],
+
+  tests: [
+    { name: "grade maps score ranges to letters",
+      code: `  expect_eq(grade(95), "A")
+  expect_eq(grade(85), "B")
+  expect_eq(grade(72), "C")
+  expect_eq(grade(40), "F")` },
+    { name: "grade boundaries land in the right band",
+      code: `  expect_eq(grade(90), "A")
+  expect_eq(grade(80), "B")
+  expect_eq(grade(70), "C")` },
+    { name: "day_type groups weekends and weekdays",
+      code: `  expect_eq(day_type("Saturday"), "weekend")
+  expect_eq(day_type("Sunday"), "weekend")
+  expect_eq(day_type("Monday"), "weekday")` },
+    { name: "day_type falls through to unknown",
+      code: '  expect_eq(day_type("Blursday"), "unknown")' },
+    { name: "describe_number guards zero, then branches on sign",
+      code: `  expect_eq(describe_number(0), "zero")
+  expect_eq(describe_number(5), "positive")
+  expect_eq(describe_number(-3), "negative")` },
+  ],
+
+  solution: `def grade(score)
+  case score
+  when 90.. then "A"
+  when 80...90 then "B"
+  when 70...80 then "C"
+  else "F"
+  end
+end
+
+def day_type(day)
+  case day
+  when "Saturday", "Sunday" then "weekend"
+  when "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" then "weekday"
+  else "unknown"
+  end
+end
+
+def describe_number(n)
+  return "zero" if n == 0
+  if n > 0 then "positive" else "negative" end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>if as expression</td><td><code>let x = if c { a } else { b };</code></td><td><code>x = if c then a else b end</code></td></tr>
+  <tr><td>Early return</td><td><code>if c { return v; }</code></td><td><code>return v if c</code></td></tr>
+  <tr><td>Negated guard</td><td><code>if !c { ... }</code></td><td><code>... unless c</code></td></tr>
+  <tr><td>Match / dispatch</td><td><code>match x { ... }</code></td><td><code>case x; when ...; end</code></td></tr>
+  <tr><td>Range arm</td><td><code>90..=u32::MAX =&gt;</code></td><td><code>when 90..</code></td></tr>
+  <tr><td>Grouped arm</td><td><code>"a" | "b" =&gt;</code></td><td><code>when "a", "b"</code></td></tr>
+  <tr><td>Exhaustiveness</td><td>compiler-enforced</td><td>your <code>else</code>, by discipline</td></tr>
+</table>
+<p><code>case</code>/<code>when</code> matches with the <code>===</code>
+operator, which is why <code>when 90..</code> works: a <code>Range</code>
+answers <code>===</code> by testing membership. That same mechanism lets a
+<code>when</code> arm be a class (<code>when Integer</code>) or a regex
+(<code>when /^\\d+$/</code>) — richer than a plain value switch. The freedom to
+omit <code>else</code> is a real trap coming from Rust: an unmatched
+<code>case</code> evaluates to <code>nil</code> silently instead of failing to
+compile, so treat the <code>else</code> arm as mandatory unless you genuinely
+want <code>nil</code> for the fall-through.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

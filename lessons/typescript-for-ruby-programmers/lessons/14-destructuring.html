@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring",
+
+  intro: `
+<p>Ruby's parallel assignment is one of its quiet pleasures:
+<code>a, b = pair</code>, <code>first, *rest = list</code>, the classic
+<code>a, b = b, a</code> swap. All of it carries over — TypeScript just asks
+for brackets on the left: <code>const [a, b] = pair</code>,
+<code>const [first, ...rest] = list</code>, and the swap becomes
+<code>[a, b] = [b, a]</code>. Same music, slightly different notation.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>a, b = pair</code></td><td><code>const [a, b] = pair;</code></td></tr>
+  <tr><td><code>first, *rest = list</code></td><td><code>const [first, ...rest] = list;</code></td></tr>
+  <tr><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td><code>name = user[:name]; age = user[:age]</code></td><td><code>const { name, age } = user;</code></td></tr>
+  <tr><td><code>admin = user.fetch(:admin, false)</code></td><td><code>const { admin = false } = user;</code></td></tr>
+</table>
+<p>Then TypeScript adds the part Ruby only approximates with keyword
+arguments or <code>deconstruct_keys</code> in pattern matching:
+<em>object destructuring</em>. <code>const { name, age } = user</code> pulls
+two properties into two locals in one line — with optional renaming
+(<code>const { name: fullName } = user</code>) and defaults
+(<code>const { admin = false } = user</code>, exactly the
+<code>fetch(:admin, false)</code> idiom). It is everywhere in real
+TypeScript, especially in function parameters, so today you will write both
+flavors until they feel like parallel assignment always has.</p>`,
+
+  ruby: `pair = [1, 2]
+a, b = pair             # a = 1, b = 2
+
+first, *rest = [1, 2, 3]
+# first = 1, rest = [2, 3]
+
+a, b = b, a             # the classic swap
+
+user = { name: "Ada", email: "ada@example.com" }
+
+# Ruby pulls hash values out one at a time...
+name  = user[:name]
+email = user[:email]
+admin = user.fetch(:admin, false)
+
+# ...or via pattern matching, the closest thing to destructuring:
+case user
+in { name:, email: }
+  puts "#{name} <#{email}>"
+end`,
+
+  task: `
+<p>Write three functions, each built on a destructuring assignment:</p>
+<ol>
+  <li><code>firstAndRest(items: number[]): { first: number; rest: number[] }</code>
+      — split off the head with <code>const [first, ...rest] = items</code>
+      (Ruby's <code>first, *rest = items</code>) and return
+      <code>{ first, rest }</code>. Assume a non-empty array.</li>
+  <li><code>userSummary(user: User): string</code> — with
+      <code>User</code> having <code>name: string</code>,
+      <code>email: string</code>, and optional <code>admin?: boolean</code>.
+      Use object destructuring with a default,
+      <code>const { name, email, admin = false } = user</code>, and return
+      <code>"Ada &lt;ada@example.com&gt;"</code>, appending
+      <code>" (admin)"</code> when <code>admin</code> is true.</li>
+  <li><code>swap(pair: [number, number]): [number, number]</code> — take a
+      two-element tuple and return it reversed, using array destructuring
+      (<code>a, b = b, a</code>, TypeScript edition).</li>
+</ol>`,
+
+  starter: `interface User {
+  name: string;
+  email: string;
+  admin?: boolean;
+}
+
+// 1. Ruby: first, *rest = items
+function firstAndRest(items: number[]): { first: number; rest: number[] } {
+  // TODO: const [first, ...rest] = items;
+  return { first: 0, rest: [] };
+}
+
+// 2. Ruby: name = user[:name]; admin = user.fetch(:admin, false)
+//    One line here: const { name, email, admin = false } = user;
+function userSummary(user: User): string {
+  // TODO: return "Ada <ada@example.com>", plus " (admin)" if admin
+  return "";
+}
+
+// 3. Ruby: a, b = b, a
+function swap(pair: [number, number]): [number, number] {
+  // TODO: destructure the tuple, return it reversed
+  return pair;
+}
+`,
+
+  exportNames: ["firstAndRest", "userSummary", "swap"],
+
+  requirements: [
+    { pattern: /const\s*\[/, message: "Use array destructuring: const [ ... ] = ..." },
+    { pattern: /\.\.\.\s*rest\b/, message: "Capture the tail with a rest element: [first, ...rest]" },
+    { pattern: /const\s*\{/, message: "Use object destructuring: const { ... } = user" },
+    { pattern: /admin\s*=\s*false/, message: "Give admin a default of false inside the destructuring pattern (Ruby's fetch(:admin, false))" },
+  ],
+
+  tests: [
+    { name: "firstAndRest([1, 2, 3]) returns { first: 1, rest: [2, 3] }", run: (x) => expectDeepEqual(x.firstAndRest([1, 2, 3]), { first: 1, rest: [2, 3] }) },
+    { name: "firstAndRest([7]) returns { first: 7, rest: [] }", run: (x) => expectDeepEqual(x.firstAndRest([7]), { first: 7, rest: [] }) },
+    {
+      name: 'userSummary for a non-admin returns "Ada <ada@example.com>"',
+      run: (x) => expectEqual(x.userSummary({ name: "Ada", email: "ada@example.com" }), "Ada <ada@example.com>"),
+    },
+    {
+      name: 'userSummary for an admin appends " (admin)"',
+      run: (x) => expectEqual(x.userSummary({ name: "Matz", email: "matz@ruby-lang.org", admin: true }), "Matz <matz@ruby-lang.org> (admin)"),
+    },
+    { name: "swap([1, 2]) returns [2, 1]", run: (x) => expectDeepEqual(x.swap([1, 2]), [2, 1]) },
+    { name: "swap([40, 2]) returns [2, 40]", run: (x) => expectDeepEqual(x.swap([40, 2]), [2, 40]) },
+  ],
+
+  solution: `interface User {
+  name: string;
+  email: string;
+  admin?: boolean;
+}
+
+function firstAndRest(items: number[]): { first: number; rest: number[] } {
+  const [first, ...rest] = items;
+  return { first, rest };
+}
+
+function userSummary(user: User): string {
+  const { name, email, admin = false } = user;
+  const base = name + " <" + email + ">";
+  return admin ? base + " (admin)" : base;
+}
+
+function swap(pair: [number, number]): [number, number] {
+  const [a, b] = pair;
+  return [b, a];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td>Parallel assignment</td><td><code>a, b = pair</code></td><td><code>const [a, b] = pair;</code></td></tr>
+  <tr><td>Head and tail</td><td><code>first, *rest = list</code></td><td><code>const [first, ...rest] = list;</code></td></tr>
+  <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+  <tr><td>Pull from a hash/object</td><td><code>name = user[:name]</code> or <code>in { name: }</code></td><td><code>const { name } = user;</code></td></tr>
+  <tr><td>Rename while pulling</td><td><code>in { name: full_name }</code></td><td><code>const { name: fullName } = user;</code></td></tr>
+  <tr><td>Default value</td><td><code>user.fetch(:admin, false)</code></td><td><code>const { admin = false } = user;</code></td></tr>
+</table>
+<p>The insight: object destructuring is not just an assignment trick — it is
+how TypeScript does keyword arguments. Where Ruby writes
+<code>def summary(name:, email:, admin: false)</code>, TypeScript writes
+<code>function summary({ name, email, admin = false }: User)</code>,
+destructuring the options object right in the parameter list. Once that
+clicks, most of the "options hash" patterns you know from Ruby map straight
+across, defaults and all.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

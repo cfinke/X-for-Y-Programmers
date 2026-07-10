@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Strings: String & &str</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Strings: String & &str",
+
+  intro: `
+<p>PHP has one string type and a zoo of free functions to operate on it:
+<code>strtoupper</code>, <code>strlen</code>, <code>str_contains</code>,
+<code>str_replace</code>… Rust splits the type in two and moves the zoo
+onto the value. <code>String</code> is the owned, growable string — the one
+you build and return. <code>&amp;str</code> is a borrowed <em>view</em> into
+string data someone else owns — the one you accept as a parameter. The
+working rule that covers almost everything:
+<strong>take <code>&amp;str</code>, return <code>String</code></strong>.</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>string</code> (one type)</td><td><code>String</code> to own, <code>&amp;str</code> to borrow</td></tr>
+  <tr><td><code>"Hello, $name!"</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+  <tr><td><code>$a . $b</code> (dot concatenation)</td><td><code>a + b</code> or, usually, <code>format!</code></td></tr>
+  <tr><td><code>strtoupper($s)</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td><code>str_contains($h, $n)</code></td><td><code>h.contains(n)</code></td></tr>
+  <tr><td><code>strlen($s)</code></td><td><code>s.len()</code> — <em>bytes</em> in both!</td></tr>
+</table>
+<p>The function-name guessing game — is it <code>strtoupper</code> or
+<code>str_to_upper</code>? needle first or haystack first? — disappears:
+everything is a method on the string itself, so your editor can list them.
+And the eternal "<code>.</code> concatenates, <code>+</code> adds" split is
+gone too; <code>format!</code> handles nearly all string building. One
+familiar footnote: <code>s.len()</code> counts bytes exactly like PHP's
+<code>strlen</code> does — <code>"héllo"</code> is 6 in both languages, so
+that particular trap is one you already know how to sidestep.</p>`,
+
+  php: `<?php
+function shout(string $s): string {
+    return strtoupper($s) . "!";
+}
+
+function greet(string $name): string {
+    return "Hello, $name!";
+}
+
+function containsWord(string $haystack, string $needle): bool {
+    return str_contains($haystack, $needle);
+}
+
+echo shout("hey");                          // HEY!
+echo greet("Ada");                          // Hello, Ada!
+var_dump(containsWord("deep dish", "dish")); // true
+echo strlen("héllo");                       // 6 — bytes, not characters`,
+
+  task: `
+<p>Rewrite the PHP as Rust. Every function follows the rule:
+take <code>&amp;str</code>, return <code>String</code> (or a plain value):</p>
+<ol>
+  <li>Write <code>shout</code> taking <code>s: &amp;str</code> and returning
+      a <code>String</code>: the input uppercased with <code>"!"</code>
+      appended. Use <code>.to_uppercase()</code> and <code>format!</code> —
+      no <code>strtoupper</code>, no dot operator.</li>
+  <li>Write <code>greet</code> taking <code>name: &amp;str</code> and
+      returning the <code>String</code> <code>"Hello, name!"</code> (with the
+      actual name), via <code>format!</code>.</li>
+  <li>Write <code>contains_word</code> taking
+      <code>haystack: &amp;str</code> and <code>needle: &amp;str</code>,
+      returning <code>bool</code> — <code>.contains()</code> is the method
+      form of <code>str_contains</code>, same haystack-first order.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. shout: uppercase + "!". PHP: strtoupper($s) . "!"
+//    Rust: the method lives on the value -> s.to_uppercase()
+fn shout(s: &str) -> String {
+    todo!()
+}
+
+// 2. greet: "Hello, $name!" becomes format!("Hello, {}!", ...)
+fn greet(name: &str) -> String {
+    todo!()
+}
+
+// 3. contains_word: str_contains($haystack, $needle) -> haystack.contains(needle)
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&str/, message: "Take string parameters as &str (the borrowed view)" },
+    { pattern: /->\s*String/, message: "Return an owned String from shout and greet" },
+    { pattern: /format!\s*\(/, message: "Build strings with format! instead of . concatenation" },
+  ],
+
+  tests: [
+    { name: 'shout("hey") returns "HEY!"',
+      code: 'assert_eq!(shout("hey"), "HEY!");' },
+    { name: 'shout("Deep Dish") returns "DEEP DISH!"',
+      code: 'assert_eq!(shout("Deep Dish"), "DEEP DISH!");' },
+    { name: 'greet("Ada") returns "Hello, Ada!"',
+      code: 'assert_eq!(greet("Ada"), "Hello, Ada!");' },
+    { name: 'contains_word("deep dish pizza", "dish") is true',
+      code: 'assert!(contains_word("deep dish pizza", "dish"));' },
+    { name: 'contains_word("deep dish pizza", "thin") is false',
+      code: 'assert!(!contains_word("deep dish pizza", "thin"));' },
+  ],
+
+  solution: `fn shout(s: &str) -> String {
+    format!("{}!", s.to_uppercase())
+}
+
+fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    haystack.contains(needle)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Own a string</td><td><code>string</code></td><td><code>String</code> (growable, heap)</td></tr>
+  <tr><td>Borrow a string</td><td>— (no distinction)</td><td><code>&amp;str</code> — the parameter type</td></tr>
+  <tr><td>Interpolate</td><td><code>"Hello, $name!"</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+  <tr><td>Concatenate</td><td><code>$a . $b</code></td><td><code>format!("{}{}", a, b)</code> (or <code>a + b</code>)</td></tr>
+  <tr><td>Uppercase</td><td><code>strtoupper($s)</code></td><td><code>s.to_uppercase()</code></td></tr>
+  <tr><td>Search</td><td><code>str_contains($h, $n)</code></td><td><code>h.contains(n)</code></td></tr>
+  <tr><td>Byte length</td><td><code>strlen($s)</code></td><td><code>s.len()</code> — bytes in both</td></tr>
+</table>
+<p>Why two types at all? <code>&amp;str</code> is a window onto string data
+without copying it — passing one to a function costs nothing, no matter how
+big the string. <code>String</code> is the buffer you actually own and can
+grow. A string literal like <code>"hey"</code> is a <code>&amp;str</code>;
+call <code>.to_string()</code> on it (or build with <code>format!</code>)
+when you need an owned <code>String</code>. This owned-versus-borrowed
+distinction is the doorway to the next lesson: ownership.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

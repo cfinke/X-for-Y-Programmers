@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Static, Constants &amp; readonly</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Static, Constants & readonly",
+
+  intro: `
+<p>Kotlin's <code>const val MAX = 10</code> (tucked into a companion object)
+becomes PHP's <code>const MAX = 10;</code> — class constants get their own
+keyword instead of living inside a companion. You read them as
+<code>Config::MAX</code>: the double colon <code>::</code> is PHP's operator for
+everything static, while <code>-&gt;</code> stays reserved for instances. Where
+Kotlin has no <code>static</code> at all — you gather class-level members into a
+<code>companion object</code> — PHP marks them with the <code>static</code>
+keyword: one copy per class, called without an instance, with
+<code>self::</code> playing the role of the class name inside its own body.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>const val MAX = 10</code> (in companion)</td><td><code>const MAX = 10;</code></td></tr>
+  <tr><td><code>Config.MAX</code></td><td><code>Config::MAX</code> (:: for statics)</td></tr>
+  <tr><td><code>private var count = 0</code> (in companion)</td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td><code>count++</code> (inside the companion)</td><td><code>self::$count++</code></td></tr>
+  <tr><td><code>Counter.increment()</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td><code>val name: String</code> in the primary ctor</td><td><code>public readonly string $name</code> (PHP 8.1)</td></tr>
+</table>
+<p>The third piece is <code>readonly</code> (PHP 8.1): the equivalent of a Kotlin
+<code>val</code> property. A readonly property may be written exactly once,
+inside the constructor, and the <em>engine</em> enforces every later write by
+throwing an <code>Error</code> at runtime — where Kotlin's <code>val</code> is
+caught by the compiler instead. Because the property can never change, you can
+safely make it <code>public</code> and skip the getter, exactly as Kotlin's
+primary-constructor <code>val name: String</code> gives you a read-only property
+with no boilerplate: PHP collapses the same idea into one promoted constructor
+parameter: <code>public function __construct(public readonly string $name) {}</code>.</p>`,
+
+  kotlin: `class Counter {
+    companion object {
+        private var count = 0
+
+        fun increment(): Int = ++count
+        fun current(): Int = count
+    }
+}
+
+class Config(val name: String) {        // write-once val, no getter ceremony
+    companion object {
+        const val DEFAULT_NAME = "guest"
+    }
+}
+
+// Counter.increment()   -> 1
+// Counter.increment()   -> 2
+// Config.DEFAULT_NAME   -> "guest"`,
+
+  task: `
+<p>Port both classes to PHP:</p>
+<ol>
+  <li>Write <code>class Counter</code> with
+      <code>private static int $count = 0;</code>, a
+      <code>public static function increment(): int</code> that adds 1 to
+      <code>self::$count</code> and returns the new value, and a
+      <code>public static function current(): int</code> that returns it.
+      Remember: <code>self::$count</code> keeps the <code>$</code>,
+      and callers use <code>Counter::increment()</code>.</li>
+  <li>Write <code>class Config</code> with
+      <code>const DEFAULT_NAME = "guest";</code> (no <code>static final</code>,
+      no type needed) and a one-line constructor using promotion:
+      <code>public function __construct(public readonly string $name) {}</code>.
+      No getter — <code>readonly</code> makes the public property safe.</li>
+</ol>
+<p>The tests read <code>Config::DEFAULT_NAME</code>, read <code>-&gt;name</code>
+directly, and verify that assigning to <code>-&gt;name</code> afterwards throws
+an <code>Error</code> — the engine, not a convention, enforces write-once.</p>`,
+
+  starter: `<?php
+
+// 1. Counter: one shared $count for the whole class.
+//    Inside the class, the field is self::$count (the $ stays).
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        throw new Exception('TODO: add 1 to self::$count and return the new value');
+    }
+
+    public static function current(): int {
+        throw new Exception('TODO: return self::$count');
+    }
+}
+
+// 2. Config: a class constant plus a write-once property.
+//    - add:  const DEFAULT_NAME = "guest";
+//    - rewrite the constructor with a promoted readonly property:
+//      public function __construct(public readonly string $name) {}
+class Config {
+    public function __construct(string $name) {
+        throw new Exception('TODO: promote $name as public readonly');
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+/, message: "Declare static members in Counter" },
+    { pattern: /const\s+[A-Z_]+/, message: "Declare the DEFAULT_NAME class constant with const" },
+    { pattern: /readonly/, message: "Make Config's $name a readonly property" },
+  ],
+
+  tests: [
+    { name: "Counter::increment() counts 1, 2 and current() reads 2",
+      code: 'expect_eq(Counter::increment(), 1);\nexpect_eq(Counter::increment(), 2);\nexpect_eq(Counter::current(), 2);' },
+    { name: 'Config::DEFAULT_NAME is "guest"',
+      code: 'expect_eq(Config::DEFAULT_NAME, "guest");' },
+    { name: 'new Config("Ada")->name reads "Ada" (no getter needed)',
+      code: '$c = new Config("Ada");\nexpect_eq($c->name, "Ada");\n$g = new Config(Config::DEFAULT_NAME);\nexpect_eq($g->name, "guest");' },
+    { name: "writing ->name after construction throws Error (engine-enforced)",
+      code: '$c = new Config("Ada");\ntry { $c->name = "x"; throw new Exception("no error"); } catch (Error $e) {}\nexpect_eq($c->name, "Ada");' },
+  ],
+
+  solution: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        self::$count += 1;
+        return self::$count;
+    }
+
+    public static function current(): int {
+        return self::$count;
+    }
+}
+
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Class constant</td><td><code>const val MAX = 10</code> (in companion)</td><td><code>const MAX = 10;</code></td></tr>
+  <tr><td>Read a constant</td><td><code>Config.MAX</code></td><td><code>Config::MAX</code></td></tr>
+  <tr><td>Static field</td><td><code>private var count = 0</code> (in companion)</td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td>Static access, inside</td><td><code>count</code></td><td><code>self::$count</code></td></tr>
+  <tr><td>Static call, outside</td><td><code>Counter.increment()</code></td><td><code>Counter::increment()</code></td></tr>
+  <tr><td>Write-once field</td><td><code>val</code> property</td><td><code>public readonly</code> (no getter needed)</td></tr>
+  <tr><td>Violating write-once</td><td>Compile error</td><td><code>Error</code> thrown at runtime</td></tr>
+</table>
+<p>The insight: <code>::</code> versus <code>-&gt;</code> is the visible seam
+Kotlin hides behind a single dot — where Kotlin uses the same <code>.</code> for
+companion members and instance members, PHP gives static and instance access
+different operators, so a glance tells you which kind of member you're touching.
+And <code>readonly</code> is <code>val</code>-for-PHP with runtime teeth:
+because immutability is engine-enforced on every later write, exposing the
+property as <code>public</code> is safe, and the promoted-constructor form
+matches Kotlin's own primary-constructor <code>val</code> in a single parameter
+declaration.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

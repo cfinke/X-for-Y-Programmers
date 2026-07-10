@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Literal Types &amp; Enums</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Literal Types & Enums",
+
+  intro: `
+<p>Every JavaScript codebase has magic strings: <code>"pending"</code>,
+<code>"active"</code>, <code>"done"</code> scattered across files, compared
+with <code>===</code>, and one typo away from a branch that silently never
+runs. TypeScript's fix is delightfully direct: a string literal <em>is a
+type</em>. <code>"pending"</code> is the type of exactly one value, and a
+union of literals — <code>"pending" | "active" | "done"</code> — is a type
+with exactly three. Pass <code>"pnding"</code> and the compiler rejects it on
+the spot.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>let status = "pending";</code> — any string welcome</td><td><code>type Status = "pending" | "active" | "done";</code></td></tr>
+  <tr><td><code>if (status === "actve")</code> — typo, branch is dead code forever</td><td>Compile error: <em>comparison appears unintentional</em></td></tr>
+  <tr><td><code>const PRIORITY_HIGH = 3;</code> — loose constants, prints as a bare <code>3</code></td><td><code>enum Priority { Low = 1, Medium, High }</code> — named, grouped, reverse-lookupable</td></tr>
+  <tr><td><code>Object.freeze({...})</code></td><td><code>as const</code> — freezes the <em>type</em>, turning values into literals</td></tr>
+</table>
+<p>TypeScript also has <code>enum</code>, which — unlike almost everything
+else in the type system — is a real runtime value: <code>Priority.High</code>
+is <code>3</code>, and numeric enums support reverse lookup, so
+<code>Priority[3]</code> is <code>"High"</code>. Modern TypeScript style
+leans toward plain literal unions for string-shaped state (zero runtime cost,
+plays perfectly with narrowing) and reaches for <code>enum</code> or
+<code>as const</code> objects when you want a named set of values you can
+iterate or reverse-map. This lesson has you write both so you can tell them
+apart in the wild.</p>`,
+
+  javascript: `// Statuses are magic strings — nothing checks them.
+function nextStatus(status) {
+  if (status === "pending") return "active";
+  if (status === "actve") return "done"; // typo: this branch never runs
+  return status;
+}
+
+// Priorities are loose numeric constants.
+const PRIORITY_LOW = 1;
+const PRIORITY_HIGH = 3;
+
+function describeTask(status, priority) {
+  return "[" + priority + "] " + status; // prints "[3] pending" — what is 3?
+}
+
+nextStatus("active");       // stays "active" forever — silently
+nextStatus("pnding");       // garbage in, garbage out, no complaint
+describeTask("pending", 3); // "[3] pending"`,
+
+  task: `
+<p>Type the state machine so the typos above cannot compile:</p>
+<ol>
+  <li>Define <code>type Status = "pending" | "active" | "done"</code> — a
+      union of string literal types.</li>
+  <li>Write <code>nextStatus(status: Status): Status</code>:
+      <code>"pending"</code> advances to <code>"active"</code>,
+      <code>"active"</code> advances to <code>"done"</code>, and
+      <code>"done"</code> stays <code>"done"</code>.</li>
+  <li>Declare <code>enum Priority</code> with <code>Low = 1</code>,
+      <code>Medium = 2</code>, <code>High = 3</code>.</li>
+  <li>Write <code>describeTask(status: Status, priority: Priority): string</code>
+      that returns e.g. <code>"[High] pending"</code> — use the reverse
+      lookup <code>Priority[priority]</code> to get the name from the
+      number.</li>
+</ol>`,
+
+  starter: `// 1. A union of string literals: exactly three values are legal.
+// TODO: define type Status here
+
+// 2. pending -> active -> done -> done
+function nextStatus(status) {
+  // TODO
+  return status;
+}
+
+// 3. TODO: give the members values Low = 1, Medium = 2, High = 3
+enum Priority {
+  Low,
+}
+
+// 4. "[High] pending" — Priority[priority] turns 3 back into "High"
+function describeTask(status, priority): string {
+  // TODO
+  return "";
+}
+`,
+
+  exportNames: ["nextStatus", "Priority", "describeTask"],
+
+  requirements: [
+    { pattern: /"\w+"\s*\|\s*"/, message: "Define Status as a union of quoted string literals" },
+    { pattern: /enum\s+\w+/, message: "Declare Priority with the enum keyword" },
+    { pattern: /nextStatus\s*\(\s*status\s*:\s*Status\s*\)\s*:\s*Status/, message: "Type nextStatus as (status: Status): Status" },
+  ],
+
+  tests: [
+    { name: 'nextStatus("pending") returns "active"', run: (x) => expectEqual(x.nextStatus("pending"), "active") },
+    { name: 'nextStatus("active") returns "done"', run: (x) => expectEqual(x.nextStatus("active"), "done") },
+    { name: 'nextStatus("done") stays "done"', run: (x) => expectEqual(x.nextStatus("done"), "done") },
+    { name: "Priority.High is 3 and Priority[3] is \"High\" (enums are runtime values)", run: (x) => {
+        expectEqual(x.Priority.High, 3);
+        expectEqual(x.Priority.Low, 1);
+        expectEqual(x.Priority[3], "High");
+      } },
+    { name: 'describeTask("pending", Priority.High) returns "[High] pending"', run: (x) => expectEqual(x.describeTask("pending", x.Priority.High), "[High] pending") },
+    { name: 'describeTask("done", Priority.Low) returns "[Low] done"', run: (x) => expectEqual(x.describeTask("done", x.Priority.Low), "[Low] done") },
+  ],
+
+  solution: `type Status = "pending" | "active" | "done";
+
+function nextStatus(status: Status): Status {
+  if (status === "pending") return "active";
+  if (status === "active") return "done";
+  return "done";
+}
+
+enum Priority {
+  Low = 1,
+  Medium = 2,
+  High = 3,
+}
+
+function describeTask(status: Status, priority: Priority): string {
+  return "[" + Priority[priority] + "] " + status;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Fixed set of strings</td><td>Convention + code review</td><td><code>type Status = "pending" | "active" | "done"</code></td></tr>
+  <tr><td>Typo in a state value</td><td>Dead branch / bad data, found in production</td><td>Compile error at the call site</td></tr>
+  <tr><td>Named constants</td><td><code>const PRIORITY_HIGH = 3;</code></td><td><code>enum Priority { Low = 1, Medium, High }</code></td></tr>
+  <tr><td>Number back to name</td><td>Hand-written lookup table</td><td><code>Priority[3] === "High"</code> (numeric enums only)</td></tr>
+  <tr><td>Runtime footprint</td><td>—</td><td>Literal unions: zero. <code>enum</code>: compiles to a real object</td></tr>
+  <tr><td>Freeze values into literals</td><td><code>Object.freeze</code> (runtime only)</td><td><code>as const</code> (type level: <code>"pending"</code> stays <code>"pending"</code>, not <code>string</code>)</td></tr>
+</table>
+<p>Rule of thumb: reach for a literal union first — it is just a type, erases
+to nothing, and narrows beautifully with <code>===</code> and
+<code>switch</code>. Use <code>enum</code> (or an <code>as const</code>
+object) only when you need the values to exist at runtime — to iterate them,
+reverse-map them, or share them as an exported constant. Unlike interfaces
+and type aliases, an <code>enum</code> survives compilation: it is the rare
+piece of TypeScript that emits JavaScript.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

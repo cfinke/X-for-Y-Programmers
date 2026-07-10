@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p>The <code>dict</code> is Python's workhorse, and Rust's
+<code>HashMap&lt;K, V&gt;</code> is the same data structure — but it lives in
+the standard library rather than the language, so you import it
+(<code>use std::collections::HashMap;</code>) and there's no literal syntax.
+<code>d[k] = v</code> becomes <code>.insert(k, v)</code>, and like everything
+mutable in Rust, the map itself must be <code>mut</code>.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>d = {}</code></td><td><code>let mut d = HashMap::new();</code></td></tr>
+  <tr><td><code>d["apples"] = 3</code></td><td><code>d.insert(String::from("apples"), 3);</code></td></tr>
+  <tr><td><code>d.get("plums")</code> → <code>None</code></td><td><code>d.get("plums")</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td><code>d.get("plums", 0)</code></td><td><code>d.get("plums").copied().unwrap_or(0)</code></td></tr>
+  <tr><td><code>defaultdict(int)</code> / <code>setdefault</code></td><td><code>d.entry(k).or_insert(0)</code></td></tr>
+</table>
+<p>Lookups will feel familiar: you already reach for <code>d.get(k)</code>
+instead of <code>d[k]</code> when a key might be missing, because
+<code>.get</code> returns <code>None</code> instead of raising
+<code>KeyError</code>. Rust's <code>.get</code> is exactly that method — it
+returns an <code>Option&lt;&amp;V&gt;</code>, and
+<code>.copied().unwrap_or(0)</code> is the spelling of "or give me 0", your
+<code>d.get(k, 0)</code>. For "increment, creating the key at zero if needed"
+— the job you'd hand to <code>defaultdict(int)</code> — Rust has the entry
+API: <code>d.entry(k).or_insert(0)</code> hands you a reference to the value,
+inserting the default first if the key was absent.</p>`,
+
+  python: `from collections import defaultdict
+
+inventory: dict[str, int] = {}
+inventory["apples"] = 3            # insert or overwrite
+inventory["bananas"] = 5
+
+print(inventory.get("apples"))     # 3
+print(inventory.get("plums"))      # None — .get never raises
+print(inventory.get("plums", 0))   # 0 — .get with a default
+# inventory["plums"]               # KeyError!
+
+def get_count(inv: dict[str, int], name: str) -> int:
+    return inv.get(name, 0)
+
+def add_stock(inv: dict[str, int], name: str, n: int) -> None:
+    inv[name] = inv.get(name, 0) + n   # or: defaultdict(int)
+
+counts: defaultdict[str, int] = defaultdict(int)
+counts["apples"] += 2              # missing keys start at 0`,
+
+  task: `
+<p>Rebuild the inventory code with a <code>HashMap&lt;String, u32&gt;</code>
+(the <code>use</code> line is already in the starter):</p>
+<ol>
+  <li><code>build_inventory()</code> returns a
+      <code>HashMap&lt;String, u32&gt;</code> with exactly two entries:
+      <code>"apples"</code> → <code>3</code> and <code>"bananas"</code> →
+      <code>5</code>. Use <code>.insert</code> — it's <code>d[k] = v</code>.</li>
+  <li><code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str) -&gt; u32</code>
+      returns the count for <code>name</code>, or <code>0</code> if it's
+      missing — <code>inv.get(name).copied().unwrap_or(0)</code> is the Rust
+      for <code>inv.get(name, 0)</code>.</li>
+  <li><code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str, n: u32)</code>
+      adds <code>n</code> to the count for <code>name</code>, starting from 0
+      if it's a new key. Use the entry API:
+      <code>*inv.entry(name.to_string()).or_insert(0) += n;</code></li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "apples" -> 3, "bananas" -> 5, via .insert.
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: Python's inv.get(name, 0).
+//    .get returns Option<&u32>; .copied().unwrap_or(0) supplies the default.
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: the defaultdict(int) move —
+//    *inv.entry(name.to_string()).or_insert(0) += n;
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Work with the HashMap type" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Use .insert() and the .entry() API" },
+    { pattern: /unwrap_or/, message: "Use unwrap_or for the missing-key default (Python's .get(k, 0))" },
+  ],
+
+  tests: [
+    { name: "build_inventory() has exactly two entries",
+      code: "let inv = build_inventory();\nassert_eq!(inv.len(), 2);" },
+    { name: 'get_count for "apples" is 3',
+      code: 'assert_eq!(get_count(&build_inventory(), "apples"), 3);' },
+    { name: "get_count for a missing key is 0",
+      code: 'assert_eq!(get_count(&build_inventory(), "plums"), 0);' },
+    { name: "add_stock increments an existing key",
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "apples", 2);\nassert_eq!(get_count(&inv, "apples"), 5);' },
+    { name: "add_stock creates a missing key starting at 0",
+      code: 'let mut inv = build_inventory();\nadd_stock(&mut inv, "cherries", 7);\nassert_eq!(get_count(&inv, "cherries"), 7);' },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert(String::from("apples"), 3);
+    inv.insert(String::from("bananas"), 5);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>Empty map</td><td><code>d = {}</code></td><td><code>let mut d = HashMap::new();</code> (+ <code>use std::collections::HashMap;</code>)</td></tr>
+  <tr><td>Insert</td><td><code>d[k] = v</code></td><td><code>d.insert(k, v)</code></td></tr>
+  <tr><td>Lookup, may be missing</td><td><code>d.get(k)</code> → value or <code>None</code></td><td><code>d.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>Lookup with default</td><td><code>d.get(k, 0)</code></td><td><code>d.get(k).copied().unwrap_or(0)</code></td></tr>
+  <tr><td>Insert-if-absent</td><td><code>d.setdefault(k, 0)</code> / <code>defaultdict(int)</code></td><td><code>d.entry(k).or_insert(0)</code></td></tr>
+  <tr><td>Missing key via index</td><td><code>d[k]</code> raises <code>KeyError</code></td><td><code>d[&amp;k]</code> panics (so idiomatic code uses <code>.get</code>)</td></tr>
+</table>
+<p>The <code>.copied()</code> step exists because <code>.get</code> returns a
+<em>reference</em> to the value (<code>Option&lt;&amp;u32&gt;</code>) — the
+map still owns its contents, per the borrowing rules from Lesson 5. For a
+small copyable number, <code>.copied()</code> turns the borrowed
+<code>&amp;u32</code> into your own <code>u32</code>. And the entry API is
+more than convenience: it does one hash lookup where the Python
+<code>inv.get(name, 0) + n</code> pattern does two.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

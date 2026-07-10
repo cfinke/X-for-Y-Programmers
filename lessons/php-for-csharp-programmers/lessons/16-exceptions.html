@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions &amp; Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>Good news after fifteen lessons of surprises: PHP exceptions are the model
+you have used for a decade. <code>try</code> / <code>catch</code> /
+<code>finally</code> work exactly as in C#, catches are typed and tried in
+order, and a custom exception is a plain class that
+<code>extends Exception</code>. The one structural difference is at the top of
+the tree: PHP's root is the <code>Throwable</code> interface, which splits
+into <code>Exception</code> (your code's failures — what you throw and catch
+day to day) and <code>Error</code> (engine-level failures like
+<code>TypeError</code> — the <code>StackOverflowException</code> territory
+you rarely catch on purpose).</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>catch (FormatException e)</code></td><td><code>catch (InvalidArgumentException $e)</code></td></tr>
+  <tr><td><code>catch (Exception e) when (e is A or B)</code></td><td><code>catch (A | B $e)</code> — multi-catch is built in</td></tr>
+  <tr><td><code>class MyEx : Exception</code></td><td><code>class MyEx extends Exception</code></td></tr>
+  <tr><td>root: <code>System.Exception</code></td><td>root: <code>Throwable</code> → <code>Exception</code> / <code>Error</code></td></tr>
+  <tr><td><code>throw</code> expression (C# 7, limited spots)</td><td><code>throw</code> is a full expression anywhere</td></tr>
+</table>
+<p>Two conveniences to enjoy: catching several types at once needs no
+<code>when</code> filter — <code>catch (A | B $e)</code> is one arm — and
+since PHP 8 <code>throw</code> is an expression, so
+<code>$x ?? throw new InvalidArgumentException("missing")</code> is idiomatic.
+PHP also ships a small hierarchy of ready-made SPL exceptions;
+<code>InvalidArgumentException</code> is the everyday
+<code>ArgumentException</code> equivalent.</p>`,
+
+  csharp: `static int ParseAge(string s)
+{
+    var trimmed = s.Trim();
+    if (!int.TryParse(trimmed, out var age) || age < 0)
+        throw new ArgumentException($"Not a valid age: {s}");
+    return age;
+}
+
+static int SafeParseAge(string s, int fallback)
+{
+    try
+    {
+        return ParseAge(s);
+    }
+    catch (ArgumentException)
+    {
+        return fallback;
+    }
+}
+
+Console.WriteLine(SafeParseAge("42", 0));   // 42
+Console.WriteLine(SafeParseAge("abc", 18)); // 18`,
+
+  task: `
+<p>Port the parser pair:</p>
+<ol>
+  <li><code>parse_age(string $s): int</code> — trim the input, and if the
+      result is not all digits, <code>throw new
+      InvalidArgumentException(...)</code>. The check TryParse did for you is
+      <code>ctype_digit(trim($s))</code> — true only for a non-empty string of
+      digits 0–9 (so it also rejects <code>""</code> and negatives). On
+      success, cast with <code>(int)</code> and return.</li>
+  <li><code>safe_parse_age(string $s, int $default): int</code> — call
+      <code>parse_age</code> inside <code>try</code>, and
+      <code>catch (InvalidArgumentException $e)</code> to return
+      <code>$default</code> instead. The exact C# shape, plus sigils.</li>
+</ol>
+<p>The tests throw non-numeric strings at both functions and verify the
+exception's <em>type</em>, not just that something blew up.</p>`,
+
+  starter: `<?php
+
+// 1. Throw on bad input instead of returning a bool + out param.
+//    ctype_digit(trim($s)) is your TryParse-style validity check.
+function parse_age(string $s): int {
+    throw new Exception("TODO: implement parse_age");
+}
+
+// 2. try { ... } catch (...$e) { ... } - exactly the C# shape.
+function safe_parse_age(string $s, int $default): int {
+    throw new Exception("TODO: implement safe_parse_age");
+}
+`,
+
+  requirements: [
+    { pattern: /InvalidArgumentException/, message: "Throw and catch InvalidArgumentException (PHP's everyday ArgumentException)" },
+    { pattern: /try\s*\{/, message: "Use a try block in safe_parse_age" },
+    { pattern: /catch\s*\(/, message: "Catch the exception with a typed catch clause" },
+    { pattern: /throw\s+new/, message: "Throw a new exception instance from parse_age" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns int 42, and " 7 " trims to 7',
+      code: 'expect_eq(parse_age("42"), 42);\nexpect_eq(parse_age(" 7 "), 7);' },
+    { name: 'parse_age("abc") throws InvalidArgumentException',
+      code: 'try { parse_age("abc"); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}' },
+    { name: 'parse_age rejects "" and "12abc" with the same exception type',
+      code: 'try { parse_age(""); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}\ntry { parse_age("12abc"); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}' },
+    { name: 'safe_parse_age("42", 0) returns 42 (no exception path)',
+      code: 'expect_eq(safe_parse_age("42", 0), 42);' },
+    { name: 'safe_parse_age falls back to the default on bad input',
+      code: 'expect_eq(safe_parse_age("abc", 18), 18);\nexpect_eq(safe_parse_age("", 21), 21);' },
+  ],
+
+  solution: `<?php
+
+function parse_age(string $s): int {
+    $trimmed = trim($s);
+    if (!ctype_digit($trimmed)) {
+        throw new InvalidArgumentException("Not a valid age: $s");
+    }
+    return (int) $trimmed;
+}
+
+function safe_parse_age(string $s, int $default): int {
+    try {
+        return parse_age($s);
+    } catch (InvalidArgumentException $e) {
+        return $default;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Basic handling</td><td><code>try/catch/finally</code></td><td><code>try/catch/finally</code> — identical</td></tr>
+  <tr><td>Typed catch</td><td><code>catch (IOException e)</code></td><td><code>catch (RuntimeException $e)</code></td></tr>
+  <tr><td>Several types, one arm</td><td><code>when (e is A or B)</code></td><td><code>catch (A | B $e)</code></td></tr>
+  <tr><td>Custom exception</td><td><code>class MyEx : Exception</code></td><td><code>class MyEx extends Exception</code></td></tr>
+  <tr><td>Root of the tree</td><td><code>System.Exception</code></td><td><code>Throwable</code> → <code>Exception</code> / <code>Error</code></td></tr>
+  <tr><td>Bad-argument type</td><td><code>ArgumentException</code></td><td><code>InvalidArgumentException</code> (SPL)</td></tr>
+  <tr><td>Message / rethrow</td><td><code>e.Message</code>, <code>throw;</code></td><td><code>$e-&gt;getMessage()</code>, <code>throw $e;</code></td></tr>
+</table>
+<p>The <code>Exception</code> / <code>Error</code> split is the piece worth
+filing away: engine failures — calling a function with the wrong type
+(<code>TypeError</code>), writing to a <code>readonly</code> property, an
+unmatched <code>match</code> — throw <code>Error</code> subclasses, not
+<code>Exception</code>s, so <code>catch (Exception $e)</code> won't swallow
+them. That's usually what you want. At a true top-level boundary (a request
+handler, a job runner) catch <code>Throwable</code> — that's PHP's
+catch-everything, the way <code>catch (Exception)</code> is in C#.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

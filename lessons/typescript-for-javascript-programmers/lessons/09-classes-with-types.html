@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes with Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes with Types",
+
+  intro: `
+<p>You already write classes — <code>class</code>, <code>extends</code>,
+<code>super</code>, even <code>#private</code> fields are plain JavaScript.
+TypeScript keeps all of it and layers on three things: typed fields and
+methods, <em>access modifiers</em> (<code>private</code>,
+<code>protected</code>, <code>public</code>, <code>readonly</code>), and one
+glorious shortcut — <em>constructor parameter properties</em> — that deletes
+the <code>this.x = x;</code> boilerplate you have typed a thousand times.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>constructor(owner, id, balance) {<br>&nbsp;&nbsp;this.owner = owner;<br>&nbsp;&nbsp;this.id = id;<br>&nbsp;&nbsp;this.balance = balance;<br>}</code></td><td><code>constructor(<br>&nbsp;&nbsp;readonly owner: string,<br>&nbsp;&nbsp;readonly id: string,<br>&nbsp;&nbsp;private balance: number,<br>) {}</code> — declares <em>and</em> assigns</td></tr>
+  <tr><td><code>acct.balance = 1e6;</code> — anyone can poke any field</td><td><code>private balance</code> — compile error outside the class</td></tr>
+  <tr><td><code>acct.owner = "Mallory";</code> — mutable by default</td><td><code>readonly owner</code> — assignable only at construction</td></tr>
+  <tr><td><code>#balance</code> — hard privacy, enforced at runtime</td><td><code>private</code> — soft privacy, enforced at compile time (erased in the output)</td></tr>
+</table>
+<p>Putting a modifier on a constructor parameter is what turns it into a
+property: <code>constructor(private balance: number)</code> means "declare a
+private field <code>balance</code>, take it as a constructor argument, and
+assign it" — three lines of ceremony in one. Note the difference from
+<code>#private</code>: TypeScript's <code>private</code> is a compile-time
+promise that vanishes from the emitted JavaScript, while <code>#</code> is
+enforced by the engine itself. In typed codebases the compile-time version is
+usually all you need — the error arrives before the code ships.</p>`,
+
+  javascript: `class BankAccount {
+  constructor(owner, id, balance) {
+    this.owner = owner;    // boilerplate...
+    this.id = id;          // boilerplate...
+    this.balance = balance; // boilerplate...
+  }
+  deposit(amount) { this.balance += amount; }
+  withdraw(amount) { this.balance -= amount; } // overdraft? sure!
+  getBalance() { return this.balance; }
+}
+
+const acct = new BankAccount("Ada", "ACCT-1", 100);
+acct.withdraw(500);        // balance is now -400, no complaints
+acct.balance = 1000000;    // nothing is actually private
+acct.owner = "Mallory";    // nothing is actually read-only`,
+
+  task: `
+<p>Rebuild <code>BankAccount</code> with the type layer doing the guarding:</p>
+<ol>
+  <li>Declare <code>class BankAccount</code> using <strong>constructor
+      parameter properties</strong> — the constructor takes
+      <code>(owner, id, balance)</code> in that order, where
+      <code>owner: string</code> and <code>id: string</code> are
+      <code>readonly</code> and <code>balance: number</code> is
+      <code>private</code>. The constructor body should be empty.</li>
+  <li><code>deposit(amount: number): void</code> adds to the balance.</li>
+  <li><code>withdraw(amount: number): void</code> <strong>throws an
+      <code>Error</code></strong> when <code>amount</code> exceeds the
+      balance (leaving the balance unchanged), otherwise subtracts.</li>
+  <li><code>getBalance(): number</code> returns the balance — the only
+      sanctioned way to read it from outside.</li>
+</ol>
+<p>Once <code>balance</code> is <code>private</code>, the
+<code>acct.balance = 1000000</code> line is a compile error; once
+<code>owner</code> is <code>readonly</code>, so is the Mallory line.</p>`,
+
+  starter: `class BankAccount {
+  // 1. TODO: delete this boilerplate constructor and use parameter
+  //    properties instead: mark owner and id read-only, balance private.
+  constructor(owner: string, id: string, balance: number) {
+  }
+
+  deposit(amount: number): void {
+    // TODO
+  }
+
+  withdraw(amount: number): void {
+    // TODO: throw an Error on overdraft, otherwise subtract
+  }
+
+  getBalance(): number {
+    // TODO
+    return 0;
+  }
+}
+`,
+
+  exportNames: ["BankAccount"],
+
+  requirements: [
+    { pattern: /private\s+balance\s*:\s*number/, message: "Mark balance as private (private balance: number)" },
+    { pattern: /readonly\s+owner\s*:\s*string/, message: "Mark owner as readonly (readonly owner: string)" },
+    { pattern: /readonly\s+id\s*:\s*string/, message: "Mark id as readonly (readonly id: string)" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada", "ACCT-1", 100) starts with balance 100', run: (x) => {
+        const a = new x.BankAccount("Ada", "ACCT-1", 100);
+        expectEqual(a.getBalance(), 100);
+      } },
+    { name: "owner and id are set by the constructor parameter properties", run: (x) => {
+        const a = new x.BankAccount("Ada", "ACCT-1", 100);
+        expectEqual(a.owner, "Ada");
+        expectEqual(a.id, "ACCT-1");
+      } },
+    { name: "deposit(50) raises the balance to 150", run: (x) => {
+        const a = new x.BankAccount("Ada", "ACCT-1", 100);
+        a.deposit(50);
+        expectEqual(a.getBalance(), 150);
+      } },
+    { name: "withdraw(30) lowers the balance to 70", run: (x) => {
+        const a = new x.BankAccount("Ada", "ACCT-1", 100);
+        a.withdraw(30);
+        expectEqual(a.getBalance(), 70);
+      } },
+    { name: "withdraw(1000) on a balance of 100 throws", run: (x) => {
+        const a = new x.BankAccount("Ada", "ACCT-1", 100);
+        expectThrows(() => a.withdraw(1000));
+      } },
+    { name: "a failed withdrawal leaves the balance unchanged", run: (x) => {
+        const a = new x.BankAccount("Ada", "ACCT-1", 100);
+        expectThrows(() => a.withdraw(1000));
+        expectEqual(a.getBalance(), 100);
+      } },
+  ],
+
+  solution: `class BankAccount {
+  constructor(
+    readonly owner: string,
+    readonly id: string,
+    private balance: number,
+  ) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("Insufficient funds: balance is " + this.balance);
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Declare + assign a field</td><td><code>constructor(x) { this.x = x; }</code></td><td><code>constructor(private x: number) {}</code></td></tr>
+  <tr><td>Private field</td><td><code>#x</code> (runtime-enforced)</td><td><code>private x</code> (compile-time, erased) — <code>#x</code> also still works</td></tr>
+  <tr><td>Immutable field</td><td><code>Object.freeze(this)</code>, getters, discipline</td><td><code>readonly x</code> — assignable only in the constructor</td></tr>
+  <tr><td>Subclass-only access</td><td>No equivalent</td><td><code>protected x</code></td></tr>
+  <tr><td>Default visibility</td><td>Everything public</td><td>Also public — <code>public</code> keyword is optional, but counts as a modifier for parameter properties</td></tr>
+</table>
+<p>The subtlety worth remembering: <code>private</code> and
+<code>readonly</code> are compile-time constructs. After compilation,
+<code>balance</code> is an ordinary property — a determined caller (or a
+<code>JSON.stringify</code>) can still see it. That trade is usually fine:
+the point of the type layer is to stop your <em>teammates'</em> honest
+mistakes at compile time, not to stop attackers at runtime. When you need
+hard privacy, JavaScript's own <code>#field</code> works in TypeScript
+too.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

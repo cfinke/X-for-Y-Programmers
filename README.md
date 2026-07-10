@@ -18,16 +18,16 @@ internet connection.
 
 ## TypeScript courses
 
-- **[typescript-for-javascript-programmers](typescript-for-javascript-programmers/index.html)** — TypeScript for JavaScript Programmers (teaches the type layer; the runtime is assumed known)
-- **[typescript-for-python-programmers](typescript-for-python-programmers/index.html)** — TypeScript for Python Programmers
-- **[typescript-for-java-programmers](typescript-for-java-programmers/index.html)** — TypeScript for Java Programmers
-- **[typescript-for-csharp-programmers](typescript-for-csharp-programmers/index.html)** — TypeScript for C# Programmers
-- **[typescript-for-cpp-programmers](typescript-for-cpp-programmers/index.html)** — TypeScript for C++ Programmers
-- **[typescript-for-go-programmers](typescript-for-go-programmers/index.html)** — TypeScript for Go Programmers
-- **[typescript-for-rust-programmers](typescript-for-rust-programmers/index.html)** — TypeScript for Rust Programmers
-- **[typescript-for-ruby-programmers](typescript-for-ruby-programmers/index.html)** — TypeScript for Ruby Programmers
-- **[typescript-for-php-programmers](typescript-for-php-programmers/index.html)** — TypeScript for PHP Programmers
-- **[typescript-for-kotlin-programmers](typescript-for-kotlin-programmers/index.html)** — TypeScript for Kotlin Programmers
+- **[typescript-for-javascript-programmers](lessons/typescript-for-javascript-programmers/index.html)** — TypeScript for JavaScript Programmers (teaches the type layer; the runtime is assumed known)
+- **[typescript-for-python-programmers](lessons/typescript-for-python-programmers/index.html)** — TypeScript for Python Programmers
+- **[typescript-for-java-programmers](lessons/typescript-for-java-programmers/index.html)** — TypeScript for Java Programmers
+- **[typescript-for-csharp-programmers](lessons/typescript-for-csharp-programmers/index.html)** — TypeScript for C# Programmers
+- **[typescript-for-cpp-programmers](lessons/typescript-for-cpp-programmers/index.html)** — TypeScript for C++ Programmers
+- **[typescript-for-go-programmers](lessons/typescript-for-go-programmers/index.html)** — TypeScript for Go Programmers
+- **[typescript-for-rust-programmers](lessons/typescript-for-rust-programmers/index.html)** — TypeScript for Rust Programmers
+- **[typescript-for-ruby-programmers](lessons/typescript-for-ruby-programmers/index.html)** — TypeScript for Ruby Programmers
+- **[typescript-for-php-programmers](lessons/typescript-for-php-programmers/index.html)** — TypeScript for PHP Programmers
+- **[typescript-for-kotlin-programmers](lessons/typescript-for-kotlin-programmers/index.html)** — TypeScript for Kotlin Programmers
 
 ## JavaScript courses
 
@@ -38,16 +38,16 @@ array iteration with map/filter/reduce, equality and truthiness, error handling,
 iterators and generators, promises, async/await, modules, Map and Set,
 capstone), framed for each source language. Runs entirely in the browser:
 
-- **[javascript-for-typescript-programmers](javascript-for-typescript-programmers/index.html)** — JavaScript for TypeScript Programmers (the runtime under the types)
-- **[javascript-for-python-programmers](javascript-for-python-programmers/index.html)** — JavaScript for Python Programmers
-- **[javascript-for-java-programmers](javascript-for-java-programmers/index.html)** — JavaScript for Java Programmers
-- **[javascript-for-csharp-programmers](javascript-for-csharp-programmers/index.html)** — JavaScript for C# Programmers
-- **[javascript-for-cpp-programmers](javascript-for-cpp-programmers/index.html)** — JavaScript for C++ Programmers
-- **[javascript-for-go-programmers](javascript-for-go-programmers/index.html)** — JavaScript for Go Programmers
-- **[javascript-for-rust-programmers](javascript-for-rust-programmers/index.html)** — JavaScript for Rust Programmers
-- **[javascript-for-ruby-programmers](javascript-for-ruby-programmers/index.html)** — JavaScript for Ruby Programmers
-- **[javascript-for-php-programmers](javascript-for-php-programmers/index.html)** — JavaScript for PHP Programmers
-- **[javascript-for-kotlin-programmers](javascript-for-kotlin-programmers/index.html)** — JavaScript for Kotlin Programmers
+- **[javascript-for-typescript-programmers](lessons/javascript-for-typescript-programmers/index.html)** — JavaScript for TypeScript Programmers (the runtime under the types)
+- **[javascript-for-python-programmers](lessons/javascript-for-python-programmers/index.html)** — JavaScript for Python Programmers
+- **[javascript-for-java-programmers](lessons/javascript-for-java-programmers/index.html)** — JavaScript for Java Programmers
+- **[javascript-for-csharp-programmers](lessons/javascript-for-csharp-programmers/index.html)** — JavaScript for C# Programmers
+- **[javascript-for-cpp-programmers](lessons/javascript-for-cpp-programmers/index.html)** — JavaScript for C++ Programmers
+- **[javascript-for-go-programmers](lessons/javascript-for-go-programmers/index.html)** — JavaScript for Go Programmers
+- **[javascript-for-rust-programmers](lessons/javascript-for-rust-programmers/index.html)** — JavaScript for Rust Programmers
+- **[javascript-for-ruby-programmers](lessons/javascript-for-ruby-programmers/index.html)** — JavaScript for Ruby Programmers
+- **[javascript-for-php-programmers](lessons/javascript-for-php-programmers/index.html)** — JavaScript for PHP Programmers
+- **[javascript-for-kotlin-programmers](lessons/javascript-for-kotlin-programmers/index.html)** — JavaScript for Kotlin Programmers
 
 ## Rust courses
 
@@ -55,16 +55,16 @@ A shared 20-lesson Rust curriculum (mutability, ownership, borrowing,
 Option/Result, structs, enums + match, traits, generics, iterators, lifetimes,
 derive, modules, threads, capstone), framed for each source language:
 
-- **[rust-for-typescript-programmers](rust-for-typescript-programmers/index.html)** — Rust for TypeScript Programmers
-- **[rust-for-javascript-programmers](rust-for-javascript-programmers/index.html)** — Rust for JavaScript Programmers
-- **[rust-for-python-programmers](rust-for-python-programmers/index.html)** — Rust for Python Programmers
-- **[rust-for-java-programmers](rust-for-java-programmers/index.html)** — Rust for Java Programmers
-- **[rust-for-csharp-programmers](rust-for-csharp-programmers/index.html)** — Rust for C# Programmers
-- **[rust-for-cpp-programmers](rust-for-cpp-programmers/index.html)** — Rust for C++ Programmers
-- **[rust-for-go-programmers](rust-for-go-programmers/index.html)** — Rust for Go Programmers
-- **[rust-for-ruby-programmers](rust-for-ruby-programmers/index.html)** — Rust for Ruby Programmers
-- **[rust-for-php-programmers](rust-for-php-programmers/index.html)** — Rust for PHP Programmers
-- **[rust-for-kotlin-programmers](rust-for-kotlin-programmers/index.html)** — Rust for Kotlin Programmers
+- **[rust-for-typescript-programmers](lessons/rust-for-typescript-programmers/index.html)** — Rust for TypeScript Programmers
+- **[rust-for-javascript-programmers](lessons/rust-for-javascript-programmers/index.html)** — Rust for JavaScript Programmers
+- **[rust-for-python-programmers](lessons/rust-for-python-programmers/index.html)** — Rust for Python Programmers
+- **[rust-for-java-programmers](lessons/rust-for-java-programmers/index.html)** — Rust for Java Programmers
+- **[rust-for-csharp-programmers](lessons/rust-for-csharp-programmers/index.html)** — Rust for C# Programmers
+- **[rust-for-cpp-programmers](lessons/rust-for-cpp-programmers/index.html)** — Rust for C++ Programmers
+- **[rust-for-go-programmers](lessons/rust-for-go-programmers/index.html)** — Rust for Go Programmers
+- **[rust-for-ruby-programmers](lessons/rust-for-ruby-programmers/index.html)** — Rust for Ruby Programmers
+- **[rust-for-php-programmers](lessons/rust-for-php-programmers/index.html)** — Rust for PHP Programmers
+- **[rust-for-kotlin-programmers](lessons/rust-for-kotlin-programmers/index.html)** — Rust for Kotlin Programmers
 
 ## PHP courses
 
@@ -75,16 +75,16 @@ enums, traits, `array_map`/`array_filter`, destructuring and spread, closures
 with explicit `use` capture, exceptions, static/const/readonly, generators,
 JSON, capstone), framed for each source language:
 
-- **[php-for-typescript-programmers](php-for-typescript-programmers/index.html)** — PHP for TypeScript Programmers
-- **[php-for-javascript-programmers](php-for-javascript-programmers/index.html)** — PHP for JavaScript Programmers
-- **[php-for-python-programmers](php-for-python-programmers/index.html)** — PHP for Python Programmers
-- **[php-for-java-programmers](php-for-java-programmers/index.html)** — PHP for Java Programmers
-- **[php-for-csharp-programmers](php-for-csharp-programmers/index.html)** — PHP for C# Programmers
-- **[php-for-cpp-programmers](php-for-cpp-programmers/index.html)** — PHP for C++ Programmers
-- **[php-for-go-programmers](php-for-go-programmers/index.html)** — PHP for Go Programmers
-- **[php-for-ruby-programmers](php-for-ruby-programmers/index.html)** — PHP for Ruby Programmers
-- **[php-for-rust-programmers](php-for-rust-programmers/index.html)** — PHP for Rust Programmers
-- **[php-for-kotlin-programmers](php-for-kotlin-programmers/index.html)** — PHP for Kotlin Programmers
+- **[php-for-typescript-programmers](lessons/php-for-typescript-programmers/index.html)** — PHP for TypeScript Programmers
+- **[php-for-javascript-programmers](lessons/php-for-javascript-programmers/index.html)** — PHP for JavaScript Programmers
+- **[php-for-python-programmers](lessons/php-for-python-programmers/index.html)** — PHP for Python Programmers
+- **[php-for-java-programmers](lessons/php-for-java-programmers/index.html)** — PHP for Java Programmers
+- **[php-for-csharp-programmers](lessons/php-for-csharp-programmers/index.html)** — PHP for C# Programmers
+- **[php-for-cpp-programmers](lessons/php-for-cpp-programmers/index.html)** — PHP for C++ Programmers
+- **[php-for-go-programmers](lessons/php-for-go-programmers/index.html)** — PHP for Go Programmers
+- **[php-for-ruby-programmers](lessons/php-for-ruby-programmers/index.html)** — PHP for Ruby Programmers
+- **[php-for-rust-programmers](lessons/php-for-rust-programmers/index.html)** — PHP for Rust Programmers
+- **[php-for-kotlin-programmers](lessons/php-for-kotlin-programmers/index.html)** — PHP for Kotlin Programmers
 
 ## Ruby courses
 
@@ -95,16 +95,16 @@ and modules, blocks/procs/lambdas, Enumerable, destructuring and splat, duck
 typing, exceptions, Structs and Comparable, enumerators and lazy, JSON,
 capstone), framed for each source language:
 
-- **[ruby-for-typescript-programmers](ruby-for-typescript-programmers/index.html)** — Ruby for TypeScript Programmers
-- **[ruby-for-javascript-programmers](ruby-for-javascript-programmers/index.html)** — Ruby for JavaScript Programmers
-- **[ruby-for-python-programmers](ruby-for-python-programmers/index.html)** — Ruby for Python Programmers
-- **[ruby-for-java-programmers](ruby-for-java-programmers/index.html)** — Ruby for Java Programmers
-- **[ruby-for-csharp-programmers](ruby-for-csharp-programmers/index.html)** — Ruby for C# Programmers
-- **[ruby-for-cpp-programmers](ruby-for-cpp-programmers/index.html)** — Ruby for C++ Programmers
-- **[ruby-for-go-programmers](ruby-for-go-programmers/index.html)** — Ruby for Go Programmers
-- **[ruby-for-rust-programmers](ruby-for-rust-programmers/index.html)** — Ruby for Rust Programmers
-- **[ruby-for-php-programmers](ruby-for-php-programmers/index.html)** — Ruby for PHP Programmers
-- **[ruby-for-kotlin-programmers](ruby-for-kotlin-programmers/index.html)** — Ruby for Kotlin Programmers
+- **[ruby-for-typescript-programmers](lessons/ruby-for-typescript-programmers/index.html)** — Ruby for TypeScript Programmers
+- **[ruby-for-javascript-programmers](lessons/ruby-for-javascript-programmers/index.html)** — Ruby for JavaScript Programmers
+- **[ruby-for-python-programmers](lessons/ruby-for-python-programmers/index.html)** — Ruby for Python Programmers
+- **[ruby-for-java-programmers](lessons/ruby-for-java-programmers/index.html)** — Ruby for Java Programmers
+- **[ruby-for-csharp-programmers](lessons/ruby-for-csharp-programmers/index.html)** — Ruby for C# Programmers
+- **[ruby-for-cpp-programmers](lessons/ruby-for-cpp-programmers/index.html)** — Ruby for C++ Programmers
+- **[ruby-for-go-programmers](lessons/ruby-for-go-programmers/index.html)** — Ruby for Go Programmers
+- **[ruby-for-rust-programmers](lessons/ruby-for-rust-programmers/index.html)** — Ruby for Rust Programmers
+- **[ruby-for-php-programmers](lessons/ruby-for-php-programmers/index.html)** — Ruby for PHP Programmers
+- **[ruby-for-kotlin-programmers](lessons/ruby-for-kotlin-programmers/index.html)** — Ruby for Kotlin Programmers
 
 ## Java courses
 
@@ -116,16 +116,16 @@ exceptions, `equals`/`hashCode`/`Comparable`, sealed types and pattern matching,
 capstone), framed for each source language. Compiles and runs your code on
 [Wandbox](https://wandbox.org), so these need an internet connection:
 
-- **[java-for-typescript-programmers](java-for-typescript-programmers/index.html)** — Java for TypeScript Programmers
-- **[java-for-javascript-programmers](java-for-javascript-programmers/index.html)** — Java for JavaScript Programmers
-- **[java-for-python-programmers](java-for-python-programmers/index.html)** — Java for Python Programmers
-- **[java-for-csharp-programmers](java-for-csharp-programmers/index.html)** — Java for C# Programmers
-- **[java-for-cpp-programmers](java-for-cpp-programmers/index.html)** — Java for C++ Programmers
-- **[java-for-go-programmers](java-for-go-programmers/index.html)** — Java for Go Programmers
-- **[java-for-rust-programmers](java-for-rust-programmers/index.html)** — Java for Rust Programmers
-- **[java-for-ruby-programmers](java-for-ruby-programmers/index.html)** — Java for Ruby Programmers
-- **[java-for-php-programmers](java-for-php-programmers/index.html)** — Java for PHP Programmers
-- **[java-for-kotlin-programmers](java-for-kotlin-programmers/index.html)** — Java for Kotlin Programmers
+- **[java-for-typescript-programmers](lessons/java-for-typescript-programmers/index.html)** — Java for TypeScript Programmers
+- **[java-for-javascript-programmers](lessons/java-for-javascript-programmers/index.html)** — Java for JavaScript Programmers
+- **[java-for-python-programmers](lessons/java-for-python-programmers/index.html)** — Java for Python Programmers
+- **[java-for-csharp-programmers](lessons/java-for-csharp-programmers/index.html)** — Java for C# Programmers
+- **[java-for-cpp-programmers](lessons/java-for-cpp-programmers/index.html)** — Java for C++ Programmers
+- **[java-for-go-programmers](lessons/java-for-go-programmers/index.html)** — Java for Go Programmers
+- **[java-for-rust-programmers](lessons/java-for-rust-programmers/index.html)** — Java for Rust Programmers
+- **[java-for-ruby-programmers](lessons/java-for-ruby-programmers/index.html)** — Java for Ruby Programmers
+- **[java-for-php-programmers](lessons/java-for-php-programmers/index.html)** — Java for PHP Programmers
+- **[java-for-kotlin-programmers](lessons/java-for-kotlin-programmers/index.html)** — Java for Kotlin Programmers
 
 ## C++ courses
 
@@ -137,16 +137,16 @@ move semantics, tuples and structured bindings, iterators, capstone), framed for
 each source language. Compiles and runs your code on
 [Wandbox](https://wandbox.org), so these need an internet connection:
 
-- **[cpp-for-typescript-programmers](cpp-for-typescript-programmers/index.html)** — C++ for TypeScript Programmers
-- **[cpp-for-javascript-programmers](cpp-for-javascript-programmers/index.html)** — C++ for JavaScript Programmers
-- **[cpp-for-python-programmers](cpp-for-python-programmers/index.html)** — C++ for Python Programmers
-- **[cpp-for-java-programmers](cpp-for-java-programmers/index.html)** — C++ for Java Programmers
-- **[cpp-for-csharp-programmers](cpp-for-csharp-programmers/index.html)** — C++ for C# Programmers
-- **[cpp-for-go-programmers](cpp-for-go-programmers/index.html)** — C++ for Go Programmers
-- **[cpp-for-rust-programmers](cpp-for-rust-programmers/index.html)** — C++ for Rust Programmers
-- **[cpp-for-ruby-programmers](cpp-for-ruby-programmers/index.html)** — C++ for Ruby Programmers
-- **[cpp-for-php-programmers](cpp-for-php-programmers/index.html)** — C++ for PHP Programmers
-- **[cpp-for-kotlin-programmers](cpp-for-kotlin-programmers/index.html)** — C++ for Kotlin Programmers
+- **[cpp-for-typescript-programmers](lessons/cpp-for-typescript-programmers/index.html)** — C++ for TypeScript Programmers
+- **[cpp-for-javascript-programmers](lessons/cpp-for-javascript-programmers/index.html)** — C++ for JavaScript Programmers
+- **[cpp-for-python-programmers](lessons/cpp-for-python-programmers/index.html)** — C++ for Python Programmers
+- **[cpp-for-java-programmers](lessons/cpp-for-java-programmers/index.html)** — C++ for Java Programmers
+- **[cpp-for-csharp-programmers](lessons/cpp-for-csharp-programmers/index.html)** — C++ for C# Programmers
+- **[cpp-for-go-programmers](lessons/cpp-for-go-programmers/index.html)** — C++ for Go Programmers
+- **[cpp-for-rust-programmers](lessons/cpp-for-rust-programmers/index.html)** — C++ for Rust Programmers
+- **[cpp-for-ruby-programmers](lessons/cpp-for-ruby-programmers/index.html)** — C++ for Ruby Programmers
+- **[cpp-for-php-programmers](lessons/cpp-for-php-programmers/index.html)** — C++ for PHP Programmers
+- **[cpp-for-kotlin-programmers](lessons/cpp-for-kotlin-programmers/index.html)** — C++ for Kotlin Programmers
 
 ## Python courses
 
@@ -158,16 +158,16 @@ managers, the `collections` module, capstone), framed for each source language.
 Runs your code on [Wandbox](https://wandbox.org), so these need an internet
 connection:
 
-- **[python-for-typescript-programmers](python-for-typescript-programmers/index.html)** — Python for TypeScript Programmers
-- **[python-for-javascript-programmers](python-for-javascript-programmers/index.html)** — Python for JavaScript Programmers
-- **[python-for-java-programmers](python-for-java-programmers/index.html)** — Python for Java Programmers
-- **[python-for-csharp-programmers](python-for-csharp-programmers/index.html)** — Python for C# Programmers
-- **[python-for-cpp-programmers](python-for-cpp-programmers/index.html)** — Python for C++ Programmers
-- **[python-for-go-programmers](python-for-go-programmers/index.html)** — Python for Go Programmers
-- **[python-for-rust-programmers](python-for-rust-programmers/index.html)** — Python for Rust Programmers
-- **[python-for-ruby-programmers](python-for-ruby-programmers/index.html)** — Python for Ruby Programmers
-- **[python-for-php-programmers](python-for-php-programmers/index.html)** — Python for PHP Programmers
-- **[python-for-kotlin-programmers](python-for-kotlin-programmers/index.html)** — Python for Kotlin Programmers
+- **[python-for-typescript-programmers](lessons/python-for-typescript-programmers/index.html)** — Python for TypeScript Programmers
+- **[python-for-javascript-programmers](lessons/python-for-javascript-programmers/index.html)** — Python for JavaScript Programmers
+- **[python-for-java-programmers](lessons/python-for-java-programmers/index.html)** — Python for Java Programmers
+- **[python-for-csharp-programmers](lessons/python-for-csharp-programmers/index.html)** — Python for C# Programmers
+- **[python-for-cpp-programmers](lessons/python-for-cpp-programmers/index.html)** — Python for C++ Programmers
+- **[python-for-go-programmers](lessons/python-for-go-programmers/index.html)** — Python for Go Programmers
+- **[python-for-rust-programmers](lessons/python-for-rust-programmers/index.html)** — Python for Rust Programmers
+- **[python-for-ruby-programmers](lessons/python-for-ruby-programmers/index.html)** — Python for Ruby Programmers
+- **[python-for-php-programmers](lessons/python-for-php-programmers/index.html)** — Python for PHP Programmers
+- **[python-for-kotlin-programmers](lessons/python-for-kotlin-programmers/index.html)** — Python for Kotlin Programmers
 
 ## C# courses
 
@@ -180,16 +180,16 @@ matching, tuples and deconstruction, iterators and `yield`, equality and
 your code on [Wandbox](https://wandbox.org) (mono, C# 7.3), so these need an
 internet connection:
 
-- **[csharp-for-typescript-programmers](csharp-for-typescript-programmers/index.html)** — C# for TypeScript Programmers
-- **[csharp-for-javascript-programmers](csharp-for-javascript-programmers/index.html)** — C# for JavaScript Programmers
-- **[csharp-for-python-programmers](csharp-for-python-programmers/index.html)** — C# for Python Programmers
-- **[csharp-for-java-programmers](csharp-for-java-programmers/index.html)** — C# for Java Programmers
-- **[csharp-for-cpp-programmers](csharp-for-cpp-programmers/index.html)** — C# for C++ Programmers
-- **[csharp-for-go-programmers](csharp-for-go-programmers/index.html)** — C# for Go Programmers
-- **[csharp-for-rust-programmers](csharp-for-rust-programmers/index.html)** — C# for Rust Programmers
-- **[csharp-for-ruby-programmers](csharp-for-ruby-programmers/index.html)** — C# for Ruby Programmers
-- **[csharp-for-php-programmers](csharp-for-php-programmers/index.html)** — C# for PHP Programmers
-- **[csharp-for-kotlin-programmers](csharp-for-kotlin-programmers/index.html)** — C# for Kotlin Programmers
+- **[csharp-for-typescript-programmers](lessons/csharp-for-typescript-programmers/index.html)** — C# for TypeScript Programmers
+- **[csharp-for-javascript-programmers](lessons/csharp-for-javascript-programmers/index.html)** — C# for JavaScript Programmers
+- **[csharp-for-python-programmers](lessons/csharp-for-python-programmers/index.html)** — C# for Python Programmers
+- **[csharp-for-java-programmers](lessons/csharp-for-java-programmers/index.html)** — C# for Java Programmers
+- **[csharp-for-cpp-programmers](lessons/csharp-for-cpp-programmers/index.html)** — C# for C++ Programmers
+- **[csharp-for-go-programmers](lessons/csharp-for-go-programmers/index.html)** — C# for Go Programmers
+- **[csharp-for-rust-programmers](lessons/csharp-for-rust-programmers/index.html)** — C# for Rust Programmers
+- **[csharp-for-ruby-programmers](lessons/csharp-for-ruby-programmers/index.html)** — C# for Ruby Programmers
+- **[csharp-for-php-programmers](lessons/csharp-for-php-programmers/index.html)** — C# for PHP Programmers
+- **[csharp-for-kotlin-programmers](lessons/csharp-for-kotlin-programmers/index.html)** — C# for Kotlin Programmers
 
 ## Go courses
 
@@ -200,16 +200,16 @@ composition, sorting, JSON, custom errors and wrapping, stringers and
 formatting, capstone), framed for each source language. Compiles and runs your
 code on [Wandbox](https://wandbox.org), so these need an internet connection:
 
-- **[go-for-typescript-programmers](go-for-typescript-programmers/index.html)** — Go for TypeScript Programmers
-- **[go-for-javascript-programmers](go-for-javascript-programmers/index.html)** — Go for JavaScript Programmers
-- **[go-for-python-programmers](go-for-python-programmers/index.html)** — Go for Python Programmers
-- **[go-for-java-programmers](go-for-java-programmers/index.html)** — Go for Java Programmers
-- **[go-for-csharp-programmers](go-for-csharp-programmers/index.html)** — Go for C# Programmers
-- **[go-for-cpp-programmers](go-for-cpp-programmers/index.html)** — Go for C++ Programmers
-- **[go-for-rust-programmers](go-for-rust-programmers/index.html)** — Go for Rust Programmers
-- **[go-for-ruby-programmers](go-for-ruby-programmers/index.html)** — Go for Ruby Programmers
-- **[go-for-php-programmers](go-for-php-programmers/index.html)** — Go for PHP Programmers
-- **[go-for-kotlin-programmers](go-for-kotlin-programmers/index.html)** — Go for Kotlin Programmers
+- **[go-for-typescript-programmers](lessons/go-for-typescript-programmers/index.html)** — Go for TypeScript Programmers
+- **[go-for-javascript-programmers](lessons/go-for-javascript-programmers/index.html)** — Go for JavaScript Programmers
+- **[go-for-python-programmers](lessons/go-for-python-programmers/index.html)** — Go for Python Programmers
+- **[go-for-java-programmers](lessons/go-for-java-programmers/index.html)** — Go for Java Programmers
+- **[go-for-csharp-programmers](lessons/go-for-csharp-programmers/index.html)** — Go for C# Programmers
+- **[go-for-cpp-programmers](lessons/go-for-cpp-programmers/index.html)** — Go for C++ Programmers
+- **[go-for-rust-programmers](lessons/go-for-rust-programmers/index.html)** — Go for Rust Programmers
+- **[go-for-ruby-programmers](lessons/go-for-ruby-programmers/index.html)** — Go for Ruby Programmers
+- **[go-for-php-programmers](lessons/go-for-php-programmers/index.html)** — Go for PHP Programmers
+- **[go-for-kotlin-programmers](lessons/go-for-kotlin-programmers/index.html)** — Go for Kotlin Programmers
 
 ## Kotlin courses
 
@@ -222,16 +222,16 @@ source language. Compiles and runs your code on the
 [Kotlin Playground](https://play.kotlinlang.org), so these need an internet
 connection:
 
-- **[kotlin-for-typescript-programmers](kotlin-for-typescript-programmers/index.html)** — Kotlin for TypeScript Programmers
-- **[kotlin-for-javascript-programmers](kotlin-for-javascript-programmers/index.html)** — Kotlin for JavaScript Programmers
-- **[kotlin-for-python-programmers](kotlin-for-python-programmers/index.html)** — Kotlin for Python Programmers
-- **[kotlin-for-java-programmers](kotlin-for-java-programmers/index.html)** — Kotlin for Java Programmers
-- **[kotlin-for-csharp-programmers](kotlin-for-csharp-programmers/index.html)** — Kotlin for C# Programmers
-- **[kotlin-for-cpp-programmers](kotlin-for-cpp-programmers/index.html)** — Kotlin for C++ Programmers
-- **[kotlin-for-go-programmers](kotlin-for-go-programmers/index.html)** — Kotlin for Go Programmers
-- **[kotlin-for-rust-programmers](kotlin-for-rust-programmers/index.html)** — Kotlin for Rust Programmers
-- **[kotlin-for-ruby-programmers](kotlin-for-ruby-programmers/index.html)** — Kotlin for Ruby Programmers
-- **[kotlin-for-php-programmers](kotlin-for-php-programmers/index.html)** — Kotlin for PHP Programmers
+- **[kotlin-for-typescript-programmers](lessons/kotlin-for-typescript-programmers/index.html)** — Kotlin for TypeScript Programmers
+- **[kotlin-for-javascript-programmers](lessons/kotlin-for-javascript-programmers/index.html)** — Kotlin for JavaScript Programmers
+- **[kotlin-for-python-programmers](lessons/kotlin-for-python-programmers/index.html)** — Kotlin for Python Programmers
+- **[kotlin-for-java-programmers](lessons/kotlin-for-java-programmers/index.html)** — Kotlin for Java Programmers
+- **[kotlin-for-csharp-programmers](lessons/kotlin-for-csharp-programmers/index.html)** — Kotlin for C# Programmers
+- **[kotlin-for-cpp-programmers](lessons/kotlin-for-cpp-programmers/index.html)** — Kotlin for C++ Programmers
+- **[kotlin-for-go-programmers](lessons/kotlin-for-go-programmers/index.html)** — Kotlin for Go Programmers
+- **[kotlin-for-rust-programmers](lessons/kotlin-for-rust-programmers/index.html)** — Kotlin for Rust Programmers
+- **[kotlin-for-ruby-programmers](lessons/kotlin-for-ruby-programmers/index.html)** — Kotlin for Ruby Programmers
+- **[kotlin-for-php-programmers](lessons/kotlin-for-php-programmers/index.html)** — Kotlin for PHP Programmers
 
 Open the top-level `index.html` for a linked list of every course, open a
 course's own `index.html` directly, or serve the whole directory:
@@ -250,11 +250,12 @@ X-for-Y-Programmers/
 │   ├── js/harness.js        renders lessons, compiles + tests learner code
 │   ├── js/vendor/typescript.min.js   vendored TypeScript compiler (offline)
 │   └── tools/validate.js    proves every lesson is solvable
-└── <course>/                one directory per course, named x-for-y-programmers
-    ├── index.html           lesson list with progress checkmarks
-    ├── js/course.js         course config (see below)
-    ├── js/manifest.js       lesson filenames/titles, drives nav + index
-    └── lessons/NN-*.html    20 self-contained lesson pages
+└── lessons/                 every course lives here
+    └── <course>/            one directory per course, named x-for-y-programmers
+        ├── index.html       lesson list with progress checkmarks
+        ├── js/course.js     course config (see below)
+        ├── js/manifest.js   lesson filenames/titles, drives nav + index
+        └── lessons/NN-*.html    20 self-contained lesson pages
 ```
 
 ## Course config (`js/course.js`)
@@ -324,13 +325,13 @@ everything natively rather than calling the online services:
 
 ```sh
 node shared/tools/validate.js                                  # every course
-node shared/tools/validate.js typescript-for-php-programmers   # one course
-node shared/tools/validate.js typescript-for-php-programmers/lessons/07-union-types.html
+node shared/tools/validate.js lessons/typescript-for-php-programmers   # one course
+node shared/tools/validate.js lessons/typescript-for-php-programmers/lessons/07-union-types.html
 ```
 
 ## Adding a course
 
-1. Create `<x>-for-<y>-programmers/` with `js/course.js` (pick a new
+1. Create `lessons/<x>-for-<y>-programmers/` with `js/course.js` (pick a new
    `sourceField`, `storageKey`, and accent), `js/manifest.js`, `index.html`
    (copy one from an existing course and edit the hero paragraph), and a
    `lessons/` directory.

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays as Lists</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays as Lists",
+
+  intro: `
+<p>C# gives you <code>int[]</code> for fixed-size sequences and
+<code>List&lt;int&gt;</code> for growable ones. PHP has exactly one structure
+for both jobs: the <code>array</code>, written <code>[1, 2, 3]</code>. It
+grows on demand, holds any mix of types, and (as the next lesson shows) also
+moonlights as your <code>Dictionary</code>. <code>.Add(x)</code> becomes the
+odd-looking but idiomatic <code>$arr[] = $x;</code> — "assign into the empty
+brackets" means append. <code>.Count</code> becomes the free function
+<code>count($arr)</code>, and <code>.Contains(x)</code> becomes
+<code>in_array($x, $arr, true)</code> — always pass <code>true</code> to get
+the strict, type-checked comparison you'd expect.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>new List&lt;int&gt; { 1, 2, 3 }</code> / <code>int[]</code></td><td><code>[1, 2, 3]</code></td></tr>
+  <tr><td><code>list.Add(x)</code></td><td><code>$arr[] = $x;</code></td></tr>
+  <tr><td><code>list.Count</code></td><td><code>count($arr)</code></td></tr>
+  <tr><td><code>list.Contains(x)</code></td><td><code>in_array($x, $arr, true)</code></td></tr>
+  <tr><td><code>nums.Sum()</code></td><td><code>array_sum($nums)</code></td></tr>
+</table>
+<p>Now the part that will genuinely surprise you: PHP arrays have <strong>value
+semantics</strong>. Assigning an array to another variable, or passing it to a
+function, hands over a <em>copy</em> — mutations inside the callee never touch
+the caller's array. They behave like structs, not classes: the exact opposite
+of <code>List&lt;T&gt;</code>. So the idiomatic PHP "append" helper takes an
+array, modifies its private copy, and <em>returns</em> it.</p>`,
+
+  csharp: `int[] plain = { 88, 92, 79 };
+var scores = new List<int> { 88, 92, 79 };
+
+scores.Add(95);
+var howMany = scores.Count;          // 4
+var hasIt   = scores.Contains(92);   // true
+
+static List<int> Append(List<int> xs, int x)
+{
+    xs.Add(x);       // mutates the CALLER's list — reference type
+    return xs;
+}
+
+static int Total(IEnumerable<int> nums)
+{
+    return nums.Sum();
+}`,
+
+  task: `
+<p>Rebuild the list toolkit on PHP's one array type:</p>
+<ol>
+  <li><code>make_scores(): array</code> — return the literal array
+      <code>[88, 92, 79]</code>. No <code>new</code>, no element type — just
+      brackets.</li>
+  <li><code>append(array $arr, int $x): array</code> — append with
+      <code>$arr[] = $x;</code> and <strong>return the modified copy</strong>.
+      Because arrays are passed by value, the caller's array is untouched —
+      the tests check this!</li>
+  <li><code>total(array $nums): int</code> — sum the array with
+      <code>array_sum</code>, PHP's stand-in for LINQ's <code>.Sum()</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Both int[] and List<int> become the one array literal.
+function make_scores(): array {
+    throw new Exception("TODO: implement make_scores");
+}
+
+// 2. $arr is already a COPY (value semantics). Append with $arr[] = $x
+//    and return it — the caller's original stays unchanged.
+function append(array $arr, int $x): array {
+    throw new Exception("TODO: implement append");
+}
+
+// 3. LINQ's .Sum() is the free function array_sum.
+function total(array $nums): int {
+    throw new Exception("TODO: implement total");
+}
+`,
+
+  requirements: [
+    { pattern: /\[\]\s*=/, message: "Append with $arr[] = $x (PHP's .Add)" },
+    { pattern: /count\(|array_sum\(/, message: "Use count() or array_sum() — free functions, not methods" },
+    { pattern: /:\s*array/, message: "Declare : array return types on the functions that return arrays" },
+  ],
+
+  tests: [
+    { name: "make_scores() returns [88, 92, 79]",
+      code: "expect_eq(make_scores(), [88, 92, 79]);" },
+    { name: "append([1, 2], 3) returns [1, 2, 3]",
+      code: "expect_eq(append([1, 2], 3), [1, 2, 3]);" },
+    { name: "value semantics: append does not mutate the caller's array",
+      code: "$orig = [10, 20];\n$grown = append($orig, 30);\nexpect_eq($grown, [10, 20, 30]);\nexpect_eq($orig, [10, 20]);" },
+    { name: "total([1, 2, 3, 4]) returns 10",
+      code: "expect_eq(total([1, 2, 3, 4]), 10);" },
+    { name: "total([]) returns 0",
+      code: "expect_eq(total([]), 0);" },
+  ],
+
+  solution: `<?php
+
+function make_scores(): array {
+    return [88, 92, 79];
+}
+
+function append(array $arr, int $x): array {
+    $arr[] = $x;      // mutates the local copy only
+    return $arr;
+}
+
+function total(array $nums): int {
+    return array_sum($nums);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Literal</td><td><code>new List&lt;int&gt; { 1, 2 }</code></td><td><code>[1, 2]</code></td></tr>
+  <tr><td>Append</td><td><code>list.Add(x)</code></td><td><code>$arr[] = $x;</code></td></tr>
+  <tr><td>Length</td><td><code>list.Count</code></td><td><code>count($arr)</code></td></tr>
+  <tr><td>Membership</td><td><code>list.Contains(x)</code></td><td><code>in_array($x, $arr, true)</code></td></tr>
+  <tr><td>Sum</td><td><code>nums.Sum()</code></td><td><code>array_sum($nums)</code></td></tr>
+  <tr><td>Index</td><td><code>list[0]</code></td><td><code>$arr[0]</code></td></tr>
+  <tr><td>Semantics</td><td>reference type (shared)</td><td><strong>value type (copied)</strong></td></tr>
+</table>
+<p>The value-semantics point is the one to tattoo somewhere visible. Ten years
+of <code>List&lt;T&gt;</code> have trained you to expect that a callee's
+<code>Add</code> is visible to the caller; in PHP it never is, unless the
+parameter is explicitly declared by-reference (<code>array &amp;$arr</code> —
+rare, and usually a smell). Idiomatic PHP leans into the copying: transform
+and return, like you would with an immutable collection or a struct. (Under
+the hood PHP copies lazily on write, so passing big arrays around is cheaper
+than it sounds.)</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

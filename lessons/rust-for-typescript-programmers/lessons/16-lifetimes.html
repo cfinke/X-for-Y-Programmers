@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>Here is a question TypeScript never asks you: if a function returns a
+reference, <em>whose data does it point into?</em> In TS every string is a
+GC-managed object — return it from anywhere, keep it as long as you like,
+the garbage collector keeps it alive. Rust has no GC, so a returned
+<code>&amp;str</code> must borrow from <em>something</em> that's still alive
+when the caller uses it. Lifetimes are how the compiler tracks that, and
+<code>&lt;'a&gt;</code> is how you occasionally spell it out.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>function longest(a: string, b: string): string</code></td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>Who owns the result? The GC.</td><td>The result borrows from <code>a</code> or <code>b</code> — <code>'a</code> says so.</td></tr>
+  <tr><td><code>function firstWord(s: string): string</code></td><td><code>fn first_word(s: &amp;str) -&gt; &amp;str</code> (lifetime inferred)</td></tr>
+</table>
+<p>Read <code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+as: "the result is valid for as long as <em>both</em> inputs are — i.e. as long
+as the shorter-lived one." That's all a lifetime annotation is: a <em>name</em>
+connecting an output reference to the inputs it borrows from. It never changes
+how long anything lives; it only describes the relationship so the compiler can
+check callers.</p>
+<p>And most of the time you don't write it. With one input reference and one
+output reference (like <code>first_word</code>), the compiler fills in the
+lifetime itself — that's <em>elision</em>, the same spirit as TS type
+inference. You only write <code>&lt;'a&gt;</code> when it's ambiguous: two
+inputs, one output — which one does the result borrow from? Answer:
+either, so they share one name.</p>`,
+
+  typescript: `// TypeScript never asks whose memory a returned string points
+// into: the GC keeps it alive as long as anyone can reach it.
+function longest(a: string, b: string): string {
+  return a.length >= b.length ? a : b;
+}
+
+function firstWord(s: string): string {
+  const word = s.split(/\\s+/).find((w) => w.length > 0);
+  return word ?? "";
+}
+
+const winner = longest("hello", "hi");
+// winner can outlive both arguments - nobody has to say so.
+console.log(winner);                  // "hello"
+console.log(firstWord("hello world")); // "hello"`,
+
+  task: `
+<p>Write the two functions in Rust:</p>
+<ol>
+  <li><code>longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code> —
+      return whichever slice is longer by <code>.len()</code> (return
+      <code>a</code> on a tie). Two input references, one output: this is the
+      ambiguous case, so the <code>&lt;'a&gt;</code> annotation is required —
+      it's already written in the starter's signature.</li>
+  <li><code>first_word(s: &amp;str) -&gt; &amp;str</code> — return the text up
+      to the first space, or the whole string if there is none (an empty
+      string for an empty input). One input reference means elision kicks in:
+      no annotation needed. Try
+      <code>s.split_whitespace().next().unwrap_or("")</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. longest: return the longer slice (a on a tie).
+//    <'a> names the connection: the result borrows from a or b,
+//    so it lives as long as the shorter-lived of the two.
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// 2. first_word: up to the first space, or the whole string.
+//    One input reference -> elision fills in the lifetime for you.
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a lifetime parameter <'a> on longest" },
+    { pattern: /&'a\s+str/, message: "Use &'a str to tie the inputs and output together" },
+  ],
+
+  tests: [
+    { name: 'longest("hello", "hi") returns "hello"',
+      code: 'assert_eq!(longest("hello", "hi"), "hello");' },
+    { name: 'longest("a", "abc") returns "abc"',
+      code: 'assert_eq!(longest("a", "abc"), "abc");' },
+    { name: 'the returned reference outlives a shorter-lived argument',
+      code: 'let a = String::from("borrow checker");\nlet result;\n{\n    let b = String::from("gc");\n    result = longest(a.as_str(), b.as_str()).to_string();\n}\nassert_eq!(result, "borrow checker");' },
+    { name: 'first_word("hello world") returns "hello"',
+      code: 'assert_eq!(first_word("hello world"), "hello");' },
+    { name: 'first_word("rust") returns "rust"',
+      code: 'assert_eq!(first_word("rust"), "rust");' },
+    { name: 'first_word("") returns ""',
+      code: 'assert_eq!(first_word(""), "");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() >= b.len() {
+        a
+    } else {
+        b
+    }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Returned reference</td><td>GC keeps the data alive — no question asked</td><td>Must borrow from an input; the compiler checks it</td></tr>
+  <tr><td>Naming the relationship</td><td>—</td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>What <code>'a</code> means</td><td>—</td><td>"result lives as long as the shorter-lived input"</td></tr>
+  <tr><td>When you can skip it</td><td>always</td><td>Usually — elision infers it (e.g. one input ref, one output ref)</td></tr>
+  <tr><td>What it changes at runtime</td><td>—</td><td>Nothing. It's a description, not an instruction.</td></tr>
+</table>
+<p>The mental shift: <code>&lt;'a&gt;</code> looks like a generic type parameter
+because it <em>is</em> one — a parameter over "how long the borrow is valid"
+instead of over a type. You declare it in angle brackets and use it to link
+inputs to outputs, exactly like <code>&lt;T&gt;</code> links parameter types to
+return types. If a signature compiles without it, leave it out; write it only
+when the compiler asks "which input does this output borrow from?"</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Hashes & Symbols</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Hashes & Symbols",
+
+  intro: `
+<p>Ruby's <code>Hash</code> is your <code>Dictionary&lt;TKey, TValue&gt;</code>
+with a literal that fits on one line: <code>{ apples: 3, bananas: 5 }</code>.
+Those keys aren't strings — they're <em>symbols</em>: <code>:apples</code> is
+an interned identifier, lighter than the string <code>"apples"</code>, and the
+idiomatic choice for fixed key names. Reading and writing look familiar
+(<code>h[k]</code>, <code>h[k] = v</code>), and
+<code>GetValueOrDefault(k, 0)</code> has a direct twin:
+<code>h.fetch(k, 0)</code>.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>new Dictionary&lt;string, int&gt; { ["apples"] = 3 }</code></td><td><code>{ apples: 3 }</code> (symbol keys)</td></tr>
+  <tr><td><code>dict["apples"]</code></td><td><code>h[:apples]</code></td></tr>
+  <tr><td><code>dict.GetValueOrDefault(k, 0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+  <tr><td><code>foreach (var (k, v) in dict)</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td><code>dict.Keys</code></td><td><code>h.keys</code></td></tr>
+</table>
+<p>Iteration destructures for free — <code>h.each { |name, count| ... }</code>
+hands each pair to the block already split apart, like the tuple
+deconstruction in a modern <code>foreach</code>. One gotcha to burn in early:
+<code>h[:name]</code> and <code>h["name"]</code> are <em>different keys</em>.
+A hash built with symbol keys returns <code>nil</code> when you probe it with
+the string — there's no compiler to catch the mismatch, so pick symbols for
+identifier-like keys and stay consistent.</p>`,
+
+  csharp: `var inventory = new Dictionary<string, int>
+{
+    ["apples"] = 3,
+    ["bananas"] = 5,
+};
+
+inventory["cherries"] = 12;
+
+var apples = inventory.GetValueOrDefault("apples", 0);  // 3
+var pears = inventory.GetValueOrDefault("pears", 0);    // 0, no exception
+
+foreach (var (name, count) in inventory)
+    Console.WriteLine($"{name}: {count}");
+
+var names = inventory.Keys;   // "apples", "bananas", "cherries"`,
+
+  task: `
+<p>Rebuild the inventory in Ruby, with symbol keys:</p>
+<ol>
+  <li><code>build_inventory</code> — no arguments; the hash literal
+      <code>{ apples: 3, bananas: 5 }</code>.</li>
+  <li><code>get_count(inv, name)</code> — the count for <code>name</code>, or
+      <code>0</code> when absent, via <code>inv.fetch(name, 0)</code> — your
+      <code>GetValueOrDefault</code>.</li>
+  <li><code>add_stock(inv, name, n)</code> — a <em>new</em> hash with
+      <code>n</code> added to <code>name</code>'s count. Don't mutate
+      <code>inv</code>: use
+      <code>inv.merge(name =&gt; inv.fetch(name, 0) + n)</code>. (The
+      <code>=&gt;</code> "hash rocket" is how you write a key that's a
+      <em>variable</em> rather than a literal symbol.)</li>
+  <li><code>stock_names(inv)</code> — the keys, via <code>inv.keys</code> —
+      an array of symbols like <code>[:apples, :bananas]</code>.</li>
+</ol>`,
+
+  starter: `# 1. build_inventory: symbol keys — { apples: 3 } means the key :apples.
+def build_inventory
+  raise NotImplementedError, "TODO: implement build_inventory"
+end
+
+# 2. get_count: GetValueOrDefault(k, 0) -> inv.fetch(name, 0)
+def get_count(inv, name)
+  raise NotImplementedError, "TODO: implement get_count"
+end
+
+# 3. add_stock: non-mutating — merge in { name => new_count }.
+#    (h.each { |k, v| ... } iterates pairs, but merge does this in one step.)
+def add_stock(inv, name, n)
+  raise NotImplementedError, "TODO: implement add_stock"
+end
+
+# 4. stock_names: dict.Keys -> inv.keys
+def stock_names(inv)
+  raise NotImplementedError, "TODO: implement stock_names"
+end
+`,
+
+  requirements: [
+    { pattern: /fetch\s*\(/, message: "Use fetch(name, 0) for the default-value lookup" },
+    { pattern: /merge/, message: "Build the updated hash with merge (no mutation)" },
+    { pattern: /:\w+/, message: "Use symbol keys like :apples" },
+    { pattern: /\.each|\.keys/, message: "Use .keys (or .each) on the hash" },
+  ],
+
+  tests: [
+    { name: "build_inventory returns { apples: 3, bananas: 5 }",
+      code: "  expect_eq(build_inventory, { apples: 3, bananas: 5 })" },
+    { name: "get_count(build_inventory, :apples) returns 3",
+      code: "  expect_eq(get_count(build_inventory, :apples), 3)" },
+    { name: "get_count(build_inventory, :pears) returns 0 (missing key)",
+      code: "  expect_eq(get_count(build_inventory, :pears), 0)" },
+    { name: "add_stock({ apples: 3 }, :apples, 2) returns { apples: 5 }",
+      code: "  expect_eq(add_stock({ apples: 3 }, :apples, 2), { apples: 5 })" },
+    { name: "add_stock leaves the original hash unchanged",
+      code: "  inv = { apples: 3 }\n  add_stock(inv, :apples, 2)\n  expect_eq(inv, { apples: 3 })" },
+    { name: "stock_names(build_inventory) returns [:apples, :bananas]",
+      code: "  expect_eq(stock_names(build_inventory), [:apples, :bananas])" },
+  ],
+
+  solution: `def build_inventory
+  # { apples: 3 } is sugar for { :apples => 3 } — the keys are Symbols.
+  { apples: 3, bananas: 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  inv.merge(name => inv.fetch(name, 0) + n)
+end
+
+def stock_names(inv)
+  inv.keys
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Literal</td><td><code>new Dictionary&lt;...&gt; { ["a"] = 1 }</code></td><td><code>{ a: 1 }</code></td></tr>
+  <tr><td>Symbol key</td><td>—</td><td><code>:apples</code> (interned identifier; <code>{ apples: 3 }</code> is sugar for <code>{ :apples =&gt; 3 }</code>)</td></tr>
+  <tr><td>Variable key</td><td><code>dict[k] = v</code></td><td><code>{ k =&gt; v }</code> (hash rocket)</td></tr>
+  <tr><td>Read / write</td><td><code>dict[k]</code> / <code>dict[k] = v</code></td><td><code>h[k]</code> / <code>h[k] = v</code> (missing key reads as <code>nil</code>, no exception)</td></tr>
+  <tr><td>Default lookup</td><td><code>GetValueOrDefault(k, 0)</code></td><td><code>h.fetch(k, 0)</code> (bare <code>fetch(k)</code> raises, like <code>dict[k]</code>)</td></tr>
+  <tr><td>Iterate</td><td><code>foreach (var (k, v) in dict)</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td>Keys / values</td><td><code>dict.Keys</code> / <code>dict.Values</code></td><td><code>h.keys</code> / <code>h.values</code></td></tr>
+  <tr><td>Non-destructive update</td><td>copy, then mutate</td><td><code>h.merge(k =&gt; v)</code></td></tr>
+</table>
+<p>Symbols are Ruby's answer to "this string is really an identifier":
+<code>:apples</code> is created once and compared by identity, so it's cheap
+as a hash key and ubiquitous in options hashes and APIs. The flip side of no
+static typing: <code>h[:name]</code> and <code>h["name"]</code> silently miss
+each other, returning <code>nil</code> instead of throwing — reach for
+<code>fetch</code> when a missing key should be loud.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

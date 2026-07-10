@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow & match</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & match",
+
+  intro: `
+<p>PHP's <code>if</code> is your <code>if</code>, with one spelling quirk:
+<code>elseif</code> is one word. <code>switch</code> also looks familiar — and
+inherits both of JavaScript's flaws, plus one of its own: cases fall through
+without <code>break</code>, <em>and</em> the comparison is loose
+<code>==</code> (so <code>switch ("1")</code> matches <code>case 1</code>).
+Treat <code>switch</code> the way you treat <code>==</code>: legacy syntax you
+read but rarely write.</p>
+<table>
+  <tr><th></th><th>TypeScript <code>switch</code></th><th>PHP <code>match</code> (8.0+)</th></tr>
+  <tr><td>Comparison</td><td><code>===</code></td><td><code>===</code> (strict — unlike PHP's switch!)</td></tr>
+  <tr><td>Fallthrough</td><td>yes, needs <code>break</code></td><td>never — one arm runs</td></tr>
+  <tr><td>Statement or expression?</td><td>statement</td><td><strong>expression</strong> — <code>return match (...) {...};</code></td></tr>
+  <tr><td>Unhandled value</td><td>silently does nothing</td><td>throws <code>UnhandledMatchError</code></td></tr>
+  <tr><td>Group cases</td><td>stacked <code>case</code> labels</td><td><code>"sat", "sun" =&gt; ...</code></td></tr>
+</table>
+<p>The tool to actually write is PHP 8's <code>match</code>: it compares with
+<code>===</code>, never falls through, is an <em>expression</em> you can
+return or assign (arms use <code>=&gt;</code>, so it reads like an exhaustive
+arrow-function table), and throws <code>UnhandledMatchError</code> when no arm
+matches — exhaustiveness checking at runtime, where TS gives it to you at
+compile time via <code>never</code>. And for range logic there's the
+<code>match (true)</code> idiom: each arm is a boolean condition, and the
+first arm that's <code>=== true</code> wins — an if/else chain compressed into
+a value-producing table.</p>`,
+
+  typescript: `function grade(score: number): string {
+  // Range logic in TS: an if/else-if chain
+  if (score >= 90) return "A";
+  else if (score >= 60) return "pass";
+  return "fail";
+}
+
+function dayType(day: string): string {
+  switch (day) {
+    case "sat":
+    case "sun":            // deliberate fallthrough to group cases
+      return "weekend";
+    default:
+      return "weekday";
+  }
+}`,
+
+  task: `
+<p>Port both functions to <code>match</code>:</p>
+<ol>
+  <li><code>grade(int $score): string</code> — use the <code>match (true)</code>
+      trick: arms are conditions like <code>$score &gt;= 90 =&gt; "A"</code>,
+      then <code>$score &gt;= 60 =&gt; "pass"</code>, with
+      <code>default =&gt; "fail"</code>. Order matters — the first true arm
+      wins, so put the highest threshold first.</li>
+  <li><code>day_type(string $day): string</code> — a plain <code>match</code>
+      on <code>$day</code> with a grouped arm
+      <code>"sat", "sun" =&gt; "weekend"</code> (the comma replaces stacked
+      <code>case</code> labels) and <code>default =&gt; "weekday"</code>.
+      Without the default, <code>day_type("mon")</code> would throw
+      <code>UnhandledMatchError</code>.</li>
+</ol>
+<p>Both are single <code>return match (...) { ... };</code> statements — no
+<code>break</code>, no fallthrough, no mutation.</p>`,
+
+  starter: `<?php
+
+// 1. grade: match (true) turns an if/else-if chain into an
+//    expression. First arm whose condition is === true wins.
+function grade(int $score): string {
+    throw new Exception("TODO: implement grade with match (true)");
+}
+
+// 2. day_type: strict match on the value; group arms with a comma.
+//    A default arm avoids UnhandledMatchError for other days.
+function day_type(string $day): string {
+    throw new Exception("TODO: implement day_type with match");
+}
+`,
+
+  requirements: [
+    { pattern: /match\s*\(/, message: "Use a match expression (not switch)" },
+    { pattern: /match\s*\(\s*true\s*\)/, message: "Use the match (true) idiom for the score ranges in grade" },
+    { pattern: /default\s*=>/, message: "Include a default => arm" },
+  ],
+
+  tests: [
+    { name: 'grade: 95 and the 90 boundary are "A"',
+      code: 'expect_eq(grade(95), "A"); expect_eq(grade(90), "A");' },
+    { name: 'grade: 75 and the 60 boundary are "pass"',
+      code: 'expect_eq(grade(75), "pass"); expect_eq(grade(60), "pass");' },
+    { name: 'grade: 59 and 0 are "fail"',
+      code: 'expect_eq(grade(59), "fail"); expect_eq(grade(0), "fail");' },
+    { name: 'day_type: "sat" and "sun" are "weekend"',
+      code: 'expect_eq(day_type("sat"), "weekend"); expect_eq(day_type("sun"), "weekend");' },
+    { name: 'day_type: "mon" and "fri" are "weekday"',
+      code: 'expect_eq(day_type("mon"), "weekday"); expect_eq(day_type("fri"), "weekday");' },
+  ],
+
+  solution: `<?php
+
+function grade(int $score): string {
+    return match (true) {
+        $score >= 90 => "A",
+        $score >= 60 => "pass",
+        default => "fail",
+    };
+}
+
+function day_type(string $day): string {
+    return match ($day) {
+        "sat", "sun" => "weekend",
+        default => "weekday",
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>Else-if</td><td><code>else if</code></td><td><code>elseif</code> (one word)</td></tr>
+  <tr><td>switch comparison</td><td><code>===</code></td><td><code>==</code> — loose! avoid switch</td></tr>
+  <tr><td>Strict multiway branch</td><td><code>switch</code> + <code>break</code></td><td><code>match</code> — strict, no fallthrough</td></tr>
+  <tr><td>Branch as a value</td><td>nested ternaries / IIFE</td><td><code>$x = match (...) { ... };</code></td></tr>
+  <tr><td>Group cases</td><td>stacked <code>case a: case b:</code></td><td><code>a, b =&gt; result</code></td></tr>
+  <tr><td>Range conditions</td><td><code>if</code>/<code>else if</code> chain</td><td><code>match (true) { $x &gt;= 90 =&gt; ... }</code></td></tr>
+  <tr><td>Exhaustiveness</td><td>compile-time via <code>never</code></td><td>runtime <code>UnhandledMatchError</code></td></tr>
+</table>
+<p>Think of <code>match</code> as the branch you'd design today with the
+benefit of hindsight: every property that makes <code>switch</code> dangerous
+(loose comparison, fallthrough, silent non-match, statement-only) is fixed.
+When a value maps to another value, reach for <code>match</code>; when ranges
+are involved, <code>match (true)</code>; keep <code>if</code>/<code>elseif</code>
+for branches that do work rather than produce a value.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

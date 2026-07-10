@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Exceptions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Exceptions",
+
+  intro: `
+<p>In C++ you can <code>throw</code> any value — an <code>int</code>, a
+<code>std::string</code>, an object derived from <code>std::exception</code>,
+anything — and <code>catch (...)</code> or a typed <code>catch</code> picks up
+whatever shows up; nothing is declared in the function signature (the old
+<code>throw(...)</code> specifiers are gone, and <code>noexcept</code> only
+says "won't throw"). Java splits exceptions into two families.
+<strong>Unchecked</strong> exceptions (subclasses of
+<code>RuntimeException</code>) behave like C++'s: throw them freely, catch
+them if you want. <strong>Checked</strong> exceptions (subclasses of
+<code>Exception</code> but not <code>RuntimeException</code>) are part of a
+method's signature — you must either <code>catch</code> them or declare
+<code>throws</code> to pass the buck, and the compiler enforces it.</p>
+<table>
+  <tr><th>C++</th><th>Java</th></tr>
+  <tr><td><code>throw std::runtime_error("bad")</code></td><td><code>throw new RuntimeException("bad")</code></td></tr>
+  <tr><td><code>catch (const std::exception& e) { }</code></td><td><code>catch (RuntimeException e) { }</code></td></tr>
+  <tr><td><code>try { } catch (...) { }</code> (no finally)</td><td><code>try { } finally { }</code></td></tr>
+  <tr><td>no checked exceptions</td><td><code>throws IOException</code> in the signature</td></tr>
+  <tr><td><code>class MyErr : public std::runtime_error</code></td><td><code>class MyErr extends RuntimeException</code></td></tr>
+</table>
+<p>The <code>catch</code> clause names a type, so you can have several catches
+for different exception types, most specific first. Modern idiomatic Java leans
+on unchecked exceptions for programming errors and validation, reserving checked
+exceptions for recoverable, expected conditions (I/O, parsing). A common pattern:
+a method validates its input and <code>throw</code>s a custom
+<code>RuntimeException</code>, and a defensive caller wraps the call in
+<code>try/catch</code> and returns a fallback instead of blowing up.</p>`,
+
+  cpp: `class ValidationError : public std::runtime_error {
+public:
+  explicit ValidationError(const std::string& message)
+      : std::runtime_error(message) {}
+};
+
+int parsePositive(const std::string& input) {
+  int n = std::stoi(input);
+  if (n <= 0) throw ValidationError("not positive: " + std::to_string(n));
+  return n;
+}
+
+int parseOrDefault(const std::string& input, int fallback) {
+  try {
+    return parsePositive(input);
+  } catch (const std::exception& e) {
+    return fallback;
+  }
+}`,
+
+  task: `
+<p>Build a small validator plus a safe caller, mirroring the C++ above.</p>
+<ol>
+  <li>Define a custom exception <code>ValidationError</code> that
+      <code>extends RuntimeException</code>. Give it a constructor taking a
+      <code>String message</code> and calling <code>super(message)</code>.</li>
+  <li>In a class <code>Validators</code>, write a <code>static int
+      parsePositive(String input)</code> that parses <code>input</code> with
+      <code>Integer.parseInt</code> and returns it — but if the value is
+      <code>&lt;= 0</code> it must <code>throw new ValidationError(...)</code>.
+      Declare it with <code>throws ValidationError</code> in the signature so
+      the intent is explicit (this is legal for unchecked exceptions too).</li>
+  <li>Write a <code>static int parseOrDefault(String input, int fallback)</code>
+      that calls <code>parsePositive</code> inside a <code>try</code>, returns
+      the parsed value, and in a <code>catch</code> returns <code>fallback</code>.
+      Catch both <code>ValidationError</code> and the
+      <code>NumberFormatException</code> that <code>Integer.parseInt</code>
+      throws on bad text.</li>
+</ol>`,
+
+  starter: `class ValidationError extends RuntimeException {
+  ValidationError(String message) {
+    super(message);
+  }
+}
+
+class Validators {
+  static int parsePositive(String input) throws ValidationError {
+    return 0; // TODO: parse and validate, throwing ValidationError when <= 0
+  }
+
+  static int parseOrDefault(String input, int fallback) {
+    return 0; // TODO: try parsePositive, catch and return fallback
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+ValidationError\s+extends\s+RuntimeException/, message: "Define ValidationError extends RuntimeException" },
+    { pattern: /throw\s+new\s+ValidationError/, message: "parsePositive must throw new ValidationError" },
+    { pattern: /catch\s*\(/, message: "parseOrDefault must catch the exception" },
+  ],
+
+  tests: [
+    { name: "parsePositive(\"42\") returns 42", code: "      expect_eq(Validators.parsePositive(\"42\"), 42);" },
+    { name: "parseOrDefault(\"7\", -1) returns 7", code: "      expect_eq(Validators.parseOrDefault(\"7\", -1), 7);" },
+    { name: "parseOrDefault(\"-5\", 99) falls back to 99", code: "      expect_eq(Validators.parseOrDefault(\"-5\", 99), 99);" },
+    { name: "parseOrDefault(\"abc\", 0) falls back to 0", code: "      expect_eq(Validators.parseOrDefault(\"abc\", 0), 0);" },
+    { name: "parsePositive(\"0\") throws ValidationError", code: "      boolean threw = false;\n      try { Validators.parsePositive(\"0\"); } catch (ValidationError e) { threw = true; }\n      expect_true(threw);" },
+    { name: "the thrown exception carries a message", code: "      String msg = null;\n      try { Validators.parsePositive(\"-3\"); } catch (ValidationError e) { msg = e.getMessage(); }\n      expect_true(msg != null && msg.length() > 0);" },
+  ],
+
+  solution: `class ValidationError extends RuntimeException {
+  ValidationError(String message) {
+    super(message);
+  }
+}
+
+class Validators {
+  static int parsePositive(String input) throws ValidationError {
+    int n = Integer.parseInt(input);
+    if (n <= 0) {
+      throw new ValidationError("not positive: " + n);
+    }
+    return n;
+  }
+
+  static int parseOrDefault(String input, int fallback) {
+    try {
+      return parsePositive(input);
+    } catch (ValidationError | NumberFormatException e) {
+      return fallback;
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+  <tr><td>Throw</td><td><code>throw std::runtime_error("x")</code></td><td><code>throw new RuntimeException("x")</code></td></tr>
+  <tr><td>Typed catch</td><td><code>catch (const std::exception& e) { }</code></td><td><code>catch (IOException e) { }</code></td></tr>
+  <tr><td>Multi-catch</td><td>separate <code>catch</code> blocks per type</td><td><code>catch (A | B e) { }</code></td></tr>
+  <tr><td>Declared throws</td><td>—</td><td><code>void f() throws IOException</code></td></tr>
+  <tr><td>Custom error</td><td><code>: public std::runtime_error</code></td><td><code>extends RuntimeException</code></td></tr>
+  <tr><td>Cleanup</td><td>RAII (destructors)</td><td><code>finally { }</code> / try-with-resources</td></tr>
+</table>
+<p>The big mental shift is <strong>checked exceptions</strong>. If a method
+declares <code>throws IOException</code> and that is a checked type, callers
+cannot ignore it — the compiler rejects the code until you catch it or re-declare
+it. Extending <code>RuntimeException</code> (as we did) opts out of that
+enforcement, which is why declaring <code>throws ValidationError</code> above is
+optional documentation rather than a compiler-imposed contract.</p>
+<p>Two more niceties: multi-catch (<code>catch (A | B e)</code>) handles several
+types in one block — C++ has no equivalent and needs a separate
+<code>catch</code> per type — and <code>finally</code> runs whether or not an
+exception was thrown. Java has no destructors, so for closing files, sockets,
+and other resources, prefer <em>try-with-resources</em>
+(<code>try (var f = ...) { }</code>), which auto-closes anything implementing
+<code>AutoCloseable</code>, similar in spirit to C++'s RAII but scoped to the
+<code>try</code> block rather than the enclosing scope.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

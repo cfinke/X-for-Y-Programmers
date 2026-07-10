@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>Your <code>List&lt;T&gt;</code> instincts transfer almost untouched. Type
+parameters go in angle brackets, they flow through parameters and return types,
+and the compiler infers them at the call site — <code>firstItem([1, 2, 3])</code>
+picks <code>T = number</code> exactly the way C#'s type inference does.
+Constraints just move inline: where C# writes a trailing
+<code>where T : IComparable&lt;T&gt;</code> clause, TypeScript writes
+<code>&lt;T extends Comparable&gt;</code> right in the bracket list.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>T? FirstItem&lt;T&gt;(IReadOnlyList&lt;T&gt; items)</code></td><td><code>function firstItem&lt;T&gt;(items: T[]): T | undefined</code></td></tr>
+  <tr><td><code>where T : IComparable&lt;T&gt;</code></td><td><code>&lt;T extends Comparable&gt;</code> (inline, before the parens)</td></tr>
+  <tr><td><code>Func&lt;T, TResult&gt; selector</code></td><td>Often just <code>K extends keyof T</code> — pass the property <em>name</em></td></tr>
+  <tr><td><code>typeof(T)</code> at runtime</td><td>Does not exist — generics are erased</td></tr>
+</table>
+<p>The one real difference is what survives compilation. C# generics are
+<em>reified</em>: <code>List&lt;int&gt;</code> and <code>List&lt;string&gt;</code>
+are distinct runtime types, and <code>typeof(T)</code> works inside a generic
+method. TypeScript generics are <em>fully erased</em> — after compilation there
+is one plain JavaScript function and <code>T</code> is gone without a trace. So
+there is no <code>typeof(T)</code>, no <code>new T()</code>, no
+<code>T.Default</code>; when you need runtime decisions, you inspect the
+<em>values</em> (<code>typeof x === "string"</code>, more in Lesson 16). In
+exchange you get constraints C# cannot express, like
+<code>K extends keyof T</code>: "K must be the name of a property of T."</p>`,
+
+  csharp: `using System.Collections.Generic;
+
+static class Utils
+{
+    public static T? FirstItem<T>(IReadOnlyList<T> items) =>
+        items.Count > 0 ? items[0] : default;
+
+    // No keyof in C#: you pass a selector lambda instead of a property name.
+    public static List<TResult> Pluck<T, TResult>(
+        IEnumerable<T> items, Func<T, TResult> selector)
+    {
+        var results = new List<TResult>();
+        foreach (var item in items)
+            results.Add(selector(item));
+        return results;
+    }
+
+    public static void Describe<T>() =>
+        Console.WriteLine(typeof(T).Name); // reified: T exists at runtime
+}`,
+
+  task: `
+<p>Write two generic functions:</p>
+<ol>
+  <li><code>firstItem&lt;T&gt;(items: T[]): T | undefined</code> — return the
+      first element, or <code>undefined</code> for an empty array. Same shape as
+      C#'s <code>T? FirstItem&lt;T&gt;</code>, with <code>T | undefined</code>
+      playing the role of <code>T?</code>.</li>
+  <li><code>pluck&lt;T, K extends keyof T&gt;(items: T[], key: K): T[K][]</code>
+      — extract one property from every element:
+      <code>pluck(users, "name")</code> gives <code>string[]</code>. The
+      <code>K extends keyof T</code> constraint means a misspelled property name
+      is a <em>compile</em> error, something C# needs a lambda
+      (<code>u =&gt; u.Name</code>) to achieve. <code>T[K]</code> is an indexed
+      access type: "the type of property K on T."</li>
+</ol>`,
+
+  starter: `// 1. First element or undefined (C#: T? FirstItem<T>).
+//    Declare the type parameter in angle brackets before the parens.
+function firstItem(items: unknown[]): unknown {
+  // TODO: make this generic and return items[0], or undefined when empty
+  return undefined;
+}
+
+// 2. pluck(users, "name") -> every user's name, fully typed.
+//    Signature to build: pluck<T, K extends keyof T>(items: T[], key: K): T[K][]
+function pluck(items: object[], key: string): unknown[] {
+  // TODO: make this generic and map each item to item[key]
+  return [];
+}
+`,
+
+  exportNames: ["firstItem", "pluck"],
+
+  requirements: [
+    { pattern: /<T\b/, message: "Declare a generic type parameter <T> (angle brackets before the parameter list)" },
+    { pattern: /T\s*\|\s*undefined/, message: "Give firstItem the return type T | undefined — the TS spelling of C#'s T?" },
+    { pattern: /extends\s+keyof/, message: "Constrain pluck's key with K extends keyof T" },
+  ],
+
+  tests: [
+    { name: "firstItem([10, 20, 30]) returns 10", run: (x) => expectEqual(x.firstItem([10, 20, 30]), 10) },
+    { name: "firstItem([]) returns undefined", run: (x) => expectEqual(x.firstItem([]), undefined) },
+    { name: 'firstItem(["ada"]) works for strings too — one function, every T', run: (x) => expectEqual(x.firstItem(["ada"]), "ada") },
+    { name: 'pluck(users, "name") returns ["Ada", "Grace"]', run: (x) => expectDeepEqual(x.pluck([{ name: "Ada", age: 36 }, { name: "Grace", age: 47 }], "name"), ["Ada", "Grace"]) },
+    { name: 'pluck(users, "age") returns [36, 47]', run: (x) => expectDeepEqual(x.pluck([{ name: "Ada", age: 36 }, { name: "Grace", age: 47 }], "age"), [36, 47]) },
+    { name: "pluck([], anything) returns []", run: (x) => expectDeepEqual(x.pluck([], "name"), []) },
+  ],
+
+  solution: `function firstItem<T>(items: T[]): T | undefined {
+  return items.length > 0 ? items[0] : undefined;
+}
+
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Generic method</td><td><code>T First&lt;T&gt;(List&lt;T&gt; xs)</code></td><td><code>function first&lt;T&gt;(xs: T[]): T</code></td></tr>
+  <tr><td>Constraint</td><td><code>where T : IShape</code></td><td><code>&lt;T extends Shape&gt;</code></td></tr>
+  <tr><td>"Maybe a T"</td><td><code>T?</code> / <code>default</code></td><td><code>T | undefined</code></td></tr>
+  <tr><td>Property-name constraint</td><td>— (use a <code>Func&lt;T, TResult&gt;</code> lambda)</td><td><code>K extends keyof T</code>, result type <code>T[K]</code></td></tr>
+  <tr><td>Runtime model</td><td>Reified — <code>typeof(T)</code>, <code>List&lt;int&gt;</code> ≠ <code>List&lt;string&gt;</code></td><td>Erased — one JS function, <code>T</code> is gone</td></tr>
+  <tr><td>Runtime type decisions</td><td><code>typeof(T)</code>, <code>is</code>, reflection</td><td>Narrow the <em>values</em>: <code>typeof x</code>, <code>instanceof</code></td></tr>
+</table>
+<p>Erasure sounds like a downgrade from reification, but it changes where you
+look, not what you can do. In C# the type parameter itself is a runtime fact you
+can interrogate; in TypeScript the runtime facts live in the values, and the
+type parameter is purely a compile-time thread connecting inputs to outputs.
+Once you stop reaching for <code>typeof(T)</code> and start narrowing arguments
+instead, erased generics feel lighter — and <code>keyof</code>-style constraints
+let the compiler check things (like property names as plain strings) that C#
+has to defer to lambdas or reflection.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

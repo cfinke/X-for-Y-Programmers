@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Kotlin and C# both grow class hierarchies with <code>:</code> — for extending
+a class and for chaining to a parent constructor — plus explicit
+<code>abstract</code> members. The difference is where the opt-in starts.
+Kotlin classes and members are <code>final</code> by default: a class must be
+marked <code>open</code> before it can be subclassed at all, and a member must
+be marked <code>open</code> (or <code>abstract</code>) before it can be
+overridden. C# classes are open to subclassing by default, but members still
+need <code>virtual</code> (or <code>abstract</code>) before <code>override</code>
+is allowed.</p>
+<table>
+  <tr><th>Kotlin</th><th>C#</th></tr>
+  <tr><td><code>open class Dog : Animal()</code></td><td><code>class Dog : Animal {}</code></td></tr>
+  <tr><td><code>class Dog(name: String) : Animal(name)</code></td><td><code>: base(name)</code> (constructor)</td></tr>
+  <tr><td><code>abstract class Shape {}</code></td><td><code>abstract class Shape {}</code></td></tr>
+  <tr><td><code>abstract fun area(): Double</code></td><td><code>public abstract double Area();</code></td></tr>
+  <tr><td><code>override fun area()</code></td><td><code>public override double Area()</code></td></tr>
+  <tr><td>class final unless <code>open</code></td><td><code>sealed class</code> / <code>sealed override</code></td></tr>
+</table>
+<p>Three things to internalize. First, the base-constructor call sits in the
+supertype list right after the class header — <code>: Animal(name)</code> in
+Kotlin, <code>: base(name)</code> in C# — not a <code>super()</code> statement
+inside the constructor body. Second, to override in C# you need
+<code>virtual</code>/<code>abstract</code> on the base and <code>override</code>
+on the child, the same contract as Kotlin's <code>open</code>/<code>abstract</code>
+plus <code>override</code> — except Kotlin also requires the class itself to be
+<code>open</code> before any subclassing is allowed, whereas C# classes are
+subclassable unless you explicitly <code>seal</code> them. Third,
+<code>sealed</code> in C# stops further subclassing (or seals a single
+overridden method) — the rough opposite of a Kotlin class that never got
+<code>open</code>. Polymorphism works the same as Kotlin: a <code>Shape</code>
+reference to a <code>Circle</code> calls <code>Circle</code>'s override.</p>`,
+
+  kotlin: `abstract class Shape(val name: String) {
+  abstract fun area(): Double
+  open fun describe(): String = "$name has area \${area()}"
+}
+
+class Rectangle(val w: Double, val h: Double) : Shape("Rectangle") {
+  override fun area(): Double = w * h
+}`,
+
+  task: `
+<p>Build a small shape hierarchy that shows off inheritance, abstract members,
+constructor chaining, and polymorphism.</p>
+<ol>
+  <li>Declare an <code>abstract class Shape</code> with a read-only
+      <code>string Name</code> property set through a <code>protected</code>
+      constructor <code>Shape(string name)</code>.</li>
+  <li>Give <code>Shape</code> an <code>abstract double Area()</code> (no body) and a
+      <code>virtual string Describe()</code> that returns
+      <code>$"{Name} has area {Area()}"</code>.</li>
+  <li><code>Rectangle : Shape</code> — constructor
+      <code>Rectangle(double width, double height) : base("Rectangle")</code>,
+      overriding <code>Area()</code> to return <code>Width * Height</code>.</li>
+  <li><code>Square : Shape</code> — mark it <code>sealed</code>, chain
+      <code>: base("Square")</code>, <code>override Area()</code> to return
+      <code>Side * Side</code>, and <code>override Describe()</code> to return
+      <code>$"Square with side {Side}"</code>.</li>
+</ol>`,
+
+  starter: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return ""; // TODO: "{Name} has area {Area()}"
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+
+  public override string Describe() {
+    return ""; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+double\s+Area/, message: "Declare Area() as an abstract method on Shape" },
+    { pattern: /override\s+double\s+Area/, message: "Override Area() with the override keyword in each subclass" },
+    { pattern: /:\s*base\(/, message: "Chain to the base constructor with : base(...)" },
+  ],
+
+  tests: [
+    { name: "Rectangle(3, 4).Area() is 12", code: "      expect_eq(new Rectangle(3, 4).Area(), 12.0);" },
+    { name: "Square(5).Area() is 25", code: "      expect_eq(new Square(5).Area(), 25.0);" },
+    { name: "Name set via base(...)", code: "      expect_eq(new Rectangle(1, 1).Name, \"Rectangle\");" },
+    { name: "virtual Describe() runs on a base reference", code: "      Shape s = new Rectangle(3, 4);\n      expect_eq(s.Describe(), \"Rectangle has area 12\");" },
+    { name: "Square overrides Describe()", code: "      Shape sq = new Square(5);\n      expect_eq(sq.Describe(), \"Square with side 5\");" },
+    { name: "polymorphism through a base array", code: "      Shape[] shapes = { new Rectangle(2, 3), new Square(4) };\n      double total = 0;\n      foreach (var shape in shapes) total += shape.Area();\n      expect_eq(total, 22.0);" },
+  ],
+
+  solution: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return $"{Name} has area {Area()}";
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return Width * Height;
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return Side * Side;
+  }
+
+  public override string Describe() {
+    return $"Square with side {Side}";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>C#</th></tr>
+  <tr><td>Extend a class</td><td><code>class D : B()</code></td><td><code>class D : B</code></td></tr>
+  <tr><td>Call base ctor</td><td><code>: B(x)</code> (supertype list)</td><td><code>: base(x)</code></td></tr>
+  <tr><td>Abstract method</td><td><code>abstract fun f(): T</code></td><td><code>public abstract T F();</code></td></tr>
+  <tr><td>Overridable method</td><td>only <code>open</code>/<code>abstract</code></td><td>only <code>virtual</code>/<code>abstract</code></td></tr>
+  <tr><td>Override</td><td><code>override</code> keyword required</td><td><code>override</code> keyword required</td></tr>
+  <tr><td>Block subclassing</td><td>default (no <code>open</code>)</td><td><code>sealed class</code></td></tr>
+</table>
+<p>C# and Kotlin actually agree on the core discipline here: neither lets you
+override a method by accident. In Kotlin the base must mark the method
+<code>open</code> (or <code>abstract</code>), and the child must confirm with
+<code>override</code> — C#'s <code>virtual</code>/<code>abstract</code> plus
+<code>override</code> is the same contract with different keywords. The one
+place they diverge is at the class level: Kotlin classes are <code>final</code>
+by default, so a class needs <code>open</code> before it can be subclassed at
+all, while C# classes are open to subclassing unless you mark them
+<code>sealed</code> — the inverse default. To reach the parent's version from
+inside an override, call <code>base.Describe()</code> — the analog of Kotlin's
+<code>super.describe()</code>. An <code>abstract</code> class cannot be
+instantiated with <code>new</code> in either language; it exists only to be
+inherited. Watch out for the name collision: C#'s <code>sealed</code> (stop
+subclassing) is unrelated to Kotlin's own <code>sealed class</code> (a closed,
+enumerable hierarchy) — they solve different problems despite sharing a
+word.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

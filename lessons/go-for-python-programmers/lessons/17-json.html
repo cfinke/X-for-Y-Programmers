@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "JSON",
+
+  intro: `
+<p>In Python, <code>json.loads</code> hands you a plain <code>dict</code> and
+<code>json.dumps</code> serializes whatever attributes or dict entries an object
+happens to have — the shape is whatever you say it is (or, with type hints, a
+promise the interpreter never checks at runtime). Go's <code>encoding/json</code> is
+the opposite: you marshal <em>into</em> and unmarshal <em>out of</em> concrete types. A
+<code>struct</code> declares exactly which fields exist, and <strong>struct
+tags</strong> map Go field names to JSON keys.</p>
+<table>
+  <tr><th>Python</th><th>Go</th></tr>
+  <tr><td><code>json.dumps(u)</code></td><td><code>b, err := json.Marshal(u)</code> (<code>[]byte</code>)</td></tr>
+  <tr><td><code>json.loads(s)</code></td><td><code>json.Unmarshal([]byte(s), &amp;u)</code></td></tr>
+  <tr><td><code>{"name": ...}</code> dict key</td><td><code>Name string \`json:"name"\`</code></td></tr>
+  <tr><td>omit <code>None</code> field</td><td><code>json:"email,omitempty"</code></td></tr>
+</table>
+<p>Two things surprise Python programmers. First, only <strong>exported</strong>
+(capitalized) fields are marshalled — <code>encoding/json</code> cannot see
+lowercase fields, so a JSON key like <code>"name"</code> comes from an exported
+<code>Name</code> field plus a tag. Second, <code>Marshal</code> returns
+<code>[]byte</code>, not a string, so you wrap it in <code>string(b)</code> to read
+it — <code>json.dumps</code> hands you a <code>str</code> directly. And every call
+returns an <code>error</code> you are expected to check, rather than raising an
+exception like Python's <code>json</code> module does.</p>`,
+
+  python: `from dataclasses import dataclass, field
+import json
+
+@dataclass
+class User:
+    name: str
+    age: int
+    email: str = ""
+
+u = User(name="Ada", age=36)
+s = json.dumps({"name": u.name, "age": u.age})  # '{"name":"Ada","age":36}'
+back = json.loads(s)`,
+
+  task: `
+<p>Write these as package-level declarations (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li>A struct <code>User</code> with three exported fields and JSON tags:
+      <code>Name string</code> tagged <code>json:"name"</code>,
+      <code>Age int</code> tagged <code>json:"age"</code>, and
+      <code>Email string</code> tagged <code>json:"email,omitempty"</code> so an
+      empty email is left out entirely.</li>
+  <li><code>ToJSON(u User) (string, error)</code>: call <code>json.Marshal(u)</code>
+      and return the bytes as a <code>string</code> (or <code>""</code> and the error).</li>
+  <li><code>FromJSON(data string) (User, error)</code>: declare a
+      <code>var u User</code>, call <code>json.Unmarshal([]byte(data), &amp;u)</code>,
+      and return <code>u</code> and the error.</li>
+  <li><code>ParseScores(data string) (map[string]int, error)</code>: unmarshal a JSON
+      object of numbers into a <code>map[string]int</code> — no struct needed when the
+      keys are dynamic.</li>
+</ol>
+<p><code>Marshal</code> writes struct fields in declaration order, so
+<code>ToJSON(User{Name: "Ada", Age: 36})</code> is exactly
+<code>{"name":"Ada","age":36}</code> — <code>omitempty</code> drops the empty email.</p>`,
+
+  starter: `type User struct {
+	Name  string \`json:"name"\`
+	Age   int    \`json:"age"\`
+	Email string \`json:"email,omitempty"\`
+}
+
+func ToJSON(u User) (string, error) {
+	return "", nil // TODO: json.Marshal
+}
+
+func FromJSON(data string) (User, error) {
+	return User{}, nil // TODO: json.Unmarshal into a User
+}
+
+func ParseScores(data string) (map[string]int, error) {
+	return nil, nil // TODO: json.Unmarshal into a map[string]int
+}
+`,
+
+  requirements: [
+    { pattern: /json:"email,omitempty"/, message: "Tag Email with json:\"email,omitempty\"" },
+    { pattern: /json\.Marshal/, message: "Use json.Marshal in ToJSON" },
+    { pattern: /json\.Unmarshal/, message: "Use json.Unmarshal to decode JSON" },
+  ],
+
+  tests: [
+    { name: "ToJSON marshals fields in order", code: "\t\ts, err := ToJSON(User{Name: \"Ada\", Age: 36, Email: \"ada@example.com\"})\n\t\texpect_true(err == nil)\n\t\texpect_eq(s, `{\"name\":\"Ada\",\"age\":36,\"email\":\"ada@example.com\"}`)" },
+    { name: "omitempty drops an empty email", code: "\t\ts, err := ToJSON(User{Name: \"Rob\", Age: 68})\n\t\texpect_true(err == nil)\n\t\texpect_eq(s, `{\"name\":\"Rob\",\"age\":68}`)" },
+    { name: "FromJSON fills the struct fields", code: "\t\tu, err := FromJSON(`{\"name\":\"Ada\",\"age\":36,\"email\":\"ada@example.com\"}`)\n\t\texpect_true(err == nil)\n\t\texpect_eq(u.Name, \"Ada\")\n\t\texpect_eq(u.Age, 36)\n\t\texpect_eq(u.Email, \"ada@example.com\")" },
+    { name: "round-trip preserves the value", code: "\t\torig := User{Name: \"Grace\", Age: 45, Email: \"grace@navy.mil\"}\n\t\ts, err := ToJSON(orig)\n\t\texpect_true(err == nil)\n\t\tback, err := FromJSON(s)\n\t\texpect_true(err == nil)\n\t\texpect_eq(back, orig)" },
+    { name: "ParseScores decodes into a map", code: "\t\tm, err := ParseScores(`{\"alice\":10,\"bob\":7}`)\n\t\texpect_true(err == nil)\n\t\texpect_eq(m, map[string]int{\"alice\": 10, \"bob\": 7})" },
+  ],
+
+  solution: `type User struct {
+	Name  string \`json:"name"\`
+	Age   int    \`json:"age"\`
+	Email string \`json:"email,omitempty"\`
+}
+
+func ToJSON(u User) (string, error) {
+	b, err := json.Marshal(u)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func FromJSON(data string) (User, error) {
+	var u User
+	err := json.Unmarshal([]byte(data), &u)
+	return u, err
+}
+
+func ParseScores(data string) (map[string]int, error) {
+	var m map[string]int
+	err := json.Unmarshal([]byte(data), &m)
+	return m, err
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+  <tr><td>Encode</td><td><code>json.dumps(u)</code></td><td><code>json.Marshal(u)</code> → <code>[]byte</code></td></tr>
+  <tr><td>Decode</td><td><code>json.loads(s)</code></td><td><code>json.Unmarshal(b, &amp;u)</code></td></tr>
+  <tr><td>Rename key</td><td>dict key you choose</td><td><code>\`json:"name"\`</code> tag</td></tr>
+  <tr><td>Skip empty</td><td>omit from dict, or <code>None</code> check</td><td><code>,omitempty</code></td></tr>
+  <tr><td>Dynamic keys</td><td><code>dict[str, int]</code></td><td><code>map[string]int</code></td></tr>
+</table>
+<p>The pointer in <code>Unmarshal(b, &amp;u)</code> is not optional: the decoder needs
+somewhere to <em>write</em>, so you always pass the address of the destination. Forget
+the <code>&amp;</code> and the compiler will not stop you (any value satisfies the
+<code>interface{}</code> parameter), but the fields stay at their zero values — a
+classic first bug.</p>
+<p>A field with no tag still marshals, using the exported field name verbatim
+(<code>Name</code> → <code>"Name"</code>), which is rarely the JSON you want. So in
+practice every field in a wire struct gets a tag. Reach for a <code>map</code> only
+when the keys are genuinely dynamic; when the shape is known, a struct gives you type
+safety, autocompletion, and a compile error if you misspell a field — closer to the
+safety a Python <code>dataclass</code> only hints at, but never enforces, when you
+call <code>json.loads</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

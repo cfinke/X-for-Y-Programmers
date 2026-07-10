@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Structs &amp; Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A TypeScript <code>class</code> bundles data and behavior in one block.
+Rust splits them: a <code>struct</code> declares the data (just fields, like
+an interface with storage), and an <code>impl</code> block attaches the
+behavior. There's no <code>constructor</code> keyword either — by convention
+you write an associated function called <code>new</code> and call it as
+<code>BankAccount::new("Ada")</code>. Same shape, different seams.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>class BankAccount { … }</code> (data + methods together)</td><td><code>struct BankAccount { … }</code> + <code>impl BankAccount { … }</code></td></tr>
+  <tr><td><code>constructor(owner: string) { … }</code></td><td><code>fn new(owner: &amp;str) -&gt; BankAccount</code> (convention, not keyword)</td></tr>
+  <tr><td><code>new BankAccount("Ada")</code></td><td><code>BankAccount::new("Ada")</code></td></tr>
+  <tr><td><code>deposit(amount: number)</code> — mutates? who knows</td><td><code>fn deposit(&amp;mut self, amount: i64)</code> — says so</td></tr>
+  <tr><td><code>getBalance(): number</code></td><td><code>fn balance(&amp;self) -&gt; i64</code> — read-only, provably</td></tr>
+</table>
+<p>The <code>self</code> parameter is where Rust pays you back for the
+ceremony. A TypeScript method signature never tells you whether calling it
+changes the object — <code>acct.deposit(100)</code> and
+<code>acct.getBalance()</code> look identical from outside. In Rust,
+<code>&amp;self</code> means "I only read" and <code>&amp;mut self</code>
+means "I write" — it's in the signature, checked by the compiler, and you
+can't even <em>call</em> a <code>&amp;mut self</code> method on a binding
+that isn't <code>mut</code>. Combine that with Lesson 9 and
+<code>withdraw</code> returns <code>Result</code> instead of throwing.</p>`,
+
+  typescript: `class BankAccount {
+  balance = 0;
+
+  constructor(public owner: string) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("insufficient funds");   // invisible in the signature
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;      // reads only — but the signature can't say so
+  }
+}
+
+const acct = new BankAccount("Ada");
+acct.deposit(100);`,
+
+  task: `
+<p>The <code>struct BankAccount</code> is already defined in the starter.
+Fill in the <code>impl</code> block:</p>
+<ol>
+  <li><code>new(owner: &amp;str) -&gt; BankAccount</code> — the constructor
+      convention: build a <code>BankAccount</code> with the given owner and a
+      <code>balance</code> of <code>0</code>.</li>
+  <li><code>deposit(&amp;mut self, amount: i64)</code> — add
+      <code>amount</code> to the balance. Note the <code>&amp;mut self</code>:
+      this method declares that it writes.</li>
+  <li><code>withdraw(&amp;mut self, amount: i64) -&gt; Result&lt;(), String&gt;</code>
+      — if <code>amount</code> is more than the balance, return
+      <code>Err</code> with any message; otherwise subtract and return
+      <code>Ok(())</code>.</li>
+  <li><code>balance(&amp;self) -&gt; i64</code> — return the balance.
+      Plain <code>&amp;self</code>: provably read-only.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests construct accounts
+via <code>BankAccount::new</code> and call your methods directly.</p>`,
+
+  starter: `// The data: fields only, no behavior. (Like an interface, but with storage.)
+struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+// The behavior lives in a separate impl block.
+impl BankAccount {
+    // 1. The constructor convention: an associated fn named new.
+    //    Called as BankAccount::new("Ada"). Start the balance at 0.
+    fn new(owner: &str) -> BankAccount {
+        todo!()
+    }
+
+    // 2. &mut self: this method writes. Callers need a mut binding.
+    fn deposit(&mut self, amount: i64) {
+        todo!()
+    }
+
+    // 3. Err(...) if amount > balance, otherwise subtract and Ok(()).
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        todo!()
+    }
+
+    // 4. &self: read-only, and the compiler holds you to it.
+    fn balance(&self) -> i64 {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /struct\s+BankAccount/, message: "Keep the struct BankAccount definition" },
+    { pattern: /impl\s+BankAccount/, message: "Put the methods in an impl BankAccount block" },
+    { pattern: /&mut\s+self/, message: "Use &mut self on the methods that write (deposit, withdraw)" },
+  ],
+
+  tests: [
+    { name: 'BankAccount::new("Ada") starts at balance 0 with the right owner',
+      code: 'let acct = BankAccount::new("Ada");\nassert_eq!(acct.balance(), 0);\nassert_eq!(acct.owner, "Ada");' },
+    { name: "deposit adds to the balance",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nacct.deposit(50);\nassert_eq!(acct.balance(), 150);' },
+    { name: "withdraw subtracts and returns Ok",
+      code: 'let mut acct = BankAccount::new("Grace");\nacct.deposit(100);\nassert!(acct.withdraw(40).is_ok());\nassert_eq!(acct.balance(), 60);' },
+    { name: "withdraw of more than the balance is Err",
+      code: 'let mut acct = BankAccount::new("Grace");\nacct.deposit(50);\nassert!(acct.withdraw(100).is_err());' },
+    { name: "a failed withdraw leaves the balance untouched",
+      code: 'let mut acct = BankAccount::new("Grace");\nacct.deposit(50);\nlet _ = acct.withdraw(100);\nassert_eq!(acct.balance(), 50);' },
+  ],
+
+  solution: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: &str) -> BankAccount {
+        BankAccount {
+            owner: owner.to_string(),
+            balance: 0,
+        }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        if amount > self.balance {
+            return Err("insufficient funds".to_string());
+        }
+        self.balance -= amount;
+        Ok(())
+    }
+
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Shape</td><td><code>class</code> (data + methods in one)</td><td><code>struct</code> for data, <code>impl</code> for methods</td></tr>
+  <tr><td>Constructor</td><td><code>constructor(…)</code>, called with <code>new</code></td><td><code>fn new(…)</code> by convention, called <code>Type::new(…)</code></td></tr>
+  <tr><td>Instance access</td><td><code>this.balance</code></td><td><code>self.balance</code></td></tr>
+  <tr><td>Read-only method</td><td>indistinguishable from a writer</td><td><code>fn balance(&amp;self)</code></td></tr>
+  <tr><td>Mutating method</td><td>indistinguishable from a reader</td><td><code>fn deposit(&amp;mut self, …)</code></td></tr>
+  <tr><td>Failable method</td><td><code>throw</code> inside <code>void</code></td><td><code>-&gt; Result&lt;(), String&gt;</code></td></tr>
+</table>
+<p>The struct/impl split looks like ceremony until you notice what
+<code>self</code> buys: an API's mutation story is machine-checked
+documentation. If a teammate hands you a non-<code>mut</code>
+<code>BankAccount</code>, the compiler guarantees no code path can change its
+balance — the kind of invariant that in TypeScript lives in a comment and
+dies in a refactor. You can also write multiple <code>impl</code> blocks for
+one struct, which is how trait implementations attach later in the
+course.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

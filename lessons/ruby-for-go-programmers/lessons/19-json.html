@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>In Go, JSON means <code>encoding/json</code>: define a struct, decorate it
+with tags, <code>Marshal</code> it, and <code>Unmarshal</code> into a typed
+target — plus an <code>err</code> check at each step. Ruby needs one
+<code>require "json"</code>, and then serialization is a <em>method on the
+data itself</em>: <code>data.to_json</code>. No target struct, no tags, no
+marshaling ceremony — hashes, arrays, strings, numbers, <code>true</code>,
+and <code>nil</code> already know how to be JSON.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>json.Marshal(user)</code> + tags</td><td><code>data.to_json</code></td></tr>
+  <tr><td><code>json.Unmarshal(b, &amp;u)</code> into a struct</td><td><code>JSON.parse(s)</code> → a Hash</td></tr>
+  <tr><td>tags: <code>\`json:"name"\`</code></td><td>none — keys are just keys</td></tr>
+  <tr><td>missing field → zero value</td><td>missing key → <code>nil</code>, or <code>fetch(:k, default)</code></td></tr>
+  <tr><td><code>if err != nil</code> after every call</td><td>bad JSON <em>raises</em> <code>JSON::ParserError</code></td></tr>
+</table>
+<p>Parsing goes the other way with the same shrug:
+<code>JSON.parse(s)</code> returns a <em>string</em>-keyed Hash; pass
+<code>symbolize_names: true</code> to get the symbol keys idiomatic Ruby
+expects. Nested paths need no intermediate structs —
+<code>data.dig(:user, :address, :city)</code> walks the tree and returns
+<code>nil</code> the moment a step is missing. And errors follow last
+lesson's flip: there's no <code>err</code> to check, malformed input raises
+<code>JSON::ParserError</code>, and you <code>rescue</code> it where you can
+actually respond.</p>`,
+
+  go: `type User struct {
+	Name string \`json:"name"\`
+	Age  int    \`json:"age"\`
+}
+
+func main() {
+	out, err := json.Marshal(User{Name: "Ada", Age: 36})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(out)) // {"name":"Ada","age":36}
+
+	var u User
+	if err := json.Unmarshal([]byte(\`{"name":"Grace"}\`), &u); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(u.Name, u.Age) // Grace 0 — the zero value fills the gap
+}`,
+
+  task: `
+<p>Rewrite the Go as Ruby (the starter already has
+<code>require "json"</code>):</p>
+<ol>
+  <li><code>to_json_string(data)</code> — serialize any Ruby data with
+      <code>data.to_json</code>. That's the whole marshaler.</li>
+  <li><code>parse_user(json)</code> — <code>JSON.parse(json, symbolize_names: true)</code>,
+      then build <code>{ name: ..., age: ... }</code> using
+      <code>fetch(:name, "unknown")</code> and <code>fetch(:age, 0)</code> —
+      explicit defaults instead of Go's silent zero values.</li>
+  <li><code>pluck_names(json)</code> — parse a JSON array of user objects and
+      map it to just the names.</li>
+  <li><code>safe_parse(json)</code> — <code>JSON.parse(json)</code> with a
+      def-level <code>rescue JSON::ParserError</code> returning
+      <code>{}</code>.</li>
+</ol>`,
+
+  starter: `require "json"
+
+# 1. to_json_string: serialization is a method on the data itself.
+def to_json_string(data)
+  raise NotImplementedError, "TODO: implement to_json_string"
+end
+
+# 2. parse_user: symbolize_names: true, then fetch with defaults
+#    ("unknown" for :name, 0 for :age).
+def parse_user(json)
+  raise NotImplementedError, "TODO: implement parse_user"
+end
+
+# 3. pluck_names: parse the array, map each user to its :name.
+def pluck_names(json)
+  raise NotImplementedError, "TODO: implement pluck_names"
+end
+
+# 4. safe_parse: rescue JSON::ParserError at the def level, return {}.
+def safe_parse(json)
+  raise NotImplementedError, "TODO: implement safe_parse"
+end
+`,
+
+  requirements: [
+    { pattern: /require\s+["']json["']/, message: 'Keep require "json" at the top' },
+    { pattern: /to_json/, message: "Serialize with .to_json" },
+    { pattern: /symbolize_names:\s*true/, message: "Parse with symbolize_names: true" },
+    { pattern: /JSON::ParserError|rescue/, message: "Rescue JSON::ParserError in safe_parse" },
+  ],
+
+  tests: [
+    { name: "to_json_string serializes a hash (and nil becomes null)",
+      code: `  expect_eq(to_json_string({ ok: true, count: 3 }), '{"ok":true,"count":3}')\n  expect_eq(to_json_string([1, "two", nil]), '[1,"two",null]')` },
+    { name: "parse_user reads name and age into symbol keys",
+      code: `  expect_eq(parse_user('{"name":"Ada","age":36}'), { name: "Ada", age: 36 })` },
+    { name: 'parse_user("{}") applies the defaults "unknown" / 0',
+      code: `  expect_eq(parse_user('{}'), { name: "unknown", age: 0 })` },
+    { name: "pluck_names pulls every :name from a JSON array",
+      code: `  expect_eq(pluck_names('[{"name":"Ada"},{"name":"Grace"},{"name":"Linus"}]'), ["Ada", "Grace", "Linus"])` },
+    { name: "safe_parse returns {} on malformed JSON, the data otherwise",
+      code: `  expect_eq(safe_parse("not json at all"), {})\n  expect_eq(safe_parse('{"a":1}'), { "a" => 1 })` },
+  ],
+
+  solution: `require "json"
+
+def to_json_string(data)
+  data.to_json
+end
+
+def parse_user(json)
+  user = JSON.parse(json, symbolize_names: true)
+  { name: user.fetch(:name, "unknown"), age: user.fetch(:age, 0) }
+end
+
+def pluck_names(json)
+  users = JSON.parse(json, symbolize_names: true)
+  users.map { |u| u[:name] }
+end
+
+def safe_parse(json)
+  JSON.parse(json)
+rescue JSON::ParserError
+  {}
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Serialize</td><td><code>json.Marshal(v)</code> + struct tags</td><td><code>data.to_json</code></td></tr>
+  <tr><td>Parse</td><td><code>json.Unmarshal(b, &amp;target)</code></td><td><code>JSON.parse(s)</code> (string keys)</td></tr>
+  <tr><td>Symbol keys</td><td>n/a</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+  <tr><td>Missing field</td><td>zero value, silently</td><td><code>nil</code>, or <code>fetch(:k, default)</code></td></tr>
+  <tr><td>Nested access</td><td>intermediate structs, or <code>map[string]any</code> casts</td><td><code>data.dig(:a, :b, :c)</code></td></tr>
+  <tr><td>Bad input</td><td><code>err != nil</code></td><td>raises <code>JSON::ParserError</code></td></tr>
+  <tr><td>Pretty print</td><td><code>json.MarshalIndent</code></td><td><code>JSON.pretty_generate(data)</code></td></tr>
+</table>
+<p>The trade is the dynamic-typing one, concentrated: Go's <code>Unmarshal</code>
+target struct is schema validation for free — unexpected shapes surface as
+type errors at the boundary. <code>JSON.parse</code> hands you whatever
+arrived, and a typo'd key is just <code>nil</code> three method calls later.
+That's why idiomatic Ruby leans on <code>fetch</code> (raises on a missing
+key, or takes an explicit default) and <code>dig</code> at the edges of a
+program, where the outside world's data comes in.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

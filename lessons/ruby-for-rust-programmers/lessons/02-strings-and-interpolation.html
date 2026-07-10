@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>The <code>String</code> vs <code>&amp;str</code> split — owned vs
+borrowed, heap vs slice, the <code>.to_owned()</code> and
+<code>.to_string()</code> sprinkled through every Rust codebase — simply
+vanishes. Ruby has <strong>one</strong> string class. No borrows, no
+lifetimes, no wondering whether a function should take <code>&amp;str</code>
+and return <code>String</code>: everything is a garbage-collected shared
+reference, and you pass strings around like integers.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>String</code> / <code>&amp;str</code> / <code>&amp;'a str</code></td><td><code>String</code> — one class, no borrows</td></tr>
+  <tr><td><code>format!("Hello, {name}!")</code></td><td><code>"Hello, #{name}!"</code></td></tr>
+  <tr><td><code>s.to_uppercase()</code></td><td><code>s.upcase</code></td></tr>
+  <tr><td><code>s.contains("x")</code></td><td><code>s.include?("x")</code></td></tr>
+  <tr><td><code>s.len()</code></td><td><code>s.length</code></td></tr>
+  <tr><td><code>vec.join(", ")</code></td><td><code>words.join(", ")</code></td></tr>
+</table>
+<p>Interpolation needs no macro: <em>every</em> double-quoted string supports
+<code>#{...}</code>, and the braces can hold any expression, not just a
+variable name. Note the naming convention on <code>include?</code> — Ruby
+methods that answer yes/no end in <code>?</code>, the readable cousin of
+Rust's <code>is_</code> prefix. Parentheses on zero-argument calls are
+dropped: <code>s.upcase</code>, not <code>s.upcase()</code>.</p>`,
+
+  rust: `fn shout(s: &str) -> String {
+    s.to_uppercase()
+}
+
+fn greet(name: &str) -> String {
+    format!("Hello, {name}!")
+}
+
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    haystack.contains(needle)
+}
+
+fn join_words(words: &[String]) -> String {
+    words.join(", ")
+}
+
+// Callers juggle &str vs String, .to_owned(), lifetimes…
+// In Ruby all four of these take and give plain strings.`,
+
+  task: `
+<p>Port the four functions to Ruby — the borrow-vs-owned decisions all
+disappear:</p>
+<ol>
+  <li><code>shout(s)</code> — the whole string uppercased.
+      <code>.to_uppercase()</code> becomes <code>.upcase</code>.</li>
+  <li><code>greet(name)</code> — <code>"Hello, #{name}!"</code> via
+      interpolation; no <code>format!</code> macro needed.</li>
+  <li><code>contains_word?(haystack, needle)</code> — note the <code>?</code>
+      in the method name itself; use <code>.include?</code>.</li>
+  <li><code>join_words(words)</code> — join an array of words with
+      <code>", "</code>, exactly like <code>vec.join(", ")</code>.</li>
+</ol>`,
+
+  starter: `# 1. shout: .to_uppercase() -> .upcase (no parentheses needed)
+def shout(s)
+  raise NotImplementedError, "TODO: implement shout"
+end
+
+# 2. greet: format!("Hello, {name}!") -> "Hello, #{name}!"
+def greet(name)
+  raise NotImplementedError, "TODO: implement greet"
+end
+
+# 3. contains_word?: predicates end in ? — use haystack.include?(needle)
+def contains_word?(haystack, needle)
+  raise NotImplementedError, "TODO: implement contains_word?"
+end
+
+# 4. join_words: same .join you know from Vec
+def join_words(words)
+  raise NotImplementedError, "TODO: implement join_words"
+end
+`,
+
+  requirements: [
+    { pattern: /#\{/, message: "Use #{} interpolation in greet" },
+    { pattern: /\.upcase/, message: "Use .upcase in shout" },
+    { pattern: /\.include\?/, message: "Use .include? in contains_word?" },
+    { pattern: /\.join/, message: "Use .join in join_words" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: '  expect_eq(shout("hello"), "HELLO")' },
+    { name: 'greet("Ferris") returns "Hello, Ferris!"',
+      code: '  expect_eq(greet("Ferris"), "Hello, Ferris!")' },
+    { name: 'contains_word?("the quick brown fox", "quick") is true',
+      code: '  expect_true(contains_word?("the quick brown fox", "quick"))' },
+    { name: 'contains_word?("the quick brown fox", "slow") is false',
+      code: '  expect_eq(contains_word?("the quick brown fox", "slow"), false)' },
+    { name: 'join_words(["no", "borrow", "checker"]) returns "no, borrow, checker"',
+      code: '  expect_eq(join_words(["no", "borrow", "checker"]), "no, borrow, checker")' },
+  ],
+
+  solution: `def shout(s)
+  s.upcase
+end
+
+def greet(name)
+  "Hello, #{name}!"
+end
+
+def contains_word?(haystack, needle)
+  haystack.include?(needle)
+end
+
+def join_words(words)
+  words.join(", ")
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>String types</td><td><code>String</code> and <code>&amp;str</code></td><td>one <code>String</code> class</td></tr>
+  <tr><td>Interpolation</td><td><code>format!("{name}")</code></td><td><code>"#{name}"</code> — any expression inside the braces</td></tr>
+  <tr><td>Uppercase / lowercase</td><td><code>.to_uppercase()</code> / <code>.to_lowercase()</code></td><td><code>.upcase</code> / <code>.downcase</code></td></tr>
+  <tr><td>Substring test</td><td><code>.contains("x")</code></td><td><code>.include?("x")</code></td></tr>
+  <tr><td>Length</td><td><code>.len()</code></td><td><code>.length</code> (or <code>.size</code>)</td></tr>
+  <tr><td>Join a collection</td><td><code>vec.join(", ")</code></td><td><code>words.join(", ")</code></td></tr>
+  <tr><td>Yes/no naming</td><td><code>is_empty()</code></td><td><code>empty?</code> — the <code>?</code> is part of the name</td></tr>
+</table>
+<p>What took ceremony now takes a line: no <code>.to_owned()</code> at call
+sites, no lifetime parameters on anything that stores a string, no
+<code>format!</code> import. The flip side is that Ruby strings are mutable
+shared references — two variables can point at the same string and one can
+mutate it under the other, the exact aliasing the borrow checker existed to
+prevent. In practice idiomatic Ruby leans on non-mutating methods
+(<code>upcase</code> returns a <em>new</em> string; the mutating variant is
+spelled <code>upcase!</code>), and convention does the job the checker
+did.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

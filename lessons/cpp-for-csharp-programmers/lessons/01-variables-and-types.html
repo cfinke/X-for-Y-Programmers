@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>C#'s types survive into a managed runtime with a JIT and garbage collector;
+C++'s types are the program, full stop. The compiler needs a concrete type for
+every variable, and that type picks the machine representation directly —
+<code>int</code> and <code>double</code> are genuinely different, not two
+value types sharing a common numeric tower.</p>
+<table>
+  <tr><th>C#</th><th>C++</th></tr>
+  <tr><td><code>int age = 36;</code></td><td><code>int age = 36;</code></td></tr>
+  <tr><td><code>const string name = "Ada";</code></td><td><code>const std::string name = "Ada";</code></td></tr>
+  <tr><td><code>var x = 1;</code> (inferred)</td><td><code>auto x = 1;</code> (inferred)</td></tr>
+  <tr><td><code>int</code>, <code>long</code>, <code>double</code>, … (distinct)</td><td><code>int</code>, <code>long</code>, <code>double</code>, … (distinct)</td></tr>
+</table>
+<p>Two things to internalize. First, the numeric split is already familiar —
+C# also has integer division, so <code>7 / 2</code> is <code>3</code> while
+<code>7 / 2.0</code> is <code>3.5</code>, exactly as in C++. Second,
+<code>auto</code> is your <code>var</code> — it infers the type from the
+initializer — but the type, once fixed, never changes. Free functions are
+welcome here; unlike C#, C++ does not require a class or even a top-level
+statement wrapper.</p>`,
+
+  csharp: `int age = 36;
+const string userName = "Ada";
+
+string Describe(string name, int age) {
+  return $"{name} is {age}";
+}`,
+
+  task: `
+<p>Write the C++ version as free functions (no class needed):</p>
+<ol>
+  <li><code>add(int a, int b)</code> returns their sum.</li>
+  <li><code>describe(const std::string&amp; name, int age)</code> returns a string
+      like <code>"Ada is 36"</code>. Build it with
+      <code>name + " is " + std::to_string(age)</code>.</li>
+  <li><code>divide(int a, int b)</code> returns a <code>double</code>, so
+      <code>divide(7, 2)</code> is <code>3.5</code>. Promote one operand:
+      <code>static_cast&lt;double&gt;(a) / b</code>.</li>
+</ol>`,
+
+  starter: `int add(int a, int b) {
+  return 0; // TODO
+}
+
+std::string describe(const std::string& name, int age) {
+  return ""; // TODO
+}
+
+double divide(int a, int b) {
+  return 0; // TODO: watch out for integer division
+}
+`,
+
+  requirements: [
+    { pattern: /std::to_string/, message: "Use std::to_string to turn the age into text" },
+    { pattern: /static_cast<double>/, message: "Use static_cast<double> so divide returns a fractional result" },
+  ],
+
+  tests: [
+    { name: "add(2, 3) is 5", code: "    expect_eq(add(2, 3), 5);" },
+    { name: "describe(\"Ada\", 36) is \"Ada is 36\"", code: "    expect_eq(describe(\"Ada\", 36), std::string(\"Ada is 36\"));" },
+    { name: "describe(\"Rob\", 68) is \"Rob is 68\"", code: "    expect_eq(describe(\"Rob\", 68), std::string(\"Rob is 68\"));" },
+    { name: "divide(7, 2) is 3.5", code: "    expect_eq(divide(7, 2), 3.5);" },
+    { name: "divide(10, 4) is 2.5", code: "    expect_eq(divide(10, 4), 2.5);" },
+  ],
+
+  solution: `int add(int a, int b) {
+  return a + b;
+}
+
+std::string describe(const std::string& name, int age) {
+  return name + " is " + std::to_string(age);
+}
+
+double divide(int a, int b) {
+  return static_cast<double>(a) / b;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>C++</th></tr>
+  <tr><td>Typed variable</td><td><code>int x = 1;</code></td><td><code>int x = 1;</code></td></tr>
+  <tr><td>Inferred variable</td><td><code>var x = 1;</code></td><td><code>auto x = 1;</code></td></tr>
+  <tr><td>Constant</td><td><code>const int x = 1;</code></td><td><code>const int x = 1;</code></td></tr>
+  <tr><td>Number to string</td><td><code>age.ToString()</code></td><td><code>std::to_string(age)</code></td></tr>
+  <tr><td>Integer vs float</td><td><code>7 / 2 == 3</code>, <code>7 / 2.0 == 3.5</code></td><td><code>7 / 2 == 3</code>, <code>7 / 2.0 == 3.5</code></td></tr>
+</table>
+<p>C++ has no string interpolation, so instead of C#'s <code>$"{name} is
+{age}"</code> you build strings by concatenation and explicit conversion:
+<code>std::to_string</code> for numbers, and <code>+</code> to join
+<code>std::string</code>s. Note the parameter type
+<code>const std::string&amp;</code> — passing by <code>const</code> reference
+avoids copying the string, the everyday default for read-only object
+parameters, similar in spirit to why you would not casually copy a large
+struct by value in C#.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

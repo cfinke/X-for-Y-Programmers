@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>A trait is Rust's <code>interface</code> — a named set of methods a type
+promises to provide. The syntax translates almost mechanically:
+<code>interface Describe</code> becomes <code>trait Describe</code>, and
+<code>class Dog implements Describe</code> becomes an
+<code>impl Describe for Dog</code> block. The structural difference is
+<em>where</em> the implementation lives: not inside the type's body, but in
+a separate block that pairs the trait with the type.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>interface Describe { name(): string }</code></td><td><code>trait Describe { fn name(&amp;self) -&gt; String; }</code></td></tr>
+  <tr><td><code>class Dog implements Describe { ... }</code></td><td><code>impl Describe for Dog { ... }</code> (outside the struct)</td></tr>
+  <tr><td>Default method bodies (interface defaults)</td><td>Default method bodies, same idea — override optional</td></tr>
+  <tr><td>Only your own classes can <code>implements</code></td><td>Implement <em>your</em> trait for types you didn't write</td></tr>
+</table>
+<p>That separation buys you something classes can't: because the
+<code>impl</code> block is freestanding, you can implement your own trait for
+a type from someone else's crate — <code>impl Describe for i32</code> is
+legal. And like TypeScript's interface default methods, a trait method can
+ship a default body written in terms of the trait's other methods;
+implementors get it for free and override only when they need to.</p>`,
+
+  typescript: `interface Describe {
+  name(): string;
+  describe(): string;
+}
+
+class Dog implements Describe {
+  constructor(private dogName: string) {}
+  name(): string { return this.dogName; }
+  describe(): string { return \`I am \${this.name()}\`; }
+}
+
+class Robot implements Describe {
+  constructor(private id: number) {}
+  name(): string { return \`Robot #\${this.id}\`; }
+  // Same describe body copied into every class — no defaults
+  // on TS interfaces without switching to abstract classes.
+  describe(): string { return \`I am \${this.name()}\`; }
+}`,
+
+  task: `
+<p>Move the shared <code>describe</code> body into the trait itself:</p>
+<ol>
+  <li>In the trait <code>Describe</code>, fill in the default body of
+      <code>describe</code>: it should return <code>"I am {name}"</code>,
+      built with <code>format!</code> and a call to <code>self.name()</code>.
+      Neither struct should override it.</li>
+  <li>In <code>impl Describe for Dog</code>, implement
+      <code>name</code> to return a clone of the dog's <code>name</code>
+      field (<code>self.name.clone()</code>).</li>
+  <li>In <code>impl Describe for Robot</code>, implement <code>name</code> to
+      return <code>"Robot #{id}"</code> using <code>format!</code> — e.g.
+      <code>Robot { id: 7 }</code> is named <code>"Robot #7"</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests construct
+<code>Dog</code> and <code>Robot</code> values and call <code>.name()</code>
+and <code>.describe()</code> directly.</p>`,
+
+  starter: `struct Dog {
+    name: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+trait Describe {
+    // Required method: every implementor must provide it.
+    fn name(&self) -> String;
+
+    // Default method: written once here, inherited by every implementor.
+    // Return "I am {name}" using format! and self.name().
+    fn describe(&self) -> String {
+        todo!()
+    }
+}
+
+// Note: implementation lives OUTSIDE the struct definition.
+impl Describe for Dog {
+    fn name(&self) -> String {
+        todo!() // return a clone of the name field
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        todo!() // format!("Robot #{}", ...)
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describe/, message: "Define the trait Describe" },
+    { pattern: /impl\s+Describe\s+for\s+/, message: "Implement Describe for the structs with impl Describe for ..." },
+    { pattern: /self\.name\(\)/, message: "The default describe body should call self.name()" },
+  ],
+
+  tests: [
+    { name: 'Dog { name: "Rex" }.name() returns "Rex"',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.name(), "Rex");' },
+    { name: 'Dog { name: "Rex" }.describe() returns "I am Rex" via the default method',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.describe(), "I am Rex");' },
+    { name: 'Robot { id: 7 }.name() returns "Robot #7"',
+      code: 'let r = Robot { id: 7 };\nassert_eq!(r.name(), "Robot #7");' },
+    { name: 'Robot { id: 42 }.describe() returns "I am Robot #42"',
+      code: 'let r = Robot { id: 42 };\nassert_eq!(r.describe(), "I am Robot #42");' },
+  ],
+
+  solution: `struct Dog {
+    name: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+trait Describe {
+    fn name(&self) -> String;
+
+    fn describe(&self) -> String {
+        format!("I am {}", self.name())
+    }
+}
+
+impl Describe for Dog {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        format!("Robot #{}", self.id)
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Declare the contract</td><td><code>interface Describe { name(): string }</code></td><td><code>trait Describe { fn name(&amp;self) -&gt; String; }</code></td></tr>
+  <tr><td>Fulfill the contract</td><td><code>class Dog implements Describe { ... }</code></td><td><code>impl Describe for Dog { ... }</code>, a separate block</td></tr>
+  <tr><td>Default methods</td><td>Interface method defaults</td><td>Trait methods with bodies — override optional</td></tr>
+  <tr><td>Foreign types</td><td>Can't retrofit an interface onto a built-in</td><td><code>impl Describe for i32</code> is fine (your trait, any type)</td></tr>
+  <tr><td>Conformance check</td><td>Structural — matching shape is enough</td><td>Nominal — no <code>impl</code> block, no trait</td></tr>
+</table>
+<p>One quiet difference from TypeScript: trait conformance is opt-in, not
+structural. A type with a <code>name()</code> method does not implement
+<code>Describe</code> until an <code>impl Describe for ...</code> block says
+so. In exchange, the default-method pattern you just wrote — required
+<code>name</code>, derived <code>describe</code> — is how most of the
+standard library is built: implement one or two required methods of
+<code>Iterator</code> and dozens of defaults come along for free.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

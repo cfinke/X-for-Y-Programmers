@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Errors</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Errors",
+
+  intro: `
+<p>C++ signals failure by <code>throw</code>ing an exception (usually derived
+from <code>std::exception</code>), and control jumps to the nearest matching
+<code>catch</code>, unwinding the stack via RAII along the way. Go has no
+exceptions for ordinary failures. Instead an error is just a <em>value</em> you
+return alongside the result, and the caller checks it with a plain
+<code>if</code>. The convention is a two-value return, <code>(T, error)</code>,
+where <code>error</code> is the last result.</p>
+<table>
+  <tr><th>C++</th><th>Go</th></tr>
+  <tr><td><code>throw std::runtime_error("bad")</code></td><td><code>return errors.New("bad")</code></td></tr>
+  <tr><td><code>throw std::runtime_error("bad: " + std::to_string(x))</code></td><td><code>fmt.Errorf("bad: %d", x)</code></td></tr>
+  <tr><td><code>try { … } catch (const std::exception&amp; e) { … }</code></td><td><code>v, err := f(); if err != nil { … }</code></td></tr>
+  <tr><td><code>int f()</code> (may throw)</td><td><code>func f() (int, error)</code></td></tr>
+</table>
+<p><code>error</code> is a built-in interface: any type with an
+<code>Error() string</code> method satisfies it. On success you return the value
+and <code>nil</code> for the error; on failure you return the zero value and a
+non-nil error. Because errors are ordinary return values, you cannot forget one —
+Go's unused-variable rule pushes you to look at every <code>err</code>.</p>`,
+
+  cpp: `int parsePositive(const std::string& s) {
+  int n = std::stoi(s); // throws std::invalid_argument on bad input
+  if (n <= 0) throw std::runtime_error("not positive: " + std::to_string(n));
+  return n;
+}
+
+try {
+  int n = parsePositive("42");
+  std::cout << n << std::endl;
+} catch (const std::exception& e) {
+  std::cout << "failed: " << e.what() << std::endl;
+}`,
+
+  task: `
+<p>Write these as package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>ParsePositive(s string) (int, error)</code> — parse <code>s</code> with
+      <code>strconv.Atoi</code>. If that returns an error, return
+      <code>0</code> and a wrapped error built with
+      <code>fmt.Errorf("not a number: %q", s)</code>. If the parsed number is
+      <code>&lt;= 0</code>, return <code>0</code> and
+      <code>errors.New("not positive")</code>. Otherwise return the number and
+      <code>nil</code>.</li>
+  <li><code>Describe(s string) string</code> — the caller. Call
+      <code>ParsePositive(s)</code>; if <code>err != nil</code> return
+      <code>"error: " + err.Error()</code>, otherwise return
+      <code>fmt.Sprintf("got %d", n)</code>.</li>
+</ol>`,
+
+  starter: `func ParsePositive(s string) (int, error) {
+	return 0, nil // TODO
+}
+
+func Describe(s string) string {
+	return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /errors\.New/, message: "Construct an error with errors.New" },
+    { pattern: /fmt\.Errorf/, message: "Construct an error with fmt.Errorf" },
+    { pattern: /err\s*!=\s*nil/, message: "Check the error with if err != nil" },
+  ],
+
+  tests: [
+    { name: "ParsePositive(\"42\") returns 42, nil", code: "\t\tn, err := ParsePositive(\"42\")\n\t\texpect_eq(n, 42)\n\t\texpect_true(err == nil)" },
+    { name: "ParsePositive(\"abc\") errors", code: "\t\tn, err := ParsePositive(\"abc\")\n\t\texpect_eq(n, 0)\n\t\texpect_true(err != nil)\n\t\texpect_eq(err.Error(), \"not a number: \\\"abc\\\"\")" },
+    { name: "ParsePositive(\"-5\") is not positive", code: "\t\tn, err := ParsePositive(\"-5\")\n\t\texpect_eq(n, 0)\n\t\texpect_true(err != nil)\n\t\texpect_eq(err.Error(), \"not positive\")" },
+    { name: "ParsePositive(\"0\") is not positive", code: "\t\t_, err := ParsePositive(\"0\")\n\t\texpect_true(err != nil)" },
+    { name: "Describe(\"7\") is \"got 7\"", code: "\t\texpect_eq(Describe(\"7\"), \"got 7\")" },
+    { name: "Describe(\"nope\") reports the error", code: "\t\texpect_eq(Describe(\"nope\"), \"error: not a number: \\\"nope\\\"\")" },
+    { name: "Describe(\"-1\") reports not positive", code: "\t\texpect_eq(Describe(\"-1\"), \"error: not positive\")" },
+  ],
+
+  solution: `func ParsePositive(s string) (int, error) {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, fmt.Errorf("not a number: %q", s)
+	}
+	if n <= 0 {
+		return 0, errors.New("not positive")
+	}
+	return n, nil
+}
+
+func Describe(s string) string {
+	n, err := ParsePositive(s)
+	if err != nil {
+		return "error: " + err.Error()
+	}
+	return fmt.Sprintf("got %d", n)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Go</th></tr>
+  <tr><td>Signal failure</td><td><code>throw std::runtime_error(msg)</code></td><td><code>return errors.New(msg)</code></td></tr>
+  <tr><td>Formatted error</td><td><code>throw std::runtime_error("x: " + std::to_string(v))</code></td><td><code>fmt.Errorf("x: %v", v)</code></td></tr>
+  <tr><td>Handle failure</td><td><code>try/catch</code></td><td><code>if err != nil { … }</code></td></tr>
+  <tr><td>Success sentinel</td><td>no throw</td><td>error is <code>nil</code></td></tr>
+  <tr><td>Error text</td><td><code>e.what()</code></td><td><code>err.Error()</code></td></tr>
+</table>
+<p>The <code>(T, error)</code> pair is the backbone of Go. When failing, return the
+zero value for <code>T</code> so a caller who ignores the error at least gets
+something safe — but the idiom is to never ignore it. Reach for
+<code>errors.New</code> for a fixed message and <code>fmt.Errorf</code> when you
+need to interpolate; the <code>%w</code> verb (a later topic) even lets you wrap
+one error inside another so callers can inspect the cause. There is no
+<code>catch</code> for these — <code>panic</code>/<code>recover</code> exists, but
+it is reserved for truly unexpected, unrecoverable situations, not routine bad
+input, unlike C++ exceptions, which are commonly used for ordinary error handling
+via <code>try</code>/<code>catch</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

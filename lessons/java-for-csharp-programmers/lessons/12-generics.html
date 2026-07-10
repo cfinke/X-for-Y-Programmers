@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Generics</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Generics",
+
+  intro: `
+<p>Generics will feel familiar: both languages write the type parameter in
+angle brackets after the name, and both use them to make containers and
+helpers reusable without giving up type safety. But the mechanisms underneath
+diverge — Java erases generics at compile time, while C# reifies them.</p>
+<table>
+  <tr><th>C#</th><th>Java</th></tr>
+  <tr><td><code>class Box&lt;T&gt; { ... }</code></td><td><code>class Box&lt;T&gt; { ... }</code></td></tr>
+  <tr><td><code>static T Id&lt;T&gt;(T x)</code></td><td><code>static &lt;T&gt; T id(T x)</code></td></tr>
+  <tr><td><code>where T : IComparable&lt;T&gt;</code></td><td><code>&lt;T extends Comparable&lt;T&gt;&gt;</code></td></tr>
+  <tr><td><code>List&lt;int&gt;</code>, real value-type instantiation</td><td><code>List&lt;Integer&gt;</code>, no primitives in generics</td></tr>
+</table>
+<p>Two differences bite. First, C# writes the type parameter after the method
+name and puts any bound in a trailing <code>where</code> clause —
+<code>static T Identity&lt;T&gt;(T x)</code> — while Java puts
+<code>&lt;T&gt;</code> <em>before</em> the return type and writes the bound
+inline: <code>static &lt;T&gt; T identity(T x)</code>. Second, Java generics
+are <em>invariant</em>: a <code>List&lt;Integer&gt;</code> is
+<strong>not</strong> a <code>List&lt;Number&gt;</code>. To accept "a list of
+some subtype of Number" you use a wildcard: <code>List&lt;? extends
+Number&gt;</code> — C#'s <code>List&lt;T&gt;</code> is invariant too, but C#
+instead declares variance once on an interface (<code>IEnumerable&lt;out
+T&gt;</code>) rather than at each call site. And because of type erasure,
+Java generics only work over reference types, so you write
+<code>Box&lt;Integer&gt;</code>, never <code>Box&lt;int&gt;</code> — whereas
+C# happily instantiates <code>Box&lt;int&gt;</code> directly.</p>`,
+
+  csharp: `class Box<T> {
+  private T value;
+  public Box(T value) { this.value = value; }
+  public T Get() => value;
+}
+
+static T Identity<T>(T x) => x;
+
+static T Max<T>(List<T> items, Func<T, T, bool> less) {
+  var best = items[0];
+  foreach (var x in items) if (less(best, x)) best = x;
+  return best;
+}
+
+static double Sum(List<double> nums) {
+  return nums.Sum();
+}`,
+
+  task: `
+<p>Build a small generic toolkit. Write two top-level types:</p>
+<ol>
+  <li>A generic container <code>class Box&lt;T&gt;</code> with a constructor
+      taking a <code>T</code>, a method <code>T get()</code>, and a method
+      <code>void set(T value)</code>.</li>
+  <li>A utility <code>class Generics</code> with three static methods:
+    <ul>
+      <li><code>&lt;T&gt; T identity(T x)</code> — returns its argument
+          unchanged (note the <code>&lt;T&gt;</code> before the return type).</li>
+      <li><code>&lt;T extends Comparable&lt;T&gt;&gt; T max(List&lt;T&gt; items)</code>
+          — returns the largest element using <code>compareTo</code>.</li>
+      <li><code>double sum(List&lt;? extends Number&gt; nums)</code> — adds the
+          numbers, calling <code>doubleValue()</code> on each. The wildcard lets
+          it accept a <code>List&lt;Integer&gt;</code> or a
+          <code>List&lt;Double&gt;</code>.</li>
+    </ul>
+  </li>
+</ol>`,
+
+  starter: `class Box<T> {
+  Box(T value) {
+    // TODO: store value
+  }
+
+  T get() {
+    return null; // TODO
+  }
+
+  void set(T value) {
+    // TODO
+  }
+}
+
+class Generics {
+  static <T> T identity(T x) {
+    return null; // TODO
+  }
+
+  static <T extends Comparable<T>> T max(List<T> items) {
+    return null; // TODO: find the largest with compareTo
+  }
+
+  static double sum(List<? extends Number> nums) {
+    return 0; // TODO: sum via doubleValue()
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /class\s+Box<T>/, message: "Declare a generic class Box<T>" },
+    { pattern: /<T\s+extends\s+Comparable<T>>/, message: "Use a bounded type parameter <T extends Comparable<T>> on max" },
+    { pattern: /List<\?\s+extends\s+Number>/, message: "Accept a List<? extends Number> wildcard in sum" },
+  ],
+
+  tests: [
+    { name: "Box holds and returns a value", code: "      Box<String> b = new Box<>(\"hi\");\n      expect_eq(b.get(), \"hi\");" },
+    { name: "Box.set replaces the value", code: "      Box<Integer> b = new Box<>(1);\n      b.set(42);\n      expect_eq(b.get(), 42);" },
+    { name: "identity returns its argument", code: "      expect_eq(Generics.identity(\"abc\"), \"abc\");\n      expect_eq(Generics.identity(7), 7);" },
+    { name: "max of integers", code: "      expect_eq(Generics.max(List.of(3, 9, 1, 7)), 9);" },
+    { name: "max of strings (lexicographic)", code: "      expect_eq(Generics.max(List.of(\"apple\", \"pear\", \"fig\")), \"pear\");" },
+    { name: "sum accepts List<Integer>", code: "      expect_eq(Generics.sum(List.of(1, 2, 3)), 6.0);" },
+    { name: "sum accepts List<Double>", code: "      expect_eq(Generics.sum(List.of(1.5, 2.5)), 4.0);" },
+  ],
+
+  solution: `class Box<T> {
+  private T value;
+
+  Box(T value) {
+    this.value = value;
+  }
+
+  T get() {
+    return value;
+  }
+
+  void set(T value) {
+    this.value = value;
+  }
+}
+
+class Generics {
+  static <T> T identity(T x) {
+    return x;
+  }
+
+  static <T extends Comparable<T>> T max(List<T> items) {
+    T best = items.get(0);
+    for (T x : items) {
+      if (x.compareTo(best) > 0) {
+        best = x;
+      }
+    }
+    return best;
+  }
+
+  static double sum(List<? extends Number> nums) {
+    double total = 0;
+    for (Number n : nums) {
+      total += n.doubleValue();
+    }
+    return total;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Java</th></tr>
+  <tr><td>Generic class</td><td><code>class Box&lt;T&gt;</code></td><td><code>class Box&lt;T&gt;</code></td></tr>
+  <tr><td>Generic method</td><td><code>T Id&lt;T&gt;(T x)</code></td><td><code>&lt;T&gt; T id(T x)</code> (param before return type)</td></tr>
+  <tr><td>Upper bound</td><td><code>where T : X</code> (trailing clause)</td><td><code>&lt;T extends X&gt;</code> (inline)</td></tr>
+  <tr><td>Covariant read</td><td><code>IEnumerable&lt;out T&gt;</code> (declared on the interface)</td><td><code>List&lt;? extends Number&gt;</code> (wildcard at the call site)</td></tr>
+  <tr><td>Element type</td><td><code>Box&lt;int&gt;</code> (real value-type generics)</td><td><code>Box&lt;Integer&gt;</code> (no <code>int</code>)</td></tr>
+</table>
+<p>The use-site wildcard is the piece with no direct C# equivalent. C# handles
+variance by declaring it once on the interface — <code>out T</code> for
+read-only producers, <code>in T</code> for write-only consumers, as in
+<code>IEnumerable&lt;out T&gt;</code> and <code>IComparer&lt;in T&gt;</code> —
+so every caller inherits the same variance automatically. Java instead asks
+each caller to opt in at the point of use: a method that only <em>reads</em>
+Numbers should say <code>List&lt;? extends Number&gt;</code> so it can accept
+a <code>List&lt;Integer&gt;</code>, and the mirror image, <code>? super
+T</code>, is for lists you only <em>write</em> to — the classic "producer
+extends, consumer super" rule. Also remember erasure: unlike C#'s reified
+generics, at runtime a Java <code>Box&lt;String&gt;</code> and a
+<code>Box&lt;Integer&gt;</code> are the same class, so you cannot write
+<code>new T()</code> or <code>x instanceof Box&lt;String&gt;</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules & Visibility</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules & Visibility",
+
+  intro: `
+<p>C# organizes code with namespaces and controls access with
+<code>public</code> / <code>internal</code> / <code>private</code>. Rust
+folds both jobs into one construct: <code>mod</code> creates a named scope
+(the namespace part), and everything inside it is <strong>private by
+default</strong> (the access part). There's no <code>private</code> keyword
+because private is what you get for free; <code>pub</code> is the single
+opt-in, the mirror image of C# where class members default private but
+top-level types default <code>internal</code> — visible assembly-wide.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>namespace Warehouse.Inventory { }</code></td><td><code>mod inventory { }</code></td></tr>
+  <tr><td><code>public</code></td><td><code>pub</code></td></tr>
+  <tr><td><code>internal</code> (assembly-wide default)</td><td>— (default is private to the module; <code>pub(crate)</code> is the closest cousin)</td></tr>
+  <tr><td><code>using Warehouse.Inventory;</code></td><td><code>use inventory::describe;</code></td></tr>
+  <tr><td><code>Inventory.ItemCount(items)</code></td><td><code>inventory::item_count(&amp;items)</code></td></tr>
+</table>
+<p>One structural difference worth internalizing: C# namespaces are
+decorative — any <code>public</code> type is visible to whoever references
+the assembly, regardless of namespace. Rust modules are the actual privacy
+boundary: a non-<code>pub</code> function is invisible outside its module,
+period. Modules are purely logical, not tied to compilation units the way
+assemblies are — one file can hold several, or a module can span files. And
+<code>::</code> is the path separator where C# uses <code>.</code>:
+<code>inventory::item_count</code>, like a namespace-qualified static
+call.</p>`,
+
+  csharp: `namespace Warehouse.Inventory
+{
+    public static class Inventory
+    {
+        public static int ItemCount(List<string> items) =>
+            items.Count;
+
+        public static string Describe(List<string> items) =>
+            ItemCount(items) + " items: " + JoinNames(items);
+
+        // private: only callable inside this class
+        private static string JoinNames(List<string> items) =>
+            string.Join(", ", items);
+    }
+}
+
+// elsewhere:
+// using Warehouse.Inventory;
+// Console.WriteLine(Inventory.Describe(myItems));
+// Inventory.JoinNames(myItems);  // compile error: private`,
+
+  task: `
+<p>Build the same inventory module in Rust. Write a <code>mod
+inventory</code> containing:</p>
+<ol>
+  <li><code>pub fn item_count(items: &amp;Vec&lt;String&gt;) -&gt;
+      usize</code> — the number of items (<code>.len()</code>).</li>
+  <li><code>pub fn describe(items: &amp;Vec&lt;String&gt;) -&gt;
+      String</code> — a string like <code>"2 items: apple, banana"</code>.
+      Build it with <code>format!</code>, calling <code>item_count</code>
+      for the number and a <em>private</em> helper for the name list.</li>
+  <li>A private helper <code>fn join_names(items: &amp;Vec&lt;String&gt;)
+      -&gt; String</code> — no <code>pub</code> — that joins the names with
+      <code>", "</code> (<code>items.join(", ")</code>). The tests call the
+      two <code>pub</code> functions as <code>inventory::item_count(...)</code>
+      and <code>inventory::describe(...)</code>; the helper stays
+      unreachable from outside, like a <code>private</code> method.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Everything in a mod is private unless marked pub —
+// stricter than C#, where top-level types default to internal.
+mod inventory {
+    // 1. pub: callable from outside as inventory::item_count(...)
+    pub fn item_count(items: &Vec<String>) -> usize {
+        todo!()
+    }
+
+    // 2. pub: format! the count (via item_count) and the joined
+    //    names (via the private helper below).
+    pub fn describe(items: &Vec<String>) -> String {
+        todo!()
+    }
+
+    // 3. No pub = private: visible to item_count/describe,
+    //    invisible outside this module.
+    fn join_names(items: &Vec<String>) -> String {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /mod\s+inventory/, message: "Define a module named inventory" },
+    { pattern: /pub\s+fn/, message: "Mark item_count and describe as pub" },
+  ],
+
+  tests: [
+    { name: "inventory::item_count counts three items",
+      code: `let items = vec!["apple".to_string(), "banana".to_string(), "cherry".to_string()];
+assert_eq!(inventory::item_count(&items), 3);` },
+    { name: "inventory::item_count returns 0 for an empty list",
+      code: 'assert_eq!(inventory::item_count(&vec![]), 0);' },
+    { name: 'inventory::describe lists two items',
+      code: `let items = vec!["apple".to_string(), "banana".to_string()];
+assert_eq!(inventory::describe(&items), "2 items: apple, banana");` },
+    { name: 'inventory::describe handles a single item',
+      code: `let items = vec!["saw".to_string()];
+assert_eq!(inventory::describe(&items), "1 items: saw");` },
+  ],
+
+  solution: `mod inventory {
+    pub fn item_count(items: &Vec<String>) -> usize {
+        items.len()
+    }
+
+    pub fn describe(items: &Vec<String>) -> String {
+        format!("{} items: {}", item_count(items), join_names(items))
+    }
+
+    fn join_names(items: &Vec<String>) -> String {
+        items.join(", ")
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Named scope</td><td><code>namespace Foo { }</code></td><td><code>mod foo { }</code></td></tr>
+  <tr><td>Public</td><td><code>public</code></td><td><code>pub</code></td></tr>
+  <tr><td>Private</td><td><code>private</code> (keyword)</td><td>the default (no keyword)</td></tr>
+  <tr><td>Assembly-visible</td><td><code>internal</code></td><td><code>pub(crate)</code></td></tr>
+  <tr><td>Import</td><td><code>using Foo.Bar;</code></td><td><code>use foo::bar;</code></td></tr>
+  <tr><td>Qualified call</td><td><code>Foo.Bar.Baz()</code></td><td><code>foo::bar::baz()</code></td></tr>
+  <tr><td>Boundary</td><td>assembly (namespaces are cosmetic)</td><td>module (the real privacy wall)</td></tr>
+</table>
+<p>The default flip is the part that changes how code reads. In C#, marking a
+helper <code>private</code> is an act of discipline; forgetting leaves it
+<code>internal</code>-ish and callable from across the assembly. In Rust,
+<em>exposing</em> something is the act: every <code>pub</code> is a
+deliberate addition to your API surface, and everything else is
+implementation detail the compiler enforces. When a module's API is its
+file's worth of <code>pub fn</code> lines, reviewing the public surface is
+just grepping for <code>pub</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

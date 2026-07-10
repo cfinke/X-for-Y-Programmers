@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums",
+
+  intro: `
+<p>PHP enums (added in PHP 8.1) are already real singleton objects, not a thin
+layer over numbers or strings, so they are closer in spirit to Java's enums
+than you might expect. The gap is what a case is allowed to hold: a PHP enum
+case can define methods and constants, but it cannot declare instance
+properties or a constructor, so there is no built-in way to attach different
+data to each case beyond hardcoding it inside a method. Java enums close that
+gap completely: each constant is a singleton object with its own fields,
+populated by a real constructor, that can also answer method calls.</p>
+<table>
+  <tr><th>PHP</th><th>Java</th></tr>
+  <tr><td><code>enum Status { case Todo; case Done; }</code></td><td><code>enum Status { TODO, DONE }</code></td></tr>
+  <tr><td>case cannot have instance properties or a constructor</td><td>constant carries fields via a constructor</td></tr>
+  <tr><td>hand-rolled <code>match($this)</code> per case as a workaround</td><td>fields set once, read directly &mdash; no workaround needed</td></tr>
+  <tr><td><code>Status::cases()</code></td><td><code>Status.values()</code> built in</td></tr>
+  <tr><td><code>Status::from("todo")</code> (backed enum, by value)</td><td><code>Status.valueOf("DONE")</code> (by name)</td></tr>
+</table>
+<p>Because every constant is an object, you can attach data. A
+<code>Planet</code> enum can store its mass and radius, take those through a
+constructor, and expose a <code>surfaceGravity()</code> method that computes a
+value per constant. Two built-ins come for free: <code>values()</code> returns
+every constant, and <code>valueOf(String)</code> parses a name back into a
+constant (throwing if it does not match). And a <code>switch</code> over an enum
+needs no <code>default</code> when it covers every case.</p>`,
+
+  php: `enum PlanetName: int
+{
+    case Mercury = 0;
+    case Venus = 1;
+    case Earth = 2;
+    case Mars = 3;
+}
+
+const MASS = [/* ... */];
+const RADIUS = [/* ... */];
+const G = 6.673e-11;
+
+function surfaceGravity(PlanetName $p): float
+{
+    return (G * MASS[$p->value]) / (RADIUS[$p->value] ** 2);
+}`,
+
+  task: `
+<p>Model the inner planets as a Java <code>enum</code> that carries data and
+computes gravity per constant:</p>
+<ol>
+  <li>Declare an <code>enum Planet</code> with constants
+      <code>MERCURY</code>, <code>VENUS</code>, <code>EARTH</code>,
+      <code>MARS</code>, each given a mass (kg) and radius (m).</li>
+  <li>Add <code>private final</code> fields for mass and radius, plus a
+      constructor that stores them (<code>this.mass = mass;</code>).</li>
+  <li>Add <code>double surfaceGravity()</code> returning
+      <code>G * mass / (radius * radius)</code>, with
+      <code>static final double G = 6.67300e-11;</code>.</li>
+  <li>Add <code>double surfaceWeight(double otherMass)</code> returning
+      <code>otherMass * surfaceGravity()</code>.</li>
+  <li>Add <code>String kind()</code> that uses a <code>switch</code> over
+      <code>this</code>: <code>MERCURY</code> and <code>MARS</code> are
+      <code>"small rocky"</code>; <code>VENUS</code> and <code>EARTH</code> are
+      <code>"large rocky"</code>.</li>
+</ol>
+<p>Suggested data: MERCURY (3.303e23, 2.4397e6), VENUS (4.869e24, 6.0518e6),
+EARTH (5.976e24, 6.37814e6), MARS (6.421e23, 3.3972e6).</p>`,
+
+  starter: `enum Planet {
+  MERCURY(3.303e+23, 2.4397e6),
+  VENUS(4.869e+24, 6.0518e6),
+  EARTH(5.976e+24, 6.37814e6),
+  MARS(6.421e+23, 3.3972e6);
+
+  static final double G = 6.67300e-11;
+
+  private final double mass;
+  private final double radius;
+
+  Planet(double mass, double radius) {
+    this.mass = 0;   // TODO: store mass
+    this.radius = 0; // TODO: store radius
+  }
+
+  double surfaceGravity() {
+    return 0; // TODO
+  }
+
+  double surfaceWeight(double otherMass) {
+    return 0; // TODO
+  }
+
+  String kind() {
+    return ""; // TODO: switch over this
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+Planet/, message: "Declare an enum named Planet" },
+    { pattern: /this\.mass|this\.radius/, message: "Store per-constant data via the constructor (this.mass = ...)" },
+    { pattern: /switch/, message: "Use a switch over the enum inside kind()" },
+  ],
+
+  tests: [
+    { name: 'EARTH.name() is "EARTH"', code: "      expect_eq(Planet.EARTH.name(), \"EARTH\");" },
+    { name: "values() has 4 planets", code: "      expect_eq(Planet.values().length, 4);" },
+    { name: 'valueOf("MARS") is Planet.MARS', code: "      expect_true(Planet.valueOf(\"MARS\") == Planet.MARS);" },
+    { name: "EARTH surface gravity is about 9.8", code: "      expect_true(Math.abs(Planet.EARTH.surfaceGravity() - 9.8) < 0.1);" },
+    { name: "surfaceWeight scales with gravity", code: "      expect_true(Math.abs(Planet.EARTH.surfaceWeight(75.0) - 75.0 * Planet.EARTH.surfaceGravity()) < 1e-9);" },
+    { name: 'MARS.kind() is "small rocky"', code: "      expect_eq(Planet.MARS.kind(), \"small rocky\");" },
+    { name: 'EARTH.kind() is "large rocky"', code: "      expect_eq(Planet.EARTH.kind(), \"large rocky\");" },
+  ],
+
+  solution: `enum Planet {
+  MERCURY(3.303e+23, 2.4397e6),
+  VENUS(4.869e+24, 6.0518e6),
+  EARTH(5.976e+24, 6.37814e6),
+  MARS(6.421e+23, 3.3972e6);
+
+  static final double G = 6.67300e-11;
+
+  private final double mass;   // kilograms
+  private final double radius; // meters
+
+  Planet(double mass, double radius) {
+    this.mass = mass;
+    this.radius = radius;
+  }
+
+  double surfaceGravity() {
+    return G * mass / (radius * radius);
+  }
+
+  double surfaceWeight(double otherMass) {
+    return otherMass * surfaceGravity();
+  }
+
+  String kind() {
+    return switch (this) {
+      case MERCURY, MARS -> "small rocky";
+      case VENUS, EARTH -> "large rocky";
+    };
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Java</th></tr>
+  <tr><td>Declare</td><td><code>enum E { case A; case B; }</code></td><td><code>enum E { A, B }</code></td></tr>
+  <tr><td>All values</td><td><code>E::cases()</code></td><td><code>E.values()</code></td></tr>
+  <tr><td>Parse a value</td><td><code>E::from($v)</code> / <code>E::tryFrom($v)</code> (backed enum, by value)</td><td><code>E.valueOf(name)</code> (by name)</td></tr>
+  <tr><td>Name of a constant</td><td><code>$case->name</code></td><td><code>E.A.name()</code></td></tr>
+  <tr><td>Attach data</td><td><code>match($this)</code> hardcoded in a method (no stored fields)</td><td>fields + constructor on the enum</td></tr>
+  <tr><td>Exhaustive branch</td><td><code>match</code> without a matching arm throws <code>UnhandledMatchError</code> at runtime</td><td><code>switch</code> checked for exhaustiveness at compile time (no default needed)</td></tr>
+</table>
+<p>The mental shift: a PHP enum case has real identity through <code>-&gt;name</code>
+and (for backed enums) <code>-&gt;value</code>, but no way to carry extra
+per-case data of its own &mdash; you fake it with a <code>match($this)</code>
+inside a method, hardcoding the result for each case in the method body. A
+Java enum constant is a full object, so the data lives directly on it,
+populated once by the constructor. That is why
+<code>Planet.EARTH.surfaceGravity()</code> reads as a method call over stored
+state, not a hardcoded lookup. <code>valueOf</code> throws
+<code>IllegalArgumentException</code> on an unknown name, and an enum
+<code>switch</code> that covers every constant is checked for exhaustiveness
+by the compiler &mdash; stricter than PHP's <code>match</code>, which only
+discovers a missed case with <code>UnhandledMatchError</code> when that branch
+actually runs.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

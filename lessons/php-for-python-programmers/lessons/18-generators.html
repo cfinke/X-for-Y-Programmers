@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Generators & Iterables</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Generators & Iterables",
+
+  intro: `
+<p>This one maps almost one-to-one. A Python function containing
+<code>yield</code> is a generator; so is a PHP function containing
+<code>yield</code>. Declare the return type as <code>Generator</code> and
+you have the same deal you know: calling the function runs <em>none</em> of
+its body, values are produced lazily one at a time, and the sequence can be
+infinite as long as consumers stop pulling. <code>foreach</code> consumes a
+generator exactly the way <code>for ... in</code> does, and Python's
+<code>list(gen)</code> materialization is
+<code>iterator_to_array($gen)</code>.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>def f(): yield 1</code></td><td><code>function f(): Generator { yield 1; }</code></td></tr>
+  <tr><td><code>for x in gen:</code></td><td><code>foreach ($gen as $x) {</code></td></tr>
+  <tr><td><code>list(gen)</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td><code>Iterable[int]</code> parameter</td><td><code>iterable</code> parameter type</td></tr>
+  <tr><td>lazy, resumable, one pass</td><td>lazy, resumable, one pass</td></tr>
+</table>
+<p>For functions that should accept arrays <em>and</em> generators alike —
+Python's "just take any <code>Iterable</code>" habit — PHP has the
+<code>iterable</code> pseudo-type: it admits both <code>array</code> and
+anything <code>Traversable</code> (generators included), and
+<code>foreach</code> handles either without caring which it got.</p>`,
+
+  python: `from typing import Iterable, Iterator
+
+def evens_up_to(max_n: int) -> Iterator[int]:
+    n = 0
+    while n <= max_n:
+        yield n          # lazy: nothing runs until someone pulls
+        n += 2
+
+def squares(nums: list[int]) -> Iterator[int]:
+    for n in nums:
+        yield n * n
+
+def take(items: Iterable[int], n: int) -> list[int]:
+    out = []
+    for item in items:
+        if len(out) >= n:
+            break
+        out.append(item)
+    return out
+
+print(list(squares([1, 2, 3])))        # [1, 4, 9]
+print(take(evens_up_to(10**18), 3))    # [0, 2, 4] -- finishes instantly`,
+
+  task: `
+<p>Port all three, keeping the laziness:</p>
+<ol>
+  <li><code>evens_up_to(int $max): Generator</code> — <code>yield</code> the
+      even numbers from 0 up to and including <code>$max</code>. A
+      <code>while</code> or <code>for</code> loop with <code>yield</code>
+      inside makes the function a generator, same rule as Python.</li>
+  <li><code>squares(array $nums): Generator</code> — <code>foreach</code>
+      over <code>$nums</code>, yielding each square.</li>
+  <li><code>take(iterable $items, int $n): array</code> — accept arrays and
+      generators alike via the <code>iterable</code> type; collect the first
+      <code>$n</code> items into an array with a counter (or
+      <code>count($out)</code>) and <code>break</code>. One test feeds it a
+      generator of ~a billion numbers — if your code tries to build the whole
+      sequence, it will never finish.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. yield the evens 0, 2, 4, ... up to and including $max.
+function evens_up_to(int $max): Generator {
+    throw new Exception("TODO: implement evens_up_to");
+}
+
+// 2. foreach over $nums, yield $n * $n.
+function squares(array $nums): Generator {
+    throw new Exception("TODO: implement squares");
+}
+
+// 3. iterable = array OR generator. Collect $n items, then break.
+function take(iterable $items, int $n): array {
+    throw new Exception("TODO: implement take");
+}
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Use yield — that's what makes a function a generator" },
+    { pattern: /:\s*Generator/, message: "Declare the Generator return type on the generator functions" },
+    { pattern: /iterable/, message: "take() must accept the iterable pseudo-type" },
+  ],
+
+  tests: [
+    { name: "iterator_to_array(evens_up_to(10)) is [0, 2, 4, 6, 8, 10]",
+      code: 'expect_eq(iterator_to_array(evens_up_to(10)), [0, 2, 4, 6, 8, 10]);' },
+    { name: "iterator_to_array(squares([1, 2, 3])) is [1, 4, 9]",
+      code: 'expect_eq(iterator_to_array(squares([1, 2, 3])), [1, 4, 9]);' },
+    { name: "evens_up_to(0) yields just [0]",
+      code: 'expect_eq(iterator_to_array(evens_up_to(0)), [0]);' },
+    { name: "take() works on a plain array",
+      code: 'expect_eq(take([10, 20, 30, 40], 2), [10, 20]);' },
+    { name: "take(evens_up_to(2000000000), 3) proves laziness — only 3 values are ever produced",
+      code: 'expect_eq(take(evens_up_to(2000000000), 3), [0, 2, 4]);' },
+  ],
+
+  solution: `<?php
+
+function evens_up_to(int $max): Generator {
+    $n = 0;
+    while ($n <= $max) {
+        yield $n;
+        $n += 2;
+    }
+}
+
+function squares(array $nums): Generator {
+    foreach ($nums as $n) {
+        yield $n * $n;
+    }
+}
+
+function take(iterable $items, int $n): array {
+    $out = [];
+    foreach ($items as $item) {
+        if (count($out) >= $n) {
+            break;
+        }
+        $out[] = $item;
+    }
+    return $out;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Make a generator</td><td><code>def f(): yield x</code></td><td><code>function f(): Generator { yield $x; }</code></td></tr>
+  <tr><td>Consume</td><td><code>for x in gen:</code></td><td><code>foreach ($gen as $x)</code></td></tr>
+  <tr><td>Materialize</td><td><code>list(gen)</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+  <tr><td>Delegate</td><td><code>yield from inner()</code></td><td><code>yield from inner();</code></td></tr>
+  <tr><td>Accept array or generator</td><td><code>Iterable[T]</code></td><td><code>iterable</code></td></tr>
+  <tr><td>Key-value yield</td><td><code>yield k, v</code> (tuple)</td><td><code>yield $k =&gt; $v;</code></td></tr>
+  <tr><td>Exhausted?</td><td><code>StopIteration</code></td><td><code>foreach</code> just ends (<code>$gen-&gt;valid()</code>)</td></tr>
+</table>
+<p>The semantics you rely on carry over intact: a generator body doesn't run
+until the first pull, state is suspended at each <code>yield</code>, and a
+generator is one-pass — iterate it twice and the second loop sees nothing
+(PHP actually throws an <code>Exception</code> on rewind, arguably friendlier
+than Python's silent empty loop). Two small deltas: PHP even has
+<code>yield from</code> spelled identically, and PHP generators can yield
+<code>$key =&gt; $value</code> pairs, which is why
+<code>iterator_to_array</code> keeps keys — pass <code>false</code> as its
+second argument if duplicate keys ever bite you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

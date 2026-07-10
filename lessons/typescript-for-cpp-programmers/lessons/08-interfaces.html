@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Interfaces & Object Shapes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Interfaces & Object Shapes",
+
+  intro: `
+<p>C++ has no <code>interface</code> keyword, so you improvise with one of two
+tools. A pure-virtual base class buys you a checked contract, but the price is
+steep: a vtable, virtual dispatch on every call, and every conforming type
+must <em>opt in by inheriting</em>. Or you go the template route — duck
+typing, zero overhead — but the "contract" is implicit, and violations
+surface as multi-page errors at the instantiation site, deep inside someone
+else's code. C++20 concepts finally split the difference; TypeScript's
+<code>interface</code> has been that middle ground all along.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>struct IPriceable { virtual double price() const = 0; };</code></td><td><code>interface Priceable { price: number; }</code></td></tr>
+  <tr><td>Conform by inheriting (<code>: public IPriceable</code>)</td><td>Conform by <em>having the right shape</em> — no declaration needed</td></tr>
+  <tr><td>vtable + virtual dispatch at runtime</td><td>Erased at compile time — zero runtime cost</td></tr>
+  <tr><td><code>template&lt;class T&gt;</code> duck typing, errors at instantiation</td><td>Errors at the call site, immediately, in one line</td></tr>
+  <tr><td><code>double discount = 0.0;</code> ("optional" by convention)</td><td><code>discount?: number;</code> (optional in the type)</td></tr>
+</table>
+<p>An interface is a <em>structural</em> contract, like a concept: any object
+literal with the right members satisfies it automatically, whether or not it
+has ever heard of the interface. Optional members get a <code>?</code> after
+the name — the field's type becomes <code>T | undefined</code>, and (as in
+Lesson 6) the compiler forces you to handle the missing case with
+<code>??</code> or a check before using it. And because interfaces exist only
+in the type checker, they compile away to nothing: no vtable, no RTTI, no
+runtime trace at all.</p>`,
+
+  cpp: `// Option 1: pure-virtual base — vtable, and Product must inherit.
+struct IPriceable {
+    virtual double base_price() const = 0;
+    virtual ~IPriceable() = default;
+};
+
+// Option 2: template duck typing — no contract until it explodes
+// at instantiation, three libraries deep.
+template <typename T>
+double final_price(const T& p) {
+    return p.price * (1.0 - p.discount);   // hope T has these...
+}
+
+struct Product {
+    std::string name;
+    double price;
+    double discount = 0.0;   // "optional" only by convention
+};`,
+
+  task: `
+<p>Define the contract once, structurally, and write two functions against
+it:</p>
+<ol>
+  <li>Declare <code>interface Product</code> with <code>name: string</code>,
+      <code>price: number</code>, and an <em>optional</em>
+      <code>discount?: number</code> (a fraction: <code>0.25</code> means 25%
+      off). No base class, no virtuals — just the shape.</li>
+  <li>Write <code>finalPrice(product: Product): number</code> — the price
+      after the discount, treating a missing <code>discount</code> as
+      <code>0</code>. The <code>value_or</code> move from Lesson 6:
+      <code>product.discount ?? 0</code>.</li>
+  <li>Write <code>describeProduct(product: Product): string</code> — with no
+      discount return <code>"Widget costs $100"</code>-style text
+      (<code>name + " costs $" + price</code>); with a discount return
+      <code>"Gadget costs $60 (25% off)"</code> — the final price, then the
+      percentage in parentheses.</li>
+</ol>
+<p>Note what you do <em>not</em> write: the object literals in the tests never
+say "I implement Product". They just have the right members, and that is
+enough — checked at compile time, gone at runtime.</p>`,
+
+  starter: `// 1. The contract. No inheritance, no vtable — just the shape.
+//    C++: struct Product { std::string name; double price; ... };
+interface Product {
+  name: string;
+  price: number;
+  // TODO: add the optional member:  discount?: number
+}
+
+// 2. Price after discount; missing discount means 0.
+function finalPrice(product: Product): number {
+  // TODO: product.price * (1 - (discount or 0))  — use ??
+  return 0;
+}
+
+// 3. "Widget costs $100"  or  "Gadget costs $60 (25% off)"
+function describeProduct(product: Product): string {
+  // TODO: branch on whether product.discount is undefined
+  return "";
+}
+`,
+
+  exportNames: ["finalPrice", "describeProduct"],
+
+  requirements: [
+    { pattern: /interface\s+Product/, message: "Declare interface Product — the structural contract" },
+    { pattern: /\w+\?\s*:/, message: "Mark discount as optional with ?: (not a default value by convention)" },
+    { pattern: /\(\s*product\s*:\s*Product\s*\)/, message: "Type the function parameters as Product — no template, no base class" },
+  ],
+
+  tests: [
+    { name: "finalPrice: no discount member means full price", run: (x) => expectEqual(x.finalPrice({ name: "Widget", price: 100 }), 100) },
+    { name: "finalPrice: 25% off 100 is 75", run: (x) => expectEqual(x.finalPrice({ name: "Widget", price: 100, discount: 0.25 }), 75) },
+    { name: "finalPrice: 50% off 80 is 40", run: (x) => expectEqual(x.finalPrice({ name: "Gadget", price: 80, discount: 0.5 }), 40) },
+    { name: 'describeProduct without discount: "Widget costs $100"', run: (x) => expectEqual(x.describeProduct({ name: "Widget", price: 100 }), "Widget costs $100") },
+    { name: 'describeProduct with discount: "Gadget costs $60 (25% off)"', run: (x) => expectEqual(x.describeProduct({ name: "Gadget", price: 80, discount: 0.25 }), "Gadget costs $60 (25% off)") },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  discount?: number;   // 0.25 means 25% off
+}
+
+function finalPrice(product: Product): number {
+  return product.price * (1 - (product.discount ?? 0));
+}
+
+function describeProduct(product: Product): string {
+  if (product.discount === undefined) {
+    return product.name + " costs $" + product.price;
+  }
+  return product.name + " costs $" + finalPrice(product) +
+    " (" + product.discount * 100 + "% off)";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Declare a contract</td><td>Pure-virtual base or C++20 <code>concept</code></td><td><code>interface Product { ... }</code></td></tr>
+  <tr><td>Conforming to it</td><td>Inherit (nominal) / instantiate and pray (templates)</td><td>Automatic if the shape matches (structural)</td></tr>
+  <tr><td>Runtime cost</td><td>vtable + indirect call (base-class route)</td><td>None — interfaces are erased</td></tr>
+  <tr><td>Where errors appear</td><td>Instantiation site, template stack trace</td><td>Call site, one-line diagnostic</td></tr>
+  <tr><td>Optional member</td><td><code>double discount = 0.0;</code> or <code>std::optional</code></td><td><code>discount?: number;</code></td></tr>
+  <tr><td>Read optional member</td><td>Just read it (and hope)</td><td>Must handle <code>undefined</code>: <code>d ?? 0</code></td></tr>
+</table>
+<p>The closest C++ analogue is not the pure-virtual base — it is the C++20
+concept: a named, compile-time predicate on shape that requires no
+inheritance and costs nothing at runtime. But TypeScript checks it at the
+<em>declaration</em> of every object and call, not at template instantiation,
+so the error points at your typo, not at a waterfall of substitution
+failures. One caveat carried over from Lesson 6: because interfaces are
+erased, you cannot ask <code>x instanceof Product</code> at runtime — testing
+behavior is done through the functions, and shape errors are the compiler's
+job.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

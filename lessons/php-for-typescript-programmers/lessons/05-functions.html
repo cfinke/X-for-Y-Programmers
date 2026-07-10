@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>PHP function signatures should look eerily familiar by now:
+<code>function f(int $x, string $greeting = "Hello"): string</code> has
+parameter types, a default value, and a return type — everything a TS
+signature has, minus generics. The crucial difference is <em>when</em> the
+types matter. TypeScript's annotations vanish at runtime; they exist only
+for the compiler. PHP's are the reverse: nobody checks them ahead of time,
+but the engine enforces them on every call — pass an array where
+<code>int</code> is declared and you get a <code>TypeError</code> <em>as the
+program runs</em>. Real teeth, later bite.</p>
+<table>
+  <tr><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td><code>function f(x: number, g = "Hello"): string</code></td><td><code>function f(int $x, string $g = "Hello"): string</code></td></tr>
+  <tr><td><code>last: string | null</code></td><td><code>?string $last</code> (shorthand for <code>string|null</code>)</td></tr>
+  <tr><td><code>id: number | string</code></td><td><code>int|string $id</code> (PHP 8 union types)</td></tr>
+  <tr><td><code>typeof id === "number"</code></td><td><code>is_int($id)</code></td></tr>
+  <tr><td>named arguments: <em>none</em> (options objects)</td><td><code>greet(name: "Ada")</code></td></tr>
+  <tr><td>checked at compile time</td><td>enforced at <strong>runtime</strong> (<code>TypeError</code>)</td></tr>
+</table>
+<p>Two features worth savoring. <code>?string</code> is TypeScript's
+<code>string | null</code> as a one-character prefix, and full union types
+like <code>int|string</code> arrived in PHP 8 — you narrow them with
+<code>is_int()</code>/<code>is_string()</code> instead of
+<code>typeof</code>. And PHP 8 has <em>named arguments</em> at the call
+site — <code>greet(name: "Ada")</code> — the feature TypeScript never got,
+which retires the whole "options object" pattern: skip the defaults you
+don't care about and name only what you pass.</p>`,
+
+  typescript: `function greet(name: string, greeting: string = "Hello"): string {
+  return \`\${greeting}, \${name}!\`;
+}
+
+function formatName(first: string, last: string | null = null): string {
+  return last === null ? first : \`\${first} \${last}\`;
+}
+
+function describe(id: number | string): string {
+  if (typeof id === "number") {
+    return \`int id \${id}\`;
+  }
+  return \`string id \${id}\`;
+}
+
+// TS has no named arguments — you'd reach for an options object.
+console.log(greet("Ada"), formatName("Grace"), describe(42));`,
+
+  task: `
+<p>Port the three signatures — the interesting part is the parameter
+lists:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      default value exactly like TS; return
+      <code>"Hello, Ada!"</code>-style text (greeting, comma, name,
+      exclamation point). Callers may use named arguments:
+      <code>greet(name: "Ada")</code> works out of the box.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      <code>?string</code> is <code>string | null</code>. Return just
+      <code>$first</code> when <code>$last</code> is null, otherwise
+      <code>"First Last"</code> — a null check or <code>??</code> both
+      work.</li>
+  <li><code>describe(int|string $id): string</code> — a PHP 8 union type.
+      Narrow with <code>is_int($id)</code> (PHP's <code>typeof</code>) and
+      return <code>"int id 42"</code> for ints, <code>"string id abc"</code>
+      for strings.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Default parameter, just like TS. Named args work automatically:
+//    greet(name: "Ada") — no options object needed.
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. ?string  ==  string|null. Append $last only when it's non-null.
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. Union type (PHP 8). Narrow with is_int($id) — PHP's typeof check.
+//    Ints -> "int id 42", strings -> "string id abc".
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give greet a default parameter: string $greeting = "Hello"' },
+    { pattern: /\?string/, message: "Declare format_name's $last as nullable: ?string $last = null" },
+    { pattern: /int\|string/, message: "Declare describe's parameter with the union type int|string" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Ada", "Howdy") returns "Howdy, Ada!"',
+      code: 'expect_eq(greet("Ada", "Howdy"), "Howdy, Ada!");' },
+    { name: 'named arguments: greet(greeting: "Hi", name: "Grace") returns "Hi, Grace!"',
+      code: 'expect_eq(greet(greeting: "Hi", name: "Grace"), "Hi, Grace!");' },
+    { name: 'format_name("Ada", "Lovelace") returns "Ada Lovelace"',
+      code: 'expect_eq(format_name("Ada", "Lovelace"), "Ada Lovelace");' },
+    { name: 'format_name("Ada") returns "Ada" (null last name)',
+      code: 'expect_eq(format_name("Ada"), "Ada");' },
+    { name: 'describe narrows the union: 42 vs "abc"',
+      code: 'expect_eq(describe(42), "int id 42");\nexpect_eq(describe("abc"), "string id abc");' },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    if ($last === null) {
+        return $first;
+    }
+    return "$first $last";
+}
+
+function describe(int|string $id): string {
+    if (is_int($id)) {
+        return "int id $id";
+    }
+    return "string id $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>Typed signature</td><td><code>(x: number): string</code></td><td><code>(int $x): string</code></td></tr>
+  <tr><td>Default parameter</td><td><code>g = "Hello"</code></td><td><code>string $g = "Hello"</code></td></tr>
+  <tr><td>Nullable</td><td><code>string | null</code></td><td><code>?string</code> (or spelled out: <code>string|null</code>)</td></tr>
+  <tr><td>Union type</td><td><code>number | string</code></td><td><code>int|string</code> (PHP 8, no spaces)</td></tr>
+  <tr><td>Narrowing</td><td><code>typeof x === "number"</code></td><td><code>is_int($x)</code>, <code>is_string($x)</code>, …</td></tr>
+  <tr><td>Named arguments</td><td>— (options objects)</td><td><code>greet(name: "Ada")</code></td></tr>
+  <tr><td>Enforcement</td><td>compile time, erased at runtime</td><td>runtime <code>TypeError</code> on mismatch</td></tr>
+</table>
+<p>Be clear-eyed about the trade. You lose the ahead-of-time safety net: a
+wrong-type call in a rarely-exercised branch ships to production and throws
+there, where TS would have refused to build (PHPStan/Psalm restore that
+guarantee, and serious PHP teams run one in CI). But you gain checks that
+are actually <em>real</em>: TypeScript's types are a promise erased at
+runtime — a lying <code>as</code> cast or bad JSON sails through — while a
+PHP declaration is a hard runtime contract the engine itself enforces, plus
+call-site niceties like named arguments that TS users are still writing
+options objects to simulate.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

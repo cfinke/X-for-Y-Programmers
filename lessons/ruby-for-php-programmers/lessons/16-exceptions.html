@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions &amp; Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>The vocabulary maps almost word-for-word, only the keywords change.
+PHP's <code>try / catch / finally</code> becomes Ruby's
+<code>begin / rescue / ensure</code>, and <code>throw new Foo(...)</code>
+becomes <code>raise Foo, "..."</code>. Where PHP catches a class and binds it
+with <code>catch (InvalidArgumentException $e)</code>, Ruby writes
+<code>rescue ArgumentError =&gt; e</code> — the type comes first, the arrow
+binds the variable.</p>
+<p>Two Ruby conveniences have no PHP equivalent. First, a method body can
+<em>end</em> with a <code>rescue</code> clause — no surrounding
+<code>begin</code> needed — so wrapping a whole method in a try block is just
+one extra line at the bottom. Second, a bare <code>rescue</code> with no class
+listed catches <code>StandardError</code> and its subclasses only (not
+low-level things like <code>NoMemoryError</code>), which is almost always what
+you actually want. Custom errors are ordinary classes:
+<code>class ParseError &lt; StandardError; end</code>.</p>
+<table>
+  <tr><th>PHP</th><th>Ruby</th></tr>
+  <tr><td><code>try { ... }</code></td><td><code>begin ... </code></td></tr>
+  <tr><td><code>catch (InvalidArgumentException $e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td><code>finally { ... }</code></td><td><code>ensure ... end</code></td></tr>
+  <tr><td><code>throw new RuntimeException("x")</code></td><td><code>raise "x"</code> (a RuntimeError)</td></tr>
+  <tr><td><code>throw new ParseError("x")</code></td><td><code>raise ParseError, "x"</code></td></tr>
+  <tr><td><code>class ParseError extends Exception {}</code></td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+</table>
+<p>One subtlety: in Ruby you rescue <code>StandardError</code> subclasses, not
+<code>Exception</code> itself. <code>InvalidArgumentException</code> in PHP
+becomes <code>ArgumentError</code>, which is already built in.</p>`,
+
+  php: `<?php
+function parse_age(string $s): int {
+    if (!preg_match('/^\\d+$/', trim($s))) {
+        throw new InvalidArgumentException("not a number: $s");
+    }
+    return (int) $s;
+}
+
+function safe_parse_age(string $s, int $default): int {
+    try {
+        return parse_age($s);
+    } catch (InvalidArgumentException $e) {
+        return $default;
+    }
+}
+
+class EmptyCartError extends Exception {}
+
+function checkout(array $items): int {
+    if (empty($items)) {
+        throw new EmptyCartError("cart is empty");
+    }
+    return array_sum($items);
+}`,
+
+  task: `
+<p>Port the PHP, swapping keywords for Ruby's:</p>
+<ol>
+  <li><code>parse_age(s)</code> — <code>raise ArgumentError</code> unless
+      <code>s.strip.match?(/\\A\\d+\\z/)</code>; otherwise return
+      <code>s.to_i</code>. (<code>ArgumentError</code> is Ruby's built-in
+      <code>InvalidArgumentException</code>.)</li>
+  <li><code>safe_parse_age(s, default)</code> — call <code>parse_age(s)</code>,
+      but put a <em>def-level</em> <code>rescue ArgumentError</code> at the
+      bottom of the method that returns <code>default</code>. No
+      <code>begin</code> keyword required.</li>
+  <li><code>class EmptyCartError &lt; StandardError</code> — a custom exception
+      type. Inherit from <code>StandardError</code>, never
+      <code>Exception</code>.</li>
+  <li><code>checkout(items)</code> — <code>raise EmptyCartError</code> when
+      <code>items</code> is empty; otherwise return <code>items.sum</code>.</li>
+</ol>
+<p>The tests probe for raises with the classic
+<code>begin; f("abc"); raise "did not raise"; rescue ArgumentError; end</code>
+pattern.</p>`,
+
+  starter: `# 1. parse_age: raise ArgumentError unless the trimmed string is all digits.
+#    Otherwise return the integer with s.to_i.
+def parse_age(s)
+  raise NotImplementedError, "TODO: implement parse_age"
+end
+
+# 2. safe_parse_age: call parse_age, then rescue ArgumentError at the def
+#    level (a rescue clause at the end of the method body — no begin needed)
+#    and return default.
+def safe_parse_age(s, default)
+  raise NotImplementedError, "TODO: implement safe_parse_age"
+end
+
+# 3. EmptyCartError: a custom exception. (This shell is complete.)
+class EmptyCartError < StandardError
+end
+
+# 4. checkout: raise EmptyCartError when items is empty; else sum the items.
+def checkout(items)
+  raise NotImplementedError, "TODO: implement checkout"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+\w*Error/, message: "Rescue a specific error class, e.g. rescue ArgumentError" },
+    { pattern: /raise\s+/, message: "Signal errors with raise" },
+    { pattern: /<\s*StandardError/, message: "EmptyCartError must inherit from StandardError" },
+    { pattern: /match\?|to_i/, message: "Validate with match? and convert with to_i" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42',
+      code: '  expect_eq(parse_age("42"), 42)' },
+    { name: 'parse_age("  7  ") strips whitespace and returns 7',
+      code: '  expect_eq(parse_age("  7  "), 7)' },
+    { name: 'parse_age("abc") raises ArgumentError',
+      code: '  begin\n    parse_age("abc")\n    raise "did not raise"\n  rescue ArgumentError\n  end' },
+    { name: 'safe_parse_age("abc", 0) rescues and returns 0',
+      code: '  expect_eq(safe_parse_age("abc", 0), 0)' },
+    { name: 'safe_parse_age("30", 0) returns 30',
+      code: '  expect_eq(safe_parse_age("30", 0), 30)' },
+    { name: 'checkout sums items, and checkout([]) raises EmptyCartError',
+      code: '  expect_eq(checkout([10, 20, 30]), 60)\n  begin\n    checkout([])\n    raise "did not raise"\n  rescue EmptyCartError\n  end' },
+  ],
+
+  solution: `def parse_age(s)
+  raise ArgumentError, "not a number: #{s}" unless s.strip.match?(/\\A\\d+\\z/)
+  s.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise EmptyCartError, "cart is empty" if items.empty?
+  items.sum
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Ruby</th></tr>
+  <tr><td>Guarded block</td><td><code>try { }</code></td><td><code>begin ... end</code></td></tr>
+  <tr><td>Catch + bind</td><td><code>catch (Foo $e)</code></td><td><code>rescue Foo =&gt; e</code></td></tr>
+  <tr><td>Cleanup</td><td><code>finally { }</code></td><td><code>ensure</code></td></tr>
+  <tr><td>Throw</td><td><code>throw new Foo("x")</code></td><td><code>raise Foo, "x"</code></td></tr>
+  <tr><td>Bare / quick throw</td><td><code>throw new RuntimeException("x")</code></td><td><code>raise "x"</code></td></tr>
+  <tr><td>Catch-all (sane)</td><td><code>catch (Exception $e)</code></td><td><code>rescue</code> (= StandardError)</td></tr>
+  <tr><td>Custom type</td><td><code>extends Exception</code></td><td><code>&lt; StandardError</code></td></tr>
+  <tr><td>Wrap a whole method</td><td>nest a <code>try</code></td><td>def-level <code>rescue</code> before <code>end</code></td></tr>
+</table>
+<p>The mental adjustment for a PHP developer is the class hierarchy. Ruby's
+<code>Exception</code> is the root of <em>everything</em>, including signals and
+internal errors you should never swallow, so day-to-day code rescues
+<code>StandardError</code> (what a bare <code>rescue</code> means) and derives
+custom errors from it. Reach for <code>Exception</code> in a
+<code>rescue</code> only when you truly mean "no matter what" — the opposite of
+PHP, where <code>catch (Exception $e)</code> is the everyday default.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

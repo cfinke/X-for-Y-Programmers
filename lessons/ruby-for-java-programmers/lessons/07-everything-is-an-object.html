@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Everything Is an Object</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Everything Is an Object",
+
+  intro: `
+<p>Java has lived with a split personality since 1995: <code>int</code> versus
+<code>Integer</code>, primitives versus boxed types, autoboxing papering over
+the seam, and utility classes like <code>Math</code> holding the methods that
+values can't. Ruby simply doesn't have the split. <strong>Everything is an
+object, always</strong> — <code>5</code>, <code>3.14</code>,
+<code>true</code>, even <code>nil</code> — so methods live on the values
+themselves. There is no <code>Math.abs(x)</code>; there is
+<code>x.abs</code>.</p>
+<table>
+  <tr><th>Java</th><th>Ruby</th></tr>
+  <tr><td><code>Math.abs(x)</code></td><td><code>x.abs</code></td></tr>
+  <tr><td><code>x % 2 == 0</code></td><td><code>x.even?</code></td></tr>
+  <tr><td><code>for (int i = 0; i &lt; 5; i++)</code></td><td><code>5.times { |i| ... }</code></td></tr>
+  <tr><td><code>Math.round(f * 100.0) / 100.0</code></td><td><code>f.round(2)</code></td></tr>
+  <tr><td><code>s.split("")</code> / <code>s.chars()</code> stream gymnastics</td><td><code>s.chars</code> — an array of one-character strings</td></tr>
+</table>
+<p>Once methods live on values, <em>chaining</em> becomes the core style:
+<code>-7.abs.even?</code> reads left to right, each call sending a message to
+the previous result. Even control flow joins in — <code>5.times</code> is not
+syntax, it's an ordinary method on <code>Integer</code> that takes a block.
+Ask any value what it can do: <code>5.methods.size</code> is well over a
+hundred.</p>`,
+
+  java: `int absolute(int n) {
+    return Math.abs(n);            // static utility method
+}
+
+List<Integer> evenNumbers(List<Integer> nums) {
+    return nums.stream()
+        .filter(n -> n % 2 == 0)   // operator arithmetic, not a method
+        .toList();
+}
+
+double rounded(double f, int digits) {
+    double factor = Math.pow(10, digits);
+    return Math.round(f * factor) / factor;
+}
+
+List<String> charList(String s) {
+    return s.chars()               // an IntStream of code points!
+        .mapToObj(c -> String.valueOf((char) c))
+        .toList();
+}`,
+
+  task: `
+<p>Rewrite each Java helper as a Ruby method that just asks the value:</p>
+<ol>
+  <li><code>absolute(n)</code> — return the absolute value using
+      <code>n.abs</code>. No <code>Math</code> class in sight.</li>
+  <li><code>even_numbers(nums)</code> — return only the even numbers using
+      <code>.select</code> with a block that asks each number
+      <code>n.even?</code>.</li>
+  <li><code>rounded(f, digits)</code> — round a float to <code>digits</code>
+      decimal places with <code>f.round(digits)</code> — the float rounds
+      itself.</li>
+  <li><code>char_list(s)</code> — return the string's characters as an array
+      of one-character strings via <code>s.chars</code>. No streams, no code
+      points, no casting.</li>
+</ol>`,
+
+  starter: `# 1. The integer knows its own absolute value.
+def absolute(n)
+  raise NotImplementedError, "TODO: implement absolute"
+end
+
+# 2. select keeps elements whose block returns true; ask each n if it is even.
+def even_numbers(nums)
+  raise NotImplementedError, "TODO: implement even_numbers"
+end
+
+# 3. Floats round themselves, to any number of digits.
+def rounded(f, digits)
+  raise NotImplementedError, "TODO: implement rounded"
+end
+
+# 4. Strings hand you their characters directly.
+def char_list(s)
+  raise NotImplementedError, "TODO: implement char_list"
+end
+`,
+
+  requirements: [
+    { pattern: /\.abs/, message: "Use n.abs — the method lives on the number" },
+    { pattern: /\.even\?/, message: "Ask each number n.even? instead of computing n % 2 == 0" },
+    { pattern: /\.round\(/, message: "Use f.round(digits)" },
+    { pattern: /\.chars/, message: "Use s.chars to get the character array" },
+  ],
+
+  tests: [
+    { name: "absolute(-7) returns 7 and absolute(3) returns 3",
+      code: "  expect_eq(absolute(-7), 7)\n  expect_eq(absolute(3), 3)" },
+    { name: "even_numbers([1, 2, 3, 4, 5, 6]) returns [2, 4, 6]",
+      code: "  expect_eq(even_numbers([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "even_numbers([1, 3, 5]) returns []",
+      code: "  expect_eq(even_numbers([1, 3, 5]), [])" },
+    { name: "rounded(3.14159, 2) returns 3.14",
+      code: "  expect_eq(rounded(3.14159, 2), 3.14)" },
+    { name: "rounded(2.71828, 3) returns 2.718",
+      code: "  expect_eq(rounded(2.71828, 3), 2.718)" },
+    { name: 'char_list("ruby") returns ["r", "u", "b", "y"]',
+      code: '  expect_eq(char_list("ruby"), ["r", "u", "b", "y"])' },
+  ],
+
+  solution: `def absolute(n)
+  n.abs
+end
+
+def even_numbers(nums)
+  nums.select { |n| n.even? }
+end
+
+def rounded(f, digits)
+  f.round(digits)
+end
+
+def char_list(s)
+  s.chars
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Ruby</th></tr>
+  <tr><td>Absolute value</td><td><code>Math.abs(x)</code></td><td><code>x.abs</code></td></tr>
+  <tr><td>Even / odd</td><td><code>x % 2 == 0</code></td><td><code>x.even?</code> / <code>x.odd?</code></td></tr>
+  <tr><td>Repeat n times</td><td><code>for (int i = 0; i &lt; n; i++)</code></td><td><code>n.times { |i| ... }</code></td></tr>
+  <tr><td>Round</td><td><code>Math.round(...)</code> arithmetic</td><td><code>f.round(2)</code>, <code>f.ceil</code>, <code>f.floor</code></td></tr>
+  <tr><td>Characters</td><td><code>s.chars()</code> → <code>IntStream</code></td><td><code>s.chars</code> → <code>["a", "b"]</code></td></tr>
+  <tr><td>Primitive vs boxed</td><td><code>int</code> / <code>Integer</code></td><td>just <code>Integer</code> — no split, ever</td></tr>
+</table>
+<p>The shorthand you'll meet everywhere: <code>nums.select { |n| n.even? }</code>
+can be written <code>nums.select(&amp;:even?)</code> — "call this method on each
+element." And because everything is an object, there are no static utility
+grab-bags to memorize: when you wonder how to do something to a value, ask the
+value. <code>5.methods.sort</code> lists every message an integer answers.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

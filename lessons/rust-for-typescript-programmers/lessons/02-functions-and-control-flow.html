@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Functions & Control Flow</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Functions & Control Flow",
+
+  intro: `
+<p>Function signatures translate almost mechanically:
+<code>function f(x: number): string</code> becomes
+<code>fn f(x: i32) -> String</code>. The parameter annotations are the same
+colon-after-name style you already write — only the return type moves from a
+colon to an arrow. The big shift is elsewhere: in Rust, <em>everything is an
+expression</em>. There is no ternary operator, because <code>if/else</code>
+itself produces a value: <code>let max = if a &gt; b { a } else { b };</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>function f(x: number): string</code></td><td><code>fn f(x: i32) -> String</code></td></tr>
+  <tr><td><code>const max = a &gt; b ? a : b;</code></td><td><code>let max = if a &gt; b { a } else { b };</code></td></tr>
+  <tr><td><code>return x + 1;</code></td><td><code>x + 1</code> (last expression, no semicolon)</td></tr>
+  <tr><td><code>switch (x) { case … }</code></td><td><code>match x { … }</code> (exhaustive, returns a value)</td></tr>
+</table>
+<p>That expression rule extends to function bodies: a block's <em>last
+expression</em> — written without a trailing semicolon — is the block's value.
+So idiomatic Rust rarely writes an early-exit keyword at all; the body just
+ends in the value it produces. Add a semicolon by accident and you've turned
+the expression into a statement, and the compiler will complain that the
+function claims to give back <code>i32</code> but produces <code>()</code>.
+Finally, meet <code>match</code>: think of it as <code>switch</code> that
+returns a value, needs no <code>break</code>, and refuses to compile until
+every case is handled. We'll only tease it here — it gets its own lesson.</p>`,
+
+  typescript: `function maxOf(a: number, b: number): number {
+  return a > b ? a : b;             // ternary: the expression-if of TS
+}
+
+function grade(score: number): string {
+  return score >= 60 ? "pass" : "fail";
+}
+
+function sign(n: number): number {
+  if (n < 0) return -1;             // early returns everywhere
+  if (n === 0) return 0;
+  return 1;
+}
+
+console.log(maxOf(3, 7), grade(59), sign(-5));`,
+
+  task: `
+<p>Rewrite the TypeScript as Rust — without ever writing the
+word <code>return</code>. Let each function body end in an expression
+(no trailing semicolon) instead:</p>
+<ol>
+  <li><code>max_of(a: i32, b: i32) -> i32</code> — the larger of the two,
+      using <code>if/else</code> as an expression where TS used the ternary.</li>
+  <li><code>grade(score: u32) -> String</code> — <code>"pass"</code> when
+      <code>score &gt;= 60</code>, otherwise <code>"fail"</code>. Bind an
+      if-expression to a variable (<code>let result = if … { … } else { … };</code>)
+      and convert with <code>.to_string()</code>.</li>
+  <li><code>sign(n: i32) -> i32</code> — <code>-1</code> for negative,
+      <code>0</code> for zero, <code>1</code> for positive, via
+      <code>if / else if / else</code> (or <code>match</code> if you're
+      feeling adventurous).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. max_of: TS \`a > b ? a : b\` -> Rust if-expression.
+//    The last expression of the body (no semicolon!) is the function's value.
+fn max_of(a: i32, b: i32) -> i32 {
+    todo!()
+}
+
+// 2. grade: bind an if-expression to a local, then .to_string() it.
+//    let result = if score >= 60 { "pass" } else { "fail" };
+fn grade(score: u32) -> String {
+    todo!()
+}
+
+// 3. sign: -1 / 0 / 1 via if / else if / else (or match).
+fn sign(n: i32) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /->/, message: "Declare return types with the -> arrow" },
+    { pattern: /=\s*if\b/, message: "Use if as an expression on the right-hand side of a let (let x = if … )" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No `return` keyword — let each body end in a bare expression (no semicolon)" },
+  ],
+
+  tests: [
+    { name: "max_of(3, 7) returns 7",
+      code: "assert_eq!(max_of(3, 7), 7);\nassert_eq!(max_of(10, 2), 10);" },
+    { name: "max_of(5, 5) returns 5",
+      code: "assert_eq!(max_of(5, 5), 5);" },
+    { name: 'grade(75) and grade(60) return "pass"',
+      code: 'assert_eq!(grade(75), "pass");\nassert_eq!(grade(60), "pass");' },
+    { name: 'grade(59) returns "fail"',
+      code: 'assert_eq!(grade(59), "fail");\nassert_eq!(grade(0), "fail");' },
+    { name: "sign(-5) is -1, sign(0) is 0, sign(9) is 1",
+      code: "assert_eq!(sign(-5), -1);\nassert_eq!(sign(0), 0);\nassert_eq!(sign(9), 1);" },
+  ],
+
+  solution: `fn max_of(a: i32, b: i32) -> i32 {
+    if a > b { a } else { b }
+}
+
+fn grade(score: u32) -> String {
+    let result = if score >= 60 { "pass" } else { "fail" };
+    result.to_string()
+}
+
+fn sign(n: i32) -> i32 {
+    if n < 0 {
+        -1
+    } else if n == 0 {
+        0
+    } else {
+        1
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Function signature</td><td><code>function f(x: number): string</code></td><td><code>fn f(x: i32) -> String</code></td></tr>
+  <tr><td>Conditional expression</td><td><code>cond ? a : b</code></td><td><code>if cond { a } else { b }</code></td></tr>
+  <tr><td>Returning a value</td><td><code>return expr;</code></td><td>last expression, <em>no semicolon</em></td></tr>
+  <tr><td>Multi-way branch</td><td><code>switch</code> + <code>break</code></td><td><code>match</code> — exhaustive, no fallthrough, yields a value</td></tr>
+  <tr><td>Parentheses on <code>if</code></td><td><code>if (cond)</code></td><td><code>if cond</code> — braces required, parens dropped</td></tr>
+</table>
+<p>The semicolon is doing real work in Rust: <code>x + 1</code> is an
+expression whose value the block yields, while <code>x + 1;</code> is a
+statement whose value is thrown away. When the compiler says "expected
+<code>i32</code>, found <code>()</code>", check the last line of the function
+for a stray semicolon — it's the single most common early Rust typo for
+TypeScript hands.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

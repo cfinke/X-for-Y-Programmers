@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: References &amp; Pointers</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "References & Pointers",
+
+  intro: `
+<p>In Rust there is exactly one address-carrying type in safe code: the
+reference (<code>&amp;T</code> / <code>&amp;mut T</code>), and the borrow
+checker guarantees it always points at a live object — never null, never
+dangling. When a value might be absent, Rust wraps it in
+<code>Option&lt;T&gt;</code> rather than allowing a null reference. C++ splits
+that single idea into two distinct tools, and — without a borrow checker —
+you are responsible for choosing between them and using each one safely.</p>
+<p>A <strong>reference</strong> (<code>T&amp;</code>) is an alias for an existing
+object. It can never be null and never rebound — it <em>is</em> the thing it
+names, just like Rust's <code>&amp;T</code>. Pass <code>int&amp;</code> to let a
+function write back into the caller's variable, the way Rust passes
+<code>&amp;mut i32</code>; pass <code>const T&amp;</code> to look without copying,
+the way Rust passes <code>&amp;T</code>. A <strong>pointer</strong> (<code>T*</code>)
+is a separate variable holding an address. It <em>can</em> be <code>nullptr</code>,
+so it is C++'s way to say "maybe there is an object here" — like Rust's
+<code>Option&lt;&amp;T&gt;</code>, except the compiler never forces you to check.</p>
+<table>
+  <tr><th>Rust</th><th>C++</th></tr>
+  <tr><td><code>f(&amp;mut n)</code> mutates <code>n</code></td><td><code>void f(int&amp; n)</code> mutates <code>n</code></td></tr>
+  <tr><td>read-only borrow param <code>&amp;String</code></td><td><code>const std::string&amp; s</code></td></tr>
+  <tr><td><code>p: Option&lt;&amp;i32&gt;</code></td><td><code>const int* p</code> (may be <code>nullptr</code>)</td></tr>
+  <tr><td><code>p.copied().unwrap_or(fallback)</code></td><td><code>p ? *p : fallback</code></td></tr>
+  <tr><td><code>obj.method()</code> (auto-deref)</td><td><code>ptr-&gt;method()</code></td></tr>
+</table>
+<p>Getting a pointer: <code>&amp;x</code> takes the address of <code>x</code> —
+the same syntax Rust uses to borrow, though C++ makes no promise the address
+stays valid. Using one: <code>*p</code> reads the pointed-to value, and
+<code>p-&gt;size()</code> is shorthand for <code>(*p).size()</code>. A raw
+pointer here is just a non-owning "maybe" handle — we are not allocating
+anything, so there is no <code>new</code> and no <code>delete</code> in this
+lesson.</p>`,
+
+  rust: `// Rust has &mut, so mutation is direct -- no wrapper needed:
+fn add_in_place(n: &mut i32, delta: i32) {
+    *n += delta;
+}
+
+// "maybe an int" is Option<i32>; unwrap_or supplies a fallback:
+fn value_or(p: Option<i32>, fallback: i32) -> i32 {
+    p.unwrap_or(fallback)
+}`,
+
+  task: `
+<p>Write these free functions. Two mutate through references; two take a
+possibly-null pointer.</p>
+<ol>
+  <li><code>addInPlace(int&amp; n, int delta)</code> returns <code>void</code> and
+      adds <code>delta</code> to the caller's <code>n</code>.</li>
+  <li><code>swapValues(int&amp; a, int&amp; b)</code> returns <code>void</code> and
+      swaps the two values in place.</li>
+  <li><code>valueOr(const int* p, int fallback)</code> returns <code>*p</code>
+      when <code>p</code> is non-null, otherwise <code>fallback</code>. Check
+      <code>p == nullptr</code> first.</li>
+  <li><code>safeLength(const std::string* s)</code> returns the string's length
+      as an <code>int</code> via <code>s-&gt;size()</code>, or <code>-1</code> when
+      <code>s</code> is <code>nullptr</code>.</li>
+</ol>`,
+
+  starter: `void addInPlace(int& n, int delta) {
+  // TODO: write delta into the caller's n
+}
+
+void swapValues(int& a, int& b) {
+  // TODO: swap the two values in place
+}
+
+int valueOr(const int* p, int fallback) {
+  return 0; // TODO: dereference p, or return fallback when null
+}
+
+int safeLength(const std::string* s) {
+  return 0; // TODO: s->size() when non-null, else -1
+}
+`,
+
+  requirements: [
+    { pattern: /\bint&/, message: "Take an int& parameter so the function can mutate the caller's variable" },
+    { pattern: /nullptr/, message: "Guard against nullptr before dereferencing the pointer" },
+    { pattern: /->/, message: "Use -> to call size() through the string pointer" },
+  ],
+
+  tests: [
+    { name: "addInPlace writes back into the caller's variable", code: "    int x = 10;\n    addInPlace(x, 5);\n    expect_eq(x, 15);" },
+    { name: "swapValues swaps in place", code: "    int a = 1, b = 2;\n    swapValues(a, b);\n    expect_eq(a, 2);\n    expect_eq(b, 1);" },
+    { name: "valueOr dereferences a non-null pointer", code: "    int v = 42;\n    expect_eq(valueOr(&v, 0), 42);" },
+    { name: "valueOr returns the fallback for nullptr", code: "    expect_eq(valueOr(nullptr, -1), -1);" },
+    { name: "safeLength reads length through the pointer", code: "    std::string s = \"hello\";\n    expect_eq(safeLength(&s), 5);" },
+    { name: "safeLength returns -1 for nullptr", code: "    expect_eq(safeLength(nullptr), -1);" },
+  ],
+
+  solution: `void addInPlace(int& n, int delta) {
+  n += delta;
+}
+
+void swapValues(int& a, int& b) {
+  int tmp = a;
+  a = b;
+  b = tmp;
+}
+
+int valueOr(const int* p, int fallback) {
+  if (p == nullptr) return fallback;
+  return *p;
+}
+
+int safeLength(const std::string* s) {
+  if (s == nullptr) return -1;
+  return static_cast<int>(s->size());
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>C++</th></tr>
+  <tr><td>Mutate caller's value</td><td><code>fn f(n: &amp;mut i32)</code></td><td><code>void f(int&amp; n)</code></td></tr>
+  <tr><td>Read without copying</td><td><code>fn f(s: &amp;String)</code></td><td><code>const std::string&amp; s</code></td></tr>
+  <tr><td>Maybe-absent</td><td><code>Option&lt;T&gt;</code></td><td><code>T*</code> (can be <code>nullptr</code>)</td></tr>
+  <tr><td>Address-of</td><td><code>&amp;x</code> (borrow, checked)</td><td><code>&amp;x</code> (raw address, unchecked)</td></tr>
+  <tr><td>Dereference</td><td><code>*p</code>, auto-deref for <code>p.m()</code></td><td><code>*p</code>, <code>p-&gt;m()</code></td></tr>
+</table>
+<p>Rule of thumb: reach for a <strong>reference</strong> by default — it cannot be
+null, so there is nothing to check, and <code>const T&amp;</code> is the standard
+read-only parameter, exactly like Rust's <code>&amp;T</code>. Reach for a
+<strong>pointer</strong> only when absence is a real possibility, and then always
+test against <code>nullptr</code> before <code>*</code> or <code>-&gt;</code>;
+dereferencing a null pointer is undefined behavior, not a panicking
+<code>Option::unwrap()</code> or a compile error the borrow checker would catch.
+Note <code>p-&gt;size()</code> is exactly <code>(*p).size()</code> — the arrow
+just dereferences and reaches a member in one step, the way Rust's auto-deref
+lets you write <code>p.method()</code> on a reference without an explicit
+<code>*</code>. When you later need an <em>owning</em> handle, you will use
+<code>std::unique_ptr</code> rather than raw <code>new</code>/<code>delete</code>
+— much like Rust's <code>Box&lt;T&gt;</code> already gives you for free.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Nullable &amp; Null Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Nullable & Null Handling",
+
+  intro: `
+<p>In Ruby, <code>nil</code> can be assigned to any variable — there's no
+distinction between value types and reference types, so <code>age = nil</code>
+and <code>name = nil</code> look identical regardless of what type they will
+eventually hold. C# 7.3 draws a hard line: <em>reference</em> types (like
+<code>string</code>) are already nullable, but <em>value</em> types (<code>int</code>,
+<code>bool</code>, <code>DateTime</code>, structs) cannot hold <code>null</code>
+unless you opt in with <code>?</code> — that <code>int?</code> is shorthand for
+<code>Nullable&lt;int&gt;</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>C# 7.3</th></tr>
+  <tr><td><code>n = nil</code></td><td><code>int? n = null;</code></td></tr>
+  <tr><td><code>s = nil</code></td><td><code>string s = null;</code> (already nullable)</td></tr>
+  <tr><td><code>n || 0</code></td><td><code>n ?? 0</code></td></tr>
+  <tr><td><code>user&amp;.name</code></td><td><code>user?.Name</code></td></tr>
+  <tr><td><code>!n.nil?</code></td><td><code>n.HasValue</code></td></tr>
+</table>
+<p>Note the asymmetry: there is no <code>string?</code> in C# 7.3 — nullable
+<em>reference</em> types arrived later, so a plain <code>string</code> can already
+be <code>null</code>. Only value types need the <code>?</code>. An <code>int?</code>
+exposes <code>HasValue</code> (a <code>bool</code>), <code>Value</code> (throws if
+empty), and <code>GetValueOrDefault()</code>. The null-coalescing
+<code>??</code> and null-conditional <code>?.</code> operators cover the ground
+that Ruby's <code>||</code> and <code>&amp;.</code> (safe navigation) operators
+cover, just with a stricter type system underneath.</p>`,
+
+  ruby: `def parse_age(text)
+  Integer(text)
+rescue ArgumentError
+  nil
+end
+
+def age_or_default(text, fallback)
+  parse_age(text) || fallback
+end
+
+def first_letter(name)
+  name&.slice(0, 1)
+end`,
+
+  task: `
+<p>Build a <code>static class NullTools</code> that mirrors the Ruby above
+using C# nullable value types and null operators:</p>
+<ol>
+  <li><code>ParseAge(string text)</code> returns an <code>int?</code>: parse with
+      <code>int.TryParse(text, out int n)</code>, returning <code>n</code> on
+      success and <code>null</code> otherwise.</li>
+  <li><code>AgeOrDefault(string text, int fallback)</code> returns an
+      <code>int</code> — use <code>??</code> on the result of
+      <code>ParseAge</code>.</li>
+  <li><code>Describe(int? age)</code> returns a string: if the value is present
+      return <code>$"age {age.Value}"</code> (guard with <code>HasValue</code>),
+      otherwise return <code>"unknown"</code>.</li>
+  <li><code>FirstLetter(string name)</code> returns a <code>string</code>: use the
+      null-conditional <code>?.</code> so a <code>null</code> name yields
+      <code>null</code> — e.g. <code>name?.Substring(0, 1)</code>.</li>
+</ol>`,
+
+  starter: `static class NullTools {
+  public static int? ParseAge(string text) {
+    return null; // TODO
+  }
+
+  public static int AgeOrDefault(string text, int fallback) {
+    return 0; // TODO: use ??
+  }
+
+  public static string Describe(int? age) {
+    return ""; // TODO: check HasValue
+  }
+
+  public static string FirstLetter(string name) {
+    return null; // TODO: use ?.
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /int\?/, message: "Use a nullable value type (int?) for the age" },
+    { pattern: /\?\?/, message: "Use the null-coalescing operator (??) to supply the fallback" },
+    { pattern: /\?\./, message: "Use the null-conditional operator (?.) in FirstLetter" },
+  ],
+
+  tests: [
+    { name: "ParseAge(\"36\") is 36", code: "      expect_eq(NullTools.ParseAge(\"36\"), 36);" },
+    { name: "ParseAge(\"abc\") is null", code: "      expect_true(NullTools.ParseAge(\"abc\") == null);" },
+    { name: "AgeOrDefault(\"abc\", 18) is 18", code: "      expect_eq(NullTools.AgeOrDefault(\"abc\", 18), 18);" },
+    { name: "AgeOrDefault(\"42\", 18) is 42", code: "      expect_eq(NullTools.AgeOrDefault(\"42\", 18), 42);" },
+    { name: "Describe(36) is \"age 36\"", code: "      expect_eq(NullTools.Describe(36), \"age 36\");" },
+    { name: "Describe(null) is \"unknown\"", code: "      expect_eq(NullTools.Describe(null), \"unknown\");" },
+    { name: "FirstLetter(null) is null", code: "      expect_true(NullTools.FirstLetter(null) == null);" },
+    { name: "FirstLetter(\"Ada\") is \"A\"", code: "      expect_eq(NullTools.FirstLetter(\"Ada\"), \"A\");" },
+  ],
+
+  solution: `static class NullTools {
+  public static int? ParseAge(string text) {
+    if (int.TryParse(text, out int n)) {
+      return n;
+    }
+    return null;
+  }
+
+  public static int AgeOrDefault(string text, int fallback) {
+    return ParseAge(text) ?? fallback;
+  }
+
+  public static string Describe(int? age) {
+    if (age.HasValue) {
+      return $"age {age.Value}";
+    }
+    return "unknown";
+  }
+
+  public static string FirstLetter(string name) {
+    return name?.Substring(0, 1);
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>C# 7.3</th></tr>
+  <tr><td>Nullable value</td><td><code>n = nil</code> (works for any type)</td><td><code>int?</code> / <code>Nullable&lt;int&gt;</code></td></tr>
+  <tr><td>Has a value?</td><td><code>!n.nil?</code></td><td><code>n.HasValue</code></td></tr>
+  <tr><td>Unwrap</td><td><code>n</code> (no separate step)</td><td><code>n.Value</code> (throws if empty)</td></tr>
+  <tr><td>Unwrap or default</td><td><code>n || 0</code></td><td><code>n.GetValueOrDefault()</code> or <code>n ?? 0</code></td></tr>
+  <tr><td>Safe navigation</td><td><code>obj&amp;.prop</code></td><td><code>obj?.Prop</code></td></tr>
+</table>
+<p>Reading <code>.Value</code> on an empty <code>int?</code> throws
+<code>InvalidOperationException</code> — the analog of Ruby raising
+<code>NoMethodError</code> when you call a method on <code>nil</code> — so
+guard with <code>HasValue</code> or prefer <code>??</code> /
+<code>GetValueOrDefault()</code>. Because <code>int?</code> is really
+<code>Nullable&lt;int&gt;</code>, it boxes to a plain <code>int</code> (or
+<code>null</code>) when compared as <code>object</code>, which is why the tests
+above can write <code>expect_eq(ParseAge("36"), 36)</code>. Remember the split:
+in C# 7.3 the <code>?</code> is only for value types — reference types like
+<code>string</code> are nullable already, and there is no <code>string?</code>
+yet — whereas in Ruby every variable can be <code>nil</code> regardless of
+type.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

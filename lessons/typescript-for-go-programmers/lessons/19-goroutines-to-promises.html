@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Async & Promises</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Async & Promises",
+
+  intro: `
+<p>Concurrency is where the mental model flips hardest. Go gives you many
+threads of execution: fire goroutines with <code>go func()</code>, pass
+results through channels, wait with a <code>sync.WaitGroup</code>, and guard
+shared writes with a mutex — or eat a data race. JavaScript has <em>one</em>
+thread and an event loop. Nothing preempts your code; instead, slow
+operations return a <code>Promise&lt;T&gt;</code> immediately, and
+<code>await</code> parks the current function (not the thread) until the
+value arrives. Think of <code>Promise&lt;T&gt;</code> as a channel that
+yields exactly once, and <code>await</code> as the receive.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>go fetchUser(id)</code> + a channel for the result</td><td><code>const p = fetchUser(id)</code> — calling it already "goes"; p is the one-shot channel</td></tr>
+  <tr><td><code>u := &lt;-ch</code> — blocks the goroutine</td><td><code>const u = await p</code> — parks this function, thread keeps running</td></tr>
+  <tr><td><code>wg.Add / wg.Wait</code> + slice + mutex to fan out</td><td><code>await Promise.all(promises)</code> — wait + collect, in order, one call</td></tr>
+  <tr><td><code>u, err := fetchUser(id); if err != nil { ... }</code></td><td><code>try { await fetchUser(id) } catch (err) { ... }</code></td></tr>
+</table>
+<p>Because there is only one thread, the whole hazard class you budget for in
+Go disappears: no mutexes, no data races, no <code>select</code>, no
+"forgot to <code>wg.Add</code>". Fan-out becomes
+<code>Promise.all(ids.map(fetchUser))</code> — every fetch is already in
+flight, and <code>Promise.all</code> is the WaitGroup <em>and</em> the
+results slice in one call (first rejection wins, like returning the first
+error). And where Go returns <code>err</code> as a value, a rejected promise
+<em>throws</em> at the <code>await</code> — <code>try/catch</code> is your
+<code>if err != nil</code>.</p>`,
+
+  go: `// Fan out, wait, collect: goroutines + WaitGroup + shared slice.
+func FetchUserNames(ids []int) ([]string, error) {
+	names := make([]string, len(ids))
+	var wg sync.WaitGroup
+	var firstErr error
+	for i, id := range ids {
+		wg.Add(1)
+		go func(i, id int) {
+			defer wg.Done()
+			u, err := fetchUser(id)
+			if err != nil {
+				firstErr = err // data race! really needs a mutex
+				return
+			}
+			names[i] = u.Name
+		}(i, id)
+	}
+	wg.Wait()
+	return names, firstErr
+}`,
+
+  task: `
+<p>The starter gives you <code>fetchUser</code> — a deterministic fake API
+that resolves on the microtask queue (no timers) and rejects for unknown ids.
+Build on it:</p>
+<ol>
+  <li>Implement <code>async function fetchUserNames(ids: number[]):
+      Promise&lt;string[]&gt;</code>. Map the ids to promises (they are all in
+      flight the moment you call <code>fetchUser</code>), then
+      <code>await Promise.all(...)</code> and return the names in the same
+      order as <code>ids</code>. If any fetch rejects, let it propagate —
+      that is the <code>return nil, err</code>.</li>
+  <li>Implement <code>async function fetchNameOrGuest(id: number):
+      Promise&lt;string&gt;</code> that <code>await</code>s
+      <code>fetchUser(id)</code> inside a <code>try</code> and returns the
+      user's name — or returns <code>"guest"</code> from the
+      <code>catch</code>. This is the <code>if err != nil</code> fallback,
+      spelled with control flow instead of a second return value.</li>
+</ol>
+<p>Note what is <em>missing</em> compared to the Go panel: no WaitGroup, no
+mutex, no index bookkeeping — <code>Promise.all</code> preserves order for
+you.</p>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+}
+
+// --- provided: a deterministic fake API (no timers, no network) ---
+const USERS: Record<number, string> = { 1: "Ada", 2: "Grace", 3: "Linus" };
+
+function fetchUser(id: number): Promise<User> {
+  // Promise.resolve().then(...) defers to the microtask queue:
+  // genuinely async, but instant and deterministic.
+  return Promise.resolve().then(() => {
+    const name = USERS[id];
+    if (name === undefined) {
+      // Go: return nil, err  ->  TS: throw (the promise rejects)
+      throw new Error("user " + id + " not found");
+    }
+    return { id: id, name: name };
+  });
+}
+
+// 1. TODO: fan out with Promise.all — your WaitGroup + results slice.
+//    Kick off every fetch, await them all, return the names in order.
+async function fetchUserNames(ids: number[]): Promise<string[]> {
+  return []; // TODO
+}
+
+// 2. TODO: try/catch is the if err != nil. Await fetchUser(id);
+//    return its name, or "guest" if the promise rejects.
+async function fetchNameOrGuest(id: number): Promise<string> {
+  return ""; // TODO
+}
+`,
+
+  exportNames: ["fetchUser", "fetchUserNames", "fetchNameOrGuest"],
+
+  requirements: [
+    { pattern: /async\s+function/, message: "Declare the functions with async — they return promises automatically" },
+    { pattern: /await/, message: "Receive from the one-shot channel with await" },
+    { pattern: /Promise\.all\s*\(/, message: "Fan out with Promise.all — WaitGroup and result collection in one call" },
+    { pattern: /try\s*\{[\s\S]*catch/, message: "Handle the rejection with try/catch — the if err != nil" },
+  ],
+
+  tests: [
+    { name: 'fetchUserNames([1, 2, 3]) resolves to ["Ada", "Grace", "Linus"] in order', run: async (x) => {
+        expectDeepEqual(await x.fetchUserNames([1, 2, 3]), ["Ada", "Grace", "Linus"]);
+      } },
+    { name: 'fetchUserNames([3, 1]) preserves the input order', run: async (x) => {
+        expectDeepEqual(await x.fetchUserNames([3, 1]), ["Linus", "Ada"]);
+      } },
+    { name: "fetchUserNames([]) resolves to an empty array", run: async (x) => {
+        expectDeepEqual(await x.fetchUserNames([]), []);
+      } },
+    { name: "fetchUserNames([1, 99]) rejects — the first error propagates", run: async (x) => {
+        try {
+          await x.fetchUserNames([1, 99]);
+        } catch (e) {
+          return; // rejected, as it should
+        }
+        throw new Error("expected the promise to reject for unknown id 99");
+      } },
+    { name: 'fetchNameOrGuest(2) resolves to "Grace"', run: async (x) => {
+        expectEqual(await x.fetchNameOrGuest(2), "Grace");
+      } },
+    { name: 'fetchNameOrGuest(99) catches the rejection and resolves to "guest"', run: async (x) => {
+        expectEqual(await x.fetchNameOrGuest(99), "guest");
+      } },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+}
+
+const USERS: Record<number, string> = { 1: "Ada", 2: "Grace", 3: "Linus" };
+
+function fetchUser(id: number): Promise<User> {
+  return Promise.resolve().then(() => {
+    const name = USERS[id];
+    if (name === undefined) {
+      throw new Error("user " + id + " not found");
+    }
+    return { id: id, name: name };
+  });
+}
+
+async function fetchUserNames(ids: number[]): Promise<string[]> {
+  // .map(fetchUser) launches every fetch — each call is a go statement.
+  // Promise.all is wg.Wait() plus the results slice, order preserved;
+  // a rejection propagates like returning the first err.
+  const users = await Promise.all(ids.map((id) => fetchUser(id)));
+  return users.map((u) => u.name);
+}
+
+async function fetchNameOrGuest(id: number): Promise<string> {
+  try {
+    const user = await fetchUser(id);
+    return user.name;
+  } catch (err) {
+    return "guest"; // the err != nil branch
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Start async work</td><td><code>go f(x)</code></td><td><code>const p = f(x)</code> — calling an async function starts it</td></tr>
+  <tr><td>One-shot result</td><td><code>ch := make(chan T, 1)</code></td><td><code>Promise&lt;T&gt;</code></td></tr>
+  <tr><td>Receive</td><td><code>v := &lt;-ch</code> (blocks the goroutine)</td><td><code>const v = await p</code> (parks the function only)</td></tr>
+  <tr><td>Fan out + join</td><td>WaitGroup + slice + mutex</td><td><code>await Promise.all(ps)</code></td></tr>
+  <tr><td>First of several</td><td><code>select { ... }</code></td><td><code>await Promise.race(ps)</code></td></tr>
+  <tr><td>Error path</td><td><code>v, err := f(); if err != nil</code></td><td><code>try { await f() } catch (err)</code></td></tr>
+  <tr><td>Data races</td><td>Possible; run -race and pray</td><td>Impossible between awaits — one thread</td></tr>
+</table>
+<p>The trap to unlearn: <code>await</code> looks like blocking but is not —
+while your function is parked, the event loop runs everything else, which is
+why one thread keeps up with thousands of connections. The trap to keep from
+Go: sequential awaits are sequential, exactly like calling two functions
+without <code>go</code>. <code>await a(); await b();</code> is a pipeline of
+two round trips — if they are independent, start both first and
+<code>Promise.all</code> them, just as you would fire two goroutines before
+waiting.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

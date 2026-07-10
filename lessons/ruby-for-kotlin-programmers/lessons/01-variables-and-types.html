@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Ruby will feel loose after Kotlin. No type annotations, no
+<code>val</code>/<code>var</code> distinction, no <code>fun</code> keyword, no
+class to hang your <code>main</code> on. A variable exists the moment you
+assign to it — <code>name = "Ada"</code> is the whole ceremony — and the same
+variable can hold a string now and an integer later, something Kotlin's
+compiler would never allow. The types didn't disappear, though: they moved
+into the objects. You ask the <em>value</em> what it is at runtime:
+<code>x.class</code>, <code>x.is_a?(String)</code>.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>val name = "Ada"</code></td><td><code>name = "Ada"</code></td></tr>
+  <tr><td><code>Int</code> / <code>Long</code> / <code>BigInteger</code></td><td><code>Integer</code> (one class, arbitrary precision)</td></tr>
+  <tr><td><code>x::class</code></td><td><code>x.class</code></td></tr>
+  <tr><td><code>x is String</code></td><td><code>x.is_a?(String)</code></td></tr>
+  <tr><td><code>"$n is $a"</code></td><td><code>"#{n} is #{a}"</code></td></tr>
+</table>
+<p>Numbers behave differently from Kotlin's fixed-width world. Ruby's
+<code>Integer</code> never overflows — <code>2 ** 100</code> just works — so
+<code>Int</code>, <code>Long</code>, and <code>BigInteger</code> collapse into
+one type, and there is no silent wraparound the way <code>Int.MAX_VALUE + 1</code>
+flips negative in Kotlin. It's arbitrary precision by default. One habit to
+start building immediately: a method's <strong>last expression is its return
+value</strong>. Kotlin lets you write <code>return</code> or a single-expression
+<code>= </code> body; idiomatic Ruby almost never writes the <code>return</code>
+keyword at all. Names are <code>snake_case</code>, not <code>camelCase</code>.</p>`,
+
+  kotlin: `import java.math.BigInteger
+
+fun describeUser(name: String, age: Int): String =
+    "$name is $age years old"
+
+fun main() {
+    val name = "Ada"
+    val age = 36
+
+    println(describeUser(name, age))
+    println(name::class)        // class kotlin.String
+    println(name is String)     // true
+
+    // Int overflows at 2^31, Long at 2^63; then you switch worlds:
+    val big: BigInteger = BigInteger.TWO.pow(100)
+}`,
+
+  task: `
+<p>Rewrite the Kotlin as Ruby — no <code>fun</code>, no <code>main</code>, no
+type annotations, no semicolons:</p>
+<ol>
+  <li>Write a method <code>describe_user(name, age)</code> that produces
+      <code>"Ada is 36 years old"</code>-style text using string interpolation:
+      <code>"#{name} is #{age} years old"</code> replaces Kotlin's
+      <code>"$name is $age years old"</code> template. Make the interpolated
+      string the method's <em>last expression</em> — do not write the
+      <code>return</code> keyword anywhere in your solution.</li>
+  <li>Write a method <code>birthday(age)</code> that copies <code>age</code>
+      into a local variable, bumps it with <code>+=</code>, and yields the new
+      age implicitly (again: the last expression is the result).</li>
+</ol>
+<p>Note the naming: <code>describeUser</code> becomes
+<code>describe_user</code> — Ruby methods are <code>snake_case</code>, and
+<code>def ... end</code> replaces <code>fun</code> and braces.</p>`,
+
+  starter: `# 1. describe_user: interpolate with #{} — the last expression is the result.
+#    Java: "%s is %d years old".formatted(name, age)
+#    Ruby: "#{name} is #{age} years old"
+def describe_user(name, age)
+  raise NotImplementedError, "TODO: implement describe_user"
+end
+
+# 2. birthday: bump a local with += and let it be the last expression.
+def birthday(age)
+  raise NotImplementedError, "TODO: implement birthday"
+end
+`,
+
+  requirements: [
+    { pattern: /def\s+describe_user\s*\(\s*name\s*,\s*age\s*\)/, message: "Define describe_user(name, age) with def" },
+    { pattern: /#\{\s*name\s*\}/, message: "Build the string with #{} interpolation" },
+    { pattern: /^(?:(?!\breturn\b)[\s\S])*$/, message: "No return keyword — the last expression is the return value" },
+    { pattern: /\+=/, message: "Use += inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: '  expect_eq(describe_user("Ada", 36), "Ada is 36 years old")' },
+    { name: 'describe_user("Grace", 52) returns "Grace is 52 years old"',
+      code: '  expect_eq(describe_user("Grace", 52), "Grace is 52 years old")' },
+    { name: "birthday(36) returns 37",
+      code: "  expect_eq(birthday(36), 37)" },
+    { name: "birthday(0) returns 1",
+      code: "  expect_eq(birthday(0), 1)" },
+  ],
+
+  solution: `def describe_user(name, age)
+  "#{name} is #{age} years old"
+end
+
+def birthday(age)
+  next_age = age
+  next_age += 1
+  next_age
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Declare a variable</td><td><code>val name = "Ada"</code></td><td><code>name = "Ada"</code> (assignment declares)</td></tr>
+  <tr><td>Constant</td><td><code>const val X = 1</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+  <tr><td>Integers</td><td><code>Int</code>, <code>Long</code>, <code>BigInteger</code></td><td><code>Integer</code> — arbitrary precision, no overflow</td></tr>
+  <tr><td>Decimals</td><td><code>Double</code> / <code>Float</code></td><td><code>Float</code> (always double precision)</td></tr>
+  <tr><td>Format a string</td><td><code>"$n is $a"</code></td><td><code>"#{n} is #{a}"</code> (double quotes only)</td></tr>
+  <tr><td>Ask the type</td><td><code>x::class</code>, <code>x is String</code></td><td><code>x.class</code>, <code>x.is_a?(String)</code></td></tr>
+  <tr><td>Method naming</td><td><code>describeUser</code></td><td><code>describe_user</code></td></tr>
+  <tr><td>Return</td><td><code>return</code> or <code>=</code> body</td><td>last expression; <code>return</code> only for early exit</td></tr>
+</table>
+<p>The deep trade: Kotlin proves types at compile time and pays in annotations
+and ceremony; Ruby carries the types inside the objects and pays at runtime —
+pass the wrong thing and you get a <code>NoMethodError</code> when a message
+isn't understood, not a compile error before the program starts. There is also
+no null-safety net: Ruby has no <code>?</code>/<code>!!</code> distinction, just
+<code>nil</code>, and calling a method on it raises at runtime. This whole
+course is about learning to work with that trade instead of against it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

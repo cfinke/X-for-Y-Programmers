@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Borrowing & References</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Borrowing & References",
+
+  intro: `
+<p>Moving a value into every function that touches it would be miserable, so
+Rust lets you <em>lend</em> instead: <code>&amp;T</code> is a shared,
+read-only reference, and <code>&amp;mut T</code> is an exclusive, writable
+one. The rules are short: any number of <code>&amp;T</code> borrows may
+coexist, but a <code>&amp;mut T</code> must be the <em>only</em> borrow —
+no other readers, no other writers, checked at compile time.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>def total(nums: list[int])</code> — could mutate, who knows</td><td><code>fn total(nums: &amp;[i32])</code> — provably read-only</td></tr>
+  <tr><td><code>def add(items: list[str])</code> — mutation invisible at call site</td><td><code>fn add(items: &amp;mut Vec&lt;String&gt;)</code> — declared, and <code>&amp;mut items</code> visible at the call</td></tr>
+  <tr><td>every argument is a mutable alias</td><td>many <code>&amp;</code> readers <em>or</em> one <code>&amp;mut</code> writer</td></tr>
+</table>
+<p>This is the discipline Python never had. "I passed my list to a function
+and it changed it" is a story every Python developer can tell — any callee
+can mutate any argument, and nothing at the call site warns you. In Rust
+that's impossible to do <em>by accident</em>: a function that mutates must
+say <code>&amp;mut</code> in its signature, and the caller must write
+<code>&amp;mut items</code> to agree to it. Two spelling notes:
+for read-only sequence access, prefer the slice <code>&amp;[i32]</code> over
+<code>&amp;Vec&lt;i32&gt;</code> (it accepts more callers), and this is why
+lesson 3 said to take <code>&amp;str</code> — it's the same idea for text.</p>`,
+
+  python: `def total(numbers: list[int]) -> int:
+    return sum(numbers)
+
+def add_item(items: list[str], item: str) -> None:
+    items.append(item)   # mutates the caller's list!
+
+def longer(a: str, b: str) -> int:
+    return max(len(a), len(b))
+
+nums = [1, 2, 3]
+print(total(nums))        # 6 — reading is harmless
+
+names = ["ada"]
+add_item(names, "grace")  # nothing at the call site
+print(names)              # ["ada", "grace"] — hints at mutation`,
+
+  task: `
+<ol>
+  <li><code>total</code> takes <code>numbers: &amp;[i32]</code> (a shared,
+      read-only slice) and returns <code>i32</code> — the sum. Python's
+      <code>sum(numbers)</code> becomes <code>numbers.iter().sum()</code>.</li>
+  <li><code>add_item</code> takes <code>items: &amp;mut Vec&lt;String&gt;</code>
+      and <code>item: String</code>, and pushes the item onto the vector.
+      No return type — the mutation <em>is</em> the point, and this time the
+      signature admits it.</li>
+  <li><code>longer</code> takes <code>a: &amp;str</code> and
+      <code>b: &amp;str</code> — two shared borrows at once, perfectly legal —
+      and returns <code>usize</code> (the type <code>.len()</code> gives you):
+      the byte length of the longer string. Try
+      <code>a.len().max(b.len())</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. total: read-only borrow of a slice. sum(numbers) -> numbers.iter().sum()
+fn total(numbers: &[i32]) -> i32 {
+    todo!()
+}
+
+// 2. add_item: the ONE exclusive, writable borrow. Push item onto items.
+fn add_item(items: &mut Vec<String>, item: String) {
+    todo!()
+}
+
+// 3. longer: two shared borrows at once — fine. Return the bigger .len().
+fn longer(a: &str, b: &str) -> usize {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&mut\s/, message: "Take an exclusive &mut borrow in add_item" },
+    { pattern: /&\[i32\]/, message: "Take a read-only &[i32] slice in total" },
+  ],
+
+  tests: [
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total(&[]) returns 0",
+      code: "assert_eq!(total(&[]), 0);" },
+    { name: "total works on a borrowed Vec too",
+      code: "let v = vec![10, -4, 7];\nassert_eq!(total(&v), 13);" },
+    { name: 'add_item pushes onto the caller\'s vector',
+      code: 'let mut items = vec![String::from("ada")];\nadd_item(&mut items, String::from("grace"));\nassert_eq!(items, vec!["ada", "grace"]);' },
+    { name: "add_item works on an empty vector",
+      code: 'let mut items: Vec<String> = Vec::new();\nadd_item(&mut items, String::from("first"));\nassert_eq!(items, vec!["first"]);' },
+    { name: 'longer("hello", "hi") returns 5, longer("a", "bcd") returns 3',
+      code: 'assert_eq!(longer("hello", "hi"), 5);\nassert_eq!(longer("a", "bcd"), 3);' },
+  ],
+
+  solution: `fn total(numbers: &[i32]) -> i32 {
+    numbers.iter().sum()
+}
+
+fn add_item(items: &mut Vec<String>, item: String) {
+    items.push(item);
+}
+
+fn longer(a: &str, b: &str) -> usize {
+    a.len().max(b.len())
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>Read-only access</td><td>convention (or nothing)</td><td><code>&amp;T</code> — enforced; many at once are fine</td></tr>
+  <tr><td>Writable access</td><td>every reference, implicitly</td><td><code>&amp;mut T</code> — exactly one, no readers alongside</td></tr>
+  <tr><td>List parameter</td><td><code>nums: list[int]</code></td><td><code>nums: &amp;[i32]</code> (slice — takes Vecs and arrays)</td></tr>
+  <tr><td>Mutating a list arg</td><td><code>items.append(x)</code>, invisible at call site</td><td><code>&amp;mut Vec&lt;T&gt;</code> in the signature, <code>&amp;mut v</code> at the call</td></tr>
+  <tr><td>sum()</td><td><code>sum(nums)</code></td><td><code>nums.iter().sum()</code></td></tr>
+  <tr><td>Procedure</td><td><code>-&gt; None</code></td><td>no <code>-&gt;</code> (returns <code>()</code>, the unit type)</td></tr>
+</table>
+<p>The borrow rules — many readers <em>or</em> one writer, never both — are
+the same discipline as a read-write lock, applied at compile time to every
+value in the program. That's what makes mutation safe to allow at all:
+nothing can change under a reader's feet, so "spooky action at a distance"
+mutation, Python's oldest gotcha, simply can't be written by accident. When
+you see <code>&amp;mut</code> at a call site, mutation is happening; when you
+don't, it isn't. Full stop.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

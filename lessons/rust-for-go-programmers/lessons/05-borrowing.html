@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Borrowing & References</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Borrowing & References",
+
+  intro: `
+<p>Moving ownership into every function (last lesson) would be unbearable,
+and Rust knows it. The fix looks exactly like Go pointers: <code>&amp;x</code>
+to lend a value, <code>&amp;T</code> in the signature to receive it. If
+you've written <code>func addItem(items *[]string, item string)</code>,
+you already have the muscle memory — right down to the <code>&amp;</code>
+at the call site. What's new is that Rust references come in two flavors,
+and the compiler enforces the difference.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>*T</code> — read or write, any number of them</td><td><code>&amp;T</code> read-only (many at once) / <code>&amp;mut T</code> writable (exactly one)</td></tr>
+  <tr><td><code>f(&amp;x)</code></td><td><code>f(&amp;x)</code> or <code>f(&amp;mut x)</code> — mutation visible at the call site</td></tr>
+  <tr><td><code>[]int</code> (slice, might be nil)</td><td><code>&amp;[i32]</code> (borrowed slice, never nil)</td></tr>
+  <tr><td>nil pointer → runtime panic</td><td>no nil references — a <code>&amp;T</code> always points at a T</td></tr>
+</table>
+<p>The rule: any number of shared <code>&amp;T</code> borrows, <em>or</em>
+exactly one exclusive <code>&amp;mut T</code> — never both at once. That
+one rule, checked at compile time, deletes two Go foot-guns wholesale:
+nil-pointer panics (references can't be nil) and data races through
+aliased pointers (nothing can read while a <code>&amp;mut</code> exists).
+It's <code>go vet</code> and the race detector rolled into the type system
+— except it runs on every build and can't be skipped. For parameters,
+prefer the borrowed view types: <code>&amp;[i32]</code> instead of
+<code>&amp;Vec&lt;i32&gt;</code>, just like <code>&amp;str</code> instead of
+<code>&amp;String</code> — a <code>&amp;Vec</code> coerces to a slice
+automatically at the call site.</p>`,
+
+  go: `func total(numbers []int) int {
+	sum := 0
+	for _, n := range numbers {
+		sum += n
+	}
+	return sum
+}
+
+// Mutating the caller's slice needs a pointer:
+func addItem(items *[]string, item string) {
+	*items = append(*items, item)
+}
+
+func longer(a, b string) int {
+	if len(a) >= len(b) {
+		return len(a)
+	}
+	return len(b)
+}`,
+
+  task: `
+<p>Port the Go using borrows instead of moves:</p>
+<ol>
+  <li><code>total</code> takes <code>numbers: &amp;[i32]</code> (a borrowed
+      slice — Rust's <code>[]int</code>) and returns <code>i32</code>, the
+      sum. <code>for n in numbers { ... }</code> is Go's
+      <code>range</code>; a <code>let mut sum</code> does the rest.</li>
+  <li><code>add_item</code> takes <code>items: &amp;mut Vec&lt;String&gt;</code>
+      and <code>item: String</code>, and pushes the item — Go's
+      <code>*[]string</code> parameter, but the exclusivity is compiler-checked.
+      It returns nothing: no <code>-&gt;</code> needed.</li>
+  <li><code>longer</code> takes <code>a: &amp;str</code> and
+      <code>b: &amp;str</code>, returning <code>usize</code> (what
+      <code>.len()</code> yields): the byte length of the longer string.
+      Two shared borrows at once — perfectly legal.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. total: borrowed slice in, sum out.
+//    for n in numbers { ... } — n is a &i32; += handles it fine.
+fn total(numbers: &[i32]) -> i32 {
+    todo!()
+}
+
+// 2. add_item: &mut = Go's pointer parameter, but exclusive.
+//    No return type — mutating through the borrow IS the effect.
+fn add_item(items: &mut Vec<String>, item: String) {
+    todo!()
+}
+
+// 3. longer: two shared borrows, return the bigger .len().
+fn longer(a: &str, b: &str) -> usize {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&mut\s/, message: "Take an exclusive &mut borrow in add_item" },
+    { pattern: /&\[i32\]/, message: "Take a borrowed slice &[i32] in total" },
+  ],
+
+  tests: [
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total(&[]) returns 0",
+      code: "assert_eq!(total(&[]), 0);" },
+    { name: "total on a borrowed Vec works too (auto-coerces to a slice)",
+      code: "let v = vec![10, -4, 6];\nassert_eq!(total(&v), 12);" },
+    { name: 'add_item pushes onto the caller\'s Vec through &mut',
+      code: 'let mut items = vec![String::from("compile")];\nadd_item(&mut items, String::from("run"));\nassert_eq!(items, vec!["compile", "run"]);' },
+    { name: 'longer("hello", "hi") returns 5',
+      code: 'assert_eq!(longer("hello", "hi"), 5);' },
+    { name: 'longer("go", "rust") returns 4',
+      code: 'assert_eq!(longer("go", "rust"), 4);' },
+  ],
+
+  solution: `fn total(numbers: &[i32]) -> i32 {
+    let mut sum = 0;
+    for n in numbers {
+        sum += n;
+    }
+    sum
+}
+
+fn add_item(items: &mut Vec<String>, item: String) {
+    items.push(item);
+}
+
+fn longer(a: &str, b: &str) -> usize {
+    if a.len() >= b.len() {
+        a.len()
+    } else {
+        b.len()
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Read-only access</td><td><code>T</code> or <code>*T</code> (convention only)</td><td><code>&amp;T</code> — enforced, many allowed</td></tr>
+  <tr><td>Mutating access</td><td><code>*T</code>, <code>f(&amp;x)</code></td><td><code>&amp;mut T</code>, <code>f(&amp;mut x)</code> — exactly one, no readers</td></tr>
+  <tr><td>Slice parameter</td><td><code>numbers []int</code></td><td><code>numbers: &amp;[i32]</code></td></tr>
+  <tr><td>nil</td><td><code>var p *T</code> is nil until set</td><td>impossible — references always point at a value</td></tr>
+  <tr><td>Aliased writes</td><td>race detector at runtime, if you run it</td><td>rejected at compile time, every time</td></tr>
+</table>
+<p>Notice <code>add_item</code> never dereferences: no <code>*items</code>.
+Method calls auto-dereference through references, so borrowing feels
+lighter than Go pointer code even though the call site still honestly
+shows <code>&amp;mut items</code>. The shared/exclusive rule is the whole
+borrow checker — everything else you've heard about (lifetimes included)
+is just this rule applied over time. You now know the two ideas the rest
+of Rust is built on: ownership and borrowing.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

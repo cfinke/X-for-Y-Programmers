@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put it all together. In Java you might model a small in-memory
+store with a <code>record</code> for the item, a <code>class</code> holding
+a <code>HashMap</code>, custom <code>Exception</code> subclasses, and stream
+operations (<code>filter</code>/<code>map</code>/<code>reduce</code>) to query
+it. Python gives you the same shape with different spellings: a
+<code>@dataclass</code> instead of a record, a plain <code>dict</code>
+instead of <code>HashMap</code>, custom <code>Exception</code> subclasses
+just like Java's, and comprehensions/generator expressions instead of the
+stream-method chains.</p>
+<table>
+  <tr><th>Java</th><th>Python</th></tr>
+  <tr><td><code>record Product(String name, ...) {}</code></td><td><code>@dataclass\nclass Product: name: str</code></td></tr>
+  <tr><td><code>new HashMap&lt;String, Product&gt;()</code></td><td><code>{}</code> (a dict)</td></tr>
+  <tr><td><code>class NotFoundException extends Exception {}</code></td><td><code>class ProductNotFound(Exception): pass</code></td></tr>
+  <tr><td><code>throw new NotFoundException(name)</code></td><td><code>raise ProductNotFound(name)</code></td></tr>
+  <tr><td><code>items.stream().filter(p -&gt; p.tags().contains(t))</code></td><td><code>[p for p in items if t in p.tags]</code></td></tr>
+  <tr><td><code>items.stream().reduce(0.0, (s, p) -&gt; s + p.price(), Double::sum)</code></td><td><code>sum(p.price for p in items)</code></td></tr>
+</table>
+<p>This capstone ties together the dataclass, dict/list processing,
+comprehensions, and exceptions you have met in earlier lessons — no new syntax,
+just idiomatic assembly.</p>`,
+
+  java: `record Product(String name, double price, List<String> tags) {
+  Product(String name, double price) {
+    this(name, price, new ArrayList<>());
+  }
+}
+
+class ProductNotFoundException extends RuntimeException {
+  ProductNotFoundException(String name) { super(name); }
+}
+class DuplicateProductException extends RuntimeException {
+  DuplicateProductException(String name) { super(name); }
+}
+
+class Store {
+  private final Map<String, Product> items = new HashMap<>();
+
+  void add(Product p) {
+    if (items.containsKey(p.name())) throw new DuplicateProductException(p.name());
+    items.put(p.name(), p);
+  }
+  Product get(String name) {
+    Product p = items.get(name);
+    if (p == null) throw new ProductNotFoundException(name);
+    return p;
+  }
+  double totalValue() {
+    return items.values().stream().mapToDouble(Product::price).sum();
+  }
+  List<String> namesWithTag(String tag) {
+    return items.values().stream()
+        .filter(p -> p.tags().contains(tag))
+        .map(Product::name)
+        .sorted()
+        .collect(Collectors.toList());
+  }
+}
+
+static Store load(List<Product> records) {
+  Store store = new Store();
+  for (Product r : records) store.add(r);
+  return store;
+}`,
+
+  task: `
+<p>Build a small in-memory product store.</p>
+<ol>
+  <li>Define two exception types, <code>ProductNotFound</code> and
+      <code>DuplicateProduct</code>, each subclassing <code>Exception</code>
+      (a <code>pass</code> body is enough).</li>
+  <li>Define a <code>@dataclass</code> <code>Product</code> with fields
+      <code>name: str</code>, <code>price: float</code>, and
+      <code>tags: list</code> (default to an empty list with
+      <code>field(default_factory=list)</code>).</li>
+  <li>Define a <code>Store</code> class backed by a dict:
+    <ul>
+      <li><code>add(product)</code> — store it keyed by <code>name</code>; raise
+          <code>DuplicateProduct(name)</code> if that name already exists.</li>
+      <li><code>get(name)</code> — return the product, or raise
+          <code>ProductNotFound(name)</code> if it is missing.</li>
+      <li><code>total_value()</code> — the sum of every product's
+          <code>price</code>.</li>
+      <li><code>names_with_tag(tag)</code> — a sorted list of the names of
+          products carrying <code>tag</code>.</li>
+    </ul>
+  </li>
+  <li>Write <code>load(records)</code> that takes a list of dicts (each with
+      <code>"name"</code>, <code>"price"</code>, and optional <code>"tags"</code>)
+      and returns a populated <code>Store</code>.</li>
+</ol>`,
+
+  starter: `from dataclasses import dataclass, field
+
+
+# 1. Custom exceptions
+class ProductNotFound(Exception):
+    pass
+
+
+class DuplicateProduct(Exception):
+    pass
+
+
+# 2. The record
+@dataclass
+class Product:
+    name: str
+    price: float
+    tags: list = field(default_factory=list)
+
+
+# 3. The store
+class Store:
+    def __init__(self):
+        self._items = {}
+
+    def add(self, product):
+        pass  # TODO
+
+    def get(self, name):
+        return None  # TODO
+
+    def total_value(self):
+        return 0  # TODO
+
+    def names_with_tag(self, tag):
+        return []  # TODO
+
+
+# 4. Build a store from a list of dicts
+def load(records):
+    return Store()  # TODO
+`,
+
+  requirements: [
+    { pattern: /@dataclass/, message: "Model the record with a @dataclass" },
+    { pattern: /raise\s+ProductNotFound/, message: "Raise ProductNotFound for a missing product" },
+    { pattern: /for\s+\w+\s+in\s+/, message: "Query the store with a comprehension or generator expression" },
+  ],
+
+  tests: [
+    {
+      name: "load builds a store and total_value sums prices",
+      code: [
+        "    records = [",
+        "        {\"name\": \"Pen\", \"price\": 1.5, \"tags\": [\"office\"]},",
+        "        {\"name\": \"Desk\", \"price\": 200.0, \"tags\": [\"office\", \"furniture\"]},",
+        "        {\"name\": \"Lamp\", \"price\": 45.0, \"tags\": [\"furniture\"]},",
+        "    ]",
+        "    store = load(records)",
+        "    expect_eq(store.total_value(), 246.5)",
+      ].join("\n"),
+    },
+    {
+      name: "names_with_tag returns matching names, sorted",
+      code: [
+        "    store = load([",
+        "        {\"name\": \"Pen\", \"price\": 1.5, \"tags\": [\"office\"]},",
+        "        {\"name\": \"Desk\", \"price\": 200.0, \"tags\": [\"office\", \"furniture\"]},",
+        "        {\"name\": \"Lamp\", \"price\": 45.0, \"tags\": [\"furniture\"]},",
+        "    ])",
+        "    expect_eq(store.names_with_tag(\"furniture\"), [\"Desk\", \"Lamp\"])",
+        "    expect_eq(store.names_with_tag(\"office\"), [\"Desk\", \"Pen\"])",
+        "    expect_eq(store.names_with_tag(\"missing\"), [])",
+      ].join("\n"),
+    },
+    {
+      name: "get returns the stored Product",
+      code: [
+        "    store = load([{\"name\": \"Desk\", \"price\": 200.0, \"tags\": []}])",
+        "    desk = store.get(\"Desk\")",
+        "    expect_eq(desk.name, \"Desk\")",
+        "    expect_eq(desk.price, 200.0)",
+      ].join("\n"),
+    },
+    {
+      name: "get raises ProductNotFound for a missing name",
+      code: [
+        "    store = load([])",
+        "    raised = False",
+        "    try:",
+        "        store.get(\"nope\")",
+        "    except ProductNotFound:",
+        "        raised = True",
+        "    expect_true(raised)",
+      ].join("\n"),
+    },
+    {
+      name: "add raises DuplicateProduct on a repeated name",
+      code: [
+        "    store = load([{\"name\": \"Pen\", \"price\": 1.5, \"tags\": []}])",
+        "    raised = False",
+        "    try:",
+        "        store.add(Product(name=\"Pen\", price=2.0))",
+        "    except DuplicateProduct:",
+        "        raised = True",
+        "    expect_true(raised)",
+      ].join("\n"),
+    },
+    {
+      name: "Product.tags defaults to an empty list",
+      code: [
+        "    p = Product(name=\"Mug\", price=8.0)",
+        "    expect_eq(p.tags, [])",
+      ].join("\n"),
+    },
+  ],
+
+  solution: `from dataclasses import dataclass, field
+
+
+class ProductNotFound(Exception):
+    pass
+
+
+class DuplicateProduct(Exception):
+    pass
+
+
+@dataclass
+class Product:
+    name: str
+    price: float
+    tags: list = field(default_factory=list)
+
+
+class Store:
+    def __init__(self):
+        self._items = {}
+
+    def add(self, product):
+        if product.name in self._items:
+            raise DuplicateProduct(product.name)
+        self._items[product.name] = product
+
+    def get(self, name):
+        if name not in self._items:
+            raise ProductNotFound(name)
+        return self._items[name]
+
+    def total_value(self):
+        return sum(p.price for p in self._items.values())
+
+    def names_with_tag(self, tag):
+        return sorted(p.name for p in self._items.values() if tag in p.tags)
+
+
+def load(records):
+    store = Store()
+    for r in records:
+        store.add(Product(name=r["name"], price=r["price"], tags=r.get("tags", [])))
+    return store
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Python</th></tr>
+  <tr><td>Record type</td><td><code>record</code></td><td><code>@dataclass</code></td></tr>
+  <tr><td>Keyed store</td><td><code>Map&lt;K, V&gt;</code></td><td><code>dict</code></td></tr>
+  <tr><td>Membership</td><td><code>map.containsKey(k)</code></td><td><code>k in d</code></td></tr>
+  <tr><td>Custom error</td><td><code>class E extends Exception {}</code></td><td><code>class E(Exception): pass</code></td></tr>
+  <tr><td>Signal an error</td><td><code>throw new E()</code></td><td><code>raise E()</code></td></tr>
+  <tr><td>Reduce/sum</td><td><code>stream.reduce(0, (s, x) -&gt; s + x)</code></td><td><code>sum(x for x in arr)</code></td></tr>
+  <tr><td>Filter + map + sort</td><td><code>stream.filter(...).map(...).sorted()</code></td><td><code>sorted(f(x) for x in arr if g(x))</code></td></tr>
+</table>
+<p>A few Pythonic touches worth noting. <code>field(default_factory=list)</code>
+gives each instance its own fresh list — the equivalent mistake in Python to a
+shared mutable default is a real trap, and the dataclass field factory is how you
+avoid it. Passing a generator expression straight into <code>sum()</code> or
+<code>sorted()</code> (no surrounding brackets) is the idiomatic replacement for
+a <code>reduce</code>/<code>filter</code>/<code>map</code> stream chain, and it
+avoids building an intermediate list. Finally, custom exceptions are just classes
+that inherit from <code>Exception</code>; you catch them by type with
+<code>except ProductNotFound:</code>, exactly as you would use a
+<code>catch (ProductNotFoundException e)</code> block in Java.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

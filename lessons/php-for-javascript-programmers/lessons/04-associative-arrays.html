@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Associative Arrays</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Associative Arrays",
+
+  intro: `
+<p>Where JavaScript gives you object literals for records and <code>Map</code>
+for real key-value stores, PHP has one structure for both — the same
+<code>array</code> type from last lesson, now with string keys. The literal
+uses <code>=&gt;</code> instead of <code>:</code>, access is bracket-style
+(<code>$inv['apples']</code> — no dot access), and <code>??</code> works
+exactly like the JS operator you already use for missing keys:</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>{ apples: 3, pears: 5 }</code></td><td><code>['apples' =&gt; 3, 'pears' =&gt; 5]</code></td></tr>
+  <tr><td><code>inv["apples"]</code> or <code>inv.apples</code></td><td><code>$inv['apples']</code> (brackets only)</td></tr>
+  <tr><td><code>inv[name] ?? 0</code></td><td><code>$inv[$name] ?? 0</code> (identical!)</td></tr>
+  <tr><td><code>for (const [k, v] of Object.entries(inv))</code></td><td><code>foreach ($inv as $k =&gt; $v)</code></td></tr>
+  <tr><td><code>Object.keys(inv)</code></td><td><code>array_keys($inv)</code></td></tr>
+</table>
+<p>And the value semantics from lesson 3 apply here too: pass an associative
+array into a function and the callee works on its own copy. Where a JS
+function can quietly add a key to your shared object, a PHP function that
+"updates" an array must return the updated copy. Iteration order, by the way,
+is insertion order — like JS objects, but with no numeric-key reordering
+surprises.</p>`,
+
+  javascript: `function buildInventory() {
+  return { apples: 3, pears: 5 };
+}
+
+function getCount(inv, name) {
+  return inv[name] ?? 0;
+}
+
+function addStock(inv, name, n) {
+  inv[name] = (inv[name] ?? 0) + n;  // mutates the SHARED object
+  return inv;
+}
+
+function totalStock(inv) {
+  let total = 0;
+  for (const [name, count] of Object.entries(inv)) {
+    total += count;
+  }
+  return total;
+}`,
+
+  task: `
+<p>Port the inventory helpers to PHP:</p>
+<ol>
+  <li><code>build_inventory(): array</code> — return
+      <code>['apples' =&gt; 3, 'pears' =&gt; 5]</code>.</li>
+  <li><code>get_count(array $inv, string $name): int</code> — look the key up
+      with <code>??</code> so missing items report <code>0</code>.</li>
+  <li><code>add_stock(array $inv, string $name, int $n): array</code> — add
+      <code>$n</code> to the item's count (creating the key at <code>0</code>
+      if needed, via <code>??</code>) and <em>return the updated copy</em> —
+      value semantics mean the caller's array stays untouched.</li>
+  <li><code>total_stock(array $inv): int</code> — sum every count with
+      <code>foreach ($inv as $name =&gt; $count)</code>, PHP's
+      <code>Object.entries</code> loop.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. { apples: 3, pears: 5 }  ->  ['apples' => 3, 'pears' => 5]
+function build_inventory(): array {
+    throw new Exception("TODO: implement build_inventory");
+}
+
+// 2. inv[name] ?? 0 — same operator, same meaning.
+function get_count(array $inv, string $name): int {
+    throw new Exception("TODO: implement get_count");
+}
+
+// 3. Update your COPY, then return it. The caller's array is untouched.
+function add_stock(array $inv, string $name, int $n): array {
+    throw new Exception("TODO: implement add_stock");
+}
+
+// 4. for (const [k, v] of Object.entries(inv))  ->  foreach ($inv as $k => $v)
+function total_stock(array $inv): int {
+    throw new Exception("TODO: implement total_stock");
+}
+`,
+
+  requirements: [
+    { pattern: /=>/, message: "Build the associative array with the 'key' => value syntax" },
+    { pattern: /\?\?/, message: "Use ?? to default missing keys to 0" },
+    { pattern: /foreach\s*\(|array_keys/, message: "Iterate with foreach ($inv as $k => $v) (or use array_keys)" },
+  ],
+
+  tests: [
+    { name: "build_inventory() returns ['apples' => 3, 'pears' => 5]",
+      code: "expect_eq(build_inventory(), ['apples' => 3, 'pears' => 5]);" },
+    { name: "get_count(inv, 'apples') returns 3",
+      code: "expect_eq(get_count(build_inventory(), 'apples'), 3);" },
+    { name: "get_count(inv, 'plums') returns 0 for a missing key",
+      code: "expect_eq(get_count(build_inventory(), 'plums'), 0);" },
+    { name: "add_stock adds to an existing item and to a brand-new one",
+      code: "$inv = add_stock(build_inventory(), 'apples', 2);\nexpect_eq($inv['apples'], 5);\n$inv2 = add_stock($inv, 'plums', 4);\nexpect_eq($inv2['plums'], 4);" },
+    { name: "add_stock does NOT mutate the caller's array (value semantics)",
+      code: "$inv = build_inventory();\n$updated = add_stock($inv, 'apples', 2);\nexpect_eq($inv['apples'], 3);\nexpect_eq($updated['apples'], 5);" },
+    { name: "total_stock(build_inventory()) returns 8",
+      code: "expect_eq(total_stock(build_inventory()), 8);" },
+  ],
+
+  solution: `<?php
+
+function build_inventory(): array {
+    return ['apples' => 3, 'pears' => 5];
+}
+
+function get_count(array $inv, string $name): int {
+    return $inv[$name] ?? 0;
+}
+
+function add_stock(array $inv, string $name, int $n): array {
+    $inv[$name] = ($inv[$name] ?? 0) + $n;
+    return $inv;
+}
+
+function total_stock(array $inv): int {
+    $total = 0;
+    foreach ($inv as $name => $count) {
+        $total += $count;
+    }
+    return $total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Record literal</td><td><code>{ apples: 3 }</code></td><td><code>['apples' =&gt; 3]</code></td></tr>
+  <tr><td>Read a key</td><td><code>inv.apples</code> / <code>inv["apples"]</code></td><td><code>$inv['apples']</code></td></tr>
+  <tr><td>Default for missing</td><td><code>inv[k] ?? 0</code></td><td><code>$inv[$k] ?? 0</code> — same operator</td></tr>
+  <tr><td>Set a key</td><td><code>inv[k] = v</code></td><td><code>$inv[$k] = $v;</code></td></tr>
+  <tr><td>Entries loop</td><td><code>for (const [k, v] of Object.entries(o))</code></td><td><code>foreach ($a as $k =&gt; $v)</code></td></tr>
+  <tr><td>Keys / values</td><td><code>Object.keys(o)</code> / <code>Object.values(o)</code></td><td><code>array_keys($a)</code> / <code>array_values($a)</code></td></tr>
+  <tr><td>Key exists?</td><td><code>k in o</code></td><td><code>array_key_exists($k, $a)</code> / <code>isset($a[$k])</code></td></tr>
+</table>
+<p>One structure, two hats: PHP's array is your <code>[]</code>, your
+<code>{}</code>, and your <code>Map</code> rolled together — a list is just an
+array whose keys happen to be <code>0, 1, 2…</code>. That's why
+<code>foreach</code>, <code>??</code>, <code>count</code>, and friends work
+identically on both. And because arrays are values, an "update" function like
+<code>add_stock</code> hands you back a fresh copy — spiritually the same as
+the <code>{ ...inv, [name]: n }</code> spread pattern you use in JS to avoid
+mutation, except PHP does the copying for you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Result &amp; the ? Operator</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Result & the ? Operator",
+
+  intro: `
+<p>Ruby errors are invisible until they aren't. Nothing in a method's
+signature says it can <code>raise</code>; <code>Integer("x")</code> throws
+<code>ArgumentError</code> from three gems down, and the only defense is
+wrapping things in <code>begin/rescue</code> — guided, again, by vigilance
+and documentation. Rust makes failure part of the return type: a function
+that can fail returns <code>Result&lt;T, E&gt;</code>, which is either
+<code>Ok(value)</code> or <code>Err(error)</code>. Same shape as
+<code>Option</code>, but the failure case carries an explanation.</p>
+<table>
+  <tr><th>Ruby</th><th>Rust</th></tr>
+  <tr><td><code>def parse_age(s)</code> — raises? who knows</td><td><code>fn parse_age(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code></td></tr>
+  <tr><td><code>raise ArgumentError, "bad age"</code></td><td><code>return Err("bad age".to_string());</code></td></tr>
+  <tr><td><code>Integer("x")</code> → raises <code>ArgumentError</code></td><td><code>"x".parse::&lt;u32&gt;()</code> → returns <code>Err(...)</code></td></tr>
+  <tr><td><code>begin ... rescue =&gt; e ... raise ... end</code></td><td><code>?</code> — one character</td></tr>
+</table>
+<p>The magic trick is the <code>?</code> operator. The most common Ruby
+rescue is the pass-along: <code>rescue =&gt; e; raise</code> — "not my
+problem, bubble it up." In Rust that whole dance is one character:
+<code>parse_age(s)?</code> means "if this is <code>Ok(v)</code>, give me
+<code>v</code> and keep going; if it's <code>Err(e)</code>, return that
+<code>Err</code> from <em>my</em> function right now." Errors travel up the
+call stack like exceptions — but every hop is visible in a signature, and
+<code>.map_err(...)</code> lets you translate a low-level error into your
+own words on the way through.</p>`,
+
+  ruby: `def parse_age(s)
+  Integer(s.strip)            # raises ArgumentError on "abc"
+rescue ArgumentError
+  raise ArgumentError, "not a number: #{s.strip}"
+end
+
+def age_next_year(s)
+  parse_age(s) + 1            # any raise passes through, invisibly
+end
+
+puts age_next_year("42")      # 43
+puts age_next_year(" 30 ")    # 31
+
+begin
+  age_next_year("abc")
+rescue ArgumentError => e
+  puts "rescued: #{e.message}"
+end`,
+
+  task: `
+<p>Rewrite the Ruby as Rust:</p>
+<ol>
+  <li>Write <code>parse_age</code> taking <code>s: &amp;str</code> and
+      returning <code>Result&lt;u32, String&gt;</code>. Use
+      <code>s.trim().parse::&lt;u32&gt;()</code> — <code>parse</code> already
+      returns a <code>Result</code>, no rescue needed — then
+      <code>.map_err(|_| format!("not a number: {}", s.trim()))</code> to
+      swap its error type for your <code>String</code> message.</li>
+  <li>Write <code>age_next_year</code> taking <code>s: &amp;str</code> and
+      returning <code>Result&lt;u32, String&gt;</code>. Call
+      <code>parse_age(s)?</code> — the <code>?</code> unwraps the
+      <code>Ok</code> or returns the <code>Err</code> early — add 1, and wrap
+      the sum in <code>Ok(...)</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. parse_age: s.trim().parse::<u32>() returns a Result already;
+//    .map_err(|_| format!("not a number: {}", s.trim())) makes the error yours.
+fn parse_age(s: &str) -> Result<u32, String> {
+    todo!()
+}
+
+// 2. age_next_year: let age = parse_age(s)?;  <- the entire rescue-and-reraise
+//    Then return Ok(age + 1).
+fn age_next_year(s: &str) -> Result<u32, String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Result</, message: "Use Result<u32, String> in your signatures" },
+    { pattern: /map_err|Err\(/, message: "Produce the error case with map_err or Err(...)" },
+    { pattern: /\)\?/, message: "Use the ? operator to propagate the error from parse_age" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns Ok(42)',
+      code: 'assert_eq!(parse_age("42"), Ok(42));' },
+    { name: 'parse_age(" 30 ") trims whitespace first',
+      code: 'assert_eq!(parse_age(" 30 "), Ok(30));' },
+    { name: 'parse_age("abc") returns an Err, not a crash',
+      code: 'assert!(parse_age("abc").is_err());' },
+    { name: 'age_next_year("42") returns Ok(43)',
+      code: 'assert_eq!(age_next_year("42"), Ok(43));' },
+    { name: 'age_next_year("abc") propagates the Err via ?',
+      code: 'assert!(age_next_year("abc").is_err());' },
+  ],
+
+  solution: `fn parse_age(s: &str) -> Result<u32, String> {
+    s.trim()
+        .parse::<u32>()
+        .map_err(|_| format!("not a number: {}", s.trim()))
+}
+
+fn age_next_year(s: &str) -> Result<u32, String> {
+    let age = parse_age(s)?;
+    Ok(age + 1)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+  <tr><td>Fallible function</td><td>nothing in the signature</td><td><code>-&gt; Result&lt;T, E&gt;</code>, in the signature</td></tr>
+  <tr><td>Failing</td><td><code>raise SomeError, "msg"</code></td><td><code>Err("msg".to_string())</code> — a return value</td></tr>
+  <tr><td>Succeeding</td><td>just return the value</td><td><code>Ok(value)</code></td></tr>
+  <tr><td>String → int</td><td><code>Integer(s)</code> (raises)</td><td><code>s.parse::&lt;u32&gt;()</code> (returns <code>Result</code>)</td></tr>
+  <tr><td>Bubble the error up</td><td><code>rescue =&gt; e; raise</code></td><td><code>?</code></td></tr>
+  <tr><td>Translate the error</td><td><code>rescue =&gt; e; raise MyError</code></td><td><code>.map_err(|e| ...)</code></td></tr>
+  <tr><td>Handle it here</td><td><code>begin/rescue/end</code></td><td><code>match result { Ok(v) =&gt; ..., Err(e) =&gt; ... }</code></td></tr>
+</table>
+<p>Read <code>age_next_year</code>'s signature again: it says it can fail
+because <code>parse_age</code> can — the possibility of failure is now part
+of the paper trail at every level of the call stack, not something you
+discover in an exception report. That's the whole philosophy: an error is
+just a value, and <code>?</code> makes passing it along as cheap as Ruby
+makes ignoring it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

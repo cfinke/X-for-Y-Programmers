@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Duck Typing & respond_to?</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Duck Typing & respond_to?",
+
+  intro: `
+<p>In Kotlin, polymorphism starts with a name: declare
+<code>interface Speaker</code>, make <code>class Dog : Speaker</code>, and
+only then can a function accept "anything that speaks". In Ruby the interface
+disappears. There is no <code>: Speaker</code>, no cast — polymorphism is
+<strong>method presence</strong>. Any object with a <code>#speak</code> method
+works in any code that calls <code>.speak</code>, whether or not the two ever
+heard of each other. If it quacks like a duck, it is one.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>interface Speaker { fun speak(): String }</code></td><td>— (the interface disappears)</td></tr>
+  <tr><td><code>class Dog : Speaker</code></td><td><code>class Dog</code> — just define <code>speak</code></td></tr>
+  <tr><td><code>if (thing is Speaker) { thing.speak() }</code></td><td><code>thing.respond_to?(:speak) ? thing.speak : ...</code></td></tr>
+  <tr><td><code>x is Dog</code></td><td><code>x.is_a?(Dog)</code> (exists, used sparingly)</td></tr>
+</table>
+<p>When you can't be sure what you were handed, you don't test its
+<em>type</em>, you probe for the <em>method</em>:
+<code>thing.respond_to?(:speak)</code> replaces the whole
+<code>is</code>-check-then-smart-cast ritual with a question asked at runtime.
+(<code>is_a?</code> still exists for genuinely nominal moments, but reaching
+for it first is a Kotlin accent.) Be honest about the trade, though: the Kotlin
+compiler <em>proved</em> every <code>Speaker</code> had a
+<code>speak()</code> before the program ran. Ruby offers no such proof — a
+missing method is a <code>NoMethodError</code> at call time, and the
+verification work moves to your tests and to conventions your team actually
+keeps.</p>`,
+
+  kotlin: `interface Speaker {
+    fun speak(): String
+}
+
+class Dog : Speaker {
+    override fun speak() = "Woof"
+}
+
+class Robot : Speaker {
+    override fun speak() = "Beep"
+}
+
+class Rock   // does not implement Speaker
+
+fun makeSpeak(thing: Any): String {
+    if (thing is Speaker) {   // type test, then smart cast
+        return thing.speak()
+    }
+    return "..."
+}`,
+
+  task: `
+<p>Rebuild the menagerie without the interface:</p>
+<ol>
+  <li>Class <code>Dog</code> whose <code>speak</code> returns
+      <code>"Woof"</code>, and class <code>Robot</code> whose
+      <code>speak</code> returns <code>"Beep"</code>. No
+      <code>: Speaker</code>, no shared parent — they only share a method
+      name.</li>
+  <li>Class <code>Rock</code> — no <code>speak</code> at all.</li>
+  <li><code>make_speak(thing)</code> — if
+      <code>thing.respond_to?(:speak)</code>, call <code>thing.speak</code>;
+      otherwise return <code>"..."</code>. This is your
+      <code>is</code>-check-and-smart-cast, replaced by a question.</li>
+  <li><code>all_speakers(things)</code> — <code>select</code> the things that
+      respond to <code>:speak</code>, then <code>map</code> each to what it
+      says.</li>
+</ol>`,
+
+  starter: `# 1. Two unrelated classes that happen to share a method name.
+class Dog
+  def speak
+    raise NotImplementedError, "TODO: return \\"Woof\\""
+  end
+end
+
+class Robot
+  def speak
+    raise NotImplementedError, "TODO: return \\"Beep\\""
+  end
+end
+
+# 2. Rock has no speak method at all.
+class Rock
+end
+
+# 3. make_speak: probe with respond_to?(:speak) — no instanceof, no cast.
+def make_speak(thing)
+  raise NotImplementedError, "TODO: implement make_speak"
+end
+
+# 4. all_speakers: select the ducks, then map each to its speak.
+def all_speakers(things)
+  raise NotImplementedError, "TODO: implement all_speakers"
+end
+`,
+
+  requirements: [
+    { pattern: /respond_to\?/, message: "Probe for the method with respond_to?" },
+    { pattern: /class\s+Dog/, message: "Define class Dog" },
+    { pattern: /class\s+Robot/, message: "Define class Robot" },
+    { pattern: /\.speak/, message: "Call .speak on the object once the probe says yes" },
+  ],
+
+  tests: [
+    { name: 'make_speak(Dog.new) returns "Woof"',
+      code: '  expect_eq(make_speak(Dog.new), "Woof")' },
+    { name: 'make_speak(Robot.new) returns "Beep"',
+      code: '  expect_eq(make_speak(Robot.new), "Beep")' },
+    { name: 'make_speak(Rock.new) returns "..."',
+      code: '  expect_eq(make_speak(Rock.new), "...")' },
+    { name: "Rock really has no speak method",
+      code: "  expect_true(!Rock.new.respond_to?(:speak))" },
+    { name: 'all_speakers([Dog.new, Rock.new, Robot.new]) returns ["Woof", "Beep"]',
+      code: '  expect_eq(all_speakers([Dog.new, Rock.new, Robot.new]), ["Woof", "Beep"])' },
+    { name: "all_speakers([Rock.new]) returns []",
+      code: "  expect_eq(all_speakers([Rock.new]), [])" },
+  ],
+
+  solution: `class Dog
+  def speak
+    "Woof"
+  end
+end
+
+class Robot
+  def speak
+    "Beep"
+  end
+end
+
+class Rock
+end
+
+def make_speak(thing)
+  thing.respond_to?(:speak) ? thing.speak : "..."
+end
+
+def all_speakers(things)
+  things.select { |t| t.respond_to?(:speak) }.map(&:speak)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Shared contract</td><td><code>interface Speaker</code>, <code>: Speaker</code></td><td>a method name both classes define — nothing declared</td></tr>
+  <tr><td>"Can it do X?"</td><td><code>thing is Speaker</code></td><td><code>thing.respond_to?(:speak)</code></td></tr>
+  <tr><td>Use it as X</td><td>smart cast after <code>is</code></td><td>just call <code>thing.speak</code> — no cast exists</td></tr>
+  <tr><td>Nominal type check</td><td><code>x is Dog</code></td><td><code>x.is_a?(Dog)</code> — for genuinely nominal moments</td></tr>
+  <tr><td>Contract violated</td><td>compile error, before the program runs</td><td><code>NoMethodError</code>, at the call site, at runtime</td></tr>
+  <tr><td>Who verifies?</td><td>the compiler</td><td>your tests and your team's conventions</td></tr>
+</table>
+<p>Duck typing is why Ruby libraries compose so freely: a method that calls
+<code>each</code> works on Arrays, Hashes, Ranges, files, and any class you
+write with an <code>each</code> — no one had to agree on an interface first.
+The honest ledger: you traded a compile-time proof for flexibility, and the
+proof's job did not vanish — it moved into your test suite. That is why
+idiomatic Ruby codebases lean so hard on tests: they are the type checker
+now.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

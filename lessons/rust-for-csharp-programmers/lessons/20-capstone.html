@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Last lesson — no new concepts, just the ones that matter, together. You'll
+build a small inventory API around a struct, and every function exercises a
+habit this course replaced: LINQ chains become iterator chains,
+<code>FirstOrDefault</code>'s <code>null</code> becomes <code>Option</code>,
+and "any reference can mutate" becomes one explicit <code>&amp;mut</code>.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>items.Sum(i =&gt; ...)</code></td><td><code>items.iter().map(|i| ...).sum()</code></td></tr>
+  <tr><td><code>items.FirstOrDefault(...)</code> → <code>Item?</code></td><td><code>items.iter().find(...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+  <tr><td>mutate through any reference</td><td><code>&amp;mut Vec&lt;Item&gt;</code>, <code>.iter_mut()</code> — mutation is in the signature</td></tr>
+  <tr><td><code>.Where(...).Select(...).ToList()</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+</table>
+<p>Two signatures deserve a second look. <code>find_item&lt;'a&gt;</code>
+returns <code>Option&lt;&amp;'a Item&gt;</code> — lesson 16's lifetime says
+"this borrow points into the slice you gave me", and lesson 8's
+<code>Option</code> says "or there's nothing", with no <code>null</code> able
+to escape. And <code>restock</code> taking <code>&amp;mut Vec&lt;Item&gt;</code>
+declares in its type what the C# version hides: this function mutates your
+data. Read those two and you're reading Rust.</p>`,
+
+  csharp: `class Item
+{
+    public string Name = "";
+    public int PriceCents;
+    public int Count;
+}
+
+int TotalValue(List<Item> items) =>
+    items.Sum(i => i.PriceCents * i.Count);
+
+Item? FindItem(List<Item> items, string name) =>
+    items.FirstOrDefault(i => i.Name == name);  // null when absent
+
+bool Restock(List<Item> items, string name, int amount)
+{
+    var item = FindItem(items, name);
+    if (item is null) return false;
+    item.Count += amount;   // any reference can mutate
+    return true;
+}
+
+List<string> NamesInStock(List<Item> items) =>
+    items.Where(i => i.Count > 0).Select(i => i.Name).ToList();`,
+
+  task: `
+<p>The <code>Item</code> struct is given. Implement the four functions:</p>
+<ol>
+  <li><code>total_value(items: &amp;[Item]) -&gt; u32</code> — the sum of
+      <code>price_cents * count</code> over all items:
+      <code>.iter().map(...).sum()</code>.</li>
+  <li><code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt;
+      Option&lt;&amp;'a Item&gt;</code> — the first item whose
+      <code>name</code> matches, or <code>None</code>. Use
+      <code>.iter().find(|i| i.name == name)</code> — it already returns
+      exactly this <code>Option</code>.</li>
+  <li><code>restock(items: &amp;mut Vec&lt;Item&gt;, name: &amp;str, amount:
+      u32) -&gt; bool</code> — find the named item, add <code>amount</code>
+      to its <code>count</code>, return <code>true</code>; return
+      <code>false</code> if no item matches. Iterate with
+      <code>.iter_mut()</code>.</li>
+  <li><code>names_in_stock(items: &amp;[Item]) -&gt; Vec&lt;String&gt;</code>
+      — the names of items with <code>count &gt; 0</code>, in order:
+      <code>.filter(...).map(|i| i.name.clone()).collect()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+// 1. total_value: items.Sum(i => i.PriceCents * i.Count)
+//    -> .iter().map(...).sum()
+fn total_value(items: &[Item]) -> u32 {
+    todo!()
+}
+
+// 2. find_item: FirstOrDefault -> .iter().find(...).
+//    Option<&'a Item> instead of a nullable Item? — and the 'a
+//    records that the result borrows from the items slice.
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    todo!()
+}
+
+// 3. restock: the &mut in the signature is the honesty C# lacked —
+//    this function mutates. .iter_mut() yields &mut Item.
+//    Return false when no item has the given name.
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    todo!()
+}
+
+// 4. names_in_stock: Where/Select/ToList -> filter/map/collect.
+//    Keep only count > 0; clone each name into the result.
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option<&/, message: "find_item returns Option<&Item> — a borrowed find result, not null" },
+    { pattern: /\.iter\(\)/, message: "Use iterator chains (.iter()) rather than index loops" },
+    { pattern: /&mut\s+Vec<Item>/, message: "restock takes &mut Vec<Item> — mutation declared in the signature" },
+  ],
+
+  tests: [
+    { name: "total_value sums price * count across items",
+      code: `let items = vec![
+    Item { name: "hammer".to_string(), price_cents: 900, count: 2 },
+    Item { name: "nail".to_string(), price_cents: 5, count: 100 },
+    Item { name: "saw".to_string(), price_cents: 1500, count: 0 },
+];
+assert_eq!(total_value(&items), 2300);` },
+    { name: "find_item returns Some with a borrow of the matching item",
+      code: `let items = vec![
+    Item { name: "hammer".to_string(), price_cents: 900, count: 2 },
+    Item { name: "saw".to_string(), price_cents: 1500, count: 0 },
+];
+let found = find_item(&items, "saw");
+assert!(found.is_some());
+assert_eq!(found.unwrap().price_cents, 1500);` },
+    { name: "find_item returns None for an unknown name",
+      code: `let items = vec![
+    Item { name: "hammer".to_string(), price_cents: 900, count: 2 },
+];
+assert!(find_item(&items, "drill").is_none());` },
+    { name: "restock adds to the count and returns true",
+      code: `let mut items = vec![
+    Item { name: "hammer".to_string(), price_cents: 900, count: 2 },
+    Item { name: "saw".to_string(), price_cents: 1500, count: 0 },
+];
+assert!(restock(&mut items, "saw", 3));
+assert_eq!(items[1].count, 3);
+assert_eq!(items[0].count, 2);` },
+    { name: "restock returns false for an unknown name and changes nothing",
+      code: `let mut items = vec![
+    Item { name: "hammer".to_string(), price_cents: 900, count: 2 },
+];
+assert!(!restock(&mut items, "drill", 5));
+assert_eq!(items[0].count, 2);` },
+    { name: "names_in_stock keeps only items with count > 0, in order",
+      code: `let items = vec![
+    Item { name: "hammer".to_string(), price_cents: 900, count: 2 },
+    Item { name: "saw".to_string(), price_cents: 1500, count: 0 },
+    Item { name: "nail".to_string(), price_cents: 5, count: 100 },
+];
+assert_eq!(names_in_stock(&items), vec!["hammer".to_string(), "nail".to_string()]);` },
+  ],
+
+  solution: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+fn total_value(items: &[Item]) -> u32 {
+    items.iter().map(|i| i.price_cents * i.count).sum()
+}
+
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    items.iter().find(|i| i.name == name)
+}
+
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    for item in items.iter_mut() {
+        if item.name == name {
+            item.count += amount;
+            return true;
+        }
+    }
+    false
+}
+
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    items.iter()
+        .filter(|i| i.count > 0)
+        .map(|i| i.name.clone())
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Habit</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Aggregate</td><td><code>items.Sum(i =&gt; ...)</code></td><td><code>items.iter().map(...).sum()</code></td></tr>
+  <tr><td>Search</td><td><code>FirstOrDefault</code> → <code>Item?</code>, hope callers null-check</td><td><code>.find(...)</code> → <code>Option&lt;&amp;Item&gt;</code>, callers must handle it</td></tr>
+  <tr><td>Mutate in place</td><td>invisible — any reference will do</td><td><code>&amp;mut</code> in the signature, <code>.iter_mut()</code> in the body</td></tr>
+  <tr><td>Filter + project</td><td><code>.Where(...).Select(...).ToList()</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+  <tr><td>Borrowed result</td><td>—</td><td><code>Option&lt;&amp;'a Item&gt;</code> — provably points into the input</td></tr>
+</table>
+<p>Look back at what the compiler now checks that convention used to:
+<code>find_item</code> can't return a dangling reference (lifetime), its
+caller can't forget the not-found case (<code>Option</code>), and nobody can
+mutate the inventory through a function that didn't declare
+<code>&amp;mut</code>. None of those guarantees cost a garbage collector or
+a runtime check — they're all in the signatures. That's the trade Rust
+offers a C# developer: more said up front, and a whole category of
+production incidents that simply don't compile. Nicely done — course
+complete.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

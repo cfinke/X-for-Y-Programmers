@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow & match</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & match",
+
+  intro: `
+<p>PHP's <code>if</code> is Kotlin's <code>if</code> (with truthiness, per the
+last lesson, whereas Kotlin demands an actual <code>Boolean</code>) — with two
+spelling differences: PHP chains with <code>elseif</code> as one word where you
+write <code>else if</code> as two, and PHP's <code>if</code> is only a
+<em>statement</em>, not the expression you can <code>return</code> in Kotlin.
+Its classic <code>switch</code>, meanwhile, is a footgun with no Kotlin
+equivalent: it compares cases with loose <code>==</code> juggling <em>and</em>
+falls through without <code>break</code>. Skip it.</p>
+<p>What you use instead is <code>match</code> (PHP 8), which lands almost
+exactly on Kotlin's <code>when</code> <em>expression</em>: each arm uses the
+same <code>-></code>-style <code>=></code> arrow, there is no fallthrough, arms
+can be grouped with commas, the whole thing is an expression you can
+<code>return</code>, and it dispatches on a value. The one real difference:
+<code>match</code> compares with strict <code>===</code> (type included), while
+<code>when</code> uses structural <code>==</code>. Exhaustiveness is enforced
+too, though at runtime rather than compile time: an unmatched value with no
+<code>default</code> throws <code>UnhandledMatchError</code>, like a
+non-exhaustive <code>when</code> expression missing a branch — except Kotlin
+flags that when it compiles, PHP only when it runs.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>else if</code> (two words)</td><td><code>elseif</code> (one word)</td></tr>
+  <tr><td>no <code>switch</code> — only <code>when</code></td><td><code>switch</code> — fallthrough <em>and</em> loose <code>==</code>; avoid</td></tr>
+  <tr><td><code>when (d) { "Sat", "Sun" -> "Weekend" }</code></td><td><code>match ($d) { "Sat", "Sun" => "Weekend", }</code></td></tr>
+  <tr><td>exhaustiveness: compile error</td><td>exhaustiveness: <code>UnhandledMatchError</code> at runtime</td></tr>
+  <tr><td>range guards: <code>when { score >= 90 -> ... }</code></td><td><code>match (true) { $score >= 90 => ..., }</code></td></tr>
+</table>
+<p>The last row is the local idiom worth memorizing: <code>match (true)</code>
+turns each arm's condition into a guard, giving you a clean ladder of range
+checks — exactly the job Kotlin's argument-less <code>when { }</code> form does.</p>`,
+
+  kotlin: `fun grade(score: Int): String = when {
+    score >= 90 -> "A"
+    score >= 80 -> "B"
+    score >= 70 -> "C"
+    score >= 60 -> "D"
+    else -> "F"
+}
+
+fun dayType(day: String): String =
+    // Kotlin when expression: no fallthrough, grouped branches, an
+    // expression; the else keeps it exhaustive.
+    when (day) {
+        "Saturday", "Sunday" -> "Weekend"
+        "Monday", "Tuesday", "Wednesday",
+        "Thursday", "Friday" -> "Weekday"
+        else -> "Unknown"
+    }`,
+
+  task: `
+<p>Port both functions using <code>match</code> — no <code>if</code> chains,
+no <code>switch</code>:</p>
+<ol>
+  <li><code>grade(int $score): string</code> — the classic grade ladder
+      (90+ "A", 80+ "B", 70+ "C", 60+ "D", otherwise "F"). Ranges aren't
+      values you can list, so use the <code>match (true)</code> idiom: each
+      arm is a condition like <code>$score >= 90 => "A"</code>, and the first
+      true one wins. Finish with <code>default => "F"</code>.</li>
+  <li><code>day_type(string $day): string</code> — a direct port of the Kotlin
+      when expression: group <code>"Saturday", "Sunday"</code> into one
+      <code>"Weekend"</code> arm, the five weekdays into a
+      <code>"Weekday"</code> arm, and give any other string
+      <code>default => "Unknown"</code> (without the default, an unexpected
+      value would throw <code>UnhandledMatchError</code>).</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Ranges can't be case labels — match (true) makes each arm a guard:
+//    match (true) { $score >= 90 => "A", ..., default => "F" }
+function grade(int $score): string {
+    throw new Exception("TODO: implement grade with match(true)");
+}
+
+// 2. A straight port of Kotlin's when expression: grouped arms + default.
+function day_type(string $day): string {
+    throw new Exception("TODO: implement day_type with match");
+}
+`,
+
+  requirements: [
+    { pattern: /match\s*\(/, message: "Use a match expression (not if chains or switch)" },
+    { pattern: /match\s*\(\s*true\s*\)/, message: "Use the match(true) idiom for the grade ranges" },
+    { pattern: /default\s*=>/, message: "Include a default => arm" },
+  ],
+
+  tests: [
+    { name: 'grade: 95 => "A", 80 => "B"',
+      code: 'expect_eq(grade(95), "A");\nexpect_eq(grade(80), "B");' },
+    { name: 'grade: 72 => "C", 60 => "D"',
+      code: 'expect_eq(grade(72), "C");\nexpect_eq(grade(60), "D");' },
+    { name: 'grade: 59 and 0 both => "F"',
+      code: 'expect_eq(grade(59), "F");\nexpect_eq(grade(0), "F");' },
+    { name: 'day_type: Saturday and Sunday are "Weekend"',
+      code: 'expect_eq(day_type("Saturday"), "Weekend");\nexpect_eq(day_type("Sunday"), "Weekend");' },
+    { name: 'day_type: Monday and Wednesday are "Weekday"',
+      code: 'expect_eq(day_type("Monday"), "Weekday");\nexpect_eq(day_type("Wednesday"), "Weekday");' },
+    { name: 'day_type: anything else is "Unknown"',
+      code: 'expect_eq(day_type("Payday"), "Unknown");' },
+  ],
+
+  solution: `<?php
+
+function grade(int $score): string {
+    return match (true) {
+        $score >= 90 => "A",
+        $score >= 80 => "B",
+        $score >= 70 => "C",
+        $score >= 60 => "D",
+        default => "F",
+    };
+}
+
+function day_type(string $day): string {
+    return match ($day) {
+        "Saturday", "Sunday" => "Weekend",
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" => "Weekday",
+        default => "Unknown",
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Chained condition</td><td><code>else if</code></td><td><code>elseif</code></td></tr>
+  <tr><td>Value dispatch</td><td><code>when</code> expression</td><td><code>match</code> (8.0+), strict <code>===</code></td></tr>
+  <tr><td>Arm syntax</td><td><code>X -> result</code></td><td><code>X => result,</code></td></tr>
+  <tr><td>Grouped labels</td><td><code>"Sat", "Sun" -></code></td><td><code>"Sat", "Sun" =></code></td></tr>
+  <tr><td>Missing case</td><td>compile error (exhaustive <code>when</code>)</td><td><code>UnhandledMatchError</code> at runtime</td></tr>
+  <tr><td>Range guards</td><td><code>when { x >= 90 -> ... }</code></td><td><code>match (true) { $x >= 90 => ... }</code></td></tr>
+</table>
+<p>Two things carry over unchanged and one doesn't: <code>match</code> arms
+are expressions only — no statement blocks, so a complex arm calls a helper
+function; each arm compares with <code>===</code>, so <code>match ("1")</code>
+will not hit an arm listing <code>1</code>; and unlike Kotlin there is no
+compiler to catch the missing case, so an intentionally exhaustive
+<code>match</code> <em>without</em> a <code>default</code> is often the safer
+design — the <code>UnhandledMatchError</code> surfaces the forgotten case
+loudly instead of hiding it behind a catch-all.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

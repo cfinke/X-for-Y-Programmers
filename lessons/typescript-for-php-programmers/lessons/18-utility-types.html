@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Utility Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Utility Types",
+
+  intro: `
+<p>In PHP, "a partial update" is a convention, not a type. You accept an array
+of changes, hope the caller only sent valid keys, and merge:
+<code>array_merge($user, $changes)</code>. To whitelist keys you write the
+classic incantation
+<code>array_intersect_key($data, array_flip(['name', 'email']))</code>. Both
+work at runtime; neither tells you at development time that
+<code>$changes['emial']</code> is a typo.</p>
+<p>TypeScript ships <em>utility types</em>: generic types that derive new types
+from existing ones, with zero runtime cost. <code>Partial&lt;User&gt;</code> is
+"a User where every property is optional" — the exact type of a changes array.
+<code>Pick&lt;User, "id" | "name"&gt;</code> keeps only those keys;
+<code>Omit&lt;User, "password"&gt;</code> drops them;
+<code>Readonly&lt;User&gt;</code> makes every property un-assignable. Change
+the <code>User</code> interface and every derived type updates itself.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>array_merge($user, $changes)</code></td><td><code>{ ...user, ...changes }</code> with <code>changes: Partial&lt;User&gt;</code></td></tr>
+  <tr><td><code>array_intersect_key($u, array_flip(['id','name']))</code></td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td><code>unset($u['password'])</code> then pray</td><td><code>Omit&lt;User, "password"&gt;</code></td></tr>
+  <tr><td><code>readonly</code> properties (PHP 8.1, per property)</td><td><code>Readonly&lt;User&gt;</code> (whole shape at once)</td></tr>
+</table>
+<p>Remember these are compile-time only: <code>Partial&lt;User&gt;</code>
+emits no JavaScript. The runtime work — spreading, copying — is still yours to
+write; the utility type just guarantees the shapes line up.</p>`,
+
+  php: `<?php
+$user = [
+    'id'     => 1,
+    'name'   => 'Ada',
+    'email'  => 'ada@example.com',
+    'active' => true,
+];
+
+// A "partial update": nothing checks these keys are real.
+function updateUser(array $user, array $changes): array {
+    return array_merge($user, $changes); // typo'd key? new bogus field.
+}
+
+// Whitelisting keys, the PHP way:
+function toSummary(array $user): array {
+    return array_intersect_key($user, array_flip(['id', 'name']));
+}
+
+$user = updateUser($user, ['emial' => 'new@example.com']); // oops, silently kept`,
+
+  task: `
+<p>Rebuild the update and summary helpers with derived types:</p>
+<ol>
+  <li>Define an <code>interface User</code> with <code>id: number</code>,
+      <code>name: string</code>, <code>email: string</code>,
+      <code>active: boolean</code>.</li>
+  <li>Write <code>updateUser(user: User, changes: Partial&lt;User&gt;): User</code>
+      that returns a <strong>new</strong> object via spread
+      (<code>{ ...user, ...changes }</code>) — do not mutate the original.</li>
+  <li>Write <code>toSummary(user: User): Pick&lt;User, "id" | "name"&gt;</code>
+      that returns an object with only <code>id</code> and <code>name</code>.</li>
+</ol>
+<p>Because <code>changes</code> is <code>Partial&lt;User&gt;</code>, passing
+<code>{ emial: "..." }</code> would now be a compile error — the typo PHP
+silently merged in.</p>`,
+
+  starter: `// 1. TODO: define the User interface (id, name, email, active).
+interface User {
+  id: number;
+}
+
+// 2. TODO: type changes as Partial<User>, return a new object via spread.
+function updateUser(user: User, changes: object): User {
+  return user;
+}
+
+// 3. TODO: return type Pick<User, "id" | "name">, keep only those keys.
+function toSummary(user: User) {
+  return user;
+}
+`,
+
+  exportNames: ["updateUser", "toSummary"],
+
+  requirements: [
+    { pattern: /interface\s+User\s*\{/, message: "Define an interface User" },
+    { pattern: /Partial\s*</, message: "Type the changes parameter as Partial<User>" },
+    { pattern: /Pick\s*<|Omit\s*</, message: "Use Pick or Omit to derive the summary type from User" },
+    { pattern: /\{\s*\.\.\.\s*user\s*,\s*\.\.\.\s*changes\s*\}/, message: "Build the updated user with object spread: { ...user, ...changes }" },
+  ],
+
+  tests: [
+    {
+      name: "updateUser merges the changes over the user",
+      run: (x) => expectDeepEqual(
+        x.updateUser({ id: 1, name: "Ada", email: "ada@example.com", active: true }, { email: "new@example.com" }),
+        { id: 1, name: "Ada", email: "new@example.com", active: true }
+      ),
+    },
+    {
+      name: "updateUser with several changes applies them all",
+      run: (x) => expectDeepEqual(
+        x.updateUser({ id: 2, name: "Rasmus", email: "r@example.com", active: true }, { name: "Rasmus L.", active: false }),
+        { id: 2, name: "Rasmus L.", email: "r@example.com", active: false }
+      ),
+    },
+    {
+      name: "updateUser does not mutate the original user",
+      run: (x) => {
+        const original = { id: 1, name: "Ada", email: "ada@example.com", active: true };
+        x.updateUser(original, { name: "Grace" });
+        expectEqual(original.name, "Ada");
+      },
+    },
+    {
+      name: "toSummary keeps id and name",
+      run: (x) => {
+        const s = x.toSummary({ id: 7, name: "Anders", email: "anders@example.com", active: true });
+        expectEqual(s.id, 7);
+        expectEqual(s.name, "Anders");
+      },
+    },
+    {
+      name: "toSummary drops every other key",
+      run: (x) => {
+        const s = x.toSummary({ id: 7, name: "Anders", email: "anders@example.com", active: true });
+        expectEqual(Object.keys(s).length, 2);
+      },
+    },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+function updateUser(user: User, changes: Partial<User>): User {
+  return { ...user, ...changes };
+}
+
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  return { id: user.id, name: user.name };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Goal</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>All keys optional</td><td>Convention ("pass what you have")</td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td>All keys required</td><td>Convention, or validation code</td><td><code>Required&lt;User&gt;</code></td></tr>
+  <tr><td>Keep some keys</td><td><code>array_intersect_key($u, array_flip([...]))</code></td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td>Drop some keys</td><td><code>unset()</code> / <code>array_diff_key()</code></td><td><code>Omit&lt;User, "password"&gt;</code></td></tr>
+  <tr><td>Immutable shape</td><td><code>readonly</code> per property (PHP 8.1+)</td><td><code>Readonly&lt;User&gt;</code></td></tr>
+  <tr><td>Map of key ⇒ value</td><td><code>array&lt;string, User&gt;</code> docblock</td><td><code>Record&lt;string, User&gt;</code></td></tr>
+</table>
+<p>The mental shift: in PHP you write runtime code to shape arrays and hope the
+docblocks keep up. In TypeScript the derived types <em>are</em> the docblocks —
+generated from the source interface, verified on every compile, and erased
+before runtime. One interface, many views, no drift.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

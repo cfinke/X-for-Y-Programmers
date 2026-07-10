@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow & match</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & match",
+
+  intro: `
+<p>PHP's <code>if</code> is Rust's with parentheses back on the condition:
+<code>if ($x &gt; 3) { ... }</code>. It's a statement, not an expression, so
+no <code>let y = if c { a } else { b }</code> — use the ternary. The real
+news is that <strong><code>match</code> survives the trip</strong>. PHP 8's
+<code>match</code> is Rust's match with the training wheels off: each arm
+compares with strict <code>===</code>, there is no fallthrough, the whole
+thing is an <em>expression</em> you can return or assign, and arms can be
+grouped with commas — <code>"sat", "sun" =&gt;</code> is your
+<code>"sat" | "sun" =&gt;</code>.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>if x &gt; 3 { }</code></td><td><code>if ($x &gt; 3) { }</code> (parens required)</td></tr>
+  <tr><td><code>match day { "sat" | "sun" =&gt; ..., _ =&gt; ... }</code></td><td><code>match ($day) { "sat", "sun" =&gt; ..., default =&gt; ... }</code></td></tr>
+  <tr><td><code>x if x &gt;= 90 =&gt; ...</code> (guards)</td><td><code>match (true) { $x &gt;= 90 =&gt; ... }</code></td></tr>
+  <tr><td>non-exhaustive → compile error</td><td>no arm matched → <code>UnhandledMatchError</code> at runtime</td></tr>
+</table>
+<p>Two honest downgrades. Exhaustiveness moves to <em>runtime</em>: miss every
+arm and you get an <code>UnhandledMatchError</code> thrown when it happens,
+not a red squiggle before you ship — that's the big one. And there are no
+destructuring patterns: PHP matches on <em>values</em>, not shapes — no
+<code>Some(x)</code>, no <code>(a, b)</code>, no bindings. For range logic
+the idiom is <code>match (true)</code>: every arm is a boolean expression
+compared against <code>true</code>, which is exactly what match guards were.</p>`,
+
+  rust: `fn grade(score: u32) -> &'static str {
+    match score {
+        s if s >= 90 => "A",
+        s if s >= 80 => "B",
+        s if s >= 70 => "C",
+        _ => "F",
+    }
+}
+
+fn day_type(day: &str) -> &'static str {
+    match day {
+        "sat" | "sun" => "weekend",
+        // Leave this arm out and rustc refuses to compile.
+        // Leave PHP's default out and you get UnhandledMatchError
+        // -- at runtime, on the first unexpected value.
+        _ => "weekday",
+    }
+}`,
+
+  task: `
+<p>Port both functions, one per match flavor:</p>
+<ol>
+  <li><code>grade(int $score): string</code> — use the
+      <code>match (true)</code> idiom: arms like
+      <code>$score &gt;= 90 =&gt; "A"</code> for A (≥ 90), B (≥ 80),
+      C (≥ 70), and a <code>default</code> arm returning <code>"F"</code>.
+      Arms are checked top to bottom — first <code>true</code> wins, just
+      like guard order in Rust.</li>
+  <li><code>day_type(string $day): string</code> — <code>match ($day)</code>
+      with a grouped arm: <code>"sat", "sun" =&gt; "weekend"</code> (the
+      comma is PHP's <code>|</code> pattern), and <code>default</code>
+      returning <code>"weekday"</code>.</li>
+</ol>
+<p>Both functions should <code>return match (...) { ... };</code> — it's an
+expression, so use it like one.</p>`,
+
+  starter: `<?php
+
+// 1. Guards become match(true): each arm is a bool expression,
+//    first true arm wins. default => is the _ arm.
+function grade(int $score): string {
+    throw new Exception("TODO: implement grade with match (true)");
+}
+
+// 2. Strict-comparison match on a value; group arms with commas:
+//    "sat", "sun" => "weekend"   is Rust's   "sat" | "sun" =>
+function day_type(string $day): string {
+    throw new Exception("TODO: implement day_type with match");
+}
+`,
+
+  requirements: [
+    { pattern: /match\s*\(/, message: "Use a match expression" },
+    { pattern: /match\s*\(\s*true\s*\)/, message: "Use the match (true) idiom for the grade ranges" },
+    { pattern: /default\s*=>/, message: "Include a default => arm (the _ of PHP)" },
+  ],
+
+  tests: [
+    { name: 'grade: 95 and the 90 boundary are "A"',
+      code: 'expect_eq(grade(95), "A");\nexpect_eq(grade(90), "A");' },
+    { name: 'grade: 85 is "B", 70 is "C"',
+      code: 'expect_eq(grade(85), "B");\nexpect_eq(grade(70), "C");' },
+    { name: 'grade: 69 and 0 fall through to "F"',
+      code: 'expect_eq(grade(69), "F");\nexpect_eq(grade(0), "F");' },
+    { name: 'day_type: "sat" and "sun" share the weekend arm',
+      code: 'expect_eq(day_type("sat"), "weekend");\nexpect_eq(day_type("sun"), "weekend");' },
+    { name: 'day_type: "mon" and "fri" hit default',
+      code: 'expect_eq(day_type("mon"), "weekday");\nexpect_eq(day_type("fri"), "weekday");' },
+  ],
+
+  solution: `<?php
+
+function grade(int $score): string {
+    return match (true) {
+        $score >= 90 => "A",
+        $score >= 80 => "B",
+        $score >= 70 => "C",
+        default => "F",
+    };
+}
+
+function day_type(string $day): string {
+    return match ($day) {
+        "sat", "sun" => "weekend",
+        default => "weekday",
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Conditional</td><td><code>if x &gt; 3 { }</code></td><td><code>if ($x &gt; 3) { }</code></td></tr>
+  <tr><td>Match is an expression</td><td>yes</td><td>yes — <code>return match (...) {...};</code></td></tr>
+  <tr><td>Arm comparison</td><td>pattern match</td><td>strict <code>===</code> per arm</td></tr>
+  <tr><td>Or-patterns</td><td><code>"sat" | "sun" =&gt;</code></td><td><code>"sat", "sun" =&gt;</code></td></tr>
+  <tr><td>Catch-all</td><td><code>_ =&gt;</code></td><td><code>default =&gt;</code></td></tr>
+  <tr><td>Guards / ranges</td><td><code>s if s &gt;= 90 =&gt;</code></td><td><code>match (true) { $s &gt;= 90 =&gt; }</code></td></tr>
+  <tr><td>Exhaustiveness</td><td>compile-time error</td><td><code>UnhandledMatchError</code> at runtime</td></tr>
+  <tr><td>Destructuring patterns</td><td><code>Some(x)</code>, tuples, structs</td><td>none — values only</td></tr>
+</table>
+<p>Beware the elder sibling: PHP also has <code>switch</code>, which compares
+loosely with <code>==</code> <em>and</em> falls through without
+<code>break</code> — both foot-guns <code>match</code> was designed to
+retire. Reach for <code>match</code> by default. And since exhaustiveness is
+now a runtime property, an <code>UnhandledMatchError</code> in production is
+PHP telling you what rustc would have told you for free — write the
+<code>default</code> arm, or write tests that walk every case.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

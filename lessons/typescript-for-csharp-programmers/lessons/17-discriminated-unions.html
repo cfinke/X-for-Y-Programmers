@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Discriminated Unions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Discriminated Unions",
+
+  intro: `
+<p>Modern C# models closed hierarchies with records and switch expressions:
+<code>shape switch { Circle c =&gt; ..., Rectangle r =&gt; ..., _ =&gt; throw ... }</code>.
+It reads beautifully, but the <code>_ =&gt; throw</code> arm is an admission of
+defeat — add a <code>Pentagon</code> record next sprint and the compiler stays
+silent while production throws. TypeScript's version of this pattern is the
+<em>discriminated union</em> (or tagged union): each variant is a plain object
+type carrying a literal <code>kind</code> property, and the union of them is
+the "base class".</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>abstract record Shape;</code></td><td><code>type Shape = Circle | Rectangle | Triangle;</code></td></tr>
+  <tr><td><code>record Circle(double Radius) : Shape;</code></td><td><code>interface Circle { kind: "circle"; radius: number; }</code></td></tr>
+  <tr><td><code>shape switch { Circle c =&gt; ... }</code></td><td><code>switch (shape.kind) { case "circle": ... }</code></td></tr>
+  <tr><td><code>Circle c =&gt;</code> binds <code>c</code></td><td>each <code>case</code> narrows <code>shape</code> itself</td></tr>
+  <tr><td><code>_ =&gt; throw ...</code> (fails at <em>runtime</em>)</td><td><code>never</code> default (fails at <em>compile time</em>)</td></tr>
+</table>
+<p>Switching on the <code>kind</code> tag narrows <code>shape</code> in each
+<code>case</code>, so <code>shape.radius</code> compiles only under
+<code>case "circle"</code> — the same per-arm typing you get from
+<code>Circle c =&gt;</code>, without the extra binding. The payoff is the
+default arm: assign <code>shape</code> to a variable typed <code>never</code>.
+If every variant is handled, <code>shape</code> has type <code>never</code>
+there and the assignment compiles. Forget a case and <code>shape</code> still
+has a real type left over — the assignment becomes a <em>compile error</em>
+that names the variant you missed. The <code>_ =&gt; throw</code> just became
+a build break instead of a 3 a.m. page.</p>`,
+
+  csharp: `public abstract record Shape;
+public record Circle(double Radius) : Shape;
+public record Rectangle(double Width, double Height) : Shape;
+public record Triangle(double Base, double Height) : Shape;
+
+static double Area(Shape shape) => shape switch
+{
+    Circle c    => Math.PI * c.Radius * c.Radius,
+    Rectangle r => r.Width * r.Height,
+    Triangle t  => t.Base * t.Height / 2,
+    _           => throw new ArgumentException("Unknown shape"),
+};
+
+// The compiler cannot know the hierarchy is closed: add a
+// Pentagon record and this still compiles - then throws at runtime.`,
+
+  task: `
+<p>Rebuild the shape hierarchy as a tagged union:</p>
+<ol>
+  <li>Declare three interfaces, each with a literal tag:
+      <code>Circle</code> (<code>kind: "circle"</code>, <code>radius: number</code>),
+      <code>Rectangle</code> (<code>kind: "rectangle"</code>, <code>width: number</code>,
+      <code>height: number</code>), and <code>Triangle</code>
+      (<code>kind: "triangle"</code>, <code>base: number</code>,
+      <code>height: number</code>).</li>
+  <li>Declare <code>type Shape = Circle | Rectangle | Triangle;</code></li>
+  <li>Write <code>area(shape: Shape): number</code> using
+      <code>switch (shape.kind)</code>: circle is
+      <code>Math.PI * radius * radius</code>, rectangle is
+      <code>width * height</code>, triangle is <code>base * height / 2</code>.</li>
+  <li>In the <code>default</code> arm, assign <code>shape</code> to a constant
+      explicitly typed <code>never</code>, then <code>throw new Error(...)</code>.
+      That constant is your exhaustiveness proof: remove a <code>case</code>
+      and the assignment stops compiling.</li>
+</ol>`,
+
+  starter: `interface Circle {
+  kind: "circle";
+  radius: number;
+}
+
+// TODO 1: add Rectangle (width, height) and Triangle (base, height),
+// each with its own literal kind tag.
+
+// TODO 2: widen Shape to the union of all three variants.
+type Shape = Circle;
+
+// TODO 3: switch on shape.kind - each case narrows shape to one variant.
+// TODO 4: in the default, assign shape to a constant typed never, then throw.
+function area(shape: Shape): number {
+  return 0;
+}
+`,
+
+  exportNames: ["area"],
+
+  requirements: [
+    { pattern: /kind\s*:\s*"/, message: 'Tag each variant with a literal kind property (kind: "circle")' },
+    { pattern: /switch\s*\(/, message: "Dispatch with a switch on shape.kind, the TS twin of the C# switch expression" },
+    { pattern: /never/, message: "Use a never-typed constant in the default arm so a forgotten case is a compile error" },
+  ],
+
+  tests: [
+    { name: 'area({ kind: "circle", radius: 2 }) returns 4π', run: (x) => expectEqual(x.area({ kind: "circle", radius: 2 }), Math.PI * 4) },
+    { name: 'area({ kind: "rectangle", width: 3, height: 4 }) returns 12', run: (x) => expectEqual(x.area({ kind: "rectangle", width: 3, height: 4 }), 12) },
+    { name: 'area({ kind: "triangle", base: 10, height: 4 }) returns 20', run: (x) => expectEqual(x.area({ kind: "triangle", base: 10, height: 4 }), 20) },
+    { name: "an unknown kind still throws at runtime (the never arm executes)", run: (x) => expectThrows(() => x.area({ kind: "pentagon", side: 1 })) },
+  ],
+
+  solution: `interface Circle {
+  kind: "circle";
+  radius: number;
+}
+
+interface Rectangle {
+  kind: "rectangle";
+  width: number;
+  height: number;
+}
+
+interface Triangle {
+  kind: "triangle";
+  base: number;
+  height: number;
+}
+
+type Shape = Circle | Rectangle | Triangle;
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    case "rectangle":
+      return shape.width * shape.height;
+    case "triangle":
+      return shape.base * shape.height / 2;
+    default: {
+      // If a case above is missing, shape is not never here and
+      // this assignment is a COMPILE error naming the missed variant.
+      const unreachable: never = shape;
+      throw new Error("Unhandled shape: " + JSON.stringify(unreachable));
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Closed hierarchy</td><td><code>abstract record Shape</code> + derived records</td><td><code>type Shape = A | B | C</code> of tagged interfaces</td></tr>
+  <tr><td>Variant identity</td><td>the runtime type of the record</td><td>a literal property: <code>kind: "circle"</code></td></tr>
+  <tr><td>Dispatch</td><td><code>shape switch { Circle c =&gt; ... }</code></td><td><code>switch (shape.kind) { case "circle": ... }</code></td></tr>
+  <tr><td>Per-arm typing</td><td>fresh binding (<code>c</code>, <code>r</code>, <code>t</code>)</td><td><code>shape</code> itself narrows in each case</td></tr>
+  <tr><td>Missed case</td><td><code>_ =&gt; throw</code> — runtime exception</td><td><code>const x: never = shape;</code> — compile error</td></tr>
+</table>
+<p>The <code>never</code> trick works because narrowing <em>subtracts</em>:
+each handled <code>case</code> removes a variant from <code>shape</code>'s
+type, and only when nothing remains does <code>shape</code> become
+<code>never</code> — the type with no values, assignable only to itself.
+Since the tags are plain strings on plain objects, this pattern also survives
+JSON round-trips for free, something a C# record hierarchy needs a custom
+polymorphic converter to achieve.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

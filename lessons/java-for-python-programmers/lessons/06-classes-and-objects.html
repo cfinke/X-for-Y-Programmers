@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Classes & Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Classes & Objects",
+
+  intro: `
+<p>Classes look superficially similar — both languages group data and behavior
+together — but the ceremony differs a lot. Python has no field declarations
+(attributes simply appear when you assign <code>self.x = …</code> inside
+<code>__init__</code>), no access-modifier keywords, and no true privacy: a
+leading underscore is convention, not enforcement. Java is the opposite:
+fields must be declared with an explicit type, and (importantly) no
+<code>public</code> on the top-level class in this course: the harness
+compiles your file as <code>prog.java</code>, so a <code>public</code>
+top-level type would be rejected. Leave classes <em>package-private</em> (no
+modifier).</p>
+<table>
+  <tr><th>Python</th><th>Java</th></tr>
+  <tr><td><code>self._balance = 0</code> (convention only)</td><td><code>private int balance;</code></td></tr>
+  <tr><td><code>def __init__(self, o): self.owner = o</code></td><td><code>BankAccount(String o) { this.owner = o; }</code></td></tr>
+  <tr><td><code>@property</code><br><code>def balance(self): return self._balance</code></td><td><code>int getBalance() { return balance; }</code></td></tr>
+  <tr><td><code>def __str__(self): …</code></td><td><code>@Override public String toString() { … }</code></td></tr>
+  <tr><td><code>self</code> explicit first parameter</td><td><code>this</code> implicit inside instance methods</td></tr>
+</table>
+<p>Two things to internalize. First, encapsulation in Java is enforced by
+<code>private</code> plus getter methods — there is no <code>@property</code>
+decorator baked into the language, so <code>getBalance()</code> is a real
+method call with parens, not attribute access. Second, <code>toString()</code>
+is inherited from <code>Object</code> and is already <code>public</code>, so
+your override must stay <code>public</code> (you cannot narrow visibility) and
+should carry <code>@Override</code> — unlike Python's <code>__str__</code>,
+which you simply define with a matching signature and Python calls
+automatically via <code>str()</code>/<code>print()</code>.</p>`,
+
+  python: `class BankAccount:
+    def __init__(self, owner, initial):
+        self._owner = owner
+        self._balance = initial
+
+    @property
+    def balance(self):
+        return self._balance
+
+    def deposit(self, amount):
+        self._balance += amount
+
+    def withdraw(self, amount):
+        if amount > self._balance:
+            return False
+        self._balance -= amount
+        return True
+
+    def __str__(self):
+        return f"{self._owner} has \${self._balance}"`,
+
+  task: `
+<p>Model a bank account as a class. Because there are no top-level functions and
+no <code>public</code> top-level types here, write a single package-private
+class:</p>
+<ol>
+  <li>Class <code>BankAccount</code> with <code>private</code> fields
+      <code>owner</code> (a <code>String</code>) and <code>balance</code> (an
+      <code>int</code>).</li>
+  <li>A constructor <code>BankAccount(String owner, int initialBalance)</code>
+      that assigns the fields using <code>this</code>.</li>
+  <li>Getters <code>getOwner()</code> and <code>getBalance()</code>.</li>
+  <li><code>deposit(int amount)</code> adds to the balance.</li>
+  <li><code>withdraw(int amount)</code> returns <code>false</code> and changes
+      nothing if <code>amount</code> exceeds the balance; otherwise it subtracts
+      and returns <code>true</code>.</li>
+  <li>Override <code>toString()</code> to return a string like
+      <code>"Ada has $100"</code>.</li>
+</ol>`,
+
+  starter: `class BankAccount {
+  private String owner;
+  private int balance;
+
+  BankAccount(String owner, int initialBalance) {
+    // TODO: assign the fields with this.owner = owner; etc.
+  }
+
+  String getOwner() {
+    return null; // TODO
+  }
+
+  int getBalance() {
+    return 0; // TODO
+  }
+
+  void deposit(int amount) {
+    // TODO
+  }
+
+  boolean withdraw(int amount) {
+    return false; // TODO: guard against overdrawing
+  }
+
+  @Override
+  public String toString() {
+    return ""; // TODO: e.g. "Ada has $100"
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /private\s+/, message: "Keep the fields private" },
+    { pattern: /this\./, message: "Use this to assign the instance fields in the constructor" },
+    { pattern: /String\s+toString\s*\(\s*\)/, message: "Override toString()" },
+  ],
+
+  tests: [
+    { name: "constructor stores owner and balance", code:
+      "      var acct = new BankAccount(\"Ada\", 100);\n" +
+      "      expect_eq(acct.getOwner(), \"Ada\");\n" +
+      "      expect_eq(acct.getBalance(), 100);" },
+    { name: "deposit increases the balance", code:
+      "      var acct = new BankAccount(\"Ada\", 100);\n" +
+      "      acct.deposit(50);\n" +
+      "      expect_eq(acct.getBalance(), 150);" },
+    { name: "withdraw succeeds when funds suffice", code:
+      "      var acct = new BankAccount(\"Ada\", 100);\n" +
+      "      expect_true(acct.withdraw(40));\n" +
+      "      expect_eq(acct.getBalance(), 60);" },
+    { name: "withdraw fails and leaves the balance untouched", code:
+      "      var acct = new BankAccount(\"Ada\", 100);\n" +
+      "      expect_true(!acct.withdraw(200));\n" +
+      "      expect_eq(acct.getBalance(), 100);" },
+    { name: "toString formats the account", code:
+      "      var acct = new BankAccount(\"Rob\", 68);\n" +
+      "      expect_eq(acct.toString(), \"Rob has $68\");" },
+    { name: "two instances are independent", code:
+      "      var a = new BankAccount(\"Ada\", 100);\n" +
+      "      var b = new BankAccount(\"Rob\", 10);\n" +
+      "      a.deposit(5);\n" +
+      "      expect_eq(a.getBalance(), 105);\n" +
+      "      expect_eq(b.getBalance(), 10);" },
+  ],
+
+  solution: `class BankAccount {
+  private final String owner;
+  private int balance;
+
+  BankAccount(String owner, int initialBalance) {
+    this.owner = owner;
+    this.balance = initialBalance;
+  }
+
+  String getOwner() {
+    return owner;
+  }
+
+  int getBalance() {
+    return balance;
+  }
+
+  void deposit(int amount) {
+    this.balance += amount;
+  }
+
+  boolean withdraw(int amount) {
+    if (amount > this.balance) {
+      return false;
+    }
+    this.balance -= amount;
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return owner + " has $" + balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Java</th></tr>
+  <tr><td>Private field</td><td><code>self._x = 1</code> (convention only)</td><td><code>private int x;</code></td></tr>
+  <tr><td>Constructor</td><td><code>def __init__(self, x): pass</code></td><td><code>ClassName(int x) {}</code></td></tr>
+  <tr><td>Read a field</td><td><code>self.x</code></td><td><code>this.x</code> or just <code>x</code></td></tr>
+  <tr><td>Getter</td><td><code>@property</code> method</td><td><code>int getX()</code> (a method call)</td></tr>
+  <tr><td>Stringify</td><td><code>def __str__(self)</code></td><td><code>@Override public String toString()</code></td></tr>
+  <tr><td>Instantiate</td><td><code>C(…)</code> (no <code>new</code>)</td><td><code>new C(…)</code></td></tr>
+</table>
+<p>Inside a Python method, <code>self</code> must always be spelled out
+explicitly — there is no implicit instance reference the way Java's
+<code>this</code> sometimes works. In Java, <code>this.</code> is optional
+when there is no name clash — <code>balance</code> and
+<code>this.balance</code> refer to the same field. It becomes mandatory only
+to disambiguate a field from a parameter of the same name (exactly what the
+constructor does). Notice <code>owner</code> is <code>final</code> in the
+solution: assign it once in the constructor and it can never change again.
+Python has no matching keyword for that — the closest you can get is
+discipline plus a leading underscore, since even a name-mangled
+<code>__owner</code> attribute remains freely reassignable from inside the
+class. And unlike Python's <code>_owner</code>, which is a bare naming
+convention with zero enforcement, Java's <code>private</code> is enforced by
+the compiler and the JVM.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

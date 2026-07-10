@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Type Narrowing & Guards</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Type Narrowing & Guards",
+
+  intro: `
+<p>Java 16's pattern matching for <code>instanceof</code> was a big quality-of-life
+win: <code>if (obj instanceof String s)</code> finally killed the
+check-then-cast dance. TypeScript goes one step further — an ordinary
+<code>if (typeof value === "string")</code> <em>narrows</em> the type inside the
+branch, with no binding variable and no cast at all. The compiler tracks
+control flow: after the check, <code>value</code> simply <em>is</em> a
+<code>string</code>, and <code>value.length</code> compiles.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>if (obj instanceof String s) { s.length(); }</code></td><td><code>if (typeof value === "string") { value.length; }</code></td></tr>
+  <tr><td><code>if (obj instanceof List&lt;?&gt; l)</code></td><td><code>if (Array.isArray(value))</code></td></tr>
+  <tr><td><code>obj instanceof User u</code></td><td><code>value instanceof User</code> (classes) or <code>"name" in value</code> (shapes)</td></tr>
+  <tr><td><code>Object</code> (the top type)</td><td><code>unknown</code> — like Object, but you <em>must</em> narrow before use</td></tr>
+</table>
+<p>The Java <code>Object</code> role is played by <code>unknown</code>, and it is
+stricter than <code>Object</code> ever was: you cannot call anything on an
+<code>unknown</code> until you have narrowed it. For your own shapes — which are
+interfaces, not classes, so <code>instanceof</code> cannot see them — you write a
+<em>type predicate</em>: a function whose return type is
+<code>value is User</code>. Return <code>true</code> and the compiler narrows the
+argument to <code>User</code> at every call site, like a reusable, named
+<code>instanceof</code> pattern for structural types.</p>`,
+
+  java: `static String describeValue(Object value) {
+    // Java 16+ pattern matching: instanceof binds a typed variable,
+    // finally removing the explicit cast.
+    if (value instanceof String s) {
+        return "string of length " + s.length();
+    }
+    if (value instanceof Integer n) {
+        return "number with value " + n;
+    }
+    if (value instanceof List<?> list) {
+        return "array of " + list.size() + " items";
+    }
+    if (value instanceof User user) {
+        return "user named " + user.name();
+    }
+    return "something else";
+}`,
+
+  task: `
+<p>Port <code>describeValue</code> to TypeScript, narrowing an
+<code>unknown</code> step by step:</p>
+<ol>
+  <li>Write a type guard <code>isUser</code> with the signature
+      <code>function isUser(value: unknown): value is User</code>. It returns
+      <code>true</code> only when <code>value</code> is a non-null object whose
+      <code>name</code> and <code>email</code> properties are both strings
+      (the <code>User</code> interface is provided).</li>
+  <li>Write <code>describeValue(value: unknown): string</code> that returns:
+      <ul>
+        <li><code>"string of length N"</code> for strings (via <code>typeof</code>)</li>
+        <li><code>"number with value N"</code> for numbers (via <code>typeof</code>)</li>
+        <li><code>"array of N items"</code> for arrays (via <code>Array.isArray</code>)</li>
+        <li><code>"user named NAME"</code> when <code>isUser(value)</code> is true</li>
+        <li><code>"something else"</code> otherwise</li>
+      </ul>
+      Inside each branch, use the narrowed value directly — no casts.</li>
+</ol>`,
+
+  starter: `interface User {
+  name: string;
+  email: string;
+}
+
+// TODO 1: turn this into a real type guard.
+// Signature: function isUser(value: unknown): value is User
+// True only for a non-null object whose name and email are both strings.
+// (Inside the guard one cast is fine, e.g. value as Record<string, unknown>.)
+function isUser(value: any): boolean {
+  return false; // TODO
+}
+
+// TODO 2: take unknown and narrow it branch by branch — no casts needed.
+function describeValue(value: any): string {
+  // typeof for string/number, Array.isArray for arrays, isUser for users:
+  //   string        -> "string of length N"
+  //   number        -> "number with value N"
+  //   array         -> "array of N items"
+  //   User          -> "user named NAME"
+  //   anything else -> "something else"
+  return ""; // TODO
+}
+`,
+
+  exportNames: ["isUser", "describeValue"],
+
+  requirements: [
+    { pattern: /unknown/, message: "Type the incoming values as unknown — the type-safe Object" },
+    { pattern: /\bis\s+\w+/, message: "Give isUser a type-predicate return type (value is User)" },
+    { pattern: /typeof/, message: "Narrow with typeof checks — no casts" },
+  ],
+
+  tests: [
+    { name: 'describeValue("hello") returns "string of length 5"', run: (x) => expectEqual(x.describeValue("hello"), "string of length 5") },
+    { name: 'describeValue(42) returns "number with value 42"', run: (x) => expectEqual(x.describeValue(42), "number with value 42") },
+    { name: 'describeValue([1, 2, 3]) returns "array of 3 items"', run: (x) => expectEqual(x.describeValue([1, 2, 3]), "array of 3 items") },
+    { name: 'describeValue(a user object) returns "user named Ada"', run: (x) => expectEqual(x.describeValue({ name: "Ada", email: "ada@example.com" }), "user named Ada") },
+    { name: "isUser accepts a real user and rejects impostors", run: (x) => {
+        expectTruthy(x.isUser({ name: "Ada", email: "ada@example.com" }));
+        expectEqual(x.isUser(null), false);
+        expectEqual(x.isUser("Ada"), false);
+        expectEqual(x.isUser({ name: "Ada" }), false);
+      } },
+    { name: 'describeValue(true) returns "something else"', run: (x) => expectEqual(x.describeValue(true), "something else") },
+  ],
+
+  solution: `interface User {
+  name: string;
+  email: string;
+}
+
+function isUser(value: unknown): value is User {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.name === "string" && typeof candidate.email === "string";
+}
+
+function describeValue(value: unknown): string {
+  if (typeof value === "string") {
+    return "string of length " + value.length;
+  }
+  if (typeof value === "number") {
+    return "number with value " + value;
+  }
+  if (Array.isArray(value)) {
+    return "array of " + value.length + " items";
+  }
+  if (isUser(value)) {
+    return "user named " + value.name;
+  }
+  return "something else";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Top type</td><td><code>Object</code></td><td><code>unknown</code> (must narrow before use)</td></tr>
+  <tr><td>Type test + bind</td><td><code>if (o instanceof String s)</code></td><td><code>if (typeof v === "string")</code> — v itself narrows</td></tr>
+  <tr><td>Primitives</td><td><code>instanceof Integer</code>, <code>instanceof String</code></td><td><code>typeof v === "number"</code> / <code>"string"</code> / <code>"boolean"</code></td></tr>
+  <tr><td>Collections</td><td><code>o instanceof List&lt;?&gt;</code></td><td><code>Array.isArray(v)</code></td></tr>
+  <tr><td>Class instances</td><td><code>o instanceof User</code></td><td><code>v instanceof User</code> (classes only)</td></tr>
+  <tr><td>Interface shapes</td><td>n/a — interfaces are checkable</td><td><code>"name" in v</code> or a custom predicate <code>v is User</code></td></tr>
+  <tr><td>Reusable check</td><td>helper returning <code>boolean</code> (no narrowing)</td><td>predicate returning <code>v is User</code> (narrows at call site)</td></tr>
+</table>
+<p>The key mental shift: Java's <code>instanceof</code> pattern gives you a
+<em>new</em> variable with the narrow type; TypeScript's control-flow analysis
+retypes the <em>same</em> variable inside the branch. And because TypeScript
+interfaces are erased at runtime, <code>instanceof</code> only works on classes —
+for plain object shapes, a <code>value is User</code> predicate is the idiomatic
+replacement, and unlike a Java boolean helper, the compiler actually trusts it.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

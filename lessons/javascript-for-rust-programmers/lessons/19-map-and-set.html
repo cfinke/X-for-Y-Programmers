@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Map &amp; Set</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Map & Set",
+
+  intro: `
+<p>In Rust you reach for <code>HashMap&lt;K, V&gt;</code> and
+<code>HashSet&lt;T&gt;</code> (or their sorted <code>BTreeMap</code> /
+<code>BTreeSet</code> cousins), and the compiler enforces that every key type
+implements <code>Hash + Eq</code> (or <code>Ord</code> for the B-tree variants)
+before it will let you insert anything. JavaScript's <code>Map</code> and
+<code>Set</code> are plain built-in classes with none of that compile-time
+policing — there is no trait bound to satisfy and no ownership to juggle, so
+any value at all, including <code>NaN</code> or an object reference, can be a
+key. What is left is genuinely different behaviour from a plain object, and it
+is worth knowing precisely.</p>
+<table>
+  <tr><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td><code>HashMap::&lt;String, i32&gt;::new()</code></td><td><code>new Map()</code></td></tr>
+  <tr><td><code>HashSet::&lt;i32&gt;::new()</code></td><td><code>new Set()</code></td></tr>
+  <tr><td>keys must implement <code>Hash + Eq</code></td><td><em>any</em> value can be a key</td></tr>
+  <tr><td><code>map.get(&amp;k)</code> is <code>Option&lt;&amp;V&gt;</code></td><td><code>map.get(k)</code>, undefined if absent</td></tr>
+</table>
+<p>Two runtime facts matter most. First, a <code>Map</code> key can be
+<em>anything</em> — an object, a function, <code>NaN</code>, not just a string —
+whereas plain object keys are coerced to strings; in Rust you would need a
+custom key type to implement <code>Hash</code> yourself, but JavaScript just
+uses reference identity or value equality (SameValueZero) under the hood.
+Second, a <code>Map</code> remembers insertion order and reports its
+<code>size</code> directly, unlike Rust's <code>HashMap</code>, which is
+deliberately unordered — you would reach for a <code>BTreeMap</code> for
+sorted order or a crate like <code>indexmap</code> to preserve insertion
+order. A <code>Set</code> is the same story for uniqueness: membership is
+O(1) and duplicates simply do not take.</p>`,
+
+  rust: `use std::collections::{HashMap, HashSet};
+
+let mut counts: HashMap<String, i32> = HashMap::new();
+*counts.entry("go".to_string()).or_insert(0) += 1;
+
+let mut seen: HashSet<i32> = HashSet::new();
+seen.insert(1);
+seen.insert(1); // no-op, returns false
+seen.len(); // 1`,
+
+  task: `
+<p>Build a few small utilities on top of <code>Map</code> and <code>Set</code>:</p>
+<ol>
+  <li><code>wordCount(text)</code> — split <code>text</code> on whitespace and
+      return a <code>Map</code> from each word to how many times it appears.
+      Assume words are already lowercased and clean; an empty string yields an
+      empty Map.</li>
+  <li><code>unique(arr)</code> — return a new array with duplicates removed,
+      preserving first-seen order, using a <code>Set</code>.</li>
+  <li><code>mostCommon(text)</code> — return the word with the highest count from
+      <code>wordCount</code> (first one to reach that count wins on ties), or
+      <code>null</code> for empty input.</li>
+  <li><code>keyTypes(map)</code> — return a <code>Set</code> of the
+      <code>typeof</code> string for every key in <code>map</code>
+      (demonstrating that Map keys need not be strings).</li>
+</ol>`,
+
+  starter: `// 1. wordCount(text) -> Map<word, count>
+function wordCount(text) {
+  // TODO
+  return new Map();
+}
+
+// 2. unique(arr) -> array with duplicates removed, order preserved
+function unique(arr) {
+  // TODO
+  return [];
+}
+
+// 3. mostCommon(text) -> the most frequent word, or null if none
+function mostCommon(text) {
+  // TODO
+  return null;
+}
+
+// 4. keyTypes(map) -> Set of typeof for each key
+function keyTypes(map) {
+  // TODO
+  return new Set();
+}
+`,
+
+  exportNames: ["wordCount", "unique", "mostCommon", "keyTypes"],
+
+  requirements: [
+    { pattern: /new\s+Map/, message: "Use a Map in wordCount" },
+    { pattern: /new\s+Set/, message: "Use a Set in unique or keyTypes" },
+    { pattern: /\.set\s*\(/, message: "Use Map.set to record counts" },
+  ],
+
+  tests: [
+    {
+      name: "wordCount counts repeats",
+      run: (x) => {
+        const m = x.wordCount("go go stop go");
+        expectEqual(m.get("go"), 3);
+        expectEqual(m.get("stop"), 1);
+        expectEqual(m.size, 2);
+      },
+    },
+    {
+      name: "wordCount('') is an empty Map",
+      run: (x) => {
+        const m = x.wordCount("");
+        expectEqual(m.size, 0);
+        expectEqual(m.get("anything"), undefined);
+      },
+    },
+    {
+      name: "unique preserves first-seen order",
+      run: (x) => expectDeepEqual(x.unique([3, 1, 3, 2, 1, 2]), [3, 1, 2]),
+    },
+    {
+      name: "unique keeps distinct objects distinct",
+      run: (x) => {
+        const a = {}, b = {};
+        expectEqual(x.unique([a, a, b]).length, 2);
+      },
+    },
+    {
+      name: "mostCommon picks the top word",
+      run: (x) => expectEqual(x.mostCommon("a b a c a b"), "a"),
+    },
+    {
+      name: "mostCommon('') is null",
+      run: (x) => expectEqual(x.mostCommon(""), null),
+    },
+    {
+      name: "keyTypes reports mixed key types",
+      run: (x) => {
+        const m = new Map();
+        m.set("s", 1);
+        m.set(42, 2);
+        m.set({}, 3);
+        const types = x.keyTypes(m);
+        expectTruthy(types.has("string"));
+        expectTruthy(types.has("number"));
+        expectTruthy(types.has("object"));
+        expectEqual(types.size, 3);
+      },
+    },
+  ],
+
+  solution: `function wordCount(text) {
+  const counts = new Map();
+  const words = text.split(/\\s+/).filter((w) => w.length > 0);
+  for (const word of words) {
+    counts.set(word, (counts.get(word) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function unique(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const item of arr) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+function mostCommon(text) {
+  const counts = wordCount(text);
+  let best = null;
+  let bestCount = 0;
+  for (const [word, count] of counts) {
+    if (count > bestCount) {
+      best = word;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+function keyTypes(map) {
+  const types = new Set();
+  for (const key of map.keys()) {
+    types.add(typeof key);
+  }
+  return types;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>JavaScript Map / Set</th></tr>
+  <tr><td>Any-typed keys</td><td><code>HashMap&lt;K, V&gt;</code> requires <code>K: Hash + Eq</code></td><td><code>map.set(obj, v)</code> keeps identity</td></tr>
+  <tr><td>Size</td><td><code>map.len()</code> / <code>set.len()</code></td><td><code>map.size</code> / <code>set.size</code></td></tr>
+  <tr><td>Membership</td><td><code>map.contains_key(&amp;k)</code> / <code>set.contains(&amp;v)</code></td><td><code>map.has(k)</code> / <code>set.has(v)</code></td></tr>
+  <tr><td>Iteration order</td><td><code>HashMap</code> is unordered; <code>BTreeMap</code> sorts by <code>Ord</code></td><td>strict insertion order</td></tr>
+  <tr><td>Dedupe</td><td><code>v.into_iter().collect::&lt;HashSet&lt;_&gt;&gt;()</code></td><td><code>[...new Set(arr)]</code></td></tr>
+</table>
+<p>A <code>Map</code> uses SameValueZero for key equality, so <code>NaN</code>
+works as a key (unlike <code>===</code>) but <code>{}</code> and a different
+<code>{}</code> are distinct keys because objects compare by identity. That is
+exactly why <code>unique([{}, {}])</code> keeps both — the Set sees two different
+references.</p>
+<p>Prefer <code>Map</code> over a plain object when keys are dynamic, non-string,
+or you care about size and order; prefer <code>Set</code> over an array when you
+need fast membership or dedupe. Reach back for objects and arrays when you want
+JSON serialization or a fixed, known shape — <code>JSON.stringify</code> ignores
+Map and Set contents entirely.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

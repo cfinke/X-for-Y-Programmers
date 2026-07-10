@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables, Mutability & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables, Mutability & Types",
+
+  intro: `
+<p>Rust's <code>let x = 36;</code> is Go's <code>x := 36</code> — same
+type inference, same "declare and initialize in one line" feel. The
+difference is what happens next: in Go, every variable is mutable, always.
+In Rust, <code>let</code> bindings are <em>immutable by default</em>, and
+mutation is an explicit opt-in with <code>let mut</code>. It's the same
+no-magic philosophy you already like — nothing changes unless the code
+visibly says it can.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>x := 36</code> (always mutable)</td><td><code>let x = 36;</code> (immutable)</td></tr>
+  <tr><td><code>x := 36</code>, then <code>x = 37</code></td><td><code>let mut x = 36;</code>, then <code>x = 37;</code></td></tr>
+  <tr><td><code>var price float64 = 9.99</code></td><td><code>let price: f64 = 9.99;</code></td></tr>
+  <tr><td><code>int</code> (32 or 64 bits, platform decides)</td><td><code>i32</code> / <code>i64</code> — you decide, always</td></tr>
+  <tr><td><code>var s string</code> → zero value <code>""</code></td><td>No zero values: every binding is initialized</td></tr>
+</table>
+<p>Two more honesty upgrades. First, there is no platform-dependent
+<code>int</code>: Rust's <code>i32</code>, <code>i64</code>, <code>u32</code>,
+<code>f64</code> say exactly how many bits you get, everywhere. Second,
+there are no zero values — a Rust variable doesn't exist until you give it
+a value, so "did I forget to initialize this?" is a compile error, not a
+silent <code>0</code> or <code>""</code>. And where Go reaches for
+<code>fmt.Sprintf</code>, Rust has the <code>format!</code> macro with
+<code>{}</code> placeholders — no verb characters to memorize for the
+common case.</p>`,
+
+  go: `package main
+
+import "fmt"
+
+func describeUser(name string, age int) string {
+	return fmt.Sprintf("%s is %d years old", name, age)
+}
+
+func birthday(age int) int {
+	age++ // fine: everything in Go is mutable, even parameters
+	return age
+}
+
+func main() {
+	name := "Ada"          // inferred — and reassignable, always
+	var price float64 = 9.99
+	fmt.Println(describeUser(name, 36), price)
+}`,
+
+  task: `
+<p>Rewrite the Go as Rust (note the convention change:
+Go's camelCase becomes <code>snake_case</code>):</p>
+<ol>
+  <li>Write <code>describe_user</code> taking <code>name: &amp;str</code>
+      and <code>age: u32</code> and returning a <code>String</code> like
+      <code>"Ada is 36 years old"</code>. Use <code>format!</code> — the
+      <code>fmt.Sprintf</code> of Rust, with <code>{}</code> instead of
+      <code>%s</code>/<code>%d</code>.</li>
+  <li>Write <code>birthday</code> taking <code>age: u32</code> and returning
+      <code>u32</code>. Parameters aren't mutable by default, so bind the
+      argument to a <code>let mut</code> local, add 1 with <code>+=</code>,
+      and return it.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. describe_user: name: &str, age: u32 -> String.
+//    Go: fmt.Sprintf("%s is %d years old", name, age)
+//    Rust: format!("{} is {} years old", ...)
+fn describe_user(name: &str, age: u32) -> String {
+    todo!()
+}
+
+// 2. birthday: parameters are immutable — rebind with let mut,
+//    increment with +=, then return the new value.
+fn birthday(age: u32) -> u32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /fn\s+describe_user\s*\(\s*name\s*:\s*&str\s*,\s*age\s*:\s*u32\s*\)\s*->\s*String/, message: "Define describe_user(name: &str, age: u32) -> String" },
+    { pattern: /format!\s*\(/, message: "Use the format! macro to build the string" },
+    { pattern: /let\s+mut\b/, message: "Use a let mut binding inside birthday" },
+  ],
+
+  tests: [
+    { name: 'describe_user("Ada", 36) returns "Ada is 36 years old"',
+      code: 'assert_eq!(describe_user("Ada", 36), "Ada is 36 years old");' },
+    { name: 'describe_user("Rob", 68) returns "Rob is 68 years old"',
+      code: 'assert_eq!(describe_user("Rob", 68), "Rob is 68 years old");' },
+    { name: "birthday(36) returns 37",
+      code: "assert_eq!(birthday(36), 37);" },
+    { name: "birthday(0) returns 1",
+      code: "assert_eq!(birthday(0), 1);" },
+  ],
+
+  solution: `fn describe_user(name: &str, age: u32) -> String {
+    format!("{} is {} years old", name, age)
+}
+
+fn birthday(age: u32) -> u32 {
+    let mut next = age;
+    next += 1;
+    next
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Declare + infer</td><td><code>x := 36</code></td><td><code>let x = 36;</code></td></tr>
+  <tr><td>Mutability</td><td>always mutable</td><td><code>let</code> immutable, <code>let mut</code> opts in</td></tr>
+  <tr><td>Integers</td><td><code>int</code> (platform-sized), <code>int64</code></td><td><code>i32</code>, <code>i64</code>, <code>u32</code>… explicit everywhere</td></tr>
+  <tr><td>Floats</td><td><code>float64</code></td><td><code>f64</code></td></tr>
+  <tr><td>Uninitialized</td><td>zero values (<code>0</code>, <code>""</code>, <code>nil</code>)</td><td>not allowed — initialize explicitly</td></tr>
+  <tr><td>Formatting</td><td><code>fmt.Sprintf("%s is %d", n, a)</code></td><td><code>format!("{} is {}", n, a)</code></td></tr>
+  <tr><td>Naming</td><td><code>camelCase</code></td><td><code>snake_case</code> (the compiler will nag you)</td></tr>
+</table>
+<p>Notice <code>birthday</code>'s last line: no <code>return</code>, no
+semicolon — a block's final expression is its value (more on that next
+lesson). The <code>let mut</code> rule is Go's "unused variable is an
+error" energy applied to mutation: if a binding never needs to change,
+the code says so, and the compiler holds you to it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

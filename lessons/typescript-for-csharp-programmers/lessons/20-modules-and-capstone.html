@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Modules &amp; Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Modules & Capstone",
+
+  intro: `
+<p>In C# you organize code with <code>namespace</code> blocks, consume it with
+<code>using</code> directives, and (by convention) put one public type per
+file. TypeScript flattens all three into one idea: <strong>the file IS the
+namespace</strong>. There is no wrapper block and no project-wide visibility —
+everything in a module file is private unless you mark it <code>export</code>
+right at the definition site, and consumers pull in exactly the names they
+want with <code>import { … } from "./cart"</code>. Think of <code>export</code>
+as <code>public</code> and un-exported as <code>internal</code>-to-the-file.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>namespace Shop.Cart;</code></td><td>the file <code>cart.ts</code> itself</td></tr>
+  <tr><td><code>public class CartService</code> / <code>public record CartItem</code></td><td><code>export function addItem(…)</code> / <code>export interface CartItem</code></td></tr>
+  <tr><td><code>internal</code> / no modifier</td><td>no <code>export</code> — invisible outside the file</td></tr>
+  <tr><td><code>using Shop.Cart;</code></td><td><code>import { addItem } from "./cart";</code></td></tr>
+  <tr><td><code>using Alias = Shop.Cart.CartItem;</code></td><td><code>import { CartItem as Alias } from "./cart";</code></td></tr>
+  <tr><td>one public type per file (convention)</td><td>a module exports as many names as it likes</td></tr>
+</table>
+<p>This final lesson is also the capstone: you will publish a small, typed
+cart module whose public surface is declared with <code>export</code>, and
+whose internals reuse the whole course — a structural <code>interface</code>
+(lesson 8), a generic function (12), LINQ-style array methods (13), spread
+for non-mutating updates (15), and <code>typeof</code> narrowing on a union
+(16). If this file compiles and its tests pass, you can read and write
+real-world TypeScript modules.</p>`,
+
+  csharp: `// Cart/CartItem.cs — one public type per file
+namespace Shop.Cart;
+
+public record CartItem(string Name, decimal Price, int Quantity);
+
+// Cart/CartService.cs
+namespace Shop.Cart;
+
+public static class CartService
+{
+    public static List<CartItem> AddItem(List<CartItem> cart, CartItem item)
+        => new(cart) { item };                    // copy, don't mutate
+
+    public static decimal CartTotal(List<CartItem> cart)
+        => cart.Sum(i => i.Price * i.Quantity);
+
+    public static T FirstOrDefault<T>(List<T> items, T fallback)
+        => items.Count > 0 ? items[0] : fallback;
+}
+
+// Program.cs
+using Shop.Cart;   // TS: import { addItem, cartTotal } from "./cart";`,
+
+  task: `
+<p>Treat the editor as the file <code>cart.ts</code> and publish its API with
+<code>export</code> at each definition site (PascalCase members become
+camelCase). The <code>import</code> side lives in other files, so you will not
+write any imports here — only the exports:</p>
+<ol>
+  <li>Export an interface <code>CartItem</code> with <code>name: string</code>,
+      <code>price: number</code>, <code>quantity: number</code> — the
+      <code>public record</code> of this module.</li>
+  <li>Export <code>addItem(cart: CartItem[], item: CartItem): CartItem[]</code>
+      that returns a <em>new</em> array via spread
+      (<code>[...cart, item]</code>) without mutating <code>cart</code> —
+      the <code>new(cart) { item }</code> copy constructor.</li>
+  <li>Export <code>cartTotal(cart: CartItem[]): number</code> —
+      <code>cart.Sum(i =&gt; i.Price * i.Quantity)</code> becomes
+      <code>reduce</code>.</li>
+  <li>Export <code>expensiveItems(cart: CartItem[], min: number): string[]</code>
+      returning the <em>names</em> of items with <code>price &gt;= min</code> —
+      <code>Where</code> + <code>Select</code> becomes
+      <code>filter</code> + <code>map</code>.</li>
+  <li>Export the generic <code>firstOrDefault&lt;T&gt;(items: T[], fallback: T): T</code>
+      — first element, or <code>fallback</code> when empty.</li>
+  <li>Export <code>describeEntry(entry: CartItem | string): string</code>: a
+      plain string is a note — return <code>"Note: "</code> plus the string;
+      otherwise narrow with <code>typeof</code> and return
+      <code>"Tea x2"</code>-style output (<code>name</code>, space,
+      <code>x</code>, <code>quantity</code>).</li>
+</ol>`,
+
+  starter: `// cart.ts — the file IS the namespace. Everything marked \`export\`
+// is this module's public API; everything else is file-private.
+// (Consumers would write: import { addItem, cartTotal } from "./cart";)
+
+// 1. public record CartItem -> export interface (PascalCase -> camelCase)
+export interface CartItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+// 2. Non-mutating add: new(cart) { item } -> [...cart, item]
+export function addItem(cart: CartItem[], item: CartItem): CartItem[] {
+  // TODO: return a NEW array using spread — do not push into cart
+  return cart;
+}
+
+// 3. cart.Sum(i => i.Price * i.Quantity) -> reduce
+export function cartTotal(cart: CartItem[]): number {
+  // TODO
+  return 0;
+}
+
+// 4. Where + Select -> filter + map (names of items priced >= min)
+export function expensiveItems(cart: CartItem[], min: number): string[] {
+  // TODO
+  return [];
+}
+
+// 5. Generic helper — where T : anything, erased at runtime
+export function firstOrDefault<T>(items: T[], fallback: T): T {
+  // TODO: first element, or the fallback when the array is empty
+  return fallback;
+}
+
+// 6. Union + typeof narrowing: a cart entry is an item OR a note string
+export function describeEntry(entry: CartItem | string): string {
+  // TODO: "Note: <entry>" for strings, "<name> x<quantity>" for items
+  return "";
+}
+`,
+
+  exportNames: ["addItem", "cartTotal", "expensiveItems", "firstOrDefault", "describeEntry"],
+
+  requirements: [
+    { pattern: /export\s+(function|const)/, message: "Publish the module's API with export at the definition site (the TypeScript 'public')" },
+    { pattern: /export\s+interface\s+CartItem/, message: "Export the CartItem interface so consumers can import the type too" },
+    { pattern: /\.\.\./, message: "Use spread ([...cart, item]) for the non-mutating add" },
+    { pattern: /typeof\s+\w+\s*===?\s*["']string["']/, message: "Narrow the CartItem | string union with a typeof check" },
+  ],
+
+  tests: [
+    {
+      name: "addItem appends without mutating the original cart",
+      run: (x) => {
+        const cart = [{ name: "Tea", price: 4, quantity: 2 }];
+        const next = x.addItem(cart, { name: "Mug", price: 9, quantity: 1 });
+        expectDeepEqual(next.map((i) => i.name), ["Tea", "Mug"]);
+        expectEqual(cart.length, 1);
+        expectTruthy(next !== cart);
+      },
+    },
+    {
+      name: "cartTotal sums price * quantity (Tea 4x2 + Mug 9x1 = 17)",
+      run: (x) => expectEqual(x.cartTotal([
+        { name: "Tea", price: 4, quantity: 2 },
+        { name: "Mug", price: 9, quantity: 1 },
+      ]), 17),
+    },
+    { name: "cartTotal of an empty cart is 0", run: (x) => expectEqual(x.cartTotal([]), 0) },
+    {
+      name: 'expensiveItems(cart, 5) keeps only names priced >= 5',
+      run: (x) => expectDeepEqual(x.expensiveItems([
+        { name: "Tea", price: 4, quantity: 2 },
+        { name: "Mug", price: 9, quantity: 1 },
+        { name: "Kettle", price: 30, quantity: 1 },
+      ], 5), ["Mug", "Kettle"]),
+    },
+    {
+      name: "firstOrDefault works for numbers and strings (generic, one definition)",
+      run: (x) => {
+        expectEqual(x.firstOrDefault([7, 8], 0), 7);
+        expectEqual(x.firstOrDefault([], "none"), "none");
+      },
+    },
+    {
+      name: 'describeEntry narrows the union: note strings vs items',
+      run: (x) => {
+        expectEqual(x.describeEntry("gift wrap please"), "Note: gift wrap please");
+        expectEqual(x.describeEntry({ name: "Tea", price: 4, quantity: 2 }), "Tea x2");
+      },
+    },
+  ],
+
+  solution: `// cart.ts — this file is the Shop.Cart namespace.
+export interface CartItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export function addItem(cart: CartItem[], item: CartItem): CartItem[] {
+  return [...cart, item];
+}
+
+export function cartTotal(cart: CartItem[]): number {
+  return cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+}
+
+export function expensiveItems(cart: CartItem[], min: number): string[] {
+  return cart.filter((i) => i.price >= min).map((i) => i.name);
+}
+
+export function firstOrDefault<T>(items: T[], fallback: T): T {
+  return items.length > 0 ? items[0] : fallback;
+}
+
+export function describeEntry(entry: CartItem | string): string {
+  if (typeof entry === "string") {
+    return "Note: " + entry;
+  }
+  return \`\${entry.name} x\${entry.quantity}\`;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Namespace</td><td><code>namespace Shop.Cart;</code></td><td>the file itself — no wrapper block</td></tr>
+  <tr><td>Public</td><td><code>public</code> member</td><td><code>export</code> at the definition site</td></tr>
+  <tr><td>Internal</td><td><code>internal</code></td><td>no <code>export</code> — file-private</td></tr>
+  <tr><td>Consume</td><td><code>using Shop.Cart;</code></td><td><code>import { addItem } from "./cart";</code></td></tr>
+  <tr><td>Alias</td><td><code>using Alias = Shop.Cart.CartItem;</code></td><td><code>import { CartItem as Alias } from "./cart";</code></td></tr>
+  <tr><td>Import everything</td><td>(automatic within the namespace)</td><td><code>import * as cart from "./cart";</code> then <code>cart.addItem</code></td></tr>
+  <tr><td>Entry point</td><td><code>Program.cs</code> / <code>Main</code></td><td>whichever module the runtime is told to load first</td></tr>
+  <tr><td>Type-only import</td><td>n/a</td><td><code>import type { CartItem } from "./cart";</code> (erased)</td></tr>
+</table>
+<p>One habit to unlearn: C# namespaces are open — any file can add to
+<code>Shop.Cart</code> — while a TypeScript module is closed and identified by
+its path, so "where does this name come from?" always has exactly one answer:
+the file named in the <code>import</code>. And notice what your capstone
+proved: <code>export interface CartItem</code> compiles to nothing at all
+(types are erased), yet every exported <em>function</em> is a real runtime
+value — the same value/type split you have been navigating all course, now
+drawn at the module boundary.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

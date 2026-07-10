@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to pull the course together. You're building a small inventory
+system — the kind of code you write in TypeScript without thinking — using
+everything at once: a <code>struct</code> for the data, <code>&amp;[Item]</code>
+slices for read access, <code>&amp;mut Vec&lt;Item&gt;</code> for the one
+function that mutates, <code>Option&lt;&amp;Item&gt;</code> where TS would say
+<code>Item | undefined</code>, and iterator chains where TS would reach for
+<code>reduce</code>/<code>find</code>/<code>filter</code>/<code>map</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>items.reduce((s, i) =&gt; s + ..., 0)</code></td><td><code>items.iter().map(|i| ...).sum()</code></td></tr>
+  <tr><td><code>items.find(...)</code> → <code>Item | undefined</code></td><td><code>items.iter().find(...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+  <tr><td>mutate freely — any reference will do</td><td>mutation needs <code>&amp;mut</code>, and the signature says so</td></tr>
+  <tr><td><code>items.filter(...).map(...)</code></td><td><code>items.iter().filter(...).map(...).collect()</code></td></tr>
+</table>
+<p>Notice how much of the design now lives in the signatures.
+<code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt;
+Option&lt;&amp;'a Item&gt;</code> is lesson 16's two-inputs-one-output case:
+the <code>'a</code> tells the compiler (and the reader) that the returned
+reference borrows from the <em>slice</em>, not from <code>name</code>. And
+<code>restock</code> taking <code>&amp;mut Vec&lt;Item&gt;</code> is the only
+function that can change anything — in TS every function could mutate; here
+the type system publishes which one does.</p>`,
+
+  typescript: `type Item = { name: string; priceCents: number; count: number };
+
+function totalValue(items: Item[]): number {
+  return items.reduce((sum, i) => sum + i.priceCents * i.count, 0);
+}
+
+function findItem(items: Item[], name: string): Item | undefined {
+  return items.find((i) => i.name === name);
+}
+
+function restock(items: Item[], name: string, amount: number): boolean {
+  const item = items.find((i) => i.name === name);
+  if (!item) return false;
+  item.count += amount;
+  return true;
+}
+
+function namesInStock(items: Item[]): string[] {
+  return items.filter((i) => i.count > 0).map((i) => i.name);
+}`,
+
+  task: `
+<p>The <code>Item</code> struct is defined for you. Implement the four
+functions:</p>
+<ol>
+  <li><code>total_value(items: &amp;[Item]) -&gt; u32</code> — the sum of
+      <code>price_cents * count</code> over all items, via
+      <code>.iter().map(...).sum()</code>.</li>
+  <li><code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt;
+      Option&lt;&amp;'a Item&gt;</code> — the item with that name, or
+      <code>None</code>. <code>.iter().find(|i| i.name == name)</code> returns
+      exactly this type.</li>
+  <li><code>restock(items: &amp;mut Vec&lt;Item&gt;, name: &amp;str,
+      amount: u32) -&gt; bool</code> — find the item with
+      <code>.iter_mut().find(...)</code>; if found, add <code>amount</code> to
+      its <code>count</code> and return <code>true</code>, otherwise
+      <code>false</code>.</li>
+  <li><code>names_in_stock(items: &amp;[Item]) -&gt; Vec&lt;String&gt;</code> —
+      the names of items with <code>count &gt; 0</code>, in order, via
+      <code>.iter().filter(...).map(|i| i.name.clone()).collect()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+// Sum of price_cents * count, with .iter().map(...).sum().
+fn total_value(items: &[Item]) -> u32 {
+    todo!()
+}
+
+// TS: Item | undefined. Rust: Option<&Item> — and 'a says the
+// reference borrows from the slice, not from name.
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    todo!()
+}
+
+// The only function allowed to mutate — the &mut says so.
+// true if the item was found and its count increased.
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    todo!()
+}
+
+// Names of items with count > 0: filter + map + collect.
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option<&/, message: "find_item returns Option<&Item> — absence is a type, not undefined" },
+    { pattern: /\.iter\(\)/, message: "Use .iter() chains for the read-only functions" },
+    { pattern: /&mut\s+Vec<Item>/, message: "restock takes &mut Vec<Item> — mutation is declared in the signature" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count over every item",
+      code: 'let items = vec![\n    Item { name: "apple".to_string(), price_cents: 50, count: 3 },\n    Item { name: "banana".to_string(), price_cents: 25, count: 0 },\n    Item { name: "cherry".to_string(), price_cents: 10, count: 7 },\n];\nassert_eq!(total_value(&items), 220);\nassert_eq!(total_value(&[]), 0);' },
+    { name: 'find_item returns Some(&item) for a name that exists',
+      code: 'let items = vec![\n    Item { name: "apple".to_string(), price_cents: 50, count: 3 },\n    Item { name: "banana".to_string(), price_cents: 25, count: 0 },\n];\nlet found = find_item(&items, "banana");\nassert_eq!(found.map(|i| i.price_cents), Some(25));' },
+    { name: "find_item returns None for a missing name",
+      code: 'let items = vec![Item { name: "apple".to_string(), price_cents: 50, count: 3 }];\nassert!(find_item(&items, "kiwi").is_none());' },
+    { name: "restock increments the count and returns true when found",
+      code: 'let mut items = vec![\n    Item { name: "apple".to_string(), price_cents: 50, count: 3 },\n    Item { name: "banana".to_string(), price_cents: 25, count: 0 },\n];\nassert!(restock(&mut items, "banana", 5));\nassert_eq!(items[1].count, 5);\nassert_eq!(items[0].count, 3);' },
+    { name: "restock returns false (and changes nothing) for a missing name",
+      code: 'let mut items = vec![Item { name: "apple".to_string(), price_cents: 50, count: 3 }];\nassert!(!restock(&mut items, "kiwi", 5));\nassert_eq!(items[0].count, 3);' },
+    { name: "names_in_stock keeps only count > 0, in order",
+      code: 'let items = vec![\n    Item { name: "apple".to_string(), price_cents: 50, count: 3 },\n    Item { name: "banana".to_string(), price_cents: 25, count: 0 },\n    Item { name: "cherry".to_string(), price_cents: 10, count: 7 },\n];\nassert_eq!(names_in_stock(&items), vec!["apple".to_string(), "cherry".to_string()]);\nassert_eq!(names_in_stock(&[]), Vec::<String>::new());' },
+  ],
+
+  solution: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+fn total_value(items: &[Item]) -> u32 {
+    items.iter().map(|i| i.price_cents * i.count).sum()
+}
+
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    items.iter().find(|i| i.name == name)
+}
+
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    match items.iter_mut().find(|i| i.name == name) {
+        Some(item) => {
+            item.count += amount;
+            true
+        }
+        None => false,
+    }
+}
+
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    items
+        .iter()
+        .filter(|i| i.count > 0)
+        .map(|i| i.name.clone())
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Record type</td><td><code>type Item = { ... }</code></td><td><code>struct Item { ... }</code></td></tr>
+  <tr><td>Maybe-missing result</td><td><code>Item | undefined</code></td><td><code>Option&lt;&amp;Item&gt;</code></td></tr>
+  <tr><td>Sum a projection</td><td><code>reduce((s, i) =&gt; s + ..., 0)</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+  <tr><td>Filter + project</td><td><code>.filter(...).map(...)</code></td><td><code>.iter().filter(...).map(...).collect()</code></td></tr>
+  <tr><td>Read-only vs mutating access</td><td>invisible — any function may mutate</td><td><code>&amp;[Item]</code> vs <code>&amp;mut Vec&lt;Item&gt;</code>, checked by the compiler</td></tr>
+  <tr><td>Whose data does the result borrow?</td><td>the GC's problem</td><td><code>&lt;'a&gt;</code> links <code>Option&lt;&amp;'a Item&gt;</code> to <code>&amp;'a [Item]</code></td></tr>
+</table>
+<p>Look back at where you started: the same four functions exist on the
+TypeScript side, but every guarantee there was informal — nothing stopped
+<code>totalValue</code> from mutating, <code>findItem</code>'s
+<code>undefined</code> could slip through unchecked, and a stale reference was
+a runtime surprise. In the Rust version each of those promises moved into the
+signature, where the compiler enforces it for every caller, forever. That's
+the trade you've been learning all course: say more up front, debug less
+later.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

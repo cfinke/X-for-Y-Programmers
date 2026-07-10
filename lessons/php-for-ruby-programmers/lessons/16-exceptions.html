@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions &amp; Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>The block keywords change; the model doesn't. Ruby's
+<code>begin/rescue/ensure</code> becomes <code>try/catch/finally</code>,
+<code>raise</code> becomes <code>throw</code> — and everything you know about
+exception flow (unwind the stack until something catches) carries straight
+over. One syntactic upgrade: where Ruby writes
+<code>rescue TypeError =&gt; e</code>, PHP puts the type <em>inside</em> the
+catch: <code>catch (InvalidArgumentException $e)</code>. Multiple types use a
+union: <code>rescue A, B</code> becomes <code>catch (A | B $e)</code>.</p>
+<table>
+  <tr><th>Ruby</th><th>PHP</th></tr>
+  <tr><td><code>begin … end</code></td><td><code>try { … }</code></td></tr>
+  <tr><td><code>rescue ArgumentError =&gt; e</code></td><td><code>catch (InvalidArgumentException $e) { … }</code></td></tr>
+  <tr><td><code>rescue A, B =&gt; e</code></td><td><code>catch (A | B $e) { … }</code></td></tr>
+  <tr><td><code>ensure</code></td><td><code>finally { … }</code></td></tr>
+  <tr><td><code>raise ArgumentError, "bad"</code></td><td><code>throw new InvalidArgumentException("bad");</code></td></tr>
+  <tr><td><code>class MyError &lt; StandardError</code></td><td><code>class MyError extends Exception {}</code></td></tr>
+  <tr><td><code>e.message</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+</table>
+<p>The hierarchy maps cleanly too. PHP's root is the <code>Throwable</code>
+interface with two branches: <code>Exception</code> (your everyday raisable
+errors — <code>StandardError</code> territory) and <code>Error</code>
+(engine-level failures like type errors and calling undefined functions —
+think <code>ScriptError</code>/<code>NoMethodError</code>, things you rarely
+catch on purpose). Custom exceptions are ordinary classes:
+<code>class MyError extends Exception {}</code> is your
+<code>&lt; StandardError</code>. One difference to note: PHP has no bare
+<code>rescue</code> — every <code>catch</code> names a type, and
+<code>catch (Throwable $e)</code> is the catch-everything.</p>`,
+
+  ruby: `def parse_age(s)
+  unless s.strip.match?(/\\A\\d+\\z/)
+    raise ArgumentError, "not a number: #{s}"
+  end
+  s.strip.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+begin
+  parse_age("abc")
+rescue ArgumentError => e
+  puts e.message        # not a number: abc
+ensure
+  puts "always runs"    # the finally-to-be
+end
+
+safe_parse_age("42", 18)   # 42
+safe_parse_age("abc", 18)  # 18`,
+
+  task: `
+<p>Port the Ruby to PHP:</p>
+<ol>
+  <li><code>parse_age(string $s): int</code> — if the trimmed string is not
+      all digits (<code>ctype_digit(trim($s))</code> is PHP's
+      <code>match?(/\\A\\d+\\z/)</code>), <code>throw new
+      InvalidArgumentException(...)</code> — the <code>raise
+      ArgumentError</code>. Otherwise cast the trimmed string with
+      <code>(int)</code> and return it.</li>
+  <li><code>safe_parse_age(string $s, int $default): int</code> — wrap the
+      call in <code>try { … } catch (InvalidArgumentException $e) { … }</code>
+      and return <code>$default</code> when it throws. This is the inline
+      <code>rescue ArgumentError; default</code>, spelled out with blocks.</li>
+</ol>`,
+
+  starter: `<?php
+
+// raise ArgumentError, "..."  ->  throw new InvalidArgumentException("...");
+// s.strip.match?(/\\A\\d+\\z/)  ->  ctype_digit(trim($s))
+function parse_age(string $s): int {
+    throw new Exception("TODO: implement parse_age");
+}
+
+// begin / rescue ArgumentError / end  ->  try { ... } catch (InvalidArgumentException $e) { ... }
+function safe_parse_age(string $s, int $default): int {
+    throw new Exception("TODO: implement safe_parse_age");
+}
+`,
+
+  requirements: [
+    { pattern: /InvalidArgumentException/, message: "Throw and catch InvalidArgumentException (PHP's ArgumentError)" },
+    { pattern: /try\s*\{/, message: "Use a try block (Ruby's begin)" },
+    { pattern: /catch\s*\(/, message: "Catch with a typed catch (…) clause" },
+    { pattern: /throw\s+new/, message: "Raise with throw new (Ruby's raise)" },
+  ],
+
+  tests: [
+    { name: "parse_age(\"42\") returns 42",
+      code: "expect_eq(parse_age(\"42\"), 42);" },
+    { name: "parse_age(\" 7 \") trims whitespace and returns 7",
+      code: "expect_eq(parse_age(\" 7 \"), 7);" },
+    { name: "parse_age(\"abc\") throws InvalidArgumentException",
+      code: "try { parse_age(\"abc\"); throw new Exception(\"did not throw\"); } catch (InvalidArgumentException $e) {}" },
+    { name: "parse_age(\"\") throws InvalidArgumentException",
+      code: "try { parse_age(\"\"); throw new Exception(\"did not throw\"); } catch (InvalidArgumentException $e) {}" },
+    { name: "safe_parse_age(\"abc\", 18) rescues and returns the default",
+      code: "expect_eq(safe_parse_age(\"abc\", 18), 18);" },
+    { name: "safe_parse_age(\"30\", 0) returns the parsed value",
+      code: "expect_eq(safe_parse_age(\"30\", 0), 30);" },
+  ],
+
+  solution: `<?php
+
+function parse_age(string $s): int {
+    $trimmed = trim($s);
+    if (!ctype_digit($trimmed)) {
+        // raise ArgumentError, "not a number: #{s}"
+        throw new InvalidArgumentException("not a number: $s");
+    }
+    return (int) $trimmed;
+}
+
+function safe_parse_age(string $s, int $default): int {
+    try {
+        return parse_age($s);
+    } catch (InvalidArgumentException $e) {
+        return $default;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>PHP</th></tr>
+  <tr><td>Protected block</td><td><code>begin … end</code></td><td><code>try { … }</code></td></tr>
+  <tr><td>Handle one type</td><td><code>rescue ArgumentError =&gt; e</code></td><td><code>catch (InvalidArgumentException $e)</code></td></tr>
+  <tr><td>Handle several</td><td><code>rescue A, B =&gt; e</code></td><td><code>catch (A | B $e)</code></td></tr>
+  <tr><td>Handle anything</td><td><code>rescue =&gt; e</code></td><td><code>catch (Throwable $e)</code> — a type is mandatory</td></tr>
+  <tr><td>Cleanup</td><td><code>ensure</code></td><td><code>finally { … }</code></td></tr>
+  <tr><td>Raise</td><td><code>raise MyError, "msg"</code></td><td><code>throw new MyError("msg");</code></td></tr>
+  <tr><td>Re-raise</td><td><code>raise</code></td><td><code>throw $e;</code></td></tr>
+  <tr><td>Custom class</td><td><code>class MyError &lt; StandardError</code></td><td><code>class MyError extends Exception {}</code></td></tr>
+  <tr><td>Message</td><td><code>e.message</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+</table>
+<p>The <code>Throwable</code> split is worth internalizing: <code>Exception</code>
+is what you throw and catch in application code, while <code>Error</code> is
+what the engine throws at you — <code>TypeError</code> when a declared type is
+violated, <code>Error</code> for undefined functions, division by zero, and
+(next lesson) writing to a <code>readonly</code> property. Just as a bare Ruby
+<code>rescue</code> deliberately skips <code>ScriptError</code>, idiomatic PHP
+catches <code>Exception</code> subclasses and lets <code>Error</code> crash
+loudly — reach for <code>catch (Throwable $e)</code> only at top-level
+boundaries like request handlers and job runners.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

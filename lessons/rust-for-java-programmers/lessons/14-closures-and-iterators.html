@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Closures &amp; Iterators</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Closures & Iterators",
+
+  intro: `
+<p>If you write streams, you already write iterator chains.
+<code>products.stream().filter(...).map(...).collect(Collectors.toList())</code>
+becomes <code>products.iter().filter(...).map(...).collect()</code> — the same
+shape, link for link. Lambdas swap <code>-&gt;</code> for pipes:
+<code>p -&gt; p.isInStock()</code> is <code>|p| p.in_stock</code>. And like
+streams, the chain is <em>lazy</em>: nothing runs until a terminal operation
+like <code>collect()</code> or <code>sum()</code> pulls values through.</p>
+<table>
+  <tr><th>Java</th><th>Rust</th></tr>
+  <tr><td><code>products.stream()</code></td><td><code>products.iter()</code></td></tr>
+  <tr><td><code>.filter(p -&gt; p.isInStock())</code></td><td><code>.filter(|p| p.in_stock)</code></td></tr>
+  <tr><td><code>.map(Product::name)</code></td><td><code>.map(|p| p.name.clone())</code></td></tr>
+  <tr><td><code>.collect(Collectors.toList())</code></td><td><code>.collect()</code> — container inferred from the return type</td></tr>
+  <tr><td><code>.mapToInt(...).sum()</code> / <code>.reduce(0, Integer::sum)</code></td><td><code>.sum()</code></td></tr>
+</table>
+<p>The nicest upgrade is <code>collect()</code>: there is no
+<code>Collectors</code> class to remember, because the compiler reads the
+container off your return type — declare <code>-&gt; Vec&lt;String&gt;</code>
+and <code>collect()</code> builds a <code>Vec&lt;String&gt;</code>; declare a
+<code>HashMap</code> and the same call builds a map. Summing is just
+<code>.sum()</code>, no <code>mapToInt</code> detour and no
+<code>reduce(0, Integer::sum)</code>. One borrow-flavored detail:
+<code>.iter()</code> yields <em>references</em> to the elements, so producing
+an owned <code>String</code> from a <code>&amp;Product</code> takes a
+<code>.clone()</code>.</p>`,
+
+  java: `record Product(String name, int priceCents, boolean inStock) {}
+
+static List<String> inStockNames(List<Product> products) {
+    return products.stream()
+        .filter(p -> p.inStock())
+        .map(Product::name)
+        .collect(Collectors.toList());
+}
+
+static int totalValue(List<Product> products) {
+    return products.stream()
+        .filter(Product::inStock)
+        .mapToInt(Product::priceCents)
+        .sum();
+}
+
+static List<Integer> evensDoubled(List<Integer> nums) {
+    return nums.stream()
+        .filter(n -> n % 2 == 0)
+        .map(n -> n * 2)
+        .collect(Collectors.toList());
+}`,
+
+  task: `
+<p>Port the three stream pipelines. The <code>Product</code> struct is already
+in the starter, and the tests construct it directly:</p>
+<ol>
+  <li><code>in_stock_names(products: &amp;[Product]) -&gt; Vec&lt;String&gt;</code>
+      — the names of the in-stock products, in order:
+      <code>.iter().filter(...).map(...).collect()</code>. Remember
+      <code>.clone()</code> to turn <code>&amp;String</code> into
+      <code>String</code>.</li>
+  <li><code>total_value(products: &amp;[Product]) -&gt; u32</code> — the sum of
+      <code>price_cents</code> over the <em>in-stock</em> products, ending in
+      <code>.sum()</code>.</li>
+  <li><code>evens_doubled(nums: &amp;[i32]) -&gt; Vec&lt;i32&gt;</code> — keep
+      the even numbers, double each one.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+// 1. stream().filter().map().collect(Collectors.toList())
+//    -> .iter().filter(|p| ...).map(|p| ...).collect()
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    todo!()
+}
+
+// 2. Sum of price_cents over in-stock products. .sum() replaces
+//    .mapToInt(...).sum() / reduce(0, Integer::sum).
+fn total_value(products: &[Product]) -> u32 {
+    todo!()
+}
+
+// 3. Keep evens (n % 2 == 0), double them. .iter() yields &i32,
+//    so the filter closure may need a * to dereference.
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.iter\(\)/, message: "Start the chains with .iter()" },
+    { pattern: /\.filter\(/, message: "Use .filter( with a |...| closure" },
+    { pattern: /\.map\(/, message: "Use .map( to transform the kept elements" },
+    { pattern: /\.collect/, message: "Finish the Vec-producing chains with .collect()" },
+  ],
+
+  tests: [
+    { name: "in_stock_names keeps only in-stock product names, in order",
+      code: `let products = vec![
+    Product { name: String::from("Widget"), price_cents: 250, in_stock: true },
+    Product { name: String::from("Gadget"), price_cents: 999, in_stock: false },
+    Product { name: String::from("Doohickey"), price_cents: 100, in_stock: true },
+];
+assert_eq!(in_stock_names(&products), vec!["Widget", "Doohickey"]);` },
+    { name: "total_value sums price_cents of in-stock products only (250 + 100 = 350)",
+      code: `let products = vec![
+    Product { name: String::from("Widget"), price_cents: 250, in_stock: true },
+    Product { name: String::from("Gadget"), price_cents: 999, in_stock: false },
+    Product { name: String::from("Doohickey"), price_cents: 100, in_stock: true },
+];
+assert_eq!(total_value(&products), 350);` },
+    { name: "total_value of an empty slice is 0",
+      code: `let empty: Vec<Product> = Vec::new();
+assert_eq!(total_value(&empty), 0);` },
+    { name: "evens_doubled(&[1, 2, 3, 4]) returns [4, 8]",
+      code: "assert_eq!(evens_doubled(&[1, 2, 3, 4]), vec![4, 8]);" },
+    { name: "evens_doubled(&[1, 3, 5]) returns an empty Vec",
+      code: "assert_eq!(evens_doubled(&[1, 3, 5]), Vec::<i32>::new());" },
+  ],
+
+  solution: `struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    products
+        .iter()
+        .filter(|p| p.in_stock)
+        .map(|p| p.name.clone())
+        .collect()
+}
+
+fn total_value(products: &[Product]) -> u32 {
+    products
+        .iter()
+        .filter(|p| p.in_stock)
+        .map(|p| p.price_cents)
+        .sum()
+}
+
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    nums.iter()
+        .filter(|n| *n % 2 == 0)
+        .map(|n| n * 2)
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Rust</th></tr>
+  <tr><td>Start a chain</td><td><code>list.stream()</code></td><td><code>slice.iter()</code></td></tr>
+  <tr><td>Lambda</td><td><code>p -&gt; p.isInStock()</code></td><td><code>|p| p.in_stock</code></td></tr>
+  <tr><td>Keep / transform</td><td><code>.filter(...)</code> / <code>.map(...)</code></td><td><code>.filter(...)</code> / <code>.map(...)</code> — identical</td></tr>
+  <tr><td>Into a container</td><td><code>.collect(Collectors.toList())</code></td><td><code>.collect()</code>, container inferred</td></tr>
+  <tr><td>Sum</td><td><code>.mapToInt(...).sum()</code></td><td><code>.sum()</code> (no primitive-stream detour)</td></tr>
+  <tr><td>Laziness</td><td>intermediate ops lazy, terminal op runs</td><td>same — adapters lazy, <code>collect</code>/<code>sum</code> run</td></tr>
+</table>
+<p>Like a stream, the chain compiles to a single pass — but with
+monomorphization from the last lesson, that pass typically optimizes down to
+the same machine code as a hand-written <code>for</code> loop. That's why
+idiomatic Rust reaches for iterator chains even in hot paths, where a Java
+developer might avoid streams for performance.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

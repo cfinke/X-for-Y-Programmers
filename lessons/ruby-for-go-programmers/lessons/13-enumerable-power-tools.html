@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Enumerable Power Tools</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Enumerable Power Tools",
+
+  intro: `
+<p>Beyond map and select live the loops you write in Go every single day:
+grouping into a <code>map[string][]T</code>, counting into a
+<code>map[T]int</code>, accumulating into a struct or map, splitting one slice
+into two with an <code>if</code>/<code>else</code>. Each is four to eight lines
+of <code>make</code>, <code>range</code>, and careful key handling. In Ruby
+each one is a single named verb.</p>
+<table>
+  <tr><th>The Go loop</th><th>Ruby</th></tr>
+  <tr><td><code>make(map[int][]string)</code> + range + append</td><td><code>words.group_by(&amp;:length)</code></td></tr>
+  <tr><td><code>make(map[string]int)</code> + <code>counts[v]++</code></td><td><code>votes.tally</code></td></tr>
+  <tr><td>make a map + range + <code>totals[k] += v</code></td><td><code>items.each_with_object(Hash.new(0)) { |i, h| ... }</code></td></tr>
+  <tr><td>two appends behind if/else</td><td><code>nums.partition(&amp;:even?)</code></td></tr>
+  <tr><td>range + <code>acc = f(acc, x)</code></td><td><code>nums.reduce(:+)</code></td></tr>
+</table>
+<p><code>group_by</code> yields each element and buckets it under whatever the
+block returns. <code>tally</code> is the entire vote-counting loop as one word.
+<code>each_with_object</code> threads an accumulator through the iteration —
+<code>Hash.new(0)</code> is a hash whose missing keys read as <code>0</code>,
+so <code>totals[k] += v</code> needs no "does the key exist yet?" dance.
+<code>partition</code> returns <em>two</em> arrays at once — matches, then
+non-matches. And <code>reduce(:+)</code> folds the whole collection through an
+operator. Note the <code>&amp;:length</code> shorthand from lesson 11 doing
+heavy lifting throughout.</p>`,
+
+  go: `func wordLengths(words []string) map[int][]string {
+	groups := make(map[int][]string)
+	for _, w := range words {
+		groups[len(w)] = append(groups[len(w)], w)
+	}
+	return groups
+}
+
+func voteCounts(votes []string) map[string]int {
+	counts := make(map[string]int)
+	for _, v := range votes {
+		counts[v]++
+	}
+	return counts
+}
+
+// totalsByCategory: another make-a-map loop with totals[k] += v.
+// splitEvens: two appends behind an if/else — you know the shape by heart.`,
+
+  task: `
+<p>Replace four everyday Go loops with one Enumerable call each:</p>
+<ol>
+  <li><code>word_lengths(words)</code> — group words by their length into a
+      hash like <code>{ 2 =&gt; ["go"], 4 =&gt; ["ruby", "rust"] }</code>. One
+      call: <code>words.group_by(&amp;:length)</code>.</li>
+  <li><code>vote_counts(votes)</code> — count occurrences into
+      <code>{ "ruby" =&gt; 2, "go" =&gt; 1 }</code>. The entire Go function is
+      <code>votes.tally</code>.</li>
+  <li><code>totals_by_category(items)</code> — items look like
+      <code>{ category: "fruit", price: 3 }</code>; sum prices per category.
+      Use <code>items.each_with_object(Hash.new(0))</code> and add
+      <code>item[:price]</code> into <code>totals[item[:category]]</code>
+      inside the block.</li>
+  <li><code>split_evens(nums)</code> — return <code>[evens, odds]</code> in one
+      pass with <code>nums.partition(&amp;:even?)</code>.</li>
+</ol>`,
+
+  starter: `# 1. word_lengths: group_by(&:length) builds the whole hash.
+def word_lengths(words)
+  raise NotImplementedError, "TODO: implement word_lengths"
+end
+
+# 2. vote_counts: the counting loop is one word — tally.
+def vote_counts(votes)
+  raise NotImplementedError, "TODO: implement vote_counts"
+end
+
+# 3. totals_by_category: each_with_object(Hash.new(0)) threads the
+#    accumulator; missing keys read as 0, so += just works.
+def totals_by_category(items)
+  raise NotImplementedError, "TODO: implement totals_by_category"
+end
+
+# 4. split_evens: partition(&:even?) returns [matches, non_matches].
+def split_evens(nums)
+  raise NotImplementedError, "TODO: implement split_evens"
+end
+`,
+
+  requirements: [
+    { pattern: /group_by/, message: "Group the words with group_by" },
+    { pattern: /tally/, message: "Count the votes with tally" },
+    { pattern: /each_with_object/, message: "Accumulate totals with each_with_object" },
+    { pattern: /partition/, message: "Split evens from odds with partition" },
+  ],
+
+  tests: [
+    { name: 'word_lengths(["go", "ruby", "rust", "c"]) groups by length',
+      code: '  expect_eq(word_lengths(["go", "ruby", "rust", "c"]), { 2 => ["go"], 4 => ["ruby", "rust"], 1 => ["c"] })' },
+    { name: 'vote_counts(["ruby", "go", "ruby"]) returns { "ruby" => 2, "go" => 1 }',
+      code: '  expect_eq(vote_counts(["ruby", "go", "ruby"]), { "ruby" => 2, "go" => 1 })' },
+    { name: "totals_by_category sums prices per category",
+      code: '  expect_eq(totals_by_category([{ category: "fruit", price: 3 }, { category: "veg", price: 2 }, { category: "fruit", price: 4 }]), { "fruit" => 7, "veg" => 2 })' },
+    { name: "split_evens([1, 2, 3, 4, 5, 6]) returns [[2, 4, 6], [1, 3, 5]]",
+      code: "  expect_eq(split_evens([1, 2, 3, 4, 5, 6]), [[2, 4, 6], [1, 3, 5]])" },
+    { name: "split_evens([]) returns [[], []]",
+      code: "  expect_eq(split_evens([]), [[], []])" },
+  ],
+
+  solution: `def word_lengths(words)
+  words.group_by(&:length)
+end
+
+def vote_counts(votes)
+  votes.tally
+end
+
+def totals_by_category(items)
+  items.each_with_object(Hash.new(0)) do |item, totals|
+    totals[item[:category]] += item[:price]
+  end
+end
+
+def split_evens(nums)
+  nums.partition(&:even?)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Daily Go loop</th><th>Enumerable power tool</th></tr>
+  <tr><td>bucket into <code>map[K][]T</code></td><td><code>.group_by { |x| ... }</code></td></tr>
+  <tr><td>count into <code>map[T]int</code></td><td><code>.tally</code></td></tr>
+  <tr><td>accumulate into any object</td><td><code>.each_with_object(obj) { |x, acc| ... }</code></td></tr>
+  <tr><td>two-pass / if-else split</td><td><code>.partition { |x| ... }</code> — returns both halves</td></tr>
+  <tr><td><code>acc = f(acc, x)</code> fold</td><td><code>.reduce(:+)</code> or <code>.reduce(init) { |acc, x| ... }</code></td></tr>
+  <tr><td>zero-valued map reads</td><td><code>Hash.new(0)</code> — missing keys read as 0</td></tr>
+  <tr><td>need the index anyway</td><td><code>.each_with_index { |x, i| ... }</code></td></tr>
+</table>
+<p>Go's zero-value maps get you part of the way (<code>counts[v]++</code> works
+because missing ints are 0) — <code>Hash.new(0)</code> imports exactly that
+trick into Ruby, which is what makes the <code>each_with_object</code> body a
+single <code>+=</code>. The broader shift: in Go you name the <em>mechanism</em>
+(make, range, append); in Ruby you name the <em>intent</em> (group, tally,
+partition), and the mechanism disappears into the method.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

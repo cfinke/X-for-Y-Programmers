@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance & Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Go famously declined to have inheritance: you compose, you embed, and you
+share behavior by embedding a type that implements part of an interface. It
+works, but the sharp edge is that nothing <em>checks</em> the arrangement —
+embed a half-implementation, forget the other half, and the gap surfaces at
+the first call site (or the first interface assertion), not at the type
+definition.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Embedding: <code>type Circle struct { Describable ... }</code></td><td>Inheritance: <code>class Circle extends Shape</code></td></tr>
+  <tr><td>Shared behavior via the embedded type's methods</td><td>Concrete methods on the base class, inherited</td></tr>
+  <tr><td>"You must provide Area()" — hoped for, checked at use</td><td><code>abstract area(): number</code> — checked at the class definition</td></tr>
+  <tr><td>Embedded struct initialized in a composite literal</td><td><code>super("circle")</code> runs the base constructor</td></tr>
+</table>
+<p>TypeScript has the real thing: <code>extends</code>, plus <code>abstract</code>
+classes. An abstract class is the pattern Go approximates with "an interface
+plus an embeddable partial implementation" — but with the contract enforced:
+an <code>abstract</code> method is a compile error in any subclass that fails
+to implement it, and concrete methods on the base (like a
+<code>describe()</code> that calls the not-yet-written <code>area()</code>)
+are inherited by everyone. <code>super(...)</code> calls the base constructor
+explicitly, replacing the embedded-struct field in a composite literal. Use it
+judiciously: the Go instinct that composition usually beats inheritance is
+still right in TypeScript — reach for <code>extends</code> when a genuine
+is-a hierarchy shares real implementation, as here.</p>`,
+
+  go: `// The Go approximation: an interface, plus an embeddable
+// type that implements only part of it.
+type Shape interface {
+	Area() float64
+	Describe() string
+}
+
+type named struct{ name string }
+
+func (n named) Describe(area float64) string {
+	return fmt.Sprintf("%s has area %.2f", n.name, area)
+}
+
+type Circle struct {
+	named  // embedded: Circle borrows Describe
+	Radius float64
+}
+
+func (c Circle) Area() float64 { return math.Pi * c.Radius * c.Radius }
+
+// Forget Area() on a new shape and nothing complains here —
+// only the first Shape assignment or call site fails.
+var _ Shape = Circle{} // the manual, opt-in version of "abstract"`,
+
+  task: `
+<p>Rebuild the hierarchy with the contract compiler-enforced:</p>
+<ol>
+  <li>Declare <code>abstract class Shape</code> with a constructor taking
+      <code>readonly name: string</code>, an abstract method
+      <code>area(): number</code> (the compile-enforced "you must provide
+      this"), and a <em>concrete</em> <code>describe(): string</code> that
+      returns <code>name + " has area " + area</code> with the area rounded to
+      2 decimals via <code>Math.round(this.area() * 100) / 100</code> — a
+      template method written once, against a method that doesn't exist
+      yet.</li>
+  <li>Declare <code>class Circle extends Shape</code>: constructor takes a
+      private <code>radius</code>, calls <code>super("circle")</code>;
+      <code>area()</code> returns <code>Math.PI * radius * radius</code>.</li>
+  <li>Declare <code>class Rectangle extends Shape</code>: constructor takes
+      private <code>width</code> and <code>height</code>, calls
+      <code>super("rectangle")</code>; <code>area()</code> returns
+      width × height.</li>
+</ol>
+<p>Two things to try afterwards: delete <code>area()</code> from
+<code>Rectangle</code> — the error appears at the class, Go's
+<code>var _ Shape = ...</code> trick made automatic — and try
+<code>new Shape("blob")</code>, which the compiler rejects outright.</p>`,
+
+  starter: `// 1. TODO: mark the class abstract; declare area() as
+//        abstract area(): number;
+//    and make describe() use this.area(), rounded to 2 decimals:
+//        Math.round(this.area() * 100) / 100
+class Shape {
+  constructor(readonly name: string) {}
+
+  area(): number {
+    return 0; // TODO: replace with an abstract declaration (no body)
+  }
+
+  describe(): string {
+    return ""; // TODO: "<name> has area <rounded area>"
+  }
+}
+
+// 2. TODO: class Circle extends Shape — private radius,
+//    super("circle"), area() = Math.PI * r * r
+class Circle {
+}
+
+// 3. TODO: class Rectangle extends Shape — private width/height,
+//    super("rectangle"), area() = width * height
+class Rectangle {
+}
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class — it cannot be instantiated, only extended" },
+    { pattern: /abstract\s+area\s*\(\s*\)/, message: "Declare area() abstract — the contract every subclass must fulfil, checked at compile time" },
+    { pattern: /extends\s+Shape/, message: "Circle and Rectangle must extend Shape" },
+    { pattern: /super\s*\(/, message: "Call super(...) in the subclass constructors to run Shape's constructor" },
+  ],
+
+  tests: [
+    { name: "new Rectangle(3, 4).area() is 12", run: (x) => expectEqual(new x.Rectangle(3, 4).area(), 12) },
+    { name: "new Circle(2).area() is 12.57 to 2 decimals", run: (x) => expectEqual(Math.round(new x.Circle(2).area() * 100) / 100, 12.57) },
+    { name: 'new Circle(2).describe() is "circle has area 12.57" — inherited method, subclass area()', run: (x) => expectEqual(new x.Circle(2).describe(), "circle has area 12.57") },
+    { name: 'new Rectangle(3, 4).describe() is "rectangle has area 12"', run: (x) => expectEqual(new x.Rectangle(3, 4).describe(), "rectangle has area 12") },
+    { name: "both are instanceof Shape — a real hierarchy, not just a shared shape", run: (x) => { expectTruthy(new x.Circle(1) instanceof x.Shape); expectTruthy(new x.Rectangle(1, 1) instanceof x.Shape); } },
+  ],
+
+  solution: `abstract class Shape {
+  constructor(readonly name: string) {}
+
+  // The compile-enforced contract: every subclass provides this.
+  abstract area(): number;
+
+  // Template method: written once, calls area() before it exists.
+  describe(): string {
+    return this.name + " has area " + Math.round(this.area() * 100) / 100;
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super("circle"); // run the base constructor
+  }
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(private width: number, private height: number) {
+    super("rectangle");
+  }
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Reuse mechanism</td><td>Embedding (composition)</td><td><code>extends</code> (inheritance) — and composition, still often better</td></tr>
+  <tr><td>Partial implementation + contract</td><td>Interface + embeddable helper struct</td><td><code>abstract class</code> — both halves in one, checked</td></tr>
+  <tr><td>"Subtype must implement X"</td><td><code>var _ Shape = Circle{}</code> — manual, opt-in</td><td><code>abstract area(): number</code> — automatic, at the definition</td></tr>
+  <tr><td>Base initialization</td><td>Embedded field in a composite literal</td><td><code>super("circle")</code> in the constructor</td></tr>
+  <tr><td>Uninstantiable base</td><td>Not expressible (any struct can be built)</td><td><code>new Shape(...)</code> is a compile error</td></tr>
+  <tr><td>Is-a check</td><td>Type assertion <code>v.(Shape)</code></td><td><code>c instanceof Shape</code></td></tr>
+</table>
+<p>The template-method pattern here is the payoff: <code>describe()</code> is
+written once on the base and calls <code>this.area()</code> — a method with no
+implementation yet — and the compiler guarantees every concrete subclass fills
+the hole before the program can exist. That's Go's "embed the common part,
+promise to write the rest" pattern with the promise made checkable. But keep
+the Go instinct: one level of <code>extends</code> for a true is-a
+relationship with shared code is great; deep class trees are where TypeScript
+codebases go to suffer, and an interface plus plain composition is still the
+right default.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

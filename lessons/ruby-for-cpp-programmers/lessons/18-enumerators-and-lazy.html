@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Enumerators & Lazy</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Enumerators & Lazy",
+
+  intro: `
+<p>Before C++20 ranges, a lazy sequence meant hand-writing an iterator class:
+<code>operator++</code>, <code>operator*</code>, sentinel comparisons, the
+works. Ranges finally gave you <code>views::iota(1) | views::filter(...) |
+views::take(n)</code>. Ruby's spelling of the same pipeline is method chaining
+on a lazy enumerator: <code>(1..Float::INFINITY).lazy.select { ... }.first(n)</code>.
+The <code>.lazy</code> is the pivot — without it, <code>select</code> on an
+infinite range would try to materialize everything; with it, each element
+flows through the whole chain one at a time, and <code>first(n)</code> stops
+the world after <code>n</code> results.</p>
+<table>
+  <tr><th>C++</th><th>Ruby</th></tr>
+  <tr><td><code>views::iota(1)</code></td><td><code>(1..Float::INFINITY)</code> — an infinite Range</td></tr>
+  <tr><td><code>| views::filter(pred)</code></td><td><code>.lazy.select { |n| ... }</code></td></tr>
+  <tr><td><code>| views::take(n)</code></td><td><code>.first(n)</code> — and it returns a plain Array</td></tr>
+  <tr><td>C++20 coroutine generator (promise_type, co_yield)</td><td><code>Enumerator.new { |y| y &lt;&lt; value }</code></td></tr>
+  <tr><td><code>ranges::views::chunk(2)</code></td><td><code>each_slice(2)</code></td></tr>
+</table>
+<p>For sequences that need state between elements — fibonacci, say — C++20
+offers coroutines, at the price of writing or importing a generator type with
+a <code>promise_type</code>, <code>co_yield</code> plumbing, and tens of lines
+of ceremony. Ruby's <code>Enumerator.new { |y| ... }</code> is that generator
+with zero ceremony: the block runs lazily, <code>y &lt;&lt; value</code> is
+<code>co_yield</code>, and an infinite <code>loop</code> inside is fine
+because the consumer pulls only what it asks for.</p>`,
+
+  cpp: `// C++20 ranges; before that, this meant a hand-written iterator class.
+#include <ranges>
+#include <vector>
+
+std::vector<int> multiples_of(int k, int count) {
+    namespace v = std::views;
+    auto r = v::iota(1)
+           | v::filter([k](int n) { return n % k == 0; })
+           | v::take(count);
+    return {r.begin(), r.end()};
+}
+
+// The coroutine version needs a generator<T> with a promise_type,
+// co_yield, and ~40 lines of plumbing. The pedestrian version:
+std::vector<long> fibonacci(int count) {
+    std::vector<long> out;
+    long a = 0, b = 1;
+    for (int i = 0; i < count; ++i) {
+        out.push_back(a);
+        long next = a + b; a = b; b = next;
+    }
+    return out;
+}`,
+
+  task: `
+<p>Write the three sequence builders:</p>
+<ol>
+  <li><code>multiples_of(k, count)</code> — start from the infinite range
+      <code>(1..Float::INFINITY)</code>, go <code>.lazy</code>, keep multiples
+      with <code>.select { |n| n % k == 0 }</code>, and take
+      <code>.first(count)</code>. The filter-then-take pipeline, as
+      methods.</li>
+  <li><code>fibonacci(count)</code> — build an
+      <code>Enumerator.new do |y| ... end</code> holding
+      <code>a, b = 0, 1</code>, then <code>loop do</code> yield with
+      <code>y &lt;&lt; a</code> and step with <code>a, b = b, a + b</code>.
+      Return <code>.first(count)</code> from it. Yes, the loop is infinite —
+      that is the point.</li>
+  <li><code>pairs(arr)</code> — <code>arr.each_slice(2).to_a</code>. A
+      trailing odd element becomes a one-element slice.</li>
+</ol>`,
+
+  starter: `# 1. Infinite range -> .lazy -> .select { multiples } -> .first(count).
+def multiples_of(k, count)
+  raise NotImplementedError, "TODO: implement multiples_of"
+end
+
+# 2. Enumerator.new do |y| ... end is a generator: y << value is co_yield.
+#    Keep a, b = 0, 1 and loop forever; the caller pulls only count values.
+def fibonacci(count)
+  raise NotImplementedError, "TODO: implement fibonacci"
+end
+
+# 3. each_slice(2) chunks the array; .to_a materializes the slices.
+def pairs(arr)
+  raise NotImplementedError, "TODO: implement pairs"
+end
+`,
+
+  requirements: [
+    { pattern: /\.lazy/, message: "Use .lazy on the infinite range in multiples_of" },
+    { pattern: /Enumerator\.new/, message: "Build fibonacci with Enumerator.new" },
+    { pattern: /first\(/, message: "Take finitely many elements with first(n)" },
+    { pattern: /each_slice/, message: "Use each_slice in pairs" },
+  ],
+
+  tests: [
+    { name: "multiples_of(3, 4) returns [3, 6, 9, 12]",
+      code: "  expect_eq(multiples_of(3, 4), [3, 6, 9, 12])" },
+    { name: "multiples_of(7, 3) returns [7, 14, 21]",
+      code: "  expect_eq(multiples_of(7, 3), [7, 14, 21])" },
+    { name: "fibonacci(8) returns [0, 1, 1, 2, 3, 5, 8, 13]",
+      code: "  expect_eq(fibonacci(8), [0, 1, 1, 2, 3, 5, 8, 13])" },
+    { name: "fibonacci(1) returns [0]",
+      code: "  expect_eq(fibonacci(1), [0])" },
+    { name: "pairs([1, 2, 3, 4, 5]) returns [[1, 2], [3, 4], [5]]",
+      code: "  expect_eq(pairs([1, 2, 3, 4, 5]), [[1, 2], [3, 4], [5]])" },
+  ],
+
+  solution: `def multiples_of(k, count)
+  (1..Float::INFINITY).lazy.select { |n| n % k == 0 }.first(count)
+end
+
+def fibonacci(count)
+  fibs = Enumerator.new do |y|
+    a, b = 0, 1
+    loop do
+      y << a
+      a, b = b, a + b
+    end
+  end
+  fibs.first(count)
+end
+
+def pairs(arr)
+  arr.each_slice(2).to_a
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+  <tr><td>Infinite source</td><td><code>views::iota(1)</code></td><td><code>(1..Float::INFINITY)</code>, or <code>1.step</code></td></tr>
+  <tr><td>Lazy filter</td><td><code>| views::filter(f)</code></td><td><code>.lazy.select { }</code> (also lazy map/reject/take_while)</td></tr>
+  <tr><td>Stop after n</td><td><code>| views::take(n)</code></td><td><code>.first(n)</code> — terminal, returns an Array</td></tr>
+  <tr><td>Generator</td><td>coroutine + promise_type ceremony</td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+  <tr><td>Chunking</td><td><code>views::chunk(2)</code> (C++23)</td><td><code>each_slice(2)</code>; sliding window: <code>each_cons(2)</code></td></tr>
+  <tr><td>Pull one element</td><td><code>++it; *it</code></td><td><code>enum.next</code> (external iteration)</td></tr>
+</table>
+<p>One mental model unifies this lesson: every Enumerable method you met in
+lessons 12–13 becomes a <em>view adaptor</em> after <code>.lazy</code> and
+stays a <em>terminal algorithm</em> without it. And note what
+<code>Enumerator.new</code> quietly does: the block does not run when the
+enumerator is built — it runs incrementally as values are pulled, suspending
+at each <code>y &lt;&lt;</code> exactly like a coroutine suspending at
+<code>co_yield</code>. Ruby had resumable generator semantics as a two-line
+library call while C++ was still debating the TS.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Discriminated Unions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Discriminated Unions",
+
+  intro: `
+<p>In Python, the classic way to model "one of several variants" is a dict
+with a <code>"type"</code> key, dispatched via <code>match</code>/<code>case</code>
+or <code>if</code>/<code>elif</code> — and nothing enforces the shape of each
+variant. The nicer Python 3.10 version is a <code>Union</code> of dataclasses
+matched by <code>isinstance</code> or structural patterns, but even then, plain
+Python won't tell you when a <code>match</code> forgets a case. TypeScript's
+<em>discriminated union</em> (also called a tagged union) is this pattern with
+the compiler on your side.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>shape = {"type": "circle", "radius": 2}</code></td><td><code>const shape: Shape = { kind: "circle", radius: 2 };</code></td></tr>
+  <tr><td><code>Shape = Circle | Rectangle</code></td><td><code>type Shape = Circle | Rectangle;</code></td></tr>
+  <tr><td><code>match shape: case Circle(...):</code></td><td><code>switch (shape.kind) { case "circle": ... }</code></td></tr>
+  <tr><td>Forgot a case? <code>None</code> at runtime</td><td>Forgot a case? Compile error via <code>never</code></td></tr>
+</table>
+<p>Each variant is an object type carrying a <em>literal</em> tag property —
+conventionally named <code>kind</code>. When you <code>switch</code> on
+<code>shape.kind</code>, TypeScript narrows the type inside each branch, so
+<code>shape.radius</code> only exists in the <code>"circle"</code> case. The
+killer feature is the <code>never</code>-typed <code>default</code>: if every
+variant is handled, the value narrows to <code>never</code> there, so the code
+compiles. Add a fourth variant later and the <code>default</code> assignment
+becomes a compile error at the switch — exhaustiveness checking that
+<code>match</code>/<code>case</code> over a <code>Union</code> only gives you
+with strict mypy.</p>`,
+
+  python: `import math
+from dataclasses import dataclass
+
+@dataclass
+class Circle:
+    radius: float
+
+@dataclass
+class Rectangle:
+    width: float
+    height: float
+
+@dataclass
+class Triangle:
+    base: float
+    height: float
+
+Shape = Circle | Rectangle | Triangle
+
+def area(shape: Shape) -> float:
+    match shape:
+        case Circle(radius=r):
+            return math.pi * r ** 2
+        case Rectangle(width=w, height=h):
+            return w * h
+        case Triangle(base=b, height=h):
+            return b * h / 2
+    # Forget a case? Python quietly returns None at runtime.`,
+
+  task: `
+<p>Model the same shapes as a tagged union and compute areas:</p>
+<ol>
+  <li>Define three object types — <code>Circle</code>, <code>Rectangle</code>,
+      and <code>Triangle</code> — each with a literal tag property
+      <code>kind</code> (<code>"circle"</code>, <code>"rectangle"</code>,
+      <code>"triangle"</code>). Circle has <code>radius</code>; Rectangle has
+      <code>width</code> and <code>height</code>; Triangle has
+      <code>base</code> and <code>height</code>. All numbers.</li>
+  <li>Combine them: <code>type Shape = Circle | Rectangle | Triangle;</code></li>
+  <li>Write <code>area(shape: Shape): number</code> using a
+      <code>switch</code> on <code>shape.kind</code>. Circle is
+      <code>Math.PI * radius ** 2</code>, rectangle is
+      <code>width * height</code>, triangle is <code>base * height / 2</code>.</li>
+  <li>Add a <code>default</code> branch that assigns <code>shape</code> to a
+      variable typed <code>never</code> (then throws). If someone adds a
+      <code>Pentagon</code> variant later, that line stops compiling —
+      the compiler finds the missing case for you.</li>
+</ol>`,
+
+  starter: `// 1. + 2. Define the variants and the union.
+//    Each variant carries a literal tag: kind: "circle" etc.
+type Circle = { kind: "circle"; radius: number };
+// TODO: define Rectangle = { kind: "rectangle"; width, height }
+// TODO: define Triangle  = { kind: "triangle";  base,  height }
+
+type Shape = Circle; // TODO: Circle | Rectangle | Triangle
+
+// 3. + 4. Switch on shape.kind; TypeScript narrows the type in each case.
+function area(shape: Shape): number {
+  // TODO: switch (shape.kind) { case "circle": ... }
+  // TODO: default branch — assign shape to a never-typed variable, then throw.
+  return 0;
+}
+`,
+
+  exportNames: ["area"],
+
+  requirements: [
+    { pattern: /kind\s*:\s*"/, message: 'Give each variant a literal tag property, e.g. kind: "circle"' },
+    { pattern: /type\s+Shape\s*=/, message: "Define type Shape = Circle | Rectangle | Triangle" },
+    { pattern: /switch\s*\(\s*\w+\.kind\s*\)/, message: "Dispatch with a switch on shape.kind" },
+    { pattern: /:\s*never/, message: "Add a never-typed exhaustiveness check in the default branch" },
+  ],
+
+  tests: [
+    { name: "area of a circle with radius 1 is Math.PI", run: (x) => expectEqual(x.area({ kind: "circle", radius: 1 }), Math.PI) },
+    { name: "area of a circle with radius 2 is 4 * Math.PI", run: (x) => expectEqual(x.area({ kind: "circle", radius: 2 }), Math.PI * 4) },
+    { name: "area of a 3 x 4 rectangle is 12", run: (x) => expectEqual(x.area({ kind: "rectangle", width: 3, height: 4 }), 12) },
+    { name: "area of a triangle (base 10, height 6) is 30", run: (x) => expectEqual(x.area({ kind: "triangle", base: 10, height: 6 }), 30) },
+  ],
+
+  solution: `type Circle = { kind: "circle"; radius: number };
+type Rectangle = { kind: "rectangle"; width: number; height: number };
+type Triangle = { kind: "triangle"; base: number; height: number };
+
+type Shape = Circle | Rectangle | Triangle;
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      // In this branch, shape is narrowed to Circle — .radius exists.
+      return Math.PI * shape.radius ** 2;
+    case "rectangle":
+      return shape.width * shape.height;
+    case "triangle":
+      return shape.base * shape.height / 2;
+    default: {
+      // All variants handled above, so shape is never here.
+      // Add a variant to Shape and this line becomes a compile error.
+      const unreachable: never = shape;
+      throw new Error("unhandled shape: " + JSON.stringify(unreachable));
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Variant</td><td><code>@dataclass class Circle</code> or a dict with <code>"type"</code></td><td><code>type Circle = { kind: "circle"; radius: number }</code></td></tr>
+  <tr><td>The union</td><td><code>Shape = Circle | Rectangle</code></td><td><code>type Shape = Circle | Rectangle;</code></td></tr>
+  <tr><td>Dispatch</td><td><code>match shape: case Circle(...):</code></td><td><code>switch (shape.kind) { case "circle": }</code></td></tr>
+  <tr><td>Per-branch typing</td><td>Pattern binds fields</td><td>Narrowing: <code>shape</code> <em>is</em> a <code>Circle</code> in that case</td></tr>
+  <tr><td>Exhaustiveness</td><td>Only with strict mypy (<code>assert_never</code>)</td><td><code>const x: never = shape;</code> in <code>default</code></td></tr>
+  <tr><td>Tag naming</td><td><code>"type"</code> key, snake_case fields</td><td><code>kind</code> property, camelCase fields</td></tr>
+</table>
+<p>The tag must be a <em>literal</em> type (<code>kind: "circle"</code>, not
+<code>kind: string</code>) — that literal is what lets the compiler tell the
+variants apart. Once you have it, the <code>never</code> default turns "did I
+update every switch?" from a code-review question into a compile error, which
+is exactly what you wish <code>match</code>/<code>case</code> did out of the
+box.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

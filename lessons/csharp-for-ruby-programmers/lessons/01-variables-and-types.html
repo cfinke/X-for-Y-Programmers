@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Types",
+
+  intro: `
+<p>Ruby is dynamically typed, so a variable can hold anything and its type is
+only known at runtime. C# is statically typed: every variable has a fixed type
+that the compiler checks, the numeric types are distinct, and every method
+lives inside a class or struct rather than floating free.</p>
+<table>
+  <tr><th>Ruby</th><th>C#</th></tr>
+  <tr><td><code>age = 36</code></td><td><code>int age = 36;</code></td></tr>
+  <tr><td><code>name = "Ada"</code></td><td><code>var name = "Ada";</code> (inferred)</td></tr>
+  <tr><td><code>"#{name} is #{age}"</code></td><td><code>$"{name} is {age}"</code></td></tr>
+  <tr><td><code>Integer</code>, <code>Float</code></td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>decimal</code>, …</td></tr>
+</table>
+<p>Two adjustments. First, <code>var</code> is C#'s closest thing to Ruby's plain
+assignment — the type is inferred from the initializer — but unlike Ruby, that
+type is fixed once chosen and can never hold a different kind of value later.
+Second, the numeric split matters: <code>7 / 2</code> is <code>3</code>
+(integer division), while <code>7 / 2.0</code> is <code>3.5</code> — Ruby has
+the same integer-division behavior, but C#'s split between <code>int</code>,
+<code>double</code>, and friends is stricter and enforced at compile time.
+Interpolated strings wear a <code>$</code> prefix, and there are no free
+methods like Ruby's top-level <code>def</code> — helpers become
+<code>static</code> methods on a class.</p>`,
+
+  ruby: `age = 36
+user_name = "Ada"
+
+def describe(name, age)
+  "#{name} is #{age}"
+end`,
+
+  task: `
+<p>Write the C# version. C# has no top-level methods, so put your methods in a
+class:</p>
+<ol>
+  <li>Declare a <code>static class Basics</code> holding <code>static</code>
+      methods.</li>
+  <li><code>Add(int a, int b)</code> returns their sum.</li>
+  <li><code>Describe(string name, int age)</code> returns a string like
+      <code>"Ada is 36"</code> — use an interpolated string
+      <code>$"{name} is {age}"</code>.</li>
+  <li><code>Divide(int a, int b)</code> returns a <code>double</code>, so
+      <code>Divide(7, 2)</code> is <code>3.5</code>. Cast one operand:
+      <code>(double)a / b</code>.</li>
+</ol>`,
+
+  starter: `static class Basics {
+  public static int Add(int a, int b) {
+    return 0; // TODO
+  }
+
+  public static string Describe(string name, int age) {
+    return ""; // TODO
+  }
+
+  public static double Divide(int a, int b) {
+    return 0; // TODO: watch out for integer division
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /\$"/, message: "Build the string with an interpolated string ($\"...\")" },
+    { pattern: /\(double\)/, message: "Cast to (double) so Divide returns a fractional result" },
+  ],
+
+  tests: [
+    { name: "Add(2, 3) is 5", code: "      expect_eq(Basics.Add(2, 3), 5);" },
+    { name: "Describe(\"Ada\", 36) is \"Ada is 36\"", code: "      expect_eq(Basics.Describe(\"Ada\", 36), \"Ada is 36\");" },
+    { name: "Describe(\"Rob\", 68) is \"Rob is 68\"", code: "      expect_eq(Basics.Describe(\"Rob\", 68), \"Rob is 68\");" },
+    { name: "Divide(7, 2) is 3.5", code: "      expect_eq(Basics.Divide(7, 2), 3.5);" },
+    { name: "Divide(10, 4) is 2.5", code: "      expect_eq(Basics.Divide(10, 4), 2.5);" },
+  ],
+
+  solution: `static class Basics {
+  public static int Add(int a, int b) {
+    return a + b;
+  }
+
+  public static string Describe(string name, int age) {
+    return $"{name} is {age}";
+  }
+
+  public static double Divide(int a, int b) {
+    return (double)a / b;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>C#</th></tr>
+  <tr><td>Typed variable</td><td><code>x = 1</code> (no declared type)</td><td><code>int x = 1;</code></td></tr>
+  <tr><td>Inferred variable</td><td><code>x = 1</code></td><td><code>var x = 1;</code></td></tr>
+  <tr><td>Constant</td><td><code>X = 1</code> (capitalized name)</td><td><code>const int x = 1;</code></td></tr>
+  <tr><td>Interpolation</td><td><code>"#{x}"</code></td><td><code>$"{x}"</code></td></tr>
+  <tr><td>Free method</td><td><code>def f; end</code></td><td><code>static</code> method in a class</td></tr>
+</table>
+<p>The integer-division gotcha is the classic first surprise, and it is one
+Ruby programmers already know: <code>int / int</code> truncates in C# just
+like <code>Integer / Integer</code> does in Ruby. Promote one side to
+<code>double</code> — a cast, a literal like <code>2.0</code>, or a
+<code>double</code> variable — and the whole expression becomes floating
+point. For money, reach for <code>decimal</code> instead of <code>double</code>
+to avoid binary rounding error.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

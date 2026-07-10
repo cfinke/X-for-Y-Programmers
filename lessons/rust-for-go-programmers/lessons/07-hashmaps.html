@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: HashMaps</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "HashMaps",
+
+  intro: `
+<p>Go's <code>map[string]int</code> becomes Rust's
+<code>HashMap&lt;String, u32&gt;</code> (imported with
+<code>use std::collections::HashMap;</code> — it's not in the prelude).
+Writing is <code>.insert(k, v)</code> instead of <code>m[k] = v</code>.
+Reading is where your Go instincts map over beautifully: the comma-ok idiom
+<code>v, ok := m[k]</code> is exactly what <code>.get(&amp;k)</code> returns
+— an <code>Option&lt;&amp;V&gt;</code>, which is the <code>ok</code> boolean
+folded into the type. You can't accidentally use the value without having
+acknowledged the "was it there?" question.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>m := map[string]int{}</code></td><td><code>let mut m = HashMap::new();</code></td></tr>
+  <tr><td><code>m[k] = v</code></td><td><code>m.insert(k, v);</code></td></tr>
+  <tr><td><code>v, ok := m[k]</code></td><td><code>m.get(k)</code> → <code>Option&lt;&amp;V&gt;</code> (the <code>ok</code> is in the type)</td></tr>
+  <tr><td><code>m[k]</code> missing → silent zero value</td><td><code>m.get(k).copied().unwrap_or(0)</code> — same result, explicit</td></tr>
+  <tr><td><code>m[k]++</code> (implicit zero)</td><td><code>*m.entry(k).or_insert(0) += 1;</code></td></tr>
+</table>
+<p>Go's other read form, plain <code>m[k]</code>, silently hands you the
+zero value for missing keys. Rust makes you spell that policy out:
+<code>.get(k).copied().unwrap_or(0)</code> — "give me the count, or 0 if
+absent." Same behavior, but a reader can see that missing-means-zero was a
+decision, not an accident. And for the classic upsert
+(<code>m[k]++</code>, which leans on that implicit zero), Rust has the
+entry API: <code>m.entry(k).or_insert(0)</code> gets you a mutable
+reference to the value, inserting the default first if needed.</p>`,
+
+  go: `package main
+
+import "fmt"
+
+func buildInventory() map[string]int {
+	return map[string]int{"hammer": 12, "nails": 500}
+}
+
+func getCount(inv map[string]int, name string) int {
+	return inv[name] // missing key? silent 0 — hope that's what you meant
+}
+
+func addStock(inv map[string]int, name string, n int) {
+	inv[name] += n // works even for missing keys, via the implicit zero
+}
+
+func main() {
+	inv := buildInventory()
+	if v, ok := inv["hammer"]; ok {
+		fmt.Println("hammers:", v)
+	}
+	addStock(inv, "screws", 25)
+	fmt.Println(getCount(inv, "screws"), getCount(inv, "glue"))
+}`,
+
+  task: `
+<p>Rewrite the inventory map as a <code>HashMap</code>:</p>
+<ol>
+  <li><code>build_inventory() -&gt; HashMap&lt;String, u32&gt;</code> —
+      create a map with <code>.insert</code> containing
+      <code>"hammer" → 12</code> and <code>"nails" → 500</code>
+      (use <code>.to_string()</code> to make the owned <code>String</code>
+      keys).</li>
+  <li><code>get_count(inv: &amp;HashMap&lt;String, u32&gt;, name: &amp;str) -&gt; u32</code>
+      — look up <code>name</code> with <code>.get</code>, and make Go's
+      zero-value-on-missing behavior explicit:
+      <code>.copied().unwrap_or(0)</code>.</li>
+  <li><code>add_stock(inv: &amp;mut HashMap&lt;String, u32&gt;, name: &amp;str, n: u32)</code>
+      — Go's <code>inv[name] += n</code>, via the entry API:
+      <code>*inv.entry(name.to_string()).or_insert(0) += n;</code>
+      must work whether or not the key exists yet.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::collections::HashMap;
+
+// 1. build_inventory: "hammer" -> 12, "nails" -> 500.
+//    Keys are owned Strings: inv.insert("hammer".to_string(), 12);
+fn build_inventory() -> HashMap<String, u32> {
+    todo!()
+}
+
+// 2. get_count: Go's silent inv[name] zero value, made explicit —
+//    inv.get(name) returns Option<&u32>; .copied().unwrap_or(0) finishes it.
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    todo!()
+}
+
+// 3. add_stock: Go's inv[name] += n. The entry API handles
+//    both "key exists" and "key missing" in one line.
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /HashMap</, message: "Use the HashMap type — Go's map[string]int" },
+    { pattern: /\.entry\(|\.insert\(/, message: "Write with .insert (m[k] = v) or .entry (m[k] += n)" },
+    { pattern: /unwrap_or/, message: "Make the missing-key default explicit with unwrap_or(0)" },
+  ],
+
+  tests: [
+    { name: "build_inventory() holds exactly two items",
+      code: `let inv = build_inventory();
+assert_eq!(inv.len(), 2);` },
+    { name: 'get_count finds "hammer" -> 12 and "nails" -> 500',
+      code: `let inv = build_inventory();
+assert_eq!(get_count(&inv, "hammer"), 12);
+assert_eq!(get_count(&inv, "nails"), 500);` },
+    { name: "get_count on a missing key returns 0 (the explicit zero value)",
+      code: `let inv = build_inventory();
+assert_eq!(get_count(&inv, "glue"), 0);` },
+    { name: "add_stock adds to an existing key (nails: 500 + 100 = 600)",
+      code: `let mut inv = build_inventory();
+add_stock(&mut inv, "nails", 100);
+assert_eq!(get_count(&inv, "nails"), 600);` },
+    { name: "add_stock inserts a missing key (screws: 0 + 25 = 25)",
+      code: `let mut inv = build_inventory();
+add_stock(&mut inv, "screws", 25);
+assert_eq!(get_count(&inv, "screws"), 25);` },
+  ],
+
+  solution: `use std::collections::HashMap;
+
+fn build_inventory() -> HashMap<String, u32> {
+    let mut inv = HashMap::new();
+    inv.insert("hammer".to_string(), 12);
+    inv.insert("nails".to_string(), 500);
+    inv
+}
+
+fn get_count(inv: &HashMap<String, u32>, name: &str) -> u32 {
+    inv.get(name).copied().unwrap_or(0)
+}
+
+fn add_stock(inv: &mut HashMap<String, u32>, name: &str, n: u32) {
+    *inv.entry(name.to_string()).or_insert(0) += n;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Type</td><td><code>map[string]int</code></td><td><code>HashMap&lt;String, u32&gt;</code> (+ <code>use std::collections::HashMap;</code>)</td></tr>
+  <tr><td>Create</td><td><code>map[string]int{}</code> / <code>make(...)</code></td><td><code>HashMap::new()</code></td></tr>
+  <tr><td>Write</td><td><code>m[k] = v</code></td><td><code>m.insert(k, v);</code></td></tr>
+  <tr><td>Comma-ok read</td><td><code>v, ok := m[k]</code></td><td><code>m.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+  <tr><td>Zero-on-missing read</td><td><code>m[k]</code> (implicit)</td><td><code>m.get(k).copied().unwrap_or(0)</code> (explicit)</td></tr>
+  <tr><td>Upsert / increment</td><td><code>m[k] += n</code></td><td><code>*m.entry(k).or_insert(0) += n;</code></td></tr>
+  <tr><td>Length</td><td><code>len(m)</code></td><td><code>m.len()</code></td></tr>
+</table>
+<p>Go's implicit zero value on missing keys is convenient right up until it
+masks a typo'd key as a legitimate 0. Rust's version costs one method chain
+— <code>.copied().unwrap_or(0)</code> — and in exchange the default is
+visible at the call site and different call sites can choose different
+policies: default to zero here, treat missing as an error there. The
+<code>.copied()</code> step is just turning the borrowed
+<code>&amp;u32</code> that <code>get</code> hands you into an owned
+<code>u32</code> — cheap for a number, and lesson 5's borrowing rules
+explain why <code>get</code> borrows in the first place.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

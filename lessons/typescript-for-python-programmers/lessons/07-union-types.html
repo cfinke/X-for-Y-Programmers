@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Union Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Union Types",
+
+  intro: `
+<p>Python has had <code>Union[int, str]</code> since typing landed, and since
+3.10 you can write <code>int | str</code> — which is <em>visually identical</em>
+to the TypeScript spelling <code>number | string</code>. Even
+<code>Optional[str]</code> is nothing special: it is just the union
+<code>str | None</code>. So the syntax here costs you nothing; you already
+write it.</p>
+<table>
+  <tr><th>Python</th><th>TypeScript</th></tr>
+  <tr><td><code>Union[int, str]</code></td><td><code>number | string</code></td></tr>
+  <tr><td><code>int | str</code> (3.10+)</td><td><code>number | string</code> (same pipe!)</td></tr>
+  <tr><td><code>Optional[str]</code> / <code>str | None</code></td><td><code>string | null</code></td></tr>
+  <tr><td><code>isinstance(x, int)</code></td><td><code>typeof x === "number"</code></td></tr>
+</table>
+<p>The difference is enforcement. Given <code>raw_id: int | str</code>, Python
+happily lets you call <code>raw_id.upper()</code> and hope it wasn't an int
+(only mypy would warn — the interpreter waits for the crash). TypeScript checks
+the union <em>at every use</em>: you cannot call <code>.toUpperCase()</code>
+on a <code>number | string</code> until you have <strong>narrowed</strong> it,
+usually with a <code>typeof</code> check — the compiler's mandatory version of
+your voluntary <code>isinstance()</code>. Inside the <code>if</code> branch,
+TypeScript knows the exact type and unlocks that type's methods. (And as
+always: <code>format_id</code> becomes <code>formatId</code>.)</p>`,
+
+  python: `def format_id(raw_id: int | str) -> str:
+    # Python runs whatever you write; only isinstance (or mypy) saves you
+    if isinstance(raw_id, int):
+        return str(raw_id).zfill(6)
+    return raw_id.upper()
+
+def find_nickname(name: str) -> str | None:
+    # Optional[str] is literally str | None — a union with None
+    nicknames = {"Guido": "BDFL"}
+    return nicknames.get(name)
+
+print(format_id(42))         # 000042
+print(format_id("abc-123"))  # ABC-123`,
+
+  task: `
+<p>Port <code>format_id</code> to TypeScript:</p>
+<ol>
+  <li>Write a function <code>formatId</code> whose parameter is declared with
+      a union type: <code>id: number | string</code>, returning
+      <code>string</code>.</li>
+  <li>If <code>id</code> is a number, narrow with
+      <code>typeof id === "number"</code> and return it zero-padded to 6
+      digits. Python's <code>str(id).zfill(6)</code> becomes
+      <code>id.toString().padStart(6, "0")</code>.</li>
+  <li>Otherwise TypeScript knows <code>id</code> is a string — return
+      <code>id.toUpperCase()</code>.</li>
+</ol>
+<p>Try calling <code>id.toUpperCase()</code> <em>before</em> the
+<code>typeof</code> check: the compiler refuses, because one member of the
+union (number) has no such method. That refusal is the whole point of this
+lesson.</p>`,
+
+  starter: `// 1. Change the parameter type to the union: number | string
+//    (Python 3.10+ would write raw_id: int | str — same pipe!)
+function formatId(id: string): string {
+  // 2. TODO: if typeof id === "number", return it zero-padded to 6 digits:
+  //    id.toString().padStart(6, "0")   (Python: str(id).zfill(6))
+  // 3. TODO: otherwise return id.toUpperCase()
+  return id;
+}
+`,
+
+  exportNames: ["formatId"],
+
+  requirements: [
+    { pattern: /formatId\s*\(\s*\w+\s*:\s*(number\s*\|\s*string|string\s*\|\s*number)\s*\)/, message: "Declare formatId's parameter with the union type number | string" },
+    { pattern: /typeof\s+\w+\s*===?\s*["'](number|string)["']/, message: "Narrow the union with a typeof check before using type-specific methods" },
+  ],
+
+  tests: [
+    { name: 'formatId(42) returns "000042"', run: (x) => expectEqual(x.formatId(42), "000042") },
+    { name: 'formatId(7) returns "000007"', run: (x) => expectEqual(x.formatId(7), "000007") },
+    { name: 'formatId(123456) returns "123456"', run: (x) => expectEqual(x.formatId(123456), "123456") },
+    { name: 'formatId("abc-123") returns "ABC-123"', run: (x) => expectEqual(x.formatId("abc-123"), "ABC-123") },
+    { name: 'formatId("x9") returns "X9"', run: (x) => expectEqual(x.formatId("x9"), "X9") },
+  ],
+
+  solution: `function formatId(id: number | string): string {
+  if (typeof id === "number") {
+    // In this branch, TypeScript knows id is a number.
+    return id.toString().padStart(6, "0");
+  }
+  // Here it must be a string, so string methods are allowed.
+  return id.toUpperCase();
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+  <tr><td>Union of two types</td><td><code>Union[int, str]</code> or <code>int | str</code></td><td><code>number | string</code></td></tr>
+  <tr><td>Optional value</td><td><code>Optional[str]</code> = <code>str | None</code></td><td><code>string | null</code> (or <code>| undefined</code>)</td></tr>
+  <tr><td>Runtime type check</td><td><code>isinstance(x, int)</code></td><td><code>typeof x === "number"</code></td></tr>
+  <tr><td>Zero-pad a number</td><td><code>str(n).zfill(6)</code></td><td><code>n.toString().padStart(6, "0")</code></td></tr>
+  <tr><td>Calling a member's method</td><td>Allowed anywhere; crashes at runtime if wrong</td><td>Compile error until you narrow the union</td></tr>
+</table>
+<p>The mental shift: in Python a union is documentation that mypy can
+optionally police; in TypeScript a union is a contract the compiler holds you
+to at every call site. Narrowing (<code>typeof</code>, and later
+<code>instanceof</code> and <code>in</code>) is how you cash the union in for
+a concrete type — Lesson 16 goes deeper on these guards.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

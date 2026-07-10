@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Structs &amp; Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A C++ class is a struct plus methods plus a constructor plus the .h/.cpp
+split plus initialization-order rules. Rust unbundles it:
+<code>struct</code> declares the data, and an <code>impl</code> block right
+next to it holds the behavior — one place, no header, no forward
+declarations, no out-of-line <code>ClassName::</code> repetition.
+Constructors are demystified too: <code>BankAccount::new()</code> is the
+conventional name, but it's just an associated function (a static, in your
+vocabulary) that returns a fully-formed value. No member-initializer-list
+ordering rules, no virtual calls from a half-constructed object, no
+two-phase-init workarounds — if <code>new</code> returns, the object is
+whole.</p>
+<table>
+  <tr><th>C++</th><th>Rust</th></tr>
+  <tr><td><code>class</code> in .h, definitions in .cpp</td><td><code>struct</code> + <code>impl</code>, together in one file</td></tr>
+  <tr><td><code>BankAccount(std::string owner);</code> (special member)</td><td><code>fn new(owner: &amp;str) -&gt; BankAccount</code> (just a function)</td></tr>
+  <tr><td><code>long balance() const;</code></td><td><code>fn balance(&amp;self) -&gt; i64</code></td></tr>
+  <tr><td><code>void deposit(long);</code> (non-const)</td><td><code>fn deposit(&amp;mut self, amount: i64)</code></td></tr>
+  <tr><td><code>acct.deposit(100)</code></td><td><code>acct.deposit(100)</code> — same call syntax</td></tr>
+</table>
+<p>The <code>self</code> parameter is const-correctness, mandatory:
+<code>&amp;self</code> is a const method, <code>&amp;mut self</code> is a
+non-const method — and unlike C++, where forgetting <code>const</code> is
+merely sloppy, Rust won't let a <code>&amp;mut self</code> method be called
+on an immutable binding at all. The discipline you enforce in code review,
+enforced by the compiler.</p>`,
+
+  cpp: `// bank_account.h
+class BankAccount {
+public:
+    explicit BankAccount(std::string owner);
+    void deposit(long amount);
+    bool withdraw(long amount);      // false on failure — easy to ignore
+    long balance() const;
+private:
+    std::string owner_;
+    long balance_ = 0;
+};
+
+// bank_account.cpp — the other half, in another file
+BankAccount::BankAccount(std::string owner) : owner_(std::move(owner)) {}
+void BankAccount::deposit(long amount) { balance_ += amount; }
+bool BankAccount::withdraw(long amount) {
+    if (amount > balance_) return false;
+    balance_ -= amount;
+    return true;
+}
+long BankAccount::balance() const { return balance_; }`,
+
+  task: `
+<p>The <code>struct BankAccount</code> definition is already in the starter.
+Fill in its <code>impl</code> block:</p>
+<ol>
+  <li><code>new(owner: &amp;str) -&gt; BankAccount</code> — the constructor by
+      convention: build the struct with the given owner (convert with
+      <code>owner.to_string()</code>) and <code>balance: 0</code>.</li>
+  <li><code>deposit(&amp;mut self, amount: i64)</code> — add
+      <code>amount</code> to the balance. Non-const method, so
+      <code>&amp;mut self</code>.</li>
+  <li><code>withdraw(&amp;mut self, amount: i64) -&gt; Result&lt;(), String&gt;</code>
+      — if <code>amount</code> exceeds the balance, return an
+      <code>Err</code> with a message and leave the balance untouched;
+      otherwise subtract and return <code>Ok(())</code>. Where C++ returned an
+      ignorable <code>bool</code>, this failure is a value the caller must
+      confront.</li>
+  <li><code>balance(&amp;self) -&gt; i64</code> — the const method: return the
+      current balance.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your methods
+directly.</p>`,
+
+  starter: `// The data. Fields are private to the module by default — no \`private:\`
+// section needed here.
+struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+// The behavior — same file, no header, no BankAccount:: repetition.
+impl BankAccount {
+    // 1. The "constructor": an associated function returning a whole value.
+    fn new(owner: &str) -> BankAccount {
+        todo!()
+    }
+
+    // 2. Non-const method: &mut self.
+    fn deposit(&mut self, amount: i64) {
+        todo!()
+    }
+
+    // 3. Err(...) if amount > balance (leave it untouched), else Ok(()).
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        todo!()
+    }
+
+    // 4. Const method: &self.
+    fn balance(&self) -> i64 {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /struct\s+BankAccount/, message: "Keep the struct BankAccount definition" },
+    { pattern: /impl\s+BankAccount/, message: "Put the methods in an impl BankAccount block" },
+    { pattern: /&mut\s+self/, message: "Mutating methods take &mut self (the non-const method)" },
+  ],
+
+  tests: [
+    { name: 'BankAccount::new("Ada") starts with balance 0 and the right owner',
+      code: 'let acct = BankAccount::new("Ada");\nassert_eq!(acct.balance(), 0);\nassert_eq!(acct.owner, "Ada");' },
+    { name: "deposit(100) then deposit(50) leaves balance 150",
+      code: 'let mut acct = BankAccount::new("Grace");\nacct.deposit(100);\nacct.deposit(50);\nassert_eq!(acct.balance(), 150);' },
+    { name: "withdraw(40) from 100 succeeds and leaves 60",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(100);\nassert!(acct.withdraw(40).is_ok());\nassert_eq!(acct.balance(), 60);' },
+    { name: "withdraw(100) from an empty account is an Err",
+      code: 'let mut acct = BankAccount::new("Ada");\nassert!(acct.withdraw(100).is_err());' },
+    { name: "a failed withdraw leaves the balance untouched",
+      code: 'let mut acct = BankAccount::new("Ada");\nacct.deposit(30);\nassert!(acct.withdraw(31).is_err());\nassert_eq!(acct.balance(), 30);' },
+  ],
+
+  solution: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: &str) -> BankAccount {
+        BankAccount {
+            owner: owner.to_string(),
+            balance: 0,
+        }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> Result<(), String> {
+        if amount > self.balance {
+            return Err(format!(
+                "insufficient funds: balance is {}, tried to withdraw {}",
+                self.balance, amount
+            ));
+        }
+        self.balance -= amount;
+        Ok(())
+    }
+
+    fn balance(&self) -> i64 {
+        self.balance
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Rust</th></tr>
+  <tr><td>Data + behavior</td><td><code>class</code> (.h declaration, .cpp definitions)</td><td><code>struct</code> + <code>impl</code>, one place</td></tr>
+  <tr><td>Constructor</td><td>special member, initializer lists, ordering rules</td><td><code>fn new(...) -&gt; Self</code> — a plain function, by convention</td></tr>
+  <tr><td>Static member function</td><td><code>static BankAccount make();</code></td><td>associated function (no <code>self</code>), called <code>BankAccount::new()</code></td></tr>
+  <tr><td>Const method</td><td><code>long balance() const;</code></td><td><code>fn balance(&amp;self) -&gt; i64</code></td></tr>
+  <tr><td>Non-const method</td><td><code>void deposit(long);</code></td><td><code>fn deposit(&amp;mut self, amount: i64)</code></td></tr>
+  <tr><td>Member access inside</td><td><code>balance_</code> (implicit <code>this</code>)</td><td><code>self.balance</code> (always explicit)</td></tr>
+  <tr><td>Construct an instance</td><td><code>BankAccount acct("Ada");</code></td><td><code>let acct = BankAccount::new("Ada");</code></td></tr>
+</table>
+<p>The <code>const</code> story has real teeth here: <code>let acct = ...</code>
+gives you an object on which only <code>&amp;self</code> methods compile —
+<code>deposit</code> requires the binding itself to be <code>let mut</code>.
+Mutability is a property of the whole object as seen through its binding, not
+something a stray <code>mutable</code> field or <code>const_cast</code> can
+tunnel through. And note <code>withdraw</code>'s return type: where the C++
+version's <code>bool</code> is silently droppable, a <code>Result</code> makes
+the unhappy path part of the method's contract.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Structs → Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Structs → Classes",
+
+  intro: `
+<p>A Go "object" is really three separate conventions holding hands: a
+<code>struct</code> for the data, receiver methods
+(<code>func (a *BankAccount) Deposit(...)</code>) declared alongside it, and a
+<code>NewBankAccount(...)</code> constructor function you write by hand and
+hope callers use. A TypeScript <code>class</code> folds all three into one
+declaration: fields, methods, and a <em>real</em> constructor the language
+guarantees runs on every <code>new</code>.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>type BankAccount struct { ... }</code> + receiver funcs + <code>NewBankAccount</code></td><td>One <code>class BankAccount { ... }</code></td></tr>
+  <tr><td><code>func (a *BankAccount) Deposit(x float64)</code></td><td><code>deposit(x: number)</code> — <code>this</code> instead of a receiver</td></tr>
+  <tr><td><code>Deposit</code> vs <code>deposit</code> (capitalization = visibility)</td><td>Explicit <code>public</code> (the default) / <code>private</code> keywords</td></tr>
+  <tr><td>Nothing stops <code>BankAccount{balance: -50}</code> literals</td><td>The constructor is the only door in</td></tr>
+  <tr><td>Pointer vs value receiver decision, every time</td><td>No choice to make — objects are always references</td></tr>
+</table>
+<p>Two Go decisions disappear entirely. Capitalization-as-visibility becomes
+explicit keywords — <code>private balance</code> means <em>no one</em> outside
+the class can touch it, a stronger guarantee than Go's package-private
+lowercase, and <code>readonly</code> adds "assignable once, in the
+constructor" (which Go can't express at all). And the pointer-versus-value
+receiver question is gone: objects are always references, so a method mutating
+<code>this.balance</code> always mutates <em>the</em> account — there is no
+accidental value-receiver copy that silently discards your deposit.
+<em>Parameter properties</em> shrink the boilerplate further:
+<code>constructor(private balance: number)</code> declares the field, takes
+the argument, and assigns it, in one stroke.</p>`,
+
+  go: `type BankAccount struct {
+	Owner   string
+	ID      string
+	balance float64 // lowercase: only this package sees it
+}
+
+// The constructor is a naming convention, not a guarantee:
+func NewBankAccount(owner, id string, initial float64) *BankAccount {
+	return &BankAccount{Owner: owner, ID: id, balance: initial}
+}
+
+func (a *BankAccount) Deposit(amount float64) { // *pointer* receiver — or the
+	a.balance += amount                          // deposit mutates a copy!
+}
+
+func (a *BankAccount) Withdraw(amount float64) error {
+	if amount > a.balance {
+		return errors.New("insufficient funds")
+	}
+	a.balance -= amount
+	return nil
+}
+
+func (a *BankAccount) Balance() float64 { return a.balance }`,
+
+  task: `
+<p>Collapse struct + receivers + <code>NewBankAccount</code> into one class:</p>
+<ol>
+  <li>Declare <code>class BankAccount</code> whose constructor takes
+      <code>owner</code>, <code>id</code>, and an initial balance — use
+      parameter properties: <code>readonly owner: string</code>,
+      <code>readonly id: string</code>, <code>private balance: number</code>.
+      That one signature replaces the struct fields, the
+      <code>NewBankAccount</code> body, <em>and</em> the assignments.</li>
+  <li>Add <code>deposit(amount: number): void</code> — add to the private
+      balance via <code>this</code> (no receiver, no pointer decision).</li>
+  <li>Add <code>withdraw(amount: number): void</code> — on overdraft,
+      <code>throw new Error("insufficient funds")</code>. Where Go returns an
+      <code>error</code> value, TypeScript throws; the caller uses
+      <code>try/catch</code> instead of <code>if err != nil</code>.</li>
+  <li>Add <code>getBalance(): number</code>. From outside,
+      <code>account.balance</code> is a compile error — that is
+      <code>private</code> doing lowercase's job, but enforced beyond the
+      package boundary.</li>
+</ol>`,
+
+  starter: `class BankAccount {
+  // 1. TODO: turn these into parameter properties —
+  //    readonly owner, readonly id, private balance —
+  //    and delete the manual field/assignment boilerplate.
+  constructor(owner: string, id: string, balance: number) {
+  }
+
+  // 2. TODO: add amount to the balance (this.balance, no receiver)
+  deposit(amount: number): void {
+  }
+
+  // 3. TODO: throw new Error("insufficient funds") on overdraft,
+  //    otherwise subtract. (Go returns error; TS throws.)
+  withdraw(amount: number): void {
+  }
+
+  // 4. TODO: return the private balance
+  getBalance(): number {
+    return 0;
+  }
+}
+`,
+
+  exportNames: ["BankAccount"],
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Declare class BankAccount — struct, receivers, and constructor in one place" },
+    { pattern: /private/, message: "Mark balance private — the explicit keyword that replaces lowercase-is-hidden" },
+    { pattern: /readonly/, message: "Mark owner and id readonly — set once in the constructor, immutable after" },
+    { pattern: /throw\s+new\s+Error/, message: "withdraw must throw new Error(...) on overdraft — TS throws where Go returns error" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada", "acct-1", 100).getBalance() is 100', run: (x) => expectEqual(new x.BankAccount("Ada", "acct-1", 100).getBalance(), 100) },
+    { name: "deposit(75) then deposit(25) brings 0 to 100 — no value-receiver copy ate it", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 0); a.deposit(75); a.deposit(25); expectEqual(a.getBalance(), 100); } },
+    { name: "withdraw(40) from 100 leaves 60", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 100); a.withdraw(40); expectEqual(a.getBalance(), 60); } },
+    { name: "withdraw(50) from 10 throws — the error you can't ignore", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 10); expectThrows(() => a.withdraw(50)); } },
+    { name: "a failed withdraw leaves the balance untouched", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 10); try { a.withdraw(50); } catch (e) {} expectEqual(a.getBalance(), 10); } },
+    { name: "owner and id are readable from outside", run: (x) => { const a = new x.BankAccount("Ada", "acct-1", 5); expectEqual(a.owner, "Ada"); expectEqual(a.id, "acct-1"); } },
+  ],
+
+  solution: `class BankAccount {
+  // Parameter properties: declares the fields, accepts the args,
+  // and assigns them — NewBankAccount in one line.
+  constructor(
+    readonly owner: string,
+    readonly id: string,
+    private balance: number,
+  ) {}
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  withdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error("insufficient funds");
+    }
+    this.balance -= amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Data + behavior</td><td>Struct + separate receiver funcs</td><td>One <code>class</code> body</td></tr>
+  <tr><td>Constructor</td><td><code>func NewFoo(...) *Foo</code> — convention only</td><td><code>constructor(...)</code> — guaranteed on every <code>new</code></td></tr>
+  <tr><td>Method</td><td><code>func (a *Foo) Bar()</code>, then <code>a.balance</code></td><td><code>bar()</code>, then <code>this.balance</code></td></tr>
+  <tr><td>Visibility</td><td><code>Deposit</code> exported / <code>deposit</code> package-private</td><td><code>public</code> (default) / <code>private</code>, per member</td></tr>
+  <tr><td>Set-once field</td><td>No language support</td><td><code>readonly owner: string</code></td></tr>
+  <tr><td>Field boilerplate</td><td>Struct fields + <code>NewFoo</code> assignments</td><td><code>constructor(private balance: number)</code> — all at once</td></tr>
+  <tr><td>Receiver kind</td><td>Pointer vs value, chosen per method</td><td>No choice — objects are always references</td></tr>
+  <tr><td>Failure</td><td><code>return err</code>, checked with <code>if err != nil</code></td><td><code>throw new Error(...)</code>, caught with <code>try/catch</code></td></tr>
+</table>
+<p>The mental model shift: in Go, <code>NewBankAccount</code> is a social
+contract — any package peer can still build a raw
+<code>BankAccount{}</code> literal with a zero (or nonsense) balance. A TS
+class makes the constructor the only way to obtain an instance, so invariants
+like "balance was set deliberately" actually hold. And because
+<code>private</code>/<code>readonly</code> are per-<em>member</em> rather than
+per-package, you can export the type while still sealing its internals —
+something Go's capitalization scheme can't split apart.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

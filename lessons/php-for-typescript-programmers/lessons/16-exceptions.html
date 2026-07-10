@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p><code>try</code>/<code>catch</code>/<code>finally</code> works exactly the
+way your TypeScript fingers expect — the difference is what you're catching.
+JavaScript lets you <code>throw</code> anything (a string, a number, an
+<code>Error</code>), so a TS <code>catch (e)</code> gets <code>unknown</code>
+and you play <code>instanceof</code> detective. PHP throws only objects
+implementing <code>Throwable</code>, and the catch clause itself does the type
+check: <code>catch (InvalidArgumentException $e)</code> catches that class and
+its subclasses, and lets everything else fly past.</p>
+<table>
+  <tr><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td><code>throw new Error("boom");</code></td><td><code>throw new Exception("boom");</code></td></tr>
+  <tr><td><code>catch (e) { if (e instanceof X) … }</code></td><td><code>catch (X $e) { … }</code> (typed clause)</td></tr>
+  <tr><td>one catch per try</td><td>stack them, or <code>catch (A | B $e)</code></td></tr>
+  <tr><td><code>class MyError extends Error {}</code></td><td><code>class MyError extends Exception {}</code></td></tr>
+  <tr><td><code>e.message</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+</table>
+<p>The hierarchy has two branches under <code>Throwable</code>:
+<code>Exception</code> is for <em>your</em> failures (extend it, throw it,
+catch it), while <code>Error</code> is the engine's lane — <code>TypeError</code>,
+<code>DivisionByZeroError</code>, and friends. Catch <code>Exception</code> in
+everyday code; catching <code>Error</code> is rare and deliberate. The standard
+library ships useful ready-mades like <code>InvalidArgumentException</code> and
+<code>RuntimeException</code>, and since PHP 8, <code>throw</code> is an
+<em>expression</em>, so it slots into <code>??</code> and arrow functions:
+<code>$id = $row['id'] ?? throw new RuntimeException("no id");</code></p>`,
+
+  typescript: `class InvalidAgeError extends Error {}
+
+function parseAge(s: string): number {
+  const t = s.trim();
+  if (!/^\\d+$/.test(t)) {
+    throw new InvalidAgeError(\`not a valid age: \${t}\`);
+  }
+  return parseInt(t, 10);
+}
+
+function safeParseAge(s: string, fallback: number): number {
+  try {
+    return parseAge(s);
+  } catch (e) {
+    // TS: catch is untyped; you check instanceof by hand.
+    if (e instanceof InvalidAgeError) return fallback;
+    throw e;
+  }
+}`,
+
+  task: `
+<p>Port the age parser, letting PHP's typed catch clauses do the
+<code>instanceof</code> work:</p>
+<ol>
+  <li>Write <code>parse_age(string $s): int</code>. Trim the input; if
+      <code>ctype_digit(trim($s))</code> is false, <code>throw new
+      InvalidArgumentException(...)</code> (a built-in <code>Exception</code>
+      subclass — no custom class needed). Otherwise cast the trimmed string
+      with <code>(int)</code> and return it.</li>
+  <li>Write <code>safe_parse_age(string $s, int $default): int</code> that
+      calls <code>parse_age($s)</code> inside <code>try { ... }</code> and uses
+      <code>catch (InvalidArgumentException $e)</code> to return
+      <code>$default</code> instead. Note there's no <code>instanceof</code>
+      check in the body — the catch clause <em>is</em> the check.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. parse_age: throw InvalidArgumentException unless ctype_digit(trim($s)).
+//    TS: throw new InvalidAgeError(...)  ->  PHP: throw new InvalidArgumentException(...)
+function parse_age(string $s): int {
+    throw new Exception("TODO: implement parse_age");
+}
+
+// 2. safe_parse_age: try { ... } catch (InvalidArgumentException $e) { ... }
+//    The catch clause replaces TS's manual instanceof check.
+function safe_parse_age(string $s, int $default): int {
+    throw new Exception("TODO: implement safe_parse_age");
+}
+`,
+
+  requirements: [
+    { pattern: /InvalidArgumentException/, message: "Throw and catch InvalidArgumentException, the built-in Exception subclass" },
+    { pattern: /try\s*\{/, message: "Use a try block in safe_parse_age" },
+    { pattern: /catch\s*\(/, message: "Use a typed catch clause" },
+    { pattern: /throw\s+new/, message: "Throw a new exception object on bad input" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns int 42',
+      code: 'expect_eq(parse_age("42"), 42);' },
+    { name: 'parse_age(" 7 ") trims whitespace and returns 7',
+      code: 'expect_eq(parse_age(" 7 "), 7);' },
+    { name: 'parse_age("abc") throws InvalidArgumentException',
+      code: 'try { parse_age("abc"); throw new Exception("did not throw"); } catch (InvalidArgumentException $e) {}' },
+    { name: 'safe_parse_age("19", 0) returns 19',
+      code: 'expect_eq(safe_parse_age("19", 0), 19);' },
+    { name: 'safe_parse_age("abc", 18) falls back to 18',
+      code: 'expect_eq(safe_parse_age("abc", 18), 18);' },
+    { name: 'safe_parse_age("", 21) falls back to 21',
+      code: 'expect_eq(safe_parse_age("", 21), 21);' },
+  ],
+
+  solution: `<?php
+
+function parse_age(string $s): int {
+    $t = trim($s);
+    if (!ctype_digit($t)) {
+        throw new InvalidArgumentException("not a valid age: $s");
+    }
+    return (int) $t;
+}
+
+function safe_parse_age(string $s, int $default): int {
+    try {
+        return parse_age($s);
+    } catch (InvalidArgumentException $e) {
+        return $default;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>PHP</th></tr>
+  <tr><td>Throw</td><td><code>throw new Error("x")</code> (or anything)</td><td><code>throw new Exception("x")</code> (Throwable only)</td></tr>
+  <tr><td>Catch one type</td><td><code>catch (e) { if (e instanceof X) … }</code></td><td><code>catch (X $e) { … }</code></td></tr>
+  <tr><td>Catch several</td><td>manual instanceof chain</td><td><code>catch (A | B $e)</code>, or stacked catch blocks</td></tr>
+  <tr><td>Cleanup</td><td><code>finally { … }</code></td><td><code>finally { … }</code> (identical)</td></tr>
+  <tr><td>Custom type</td><td><code>class E extends Error {}</code></td><td><code>class E extends Exception {}</code></td></tr>
+  <tr><td>Message</td><td><code>e.message</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+  <tr><td>Throw as expression</td><td>no (statement only)</td><td>yes (PHP 8): <code>$x ?? throw new E()</code></td></tr>
+</table>
+<p>The two-branch hierarchy is the piece with no TS equivalent:
+<code>Throwable</code> splits into <code>Exception</code> (yours) and
+<code>Error</code> (the engine's — <code>TypeError</code>,
+<code>DivisionByZeroError</code>). A bare <code>catch (Exception $e)</code>
+therefore does <em>not</em> swallow engine errors, which is usually exactly
+what you want; <code>catch (Throwable $e)</code> is the true catch-all,
+reserved for top-level handlers.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

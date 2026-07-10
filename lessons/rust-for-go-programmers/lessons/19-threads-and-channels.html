@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Threads & Channels</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Threads & Channels",
+
+  intro: `
+<p>Home turf. <code>go func() { ... }()</code> becomes
+<code>thread::spawn(move || { ... })</code> — a real OS thread, not a
+goroutine. No scheduler multiplexing millions of green threads, but also no
+GOMAXPROCS to tune and no runtime to carry; spawn returns a
+<code>JoinHandle</code>, and <code>.join()</code> replaces the
+<code>WaitGroup</code> ceremony for the simple cases. The
+<code>move</code> keyword is new but the idea isn't: it hands ownership of
+captured variables to the thread — the fix for Go's classic
+"loop variable captured by goroutine" bug, made mandatory.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>go func() { ... }()</code></td><td><code>let h = thread::spawn(move || { ... });</code></td></tr>
+  <tr><td><code>wg.Add(1)</code> … <code>wg.Wait()</code></td><td><code>h.join().unwrap()</code></td></tr>
+  <tr><td><code>ch := make(chan int)</code></td><td><code>let (tx, rx) = mpsc::channel();</code></td></tr>
+  <tr><td><code>ch &lt;- v</code> / <code>v := &lt;-ch</code></td><td><code>tx.send(v).unwrap()</code> / <code>rx.recv().unwrap()</code></td></tr>
+  <tr><td><code>close(ch)</code>, by hand, exactly once</td><td>automatic — the channel closes when <code>tx</code> is dropped</td></tr>
+</table>
+<p>Channels are a straight translation: <code>mpsc::channel()</code>
+<em>is</em> <code>make(chan T)</code> — send on one end, receive on the
+other, same mental model. Two upgrades, though. Closing is automatic: when
+the sender is dropped, the receiver's loop ends — no
+<code>close(ch)</code>, no "send on closed channel" panic. And the bug
+Go's mantra warns about ("don't communicate by sharing memory") is an
+actual compile error here: try to mutate shared data from two threads and
+the borrow checker rejects the program. In Go, the race detector catches it
+at runtime <em>if</em> the race happens during a test run. In Rust, it
+never compiles.</p>`,
+
+  go: `func parallelSum(a, b []int) int {
+	ch := make(chan int)
+	go func() {
+		sum := 0
+		for _, v := range b {
+			sum += v
+		}
+		ch <- sum
+	}()
+	sumA := 0
+	for _, v := range a {
+		sumA += v
+	}
+	return sumA + <-ch
+}
+
+func channelDouble(vals []int) []int {
+	ch := make(chan int)
+	go func() {
+		for _, v := range vals {
+			ch <- v * 2
+		}
+	}()
+	out := make([]int, 0, len(vals))
+	for range vals {
+		out = append(out, <-ch)
+	}
+	return out
+}`,
+
+  task: `
+<p>Port both functions — spawn, move, join, and channel:</p>
+<ol>
+  <li><code>parallel_sum</code> takes <code>a: Vec&lt;i32&gt;</code> and
+      <code>b: Vec&lt;i32&gt;</code> and returns <code>i32</code>. Spawn a
+      thread with <code>thread::spawn(move || ...)</code> that sums
+      <code>b</code> (<code>b.iter().sum::&lt;i32&gt;()</code> — a closure's
+      last expression is its return value), sum <code>a</code> on the
+      current thread, then add the spawned thread's result via
+      <code>handle.join().unwrap()</code>.</li>
+  <li><code>channel_double</code> takes <code>vals: Vec&lt;i32&gt;</code>
+      and returns <code>Vec&lt;i32&gt;</code>. Grab
+      <code>vals.len()</code> <em>before</em> the <code>move</code> closure
+      takes ownership. Create <code>mpsc::channel()</code>, spawn a thread
+      that sends each value doubled with <code>tx.send(v * 2)</code>, then
+      receive exactly that many values with <code>rx.recv().unwrap()</code>,
+      pushing each into the result — one sender, in-order delivery, so the
+      output order matches the input.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `use std::thread;
+use std::sync::mpsc;
+
+// 1. parallel_sum: spawn a thread (move!) to sum b, sum a here,
+//    then handle.join().unwrap() and add the two.
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    todo!()
+}
+
+// 2. channel_double: let n = vals.len(); let (tx, rx) = mpsc::channel();
+//    spawn a thread that tx.send(v * 2) for each v in vals,
+//    then rx.recv().unwrap() exactly n times into a Vec.
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /thread::spawn/, message: "Spawn a thread with thread::spawn" },
+    { pattern: /\.join\(\)/, message: "Wait for the spawned thread with .join()" },
+    { pattern: /mpsc/, message: "Use an mpsc channel to send values between threads" },
+  ],
+
+  tests: [
+    { name: "parallel_sum(vec![1, 2, 3], vec![10, 20, 30]) returns 66",
+      code: "assert_eq!(parallel_sum(vec![1, 2, 3], vec![10, 20, 30]), 66);" },
+    { name: "parallel_sum(vec![], vec![5, 5]) returns 10",
+      code: "assert_eq!(parallel_sum(vec![], vec![5, 5]), 10);" },
+    { name: "parallel_sum(vec![-4, 4], vec![]) returns 0",
+      code: "assert_eq!(parallel_sum(vec![-4, 4], vec![]), 0);" },
+    { name: "channel_double(vec![1, 2, 3]) returns [2, 4, 6] in order",
+      code: "assert_eq!(channel_double(vec![1, 2, 3]), vec![2, 4, 6]);" },
+    { name: "channel_double(vec![0, -5, 100]) returns [0, -10, 200]",
+      code: "assert_eq!(channel_double(vec![0, -5, 100]), vec![0, -10, 200]);" },
+    { name: "channel_double(vec![]) returns []",
+      code: "assert_eq!(channel_double(vec![]), Vec::<i32>::new());" },
+  ],
+
+  solution: `use std::thread;
+use std::sync::mpsc;
+
+fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    let handle = thread::spawn(move || b.iter().sum::<i32>());
+    let sum_a: i32 = a.iter().sum();
+    sum_a + handle.join().unwrap()
+}
+
+fn channel_double(vals: Vec<i32>) -> Vec<i32> {
+    let n = vals.len();
+    let (tx, rx) = mpsc::channel();
+    let handle = thread::spawn(move || {
+        for v in vals {
+            tx.send(v * 2).unwrap();
+        }
+    });
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        out.push(rx.recv().unwrap());
+    }
+    handle.join().unwrap();
+    out
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Start concurrent work</td><td><code>go func() { ... }()</code> (green thread)</td><td><code>thread::spawn(move || ...)</code> (OS thread)</td></tr>
+  <tr><td>Wait for it</td><td><code>sync.WaitGroup</code></td><td><code>handle.join().unwrap()</code></td></tr>
+  <tr><td>Get a result back</td><td>write to a channel or shared var</td><td><code>join()</code> returns the closure's value directly</td></tr>
+  <tr><td>Channel</td><td><code>make(chan int)</code></td><td><code>mpsc::channel()</code> — a <code>(tx, rx)</code> pair</td></tr>
+  <tr><td>Close</td><td><code>close(ch)</code>, manually</td><td>automatic when the last <code>tx</code> is dropped</td></tr>
+  <tr><td>Data race</td><td>compiles; <code>-race</code> might catch it</td><td>does not compile</td></tr>
+</table>
+<p>Notice <code>join()</code> returned the closure's value — Go needs a
+channel or a captured variable for that; Rust threads have return values
+built in. The trade beneath it all: goroutines are cheap enough to spawn
+per-request by the hundred thousand, while OS threads want to be counted
+in dozens (real Rust services reach for a thread pool or async for Go-style
+fan-out). What you get back is the guarantee Go can only ask you to
+uphold: <code>move</code> and the borrow checker make "which goroutine owns
+this slice?" a question with a compiler-checked answer.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

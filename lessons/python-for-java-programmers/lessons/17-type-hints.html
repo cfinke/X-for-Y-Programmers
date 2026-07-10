@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Type Hints</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Type Hints",
+
+  intro: `
+<p>Coming from Java, you are used to types that the compiler
+<em>enforces</em>: pass a <code>String</code> where an <code>int</code> is
+expected and the build fails. Python has type hints too, with a syntax that
+will feel familiar — but the crucial difference is that the interpreter does
+<strong>not</strong> enforce them. Hints are annotations read by editors,
+linters, and tools like <code>mypy</code>; at runtime the code runs exactly as
+it would without them. A hint that lies does not raise — it just runs.</p>
+<table>
+  <tr><th>Java</th><th>Python</th></tr>
+  <tr><td><code>String name</code></td><td><code>name: str</code></td></tr>
+  <tr><td><code>int f()</code></td><td><code>def f() -&gt; int:</code></td></tr>
+  <tr><td><code>Integer x</code></td><td><code>x: int | None</code></td></tr>
+  <tr><td><code>@Nullable T</code></td><td><code>Optional[T]</code></td></tr>
+  <tr><td><code>List&lt;Integer&gt;</code></td><td><code>list[int]</code></td></tr>
+  <tr><td><code>Map&lt;String, Integer&gt;</code></td><td><code>dict[str, int]</code></td></tr>
+</table>
+<p>Annotate a parameter with <code>name: type</code> and a return with
+<code>-&gt; type</code> after the parameter list. Collections use the built-in
+generics <code>list[int]</code> and <code>dict[str, int]</code> (lowercase, since
+Python 3.9). For "maybe missing" values, modern Python writes <code>int | None</code>
+similar to how Java uses the boxed <code>Integer</code> (which can be
+<code>null</code>) instead of the primitive <code>int</code>; the older
+<code>Optional[int]</code> from the <code>typing</code> module means the exact
+same thing — note this is unrelated to Java's <code>Optional&lt;T&gt;</code>
+wrapper class, which is a real object you must call <code>.get()</code> on.
+Because none of this is enforced, your <em>behavior</em> is what matters — the
+tests below call your functions and check results, not annotations.</p>`,
+
+  java: `static String greet(String name) {
+  return "Hello, " + name;
+}
+
+static int total(List<Integer> prices) {
+  return prices.stream().mapToInt(Integer::intValue).sum();
+}
+
+static String findUser(int id) {
+  return id == 1 ? "Ada" : null;
+}`,
+
+  task: `
+<p>Write typed Python versions of each function. Annotate every parameter and
+return type — remember the hints do not change behavior, so the tests only
+check what the functions return.</p>
+<ol>
+  <li><code>greet(name: str) -&gt; str</code> returns <code>"Hello, &lt;name&gt;"</code>.</li>
+  <li><code>total(prices: list[int]) -&gt; int</code> returns the sum of the list.</li>
+  <li><code>find_user(id: int) -&gt; str | None</code> returns <code>"Ada"</code> when
+      <code>id</code> is <code>1</code>, otherwise <code>None</code>.</li>
+  <li><code>counts(words: list[str]) -&gt; dict[str, int]</code> returns a dict
+      mapping each word to how many times it appears.</li>
+</ol>`,
+
+  starter: `# 1. greet(name: str) -> str
+def greet(name):
+    return ""  # TODO
+
+
+# 2. total(prices: list[int]) -> int
+def total(prices):
+    return 0  # TODO
+
+
+# 3. find_user(id: int) -> str | None
+def find_user(id):
+    return None  # TODO
+
+
+# 4. counts(words: list[str]) -> dict[str, int]
+def counts(words):
+    return {}  # TODO
+`,
+
+  requirements: [
+    { pattern: /def\s+greet\s*\(\s*name\s*:\s*str\s*\)\s*->\s*str/, message: "Annotate greet's parameter and return type (name: str) -> str" },
+    { pattern: /def\s+find_user\s*\([^)]*\)\s*->\s*(str\s*\|\s*None|Optional\s*\[\s*str\s*\])/, message: "find_user should return str | None (or Optional[str])" },
+    { pattern: /->\s*dict\s*\[\s*str\s*,\s*int\s*\]/, message: "Annotate counts' return as dict[str, int]" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") is "Hello, Ada"', code: "    expect_eq(greet(\"Ada\"), \"Hello, Ada\")" },
+    { name: "total([1, 2, 3]) is 6", code: "    expect_eq(total([1, 2, 3]), 6)" },
+    { name: "total([]) is 0", code: "    expect_eq(total([]), 0)" },
+    { name: 'find_user(1) is "Ada"', code: "    expect_eq(find_user(1), \"Ada\")" },
+    { name: "find_user(2) is None", code: "    expect_true(find_user(2) is None)" },
+    { name: "counts groups repeated words", code: "    expect_eq(counts([\"a\", \"b\", \"a\"]), {\"a\": 2, \"b\": 1})" },
+    { name: "counts([]) is an empty dict", code: "    expect_eq(counts([]), {})" },
+  ],
+
+  solution: `def greet(name: str) -> str:
+    return f"Hello, {name}"
+
+
+def total(prices: list[int]) -> int:
+    return sum(prices)
+
+
+def find_user(id: int) -> str | None:
+    return "Ada" if id == 1 else None
+
+
+def counts(words: list[str]) -> dict[str, int]:
+    result: dict[str, int] = {}
+    for word in words:
+        result[word] = result.get(word, 0) + 1
+    return result
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Python</th></tr>
+  <tr><td>Param annotation</td><td><code>(String name)</code></td><td><code>(name: str)</code></td></tr>
+  <tr><td>Return annotation</td><td><code>int total(...)</code></td><td><code>) -&gt; int:</code></td></tr>
+  <tr><td>Array / List</td><td><code>List&lt;Integer&gt;</code></td><td><code>list[int]</code></td></tr>
+  <tr><td>Map / Dict</td><td><code>Map&lt;String, Integer&gt;</code></td><td><code>dict[str, int]</code></td></tr>
+  <tr><td>Nullable</td><td><code>Integer</code> (boxed, can be null)</td><td><code>T | None</code> or <code>Optional[T]</code></td></tr>
+  <tr><td>Enforcement</td><td>compiler (build fails)</td><td>none at runtime (tools only)</td></tr>
+</table>
+<p>The biggest mental shift: a wrong hint is not an error. <code>greet(42)</code>
+runs fine — <code>f"Hello, {42}"</code> is <code>"Hello, 42"</code> — even though
+you annotated <code>name: str</code>. To actually catch mismatches you run a
+static checker such as <code>mypy</code> or <code>pyright</code> as a separate
+step, the way <code>javac</code> checks your Java at compile time — except
+here it is optional and disconnected from actually running the code. Also
+note the lowercase built-in generics <code>list[int]</code> / <code>dict[str, int]</code>
+replaced the old capital-L <code>List</code>/<code>Dict</code> from
+<code>typing</code>; and <code>Optional[int]</code> is exactly <code>int | None</code>,
+not "optional" in the sense of a default value, and not the same thing as
+Java's <code>Optional&lt;T&gt;</code> wrapper — it just permits <code>None</code>
+to be assigned directly.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>PHP and C# both grow class hierarchies with <code>extends</code>/<code>:</code>,
+constructors that chain to a parent, and <code>abstract</code> members. The big
+difference is that C# makes overriding <em>explicit and opt-in</em>: a base method
+is only overridable if it is marked <code>virtual</code> (or <code>abstract</code>),
+and the subclass must say <code>override</code>. PHP methods are overridable by
+default (unless marked <code>final</code>), so there is no silent shadowing to worry
+about in C# the way there can be in PHP.</p>
+<table>
+  <tr><th>PHP</th><th>C#</th></tr>
+  <tr><td><code>class Dog extends Animal {}</code></td><td><code>class Dog : Animal {}</code></td></tr>
+  <tr><td><code>parent::__construct($name);</code></td><td><code>: base(name)</code> (constructor)</td></tr>
+  <tr><td><code>abstract class Shape {}</code></td><td><code>abstract class Shape {}</code></td></tr>
+  <tr><td><code>abstract public function area(): float;</code></td><td><code>public abstract double Area();</code></td></tr>
+  <tr><td>override (implicit, any non-<code>final</code> method)</td><td><code>public override double Area()</code></td></tr>
+  <tr><td><code>final class</code> / <code>final function</code></td><td><code>sealed class</code> / <code>sealed override</code></td></tr>
+</table>
+<p>Three things to internalize. First, the base-constructor call is a
+<code>: base(...)</code> clause after the constructor signature, not a
+<code>parent::__construct(...)</code> statement in the body. Second, to override you
+need <code>virtual</code>/<code>abstract</code> on the base and <code>override</code>
+on the child — omit either and the compiler complains, whereas PHP just lets you
+override any non-<code>final</code> method without declaring intent. Third,
+<code>sealed</code> stops further subclassing (or seals a single overridden method),
+the opposite of <code>abstract</code> — the same role PHP's <code>final</code> plays.
+Polymorphism works the same as PHP: a <code>Shape</code> reference to a
+<code>Circle</code> calls <code>Circle</code>'s override.</p>`,
+
+  php: `abstract class Shape {
+    public function __construct(public readonly string $name) {}
+
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "{$this->name} has area {$this->area()}";
+    }
+}
+
+class Rectangle extends Shape {
+    public function __construct(public float $w, public float $h) {
+        parent::__construct("Rectangle");
+    }
+
+    public function area(): float {
+        return $this->w * $this->h;
+    }
+}`,
+
+  task: `
+<p>Build a small shape hierarchy that shows off inheritance, abstract members,
+constructor chaining, and polymorphism.</p>
+<ol>
+  <li>Declare an <code>abstract class Shape</code> with a read-only
+      <code>string Name</code> property set through a <code>protected</code>
+      constructor <code>Shape(string name)</code>.</li>
+  <li>Give <code>Shape</code> an <code>abstract double Area()</code> (no body) and a
+      <code>virtual string Describe()</code> that returns
+      <code>$"{Name} has area {Area()}"</code>.</li>
+  <li><code>Rectangle : Shape</code> — constructor
+      <code>Rectangle(double width, double height) : base("Rectangle")</code>,
+      overriding <code>Area()</code> to return <code>Width * Height</code>.</li>
+  <li><code>Square : Shape</code> — mark it <code>sealed</code>, chain
+      <code>: base("Square")</code>, <code>override Area()</code> to return
+      <code>Side * Side</code>, and <code>override Describe()</code> to return
+      <code>$"Square with side {Side}"</code>.</li>
+</ol>`,
+
+  starter: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return ""; // TODO: "{Name} has area {Area()}"
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+
+  public override string Describe() {
+    return ""; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+double\s+Area/, message: "Declare Area() as an abstract method on Shape" },
+    { pattern: /override\s+double\s+Area/, message: "Override Area() with the override keyword in each subclass" },
+    { pattern: /:\s*base\(/, message: "Chain to the base constructor with : base(...)" },
+  ],
+
+  tests: [
+    { name: "Rectangle(3, 4).Area() is 12", code: "      expect_eq(new Rectangle(3, 4).Area(), 12.0);" },
+    { name: "Square(5).Area() is 25", code: "      expect_eq(new Square(5).Area(), 25.0);" },
+    { name: "Name set via base(...)", code: "      expect_eq(new Rectangle(1, 1).Name, \"Rectangle\");" },
+    { name: "virtual Describe() runs on a base reference", code: "      Shape s = new Rectangle(3, 4);\n      expect_eq(s.Describe(), \"Rectangle has area 12\");" },
+    { name: "Square overrides Describe()", code: "      Shape sq = new Square(5);\n      expect_eq(sq.Describe(), \"Square with side 5\");" },
+    { name: "polymorphism through a base array", code: "      Shape[] shapes = { new Rectangle(2, 3), new Square(4) };\n      double total = 0;\n      foreach (var shape in shapes) total += shape.Area();\n      expect_eq(total, 22.0);" },
+  ],
+
+  solution: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return $"{Name} has area {Area()}";
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return Width * Height;
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return Side * Side;
+  }
+
+  public override string Describe() {
+    return $"Square with side {Side}";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+  <tr><td>Extend a class</td><td><code>class D extends B</code></td><td><code>class D : B</code></td></tr>
+  <tr><td>Call base ctor</td><td><code>parent::__construct(x)</code></td><td><code>: base(x)</code></td></tr>
+  <tr><td>Abstract method</td><td><code>abstract public function f(): T;</code></td><td><code>public abstract T F();</code></td></tr>
+  <tr><td>Overridable method</td><td>every method (unless <code>final</code>)</td><td>only <code>virtual</code>/<code>abstract</code></td></tr>
+  <tr><td>Override</td><td>implicit</td><td><code>override</code> keyword required</td></tr>
+  <tr><td>Block subclassing</td><td><code>final class</code></td><td><code>sealed class</code></td></tr>
+</table>
+<p>C# is stricter than PHP here on purpose. You cannot accidentally override
+a method: the base must opt in with <code>virtual</code> (or <code>abstract</code>),
+and the child must confirm with <code>override</code>. To reach the parent's version
+from inside an override, call <code>base.Describe()</code> — the analog of
+<code>parent::describe()</code>. An <code>abstract</code> class cannot be instantiated
+with <code>new</code>; it exists only to be inherited, just like PHP. <code>sealed</code>
+is the inverse — it slams the door on further subclassing, which lets the runtime
+devirtualize calls and documents that the type is a leaf, much like marking a PHP class
+<code>final</code>. You can also seal a single method with <code>sealed override</code>
+to stop a deeper subclass from re-overriding it — PHP achieves the same thing by marking
+that one method <code>final</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

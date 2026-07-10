@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>Ruby's exception machinery maps onto C#'s almost keyword-for-keyword:
+<code>try</code> becomes <code>begin</code>, <code>catch</code> becomes
+<code>rescue</code>, <code>finally</code> becomes <code>ensure</code>. Typed
+rescues have the same shape as your typed catches —
+<code>rescue ArgumentError =&gt; e</code> is
+<code>catch (ArgumentException e)</code> — and raising takes the class and
+message side by side: <code>raise ArgumentError, "msg"</code> instead of
+<code>throw new ArgumentException("msg")</code>. A custom exception is one
+line: <code>class ParseError &lt; StandardError; end</code>. No constructor
+boilerplate forwarding <code>message</code> to <code>base</code>.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>try { ... }</code></td><td><code>begin ... end</code></td></tr>
+  <tr><td><code>catch (ArgumentException e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td><code>finally { ... }</code></td><td><code>ensure</code></td></tr>
+  <tr><td><code>throw new ArgumentException("msg");</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+  <tr><td><code>class ParseException : Exception { ... }</code></td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+</table>
+<p>Two idioms have no C# equivalent. First, a whole method body can be a try
+block: write the happy path, end the body with <code>rescue</code>, and skip
+<code>begin</code> entirely — no extra nesting, no indentation pyramid.
+Second, a bare <code>rescue</code> catches <code>StandardError</code>, not
+<code>Exception</code> — Ruby's equivalent of catching
+<code>Exception</code> but <em>not</em> the process-is-doomed signals like
+out-of-memory, which live outside <code>StandardError</code>. The lazy
+default is actually the safe one.</p>`,
+
+  csharp: `int ParseAge(string input)
+{
+    if (!int.TryParse(input.Trim(), out var age))
+        throw new ArgumentException($"not a valid age: {input}");
+    return age;
+}
+
+class EmptyCartException : Exception
+{
+    public EmptyCartException(string message) : base(message) { }
+}
+
+try
+{
+    var age = ParseAge("abc");
+}
+catch (ArgumentException e)
+{
+    Console.WriteLine(e.Message);
+}
+finally
+{
+    Console.WriteLine("done");
+}`,
+
+  task: `
+<p>Port the error handling to Ruby:</p>
+<ol>
+  <li><code>parse_age(input)</code> — <code>raise ArgumentError, "..."</code>
+      unless <code>input.strip.match?(/\\A\\d+\\z/)</code> says the string is
+      all digits (<code>\\A</code> and <code>\\z</code> anchor the whole
+      string); otherwise return <code>input.to_i</code>.</li>
+  <li><code>safe_parse_age(input, default)</code> — call
+      <code>parse_age</code> and return the default on
+      <code>ArgumentError</code>, using a <strong>def-level rescue</strong>:
+      the method body ends with <code>rescue ArgumentError</code> — no
+      <code>begin</code>, no nesting.</li>
+  <li><code>EmptyCartError</code> — subclass <code>StandardError</code>
+      (already stubbed in the starter) — and <code>checkout(items)</code>,
+      which raises it when the cart is empty and returns
+      <code>items.sum</code> otherwise.</li>
+</ol>`,
+
+  starter: `# 1. parse_age: raise ArgumentError unless input.strip.match?(/\\A\\d+\\z/),
+#    otherwise input.to_i. (\\A and \\z anchor the WHOLE string, like ^$ + no tricks.)
+def parse_age(input)
+  raise NotImplementedError, "TODO: implement parse_age"
+end
+
+# 2. safe_parse_age: call parse_age; end the method body with
+#    "rescue ArgumentError" (def-level rescue, no begin) returning default.
+def safe_parse_age(input, default)
+  raise NotImplementedError, "TODO: implement safe_parse_age"
+end
+
+# 3. A custom exception is one line — the subclassing IS the definition.
+class EmptyCartError < StandardError; end
+
+def checkout(items)
+  raise NotImplementedError, "TODO: raise EmptyCartError if items.empty?, else items.sum"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+\w*Error/, message: "Use a typed rescue (rescue ArgumentError)" },
+    { pattern: /raise\s+/, message: "Raise an exception with raise" },
+    { pattern: /<\s*StandardError/, message: "EmptyCartError must subclass StandardError" },
+    { pattern: /match\?|to_i/, message: "Validate with match? and convert with to_i" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42',
+      code: '  expect_eq(parse_age("42"), 42)' },
+    { name: 'parse_age("  7  ") strips whitespace first',
+      code: '  expect_eq(parse_age("  7  "), 7)' },
+    { name: 'parse_age("abc") raises ArgumentError',
+      code: `  begin
+    parse_age("abc")
+    raise "did not raise"
+  rescue ArgumentError
+  end` },
+    { name: 'safe_parse_age falls back to the default on bad input',
+      code: `  expect_eq(safe_parse_age("abc", 18), 18)
+  expect_eq(safe_parse_age("42", 18), 42)` },
+    { name: "checkout([250, 1000, 5]) returns 1255",
+      code: "  expect_eq(checkout([250, 1000, 5]), 1255)" },
+    { name: "checkout([]) raises EmptyCartError",
+      code: `  begin
+    checkout([])
+    raise "did not raise"
+  rescue EmptyCartError
+  end` },
+  ],
+
+  solution: `def parse_age(input)
+  raise ArgumentError, "not a valid age: #{input.inspect}" unless input.strip.match?(/\\A\\d+\\z/)
+  input.to_i
+end
+
+def safe_parse_age(input, default)
+  parse_age(input)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError; end
+
+def checkout(items)
+  raise EmptyCartError, "the cart is empty" if items.empty?
+  items.sum
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Guarded block</td><td><code>try { ... }</code></td><td><code>begin ... end</code> (or the method body itself)</td></tr>
+  <tr><td>Typed handler</td><td><code>catch (ArgumentException e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td>Cleanup</td><td><code>finally</code></td><td><code>ensure</code></td></tr>
+  <tr><td>Throw</td><td><code>throw new ArgumentException("msg");</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+  <tr><td>Rethrow</td><td><code>throw;</code></td><td><code>raise</code> (bare, inside a rescue)</td></tr>
+  <tr><td>Custom exception</td><td>class + constructor forwarding to <code>base</code></td><td><code>class FooError &lt; StandardError; end</code></td></tr>
+  <tr><td>Catch-all</td><td><code>catch (Exception)</code> (catches too much)</td><td>bare <code>rescue</code> — <code>StandardError</code> only</td></tr>
+</table>
+<p>The def-level rescue is the habit worth stealing: any method whose whole
+body would be one try block just ends with <code>rescue</code> — the happy
+path stays at the left margin. And note where the hierarchies differ: Ruby's
+catch-all <code>rescue</code> deliberately excludes
+<code>SignalException</code>, <code>NoMemoryError</code> and friends, because
+they subclass <code>Exception</code> directly rather than
+<code>StandardError</code>. That's why your own errors should always subclass
+<code>StandardError</code> — so a caller's ordinary <code>rescue</code> can
+see them.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

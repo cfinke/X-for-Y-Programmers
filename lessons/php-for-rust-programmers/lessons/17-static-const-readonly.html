@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Static, Constants & readonly</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Static, Constants & readonly",
+
+  intro: `
+<p>Three Rust habits, relocated. First, constants:
+<code>const MAX: u32 = 10;</code> becomes a <em>class</em> constant,
+<code>const MAX = 10;</code>, read as <code>Config::MAX</code> — yes, with
+<code>::</code>, the same path separator you already use for
+<code>Config::new</code> and enum variants. Second, associated functions and
+statics: what you would hang on an <code>impl</code> block (or stash in a
+<code>static</code>) becomes <code>static</code> properties and methods on
+the class, written <code>Counter::increment()</code> from outside and
+<code>self::$count</code> from inside. And unlike Rust, where a mutable
+global drags in <code>unsafe</code> or atomics, PHP's single-threaded
+request model lets <code>private static int $count</code> just… mutate.</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>const MAX: u32 = 10;</code> / <code>impl Config { const MAX … }</code></td><td><code>const MAX = 10;</code> inside the class</td></tr>
+  <tr><td><code>Config::MAX</code></td><td><code>Config::MAX</code> — identical spelling</td></tr>
+  <tr><td><code>static COUNT: AtomicU32</code> + <code>Ordering</code> ceremony</td><td><code>private static int $count = 0;</code>, plain <code>+=</code></td></tr>
+  <tr><td>Associated fn: <code>Counter::increment()</code></td><td><code>public static function increment()</code>, called <code>Counter::increment()</code></td></tr>
+  <tr><td><code>Self</code> inside <code>impl</code></td><td><code>self::</code> inside the class (<code>self::$count</code>, <code>self::MAX</code>)</td></tr>
+  <tr><td>Fields immutable without <code>mut</code></td><td><code>public readonly string $name</code> — write once, then frozen</td></tr>
+</table>
+<p>Third, and sweetest: immutability. PHP variables are mutable, full stop —
+but since PHP 8.1, <em>properties</em> can be declared <code>readonly</code>:
+assignable exactly once (in the constructor), engine-enforced ever after.
+Any later write throws an <code>Error</code>. It is <code>let</code> without
+<code>mut</code>, recovered per-field — the closest thing PHP has to
+Rust's default, and idiomatic modern PHP uses it on nearly every value
+object.</p>`,
+
+  rust: `use std::sync::atomic::{AtomicU32, Ordering};
+
+static COUNT: AtomicU32 = AtomicU32::new(0);
+
+struct Counter;
+
+impl Counter {
+    fn increment() -> u32 {
+        COUNT.fetch_add(1, Ordering::SeqCst) + 1
+    }
+    fn current() -> u32 {
+        COUNT.load(Ordering::SeqCst)
+    }
+}
+
+struct Config {
+    name: String, // immutable after construction, by default
+}
+
+impl Config {
+    const DEFAULT_NAME: &'static str = "guest";
+}`,
+
+  task: `
+<p>Recreate both types in PHP:</p>
+<ol>
+  <li>Write <code>class Counter</code> with
+      <code>private static int $count = 0;</code>,
+      <code>public static function increment(): int</code> (bump
+      <code>self::$count</code> and return the new value), and
+      <code>public static function current(): int</code>. No atomics, no
+      <code>Ordering</code> — just <code>self::$count += 1;</code>.</li>
+  <li>Write <code>class Config</code> with a class constant
+      <code>const DEFAULT_NAME = "guest";</code> (read it as
+      <code>Config::DEFAULT_NAME</code>) and a promoted, engine-frozen
+      property: <code>public function __construct(public readonly string
+      $name) {}</code>. The tests will try to overwrite
+      <code>$config-&gt;name</code> and expect an <code>Error</code>.</li>
+</ol>
+<p>Watch the sigil rules: <code>self::$count</code> keeps the <code>$</code>,
+but constants don't — <code>self::DEFAULT_NAME</code>, like a Rust path.</p>`,
+
+  starter: `<?php
+
+// 1. Counter: an associated-fn namespace around one piece of static state.
+//    Inside the class, the state is self::$count (note: $ stays).
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        throw new Exception('TODO: bump self::$count and return it');
+    }
+
+    public static function current(): int {
+        throw new Exception('TODO: return self::$count');
+    }
+}
+
+// 2. Config:
+//    - add const DEFAULT_NAME = "guest";   (read as Config::DEFAULT_NAME)
+//    - make the promoted property readonly (write-once, engine-enforced)
+class Config {
+    public function __construct(public string $name) {}
+}
+`,
+
+  requirements: [
+    { pattern: /static\s+/, message: "Use static members on Counter" },
+    { pattern: /const\s+[A-Z_]+/, message: "Declare a SCREAMING_CASE class constant on Config" },
+    { pattern: /readonly/, message: "Mark Config's $name property readonly" },
+  ],
+
+  tests: [
+    { name: "Counter::increment() counts 1, 2 and current() agrees",
+      code: "expect_eq(Counter::increment(), 1); expect_eq(Counter::increment(), 2); expect_eq(Counter::current(), 2);" },
+    { name: 'Config::DEFAULT_NAME is "guest"',
+      code: 'expect_eq(Config::DEFAULT_NAME, "guest");' },
+    { name: 'new Config("ada")->name reads back "ada"',
+      code: '$c = new Config("ada"); expect_eq($c->name, "ada");' },
+    { name: "writing to a readonly property throws Error",
+      code: '$c = new Config("ada"); try { $c->name = "x"; throw new Exception("no error"); } catch (Error $e) {} expect_eq($c->name, "ada");' },
+  ],
+
+  solution: `<?php
+
+class Counter {
+    private static int $count = 0;
+
+    public static function increment(): int {
+        self::$count += 1;
+        return self::$count;
+    }
+
+    public static function current(): int {
+        return self::$count;
+    }
+}
+
+class Config {
+    const DEFAULT_NAME = "guest";
+
+    public function __construct(public readonly string $name) {}
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>Constant</td><td><code>const MAX: u32 = 10;</code></td><td><code>const MAX = 10;</code> (class scope, no <code>$</code>)</td></tr>
+  <tr><td>Read a constant</td><td><code>Config::MAX</code></td><td><code>Config::MAX</code> — same <code>::</code> path</td></tr>
+  <tr><td>Mutable shared state</td><td><code>static</code> + <code>AtomicU32</code> / <code>unsafe</code></td><td><code>private static int $count = 0;</code></td></tr>
+  <tr><td>Associated function</td><td><code>impl Counter { fn f() {} }</code></td><td><code>public static function f() {}</code></td></tr>
+  <tr><td>Self-reference</td><td><code>Self::</code></td><td><code>self::$count</code>, <code>self::MAX</code>, <code>self::f()</code></td></tr>
+  <tr><td>Write-once field</td><td>the default (<code>let</code> without <code>mut</code>)</td><td><code>public readonly string $name</code> (PHP 8.1+)</td></tr>
+  <tr><td>Violation</td><td>compile error <code>E0594</code></td><td><code>Error</code> thrown at runtime</td></tr>
+</table>
+<p>Keep the two <code>::</code> namespaces straight: constants and methods
+drop the sigil (<code>self::MAX</code>, <code>Counter::increment()</code>)
+but static <em>properties</em> keep it (<code>self::$count</code>) —
+forgetting the <code>$</code> there is the classic slip. And a fairness
+note on <code>readonly</code>: it is per-property and shallow. A
+<code>readonly</code> property holding an object freezes the
+<em>reference</em>, not the object's innards — closer to an immutable
+binding to a <code>RefCell</code> than to a deeply frozen value. For
+scalars like <code>string $name</code>, though, it is exactly the
+immutability you miss.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

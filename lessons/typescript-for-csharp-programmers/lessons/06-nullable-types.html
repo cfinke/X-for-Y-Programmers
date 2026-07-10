@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Nullable Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Nullable Types",
+
+  intro: `
+<p>If you have worked in a project with <code>&lt;Nullable&gt;enable&lt;/Nullable&gt;</code>
+set, this lesson is mostly review: TypeScript's <code>?.</code> (null-conditional)
+and <code>??</code> (null-coalescing) operators carry over from C# almost
+character for character. Even the compiler behavior matches — dereference a
+possibly-null value without checking it first and you get a compile error,
+not a <code>NullReferenceException</code> three weeks later in production.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>string? name = null;</code></td><td><code>let name: string | null = null;</code></td></tr>
+  <tr><td><code>name?.Length</code></td><td><code>name?.length</code></td></tr>
+  <tr><td><code>name ?? "guest"</code></td><td><code>name ?? "guest"</code></td></tr>
+  <tr><td>Opt-in per project (csproj flag)</td><td>Strict null checks are the expected default</td></tr>
+</table>
+<p>Three differences to internalize. First, spelling: TypeScript writes the
+nullable-ness out as a union, <code>string | null</code> — the <code>?</code>
+shorthand exists, but only for optional <em>members and parameters</em>
+(<code>middleName?: string</code>), not as a general type suffix. Second,
+JavaScript has <em>two</em> absent values: <code>null</code> (deliberate
+absence, like C#'s) and <code>undefined</code> (nothing was ever assigned —
+a missing property, an unpassed parameter). Both <code>?.</code> and
+<code>??</code> treat them identically, which is why they are your workhorses.
+Third, culture: strict null checking is the default posture of the TypeScript
+ecosystem rather than a csproj opt-in you have to campaign for — new projects
+start with <code>strictNullChecks</code> on.</p>`,
+
+  csharp: `#nullable enable
+
+string? middleName = null;
+
+int GetLength(string? text)
+{
+    // Null-conditional + null-coalescing, exactly as in TS:
+    return text?.Length ?? 0;
+}
+
+string Greet(string? name)
+{
+    return $"Hello, {name ?? "guest"}";
+}
+
+Console.WriteLine(GetLength(middleName)); // 0
+Console.WriteLine(GetLength("Ada"));      // 3
+Console.WriteLine(Greet(null));           // Hello, guest`,
+
+  task: `
+<p>Port the two nullable-friendly helpers to TypeScript (note the camelCase
+names — <code>GetLength</code> becomes <code>getLength</code>):</p>
+<ol>
+  <li>Write <code>getLength</code> taking <code>text: string | null</code> and
+      returning a <code>number</code>: the length of the string, or
+      <code>0</code> when it is null. Use <code>?.</code> and <code>??</code>,
+      exactly like the C# body — no <code>if</code> needed.</li>
+  <li>Write <code>greet</code> taking <code>name: string | null</code> and
+      returning a <code>string</code> like <code>"Hello, Ada"</code>, falling
+      back to <code>"Hello, guest"</code> when the name is null. Use
+      <code>??</code> for the fallback.</li>
+</ol>
+<p>Remember: there is no <code>string?</code> type in TypeScript — spell the
+union out as <code>string | null</code>.</p>`,
+
+  starter: `// 1. C#: int GetLength(string? text) => text?.Length ?? 0;
+//    There is no "string?" type here — write the union: string | null
+function getLength(text: string | null): number {
+  // TODO: return the length, or 0 for null, using ?. and ??
+  return 0;
+}
+
+// 2. C#: string Greet(string? name) => $"Hello, {name ?? "guest"}";
+function greet(name: string | null): string {
+  // TODO: return "Hello, <name>" with "guest" as the fallback
+  return "";
+}
+`,
+
+  exportNames: ["getLength", "greet"],
+
+  requirements: [
+    { pattern: /:\s*string\s*\|\s*null/, message: "Type the nullable parameters as string | null (the union, not a ? suffix)" },
+    { pattern: /\?\./, message: "Use the ?. null-conditional (optional chaining) operator" },
+    { pattern: /\?\?/, message: "Use the ?? null-coalescing operator" },
+  ],
+
+  tests: [
+    { name: 'getLength("hello") returns 5', run: (x) => expectEqual(x.getLength("hello"), 5) },
+    { name: "getLength(null) returns 0", run: (x) => expectEqual(x.getLength(null), 0) },
+    { name: 'greet("Ada") returns "Hello, Ada"', run: (x) => expectEqual(x.greet("Ada"), "Hello, Ada") },
+    { name: 'greet(null) returns "Hello, guest"', run: (x) => expectEqual(x.greet(null), "Hello, guest") },
+  ],
+
+  solution: `function getLength(text: string | null): number {
+  return text?.length ?? 0;
+}
+
+function greet(name: string | null): string {
+  return "Hello, " + (name ?? "guest");
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Nullable type</td><td><code>string? name</code></td><td><code>name: string | null</code></td></tr>
+  <tr><td>Null-conditional</td><td><code>user?.Name</code></td><td><code>user?.name</code> (same, camelCase member)</td></tr>
+  <tr><td>Null-coalescing</td><td><code>x ?? fallback</code></td><td><code>x ?? fallback</code> (identical)</td></tr>
+  <tr><td>Coalescing assignment</td><td><code>x ??= fallback;</code></td><td><code>x ??= fallback;</code> (identical)</td></tr>
+  <tr><td>Absent values</td><td>Just <code>null</code></td><td><code>null</code> <em>and</em> <code>undefined</code></td></tr>
+  <tr><td>Optional member/param</td><td><code>string? Middle { get; set; }</code></td><td><code>middle?: string</code> (? only valid here)</td></tr>
+  <tr><td>Turning checks on</td><td><code>&lt;Nullable&gt;enable&lt;/Nullable&gt;</code> in csproj</td><td><code>strictNullChecks</code> — on by default with <code>strict</code></td></tr>
+</table>
+<p>The two absent values divide the work the way C#'s single <code>null</code>
+cannot: <code>undefined</code> means "was never set" (a missing property, an
+optional parameter nobody passed), while <code>null</code> means "deliberately
+empty". In practice you rarely need to distinguish them — <code>?.</code> and
+<code>??</code> treat both as absent, and idiomatic TypeScript checks
+<code>value == null</code> (loose equality, deliberately) when it wants to
+catch both at once.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

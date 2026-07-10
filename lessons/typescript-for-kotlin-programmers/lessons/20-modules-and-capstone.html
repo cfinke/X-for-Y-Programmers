@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Modules &amp; Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Modules & Capstone",
+
+  intro: `
+<p>Kotlin's unit of organization is the package: a <code>package</code>
+declaration at the top of a file, visibility decided by
+<code>public</code>/<code>internal</code>/<code>private</code>, and any number
+of top-level declarations — functions, classes, constants — sharing a file.
+TypeScript's unit is the <em>ES module</em> — and a module is just a file.
+Like Kotlin's file-private declarations, anything not exported is private to
+the file automatically (no modifier needed), and you publish a symbol by
+putting <code>export</code> directly on its definition:
+<code>export function cartTotal(...)</code>,
+<code>export const TAX_RATE = ...</code>,
+<code>export interface Product { ... }</code>. Consumers pull symbols in
+with <code>import { cartTotal } from "./cart"</code> — a relative file
+path, resolved by the bundler or runtime. Where Kotlin resolves an
+<code>import store.cartTotal</code> against a package name on the classpath,
+TypeScript resolves against a file path; and just as a Kotlin file can hold
+many top-level declarations, a module exports as many functions, constants,
+classes, and interfaces as make sense together.</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td><code>package store</code> at the top of the file</td><td>the file itself is the module</td></tr>
+  <tr><td>many top-level declarations per file</td><td>any number of exports per file</td></tr>
+  <tr><td><code>public</code> (the default) on a declaration</td><td><code>export</code> on each definition</td></tr>
+  <tr><td><code>private</code> (file-scoped)</td><td>not exported (the default)</td></tr>
+  <tr><td><code>import store.Product</code></td><td><code>import { Product } from "./product";</code></td></tr>
+  <tr><td>package-name resolution</td><td>relative path / package-name resolution</td></tr>
+</table>
+<p>That closes the tour — so this lesson doubles as the capstone. You will
+build one small, publishable inventory module that combines the course:
+an <code>interface</code> for the data shape (lesson 8), a generic function
+(lesson 12), array methods in place of collection operators (lesson 13),
+spread for non-mutating updates (lesson 15), and <code>typeof</code>
+narrowing on a union (lessons 7 and 16) — every piece published with
+<code>export</code> so another file could import it. (The editor here runs a
+single file, so write the exports but no <code>import</code> lines.)</p>`,
+
+  kotlin: `// src/store/Product.kt — many top-level declarations can share a file
+package store
+
+data class Product(val name: String, val price: Double, val quantity: Int)
+
+// src/store/Cart.kt
+package store
+
+fun total(items: List<Product>): Double =
+    items.sumOf { it.price * it.quantity }
+
+fun find(items: List<Product>, name: String): Product? =
+    items.firstOrNull { it.name == name }`,
+
+  task: `
+<p>Build the inventory module. Every symbol below must carry
+<code>export</code> at its definition:</p>
+<ol>
+  <li><code>export interface Product</code> with <code>name: string</code>,
+      <code>price: number</code>, and <code>quantity: number</code> — the
+      data class, expressed as an interface.</li>
+  <li><code>export function addProduct(cart: Product[], item: Product): Product[]</code>
+      — return a <em>new</em> array containing the old items plus
+      <code>item</code>, using spread (<code>...</code>). Do not mutate the
+      caller's array.</li>
+  <li><code>export function cartTotal(cart: Product[]): number</code> — the
+      collection pipeline: <code>map</code> each product to
+      <code>price * quantity</code>, then <code>reduce</code> to a sum
+      (start the reduce at <code>0</code>), just like <code>sumOf</code>.</li>
+  <li><code>export function findProduct(cart: Product[], name: string): Product | undefined</code>
+      — Kotlin's <code>firstOrNull { ... }</code> becomes
+      <code>.find(...)</code>; a miss is <code>undefined</code>, not
+      <code>null</code>.</li>
+  <li><code>export function firstOrDefault&lt;T&gt;(items: T[], fallback: T): T</code>
+      — a generic function, like a <code>fun &lt;T&gt; T</code> utility:
+      the first element if one exists, otherwise
+      <code>fallback</code>.</li>
+  <li><code>export function describeEntry(entry: Product | string): string</code>
+      — narrow the union with <code>typeof</code>, the way a
+      <code>when</code> would smart-cast: for a plain string
+      return <code>"Unknown product: " + entry</code>; for a
+      <code>Product</code> return <code>entry.name + " x" + entry.quantity</code>.</li>
+</ol>`,
+
+  starter: `// The whole module lives in this one file. Publish each symbol by
+// putting export on its definition. (In another file you would write
+// import { addProduct } from "./inventory" — no import lines here.)
+
+// 1. The record, as an exported interface.
+export interface Product {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+// 2. Non-mutating add: copy with spread, never push onto the caller's array.
+export function addProduct(cart: Product[], item: Product): Product[] {
+  // TODO: new array = old items + item
+  return cart;
+}
+
+// 3. The stream pipeline: map to price * quantity, reduce to a sum.
+export function cartTotal(cart: Product[]): number {
+  // TODO
+  return 0;
+}
+
+// 4. .stream().filter(...).findFirst() collapses to .find(...)
+export function findProduct(cart: Product[], name: string): Product | undefined {
+  // TODO
+  return undefined;
+}
+
+// 5. Generic, like a static <T> T method — works for any element type.
+export function firstOrDefault<T>(items: T[], fallback: T): T {
+  // TODO: first element if there is one, otherwise the fallback
+  return fallback;
+}
+
+// 6. Narrow the Product | string union with typeof before touching .name
+export function describeEntry(entry: Product | string): string {
+  // TODO: string  -> "Unknown product: " + entry
+  //       Product -> entry.name + " x" + entry.quantity
+  return "";
+}
+`,
+
+  exportNames: ["addProduct", "cartTotal", "findProduct", "firstOrDefault", "describeEntry"],
+
+  requirements: [
+    { pattern: /export\s+(function|const)/, message: "Publish your symbols with export at the definition site — the module's public API" },
+    { pattern: /interface\s+Product/, message: "Define the Product interface — the record shape other files would import" },
+    { pattern: /\.\.\.\s*\w+/, message: "Use spread (...) in addProduct so the caller's array is not mutated" },
+    { pattern: /typeof\s+\w+\s*===\s*["']string["']/, message: 'Narrow the union with typeof entry === "string"' },
+  ],
+
+  tests: [
+    { name: "addProduct returns a new array and leaves the original alone", run: (x) => {
+        const cart = [{ name: "Widget", price: 2.5, quantity: 4 }];
+        const out = x.addProduct(cart, { name: "Gadget", price: 10, quantity: 1 });
+        expectDeepEqual(out, [{ name: "Widget", price: 2.5, quantity: 4 }, { name: "Gadget", price: 10, quantity: 1 }]);
+        expectEqual(cart.length, 1);
+      } },
+    { name: "cartTotal sums price * quantity (2.5*4 + 10*1 = 20)", run: (x) => expectEqual(x.cartTotal([{ name: "Widget", price: 2.5, quantity: 4 }, { name: "Gadget", price: 10, quantity: 1 }]), 20) },
+    { name: "cartTotal of an empty cart is 0", run: (x) => expectEqual(x.cartTotal([]), 0) },
+    { name: "findProduct finds by name, and misses as undefined", run: (x) => {
+        const cart = [{ name: "Widget", price: 2.5, quantity: 4 }];
+        expectDeepEqual(x.findProduct(cart, "Widget"), { name: "Widget", price: 2.5, quantity: 4 });
+        expectEqual(x.findProduct(cart, "Sprocket"), undefined);
+      } },
+    { name: "firstOrDefault works for numbers and strings alike", run: (x) => {
+        expectEqual(x.firstOrDefault([7, 8, 9], 0), 7);
+        expectEqual(x.firstOrDefault([], 0), 0);
+        expectEqual(x.firstOrDefault(["a"], "z"), "a");
+      } },
+    { name: "describeEntry narrows the union correctly", run: (x) => {
+        expectEqual(x.describeEntry("sprocket"), "Unknown product: sprocket");
+        expectEqual(x.describeEntry({ name: "Widget", price: 2.5, quantity: 4 }), "Widget x4");
+      } },
+  ],
+
+  solution: `export interface Product {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export function addProduct(cart: Product[], item: Product): Product[] {
+  return [...cart, item];
+}
+
+export function cartTotal(cart: Product[]): number {
+  return cart.map((p) => p.price * p.quantity).reduce((sum, n) => sum + n, 0);
+}
+
+export function findProduct(cart: Product[], name: string): Product | undefined {
+  return cart.find((p) => p.name === name);
+}
+
+export function firstOrDefault<T>(items: T[], fallback: T): T {
+  return items.length > 0 ? items[0] : fallback;
+}
+
+export function describeEntry(entry: Product | string): string {
+  if (typeof entry === "string") {
+    return "Unknown product: " + entry;
+  }
+  return entry.name + " x" + entry.quantity;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Unit of code</td><td>package (declaration + classpath)</td><td>module (one file)</td></tr>
+  <tr><td>Public API</td><td><code>public</code> declaration (the default)</td><td><code>export</code> per definition, many per file</td></tr>
+  <tr><td>Internal helper</td><td><code>private</code> (file-scoped)</td><td>simply not exported</td></tr>
+  <tr><td>Bringing symbols in</td><td><code>import store.Product</code> via package</td><td><code>import { Product } from "./product";</code> via path</td></tr>
+  <tr><td>Whole-module import</td><td><code>import store.*</code></td><td><code>import * as store from "./store";</code></td></tr>
+  <tr><td>Types in the API</td><td>classes and interfaces (compiled, on classpath)</td><td>exported interfaces — erased at runtime, real to importers</td></tr>
+</table>
+<p>The capstone you just wrote is the shape of most real TypeScript modules:
+a couple of exported interfaces describing the data, a handful of exported
+functions operating on it, and any helpers kept file-private by leaving
+<code>export</code> off. Notice how much of the course showed up in thirty
+lines — structural interfaces instead of data classes, generics that read like
+Kotlin's, <code>find</code>/<code>map</code>/<code>reduce</code> instead of
+<code>firstOrNull</code>/<code>map</code>/<code>sumOf</code>, spread instead of
+building a new list by hand, and a union narrowed by <code>typeof</code>
+instead of a <code>when</code> smart-cast. That is the trade you
+have made all course long: Kotlin's guarantees come from a rich type system
+declared up front; TypeScript's come from a structural type checker smart
+enough to follow the code you would have written anyway. Welcome to the other
+side.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

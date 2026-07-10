@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Destructuring & Splat</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Destructuring & Splat",
+
+  intro: `
+<p>Here is a corner of Ruby that overlaps with Kotlin — but only partway.
+Kotlin has <strong>destructuring declarations</strong>:
+<code>val (a, b) = pair</code> pulls a Pair or a list apart into two variables.
+Ruby's <strong>multiple assignment</strong> goes further:
+<code>a, b = pair</code> unpacks an array, and
+<code>a, b = b, a</code> swaps them with no temp variable — something Kotlin
+can't do cleanly, because its destructuring only ever produces read-only
+<code>val</code>s. The right-hand side is built as a whole before anything is
+assigned.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>val (a, b) = pair</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td><code>var t = a; a = b; b = t</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td><code>list.first()</code> + <code>list.drop(1)</code></td><td><code>first, *rest = list</code></td></tr>
+  <tr><td><code>fun sum(vararg nums: Int)</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td><code>a + b</code> (list concat)</td><td><code>[*a, *b]</code> splices arrays together</td></tr>
+  <tr><td><code>defaults + overrides</code></td><td><code>defaults.merge(overrides)</code></td></tr>
+</table>
+<p>The star is the <strong>splat</strong>, and you already know half of it:
+Kotlin's <code>vararg nums: Int</code> is exactly <code>def sum(*nums)</code> —
+same idea, star moves to the front. Kotlin even has a spread operator
+(<code>sum(*array)</code>) for feeding an array into a vararg. But Ruby's splat
+also works in <em>assignment</em> (<code>first, *rest = list</code> collects
+the leftovers — Kotlin destructuring has no rest pattern) and in
+<em>literals</em> (<code>[*a, *b]</code> spreads two arrays into one, where
+Kotlin reaches for <code>a + b</code>). Its double cousin <code>**opts</code>
+does the same for keyword arguments; for plain hashes, the everyday tool is
+<code>.merge</code>, which returns a new hash with the right-hand side
+winning — just like Kotlin's <code>defaults + overrides</code>.</p>`,
+
+  kotlin: `fun sum(vararg nums: Int): Int {         // varargs: the splat Kotlin has
+    var total = 0
+    for (n in nums) total += n
+    return total
+}
+
+fun swap(pair: IntArray): IntArray {
+    val temp = pair[0]                   // the classic temp-variable dance
+    pair[0] = pair[1]
+    pair[1] = temp
+    return pair
+}
+
+fun mergeSettings(defaults: Map<String, Any>,
+                  overrides: Map<String, Any>): Map<String, Any> {
+    val merged = defaults.toMutableMap()
+    merged.putAll(overrides)             // right side wins
+    return merged
+}`,
+
+  task: `
+<p>Rewrite the Kotlin with destructuring and splats:</p>
+<ol>
+  <li><code>swap(pair)</code> — unpack with <code>a, b = pair</code>, swap
+      with <code>a, b = b, a</code> (no temp variable anywhere!), and return
+      <code>[a, b]</code>.</li>
+  <li><code>head_tail(list)</code> — one line, <code>first, *rest =
+      list</code>, then return <code>[first, rest]</code>. The splat collects
+      everything after the head into an array.</li>
+  <li><code>sum(*nums)</code> — a splat parameter, Kotlin's
+      <code>vararg nums: Int</code> with the star up front. Inside the method,
+      <code>nums</code> is a plain array; total it with <code>.sum</code>.</li>
+  <li><code>merge_settings(defaults, overrides)</code> — one call to
+      <code>.merge</code>; overrides win, and neither input is mutated.</li>
+</ol>`,
+
+  starter: `# 1. swap: a, b = pair to unpack; a, b = b, a to swap — no temp variable.
+def swap(pair)
+  raise NotImplementedError, "TODO: implement swap"
+end
+
+# 2. head_tail: first, *rest = list — the splat soaks up the leftovers.
+#    Return [first, rest].
+def head_tail(list)
+  raise NotImplementedError, "TODO: implement head_tail"
+end
+
+# 3. sum: *nums is Kotlin's vararg nums: Int — the leading star does the vararg keyword's job.
+def sum(*nums)
+  raise NotImplementedError, "TODO: implement sum"
+end
+
+# 4. merge_settings: Hash#merge returns a new hash; the argument wins ties.
+def merge_settings(defaults, overrides)
+  raise NotImplementedError, "TODO: implement merge_settings"
+end
+`,
+
+  requirements: [
+    { pattern: /\*\w+/, message: "Use a splat (*name) somewhere" },
+    { pattern: /,\s*\*/, message: "Collect the tail with a splat in multiple assignment (first, *rest = ...)" },
+    { pattern: /\.merge/, message: "Combine the settings hashes with .merge" },
+    { pattern: /def\s+sum\s*\(\s*\*/, message: "Define sum with a splat parameter: def sum(*nums)" },
+  ],
+
+  tests: [
+    { name: "swap([1, 2]) returns [2, 1]",
+      code: "  expect_eq(swap([1, 2]), [2, 1])" },
+    { name: 'swap(["left", "right"]) returns ["right", "left"]',
+      code: '  expect_eq(swap(["left", "right"]), ["right", "left"])' },
+    { name: "head_tail([1, 2, 3, 4]) returns [1, [2, 3, 4]]",
+      code: "  expect_eq(head_tail([1, 2, 3, 4]), [1, [2, 3, 4]])" },
+    { name: "head_tail([9]) returns [9, []]",
+      code: "  expect_eq(head_tail([9]), [9, []])" },
+    { name: "sum(1, 2, 3, 4) returns 10 and sum() returns 0",
+      code: `  expect_eq(sum(1, 2, 3, 4), 10)
+  expect_eq(sum, 0)` },
+    { name: "merge_settings: overrides win, defaults untouched",
+      code: `  defaults = { theme: "light", font_size: 12 }
+  merged = merge_settings(defaults, { theme: "dark" })
+  expect_eq(merged, { theme: "dark", font_size: 12 })
+  expect_eq(defaults, { theme: "light", font_size: 12 })` },
+  ],
+
+  solution: `def swap(pair)
+  a, b = pair
+  a, b = b, a
+  [a, b]
+end
+
+def head_tail(list)
+  first, *rest = list
+  [first, rest]
+end
+
+def sum(*nums)
+  nums.sum
+end
+
+def merge_settings(defaults, overrides)
+  defaults.merge(overrides)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Unpack a pair</td><td><code>val (a, b) = pair</code></td><td><code>a, b = pair</code></td></tr>
+  <tr><td>Swap</td><td><code>var t = a; a = b; b = t</code></td><td><code>a, b = b, a</code></td></tr>
+  <tr><td>Head + tail</td><td><code>first()</code> + <code>drop(1)</code></td><td><code>first, *rest = list</code></td></tr>
+  <tr><td>Varargs</td><td><code>fun sum(vararg nums: Int)</code></td><td><code>def sum(*nums)</code></td></tr>
+  <tr><td>Spread into a call</td><td><code>sum(*array)</code> — only into a vararg slot</td><td><code>swap(*pair)</code> — any splattable position</td></tr>
+  <tr><td>Spread into a literal</td><td><code>a + b</code> (concat, no true spread)</td><td><code>[*a, *b]</code>, <code>{ **h1, **h2 }</code></td></tr>
+  <tr><td>Merge maps</td><td><code>a + b</code> (returns a new map)</td><td><code>a.merge(b)</code> (returns a new hash)</td></tr>
+  <tr><td>Options bag</td><td><code>opts: Map&lt;String, Any&gt;</code> parameter</td><td><code>def draw(**opts)</code> keyword splat</td></tr>
+</table>
+<p>The mental model that makes all of this click: the right-hand side of a
+multiple assignment is evaluated <em>completely</em> before any variable
+changes, which is why <code>a, b = b, a</code> needs no temp. And the splat is
+one symmetric idea — in a parameter list it <em>collects</em> arguments into
+an array, at a call site or in a literal it <em>spreads</em> an array back
+out. <code>**</code> is the same pair of moves for keyword arguments and
+hashes.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

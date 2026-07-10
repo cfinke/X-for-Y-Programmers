@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put the course together. One small inventory system — the kind of
+code you've written in PHP a hundred times with an <code>Item</code> class
+and an array of objects — built the Rust way: a <code>struct</code> for the
+data (lesson 10), iterator chains instead of <code>array_map</code> /
+<code>array_filter</code> (lesson 14), <code>Option</code> where PHP would
+return <code>null</code> (lesson 8), a lifetime where a borrow flows through
+a function (lesson 16), and <code>&amp;mut</code> where PHP would quietly
+mutate through an object handle (lesson 5).</p>
+<table>
+  <tr><th>PHP</th><th>Rust</th></tr>
+  <tr><td><code>class Item { ... }</code> + array of objects</td><td><code>struct Item { ... }</code> + <code>Vec&lt;Item&gt;</code> / <code>&amp;[Item]</code></td></tr>
+  <tr><td><code>array_sum(array_map(fn($i) =&gt; ..., $items))</code></td><td><code>items.iter().map(|i| ...).sum()</code></td></tr>
+  <tr><td><code>?Item</code> — an Item or <code>null</code></td><td><code>Option&lt;&amp;Item&gt;</code> — <code>Some(item)</code> or <code>None</code></td></tr>
+  <tr><td><code>$item-&gt;count += $n;</code> — handles mutate silently</td><td><code>&amp;mut Vec&lt;Item&gt;</code> — mutation declared in the signature</td></tr>
+  <tr><td><code>array_filter</code> + <code>array_map</code> + <code>array_values</code></td><td><code>.iter().filter(...).map(...).collect()</code></td></tr>
+</table>
+<p>Notice what each signature tells the caller before a line of the body is
+read: <code>find_item</code> returns <code>Option&lt;&amp;'a Item&gt;</code>
+— it can miss, and the reference it returns borrows from the slice you
+passed in, valid exactly as long as that data. <code>restock</code> takes
+<code>&amp;mut Vec&lt;Item&gt;</code> — the only function of the four
+allowed to change anything. In PHP, all of that lives in docblocks and
+discipline; here it's the type system, and the tests below simply hold you
+to it.</p>`,
+
+  php: `<?php
+class Item {
+    public function __construct(
+        public string $name, public int $priceCents, public int $count) {}
+}
+function totalValue(array $items): int {
+    return array_sum(array_map(fn($i) => $i->priceCents * $i->count, $items));
+}
+function findItem(array $items, string $name): ?Item {
+    foreach ($items as $i) if ($i->name === $name) return $i;
+    return null;   // the classic "maybe an Item, maybe null"
+}
+function restock(array $items, string $name, int $amount): bool {
+    $item = findItem($items, $name);
+    if ($item === null) return false;
+    $item->count += $amount;   // objects are handles — mutates the original
+    return true;
+}
+function namesInStock(array $items): array {
+    return array_map(fn($i) => $i->name, array_filter($items, fn($i) => $i->count > 0));
+}`,
+
+  task: `
+<p>The starter defines <code>struct Item</code> for you (complete — don't
+change it). Implement the four functions:</p>
+<ol>
+  <li><code>total_value(items: &amp;[Item]) -&gt; u32</code> — the sum of
+      <code>price_cents * count</code> over all items:
+      <code>.iter().map(...).sum()</code>.</li>
+  <li><code>find_item&lt;'a&gt;(items: &amp;'a [Item], name: &amp;str) -&gt; Option&lt;&amp;'a Item&gt;</code>
+      — PHP's <code>?Item</code>, honestly typed. Use
+      <code>.iter().find(|i| i.name == name)</code>; the <code>'a</code>
+      says the returned borrow points into <code>items</code>, not into
+      <code>name</code>.</li>
+  <li><code>restock(items: &amp;mut Vec&lt;Item&gt;, name: &amp;str, amount: u32) -&gt; bool</code>
+      — find the named item and add <code>amount</code> to its
+      <code>count</code>, returning <code>true</code>; return
+      <code>false</code> if no item matches. Loop with
+      <code>items.iter_mut()</code> so you can mutate what you find.</li>
+  <li><code>names_in_stock(items: &amp;[Item]) -&gt; Vec&lt;String&gt;</code>
+      — the names of items with <code>count &gt; 0</code>, in order:
+      <code>.iter().filter(...).map(|i| i.name.clone()).collect()</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Complete — the tests construct Items with these exact fields.
+struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+// Sum of price_cents * count across the slice.
+fn total_value(items: &[Item]) -> u32 {
+    todo!()
+}
+
+// PHP's ?Item, honestly: Some(&item) or None.
+// 'a ties the returned borrow to the slice it came from.
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    todo!()
+}
+
+// The one function allowed to mutate — and its signature says so.
+// true if the item was found and topped up, false otherwise.
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    todo!()
+}
+
+// Names of items with count > 0, in their original order.
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Option<&/, message: "find_item returns Option<&Item> — a borrow, not a copy, and maybe nothing" },
+    { pattern: /\.iter\(\)/, message: "Use iterator chains (.iter()...) rather than manual index loops" },
+    { pattern: /&mut\s+Vec<Item>/, message: "restock takes &mut Vec<Item> — mutation is declared in the signature" },
+  ],
+
+  tests: [
+    { name: "total_value: 4 widgets at 250 + 0 gadgets at 1000 = 1000",
+      code: 'let items = vec![\n    Item { name: String::from("widget"), price_cents: 250, count: 4 },\n    Item { name: String::from("gadget"), price_cents: 1000, count: 0 },\n];\nassert_eq!(total_value(&items), 1000);' },
+    { name: "total_value of an empty slice is 0",
+      code: "let items: Vec<Item> = Vec::new();\nassert_eq!(total_value(&items), 0);" },
+    { name: 'find_item finds "widget" and borrows it from the slice',
+      code: 'let items = vec![\n    Item { name: String::from("widget"), price_cents: 250, count: 4 },\n    Item { name: String::from("gadget"), price_cents: 1000, count: 0 },\n];\nlet found = find_item(&items, "widget");\nassert_eq!(found.map(|i| i.price_cents), Some(250));' },
+    { name: 'find_item returns None for a name that is not there',
+      code: 'let items = vec![Item { name: String::from("widget"), price_cents: 250, count: 4 }];\nassert!(find_item(&items, "sprocket").is_none());' },
+    { name: "restock tops up an existing item and returns true",
+      code: 'let mut items = vec![\n    Item { name: String::from("widget"), price_cents: 250, count: 4 },\n    Item { name: String::from("gadget"), price_cents: 1000, count: 0 },\n];\nassert!(restock(&mut items, "gadget", 5));\nassert_eq!(items[1].count, 5);\nassert_eq!(items[0].count, 4);' },
+    { name: "restock returns false (and changes nothing) for an unknown name; names_in_stock skips count 0",
+      code: 'let mut items = vec![\n    Item { name: String::from("widget"), price_cents: 250, count: 4 },\n    Item { name: String::from("gadget"), price_cents: 1000, count: 0 },\n];\nassert!(!restock(&mut items, "sprocket", 5));\nassert_eq!(total_value(&items), 1000);\nassert_eq!(names_in_stock(&items), vec!["widget".to_string()]);' },
+  ],
+
+  solution: `struct Item {
+    name: String,
+    price_cents: u32,
+    count: u32,
+}
+
+fn total_value(items: &[Item]) -> u32 {
+    items.iter().map(|i| i.price_cents * i.count).sum()
+}
+
+fn find_item<'a>(items: &'a [Item], name: &str) -> Option<&'a Item> {
+    items.iter().find(|i| i.name == name)
+}
+
+fn restock(items: &mut Vec<Item>, name: &str, amount: u32) -> bool {
+    for item in items.iter_mut() {
+        if item.name == name {
+            item.count += amount;
+            return true;
+        }
+    }
+    false
+}
+
+fn names_in_stock(items: &[Item]) -> Vec<String> {
+    items.iter()
+        .filter(|i| i.count > 0)
+        .map(|i| i.name.clone())
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+  <tr><td>Data shape</td><td><code>class Item</code>, props by convention</td><td><code>struct Item</code> — fields checked everywhere</td></tr>
+  <tr><td>Maybe-missing result</td><td><code>?Item</code>, then <code>!== null</code> checks (or forget one)</td><td><code>Option&lt;&amp;Item&gt;</code> — the compiler makes you look</td></tr>
+  <tr><td>Aggregate</td><td><code>array_sum(array_map(...))</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+  <tr><td>Find</td><td><code>foreach</code> + early <code>return</code></td><td><code>.iter().find(|i| ...)</code></td></tr>
+  <tr><td>Mutate in place</td><td>Object handles mutate through any <code>array</code> param</td><td>Only through <code>&amp;mut</code>, visible in the signature</td></tr>
+  <tr><td>Filter + project</td><td><code>array_values(array_map(..., array_filter(...)))</code></td><td><code>.iter().filter(...).map(...).collect()</code> — no reindexing dance</td></tr>
+</table>
+<p>Look back at the PHP version's <code>restock</code>: it takes a plain
+<code>array $items</code>, yet mutates your data anyway, because objects
+travel as handles — nothing in the signature warned you. The Rust version
+can't be sneaky: without <code>&amp;mut</code>, <code>item.count += amount</code>
+doesn't compile. That's the course in one contrast. Ownership, borrowing,
+<code>Option</code>, lifetimes — each one moves a convention you enforced by
+code review into a contract the compiler enforces for free. You now read
+Rust signatures the way you used to read PHPDoc, except these ones can't
+drift out of date. Nicely done — go build something.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

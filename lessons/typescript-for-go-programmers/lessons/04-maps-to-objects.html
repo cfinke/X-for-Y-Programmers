@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Maps → Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Maps → Objects",
+
+  intro: `
+<p>Go's <code>map[string]int</code> maps directly onto a TypeScript object
+typed as <code>Record&lt;string, number&gt;</code> — read it as "a record
+from string keys to number values", the same two type parameters in the same
+order. The literal syntax barely changes: keys, colons, braces. What changes
+is the missing-key story.</p>
+<table>
+  <tr><th>Go</th><th>TypeScript</th></tr>
+  <tr><td><code>ages := map[string]int{"ada": 36}</code></td><td><code>const ages: Record&lt;string, number&gt; = { ada: 36 };</code></td></tr>
+  <tr><td><code>v, ok := ages["grace"]</code></td><td><code>ages["grace"]</code> is <code>number | undefined</code></td></tr>
+  <tr><td><code>if !ok { v = -1 }</code></td><td><code>ages["grace"] ?? -1</code></td></tr>
+  <tr><td><code>delete(ages, "linus")</code></td><td><code>delete ages["linus"];</code></td></tr>
+  <tr><td><code>for k, v := range ages</code></td><td><code>for (const [k, v] of Object.entries(ages))</code></td></tr>
+</table>
+<p>In Go, a missing key silently hands you the zero value, so the comma-ok
+idiom <code>v, ok := m[k]</code> is the only honest way to read a map.
+TypeScript takes the opposite bet: a missing key gives you
+<code>undefined</code> — a value that is loudly not a number — and the
+<code>??</code> operator is the entire comma-ok dance in two characters:
+<code>ages[name] ?? -1</code> means "the value, or <code>-1</code> if it
+wasn't there". Crucially <code>??</code> only triggers on
+<code>null</code>/<code>undefined</code>, so a stored <code>0</code> comes
+through intact (which <code>||</code> would botch — avoid it here).</p>
+<p>Iteration trades <code>range</code> for helper functions:
+<code>Object.entries(obj)</code> gives you the key/value pairs,
+<code>Object.keys(obj)</code> just the keys. One genuine upgrade over Go:
+iteration order is <em>deterministic</em> (insertion order for string keys),
+not deliberately randomized.</p>`,
+
+  go: `ages := map[string]int{
+	"ada":   36,
+	"linus": 55,
+}
+
+// A missing key returns the zero value, so comma-ok is
+// the only way to tell "grace": 0 from "no grace at all".
+age, ok := ages["grace"]
+if !ok {
+	age = -1
+}
+
+delete(ages, "linus")
+
+for name, a := range ages { // order randomized on purpose!
+	fmt.Printf("%s is %d\n", name, a)
+}
+fmt.Println(age)`,
+
+  task: `
+<p>Rewrite the map code as TypeScript:</p>
+<ol>
+  <li>Declare a constant <code>ages</code> typed
+      <code>Record&lt;string, number&gt;</code> with entries
+      <code>ada: 36</code> and <code>linus: 55</code>.</li>
+  <li>Write <code>getAge(ages: Record&lt;string, number&gt;, name: string): number</code>
+      that returns the stored age, or <code>-1</code> if the key is missing —
+      replace the whole comma-ok block with <code>??</code>.</li>
+  <li>Write <code>removeUser(ages: Record&lt;string, number&gt;, name: string): void</code>
+      that deletes the entry — Go's <code>delete(m, k)</code> becomes the
+      <code>delete</code> operator: <code>delete ages[name]</code>.</li>
+  <li>Write <code>describeAll(ages: Record&lt;string, number&gt;): string[]</code>
+      that returns one <code>"name is age"</code> string per entry, using
+      <code>Object.entries</code> in place of <code>for ... range</code>.</li>
+</ol>`,
+
+  starter: `// 1. ages — Go: map[string]int{"ada": 36, "linus": 55}
+//    Type it as Record<string, number>.
+
+
+// 2. getAge — the comma-ok idiom collapses into ??
+function getAge(ages: Record<string, number>, name: string): number {
+  // TODO: return the age, or -1 when missing (?? — not ||)
+  return -1;
+}
+
+// 3. removeUser — Go: delete(ages, name)
+function removeUser(ages: Record<string, number>, name: string): void {
+  // TODO
+}
+
+// 4. describeAll — Go: for name, a := range ages
+function describeAll(ages: Record<string, number>): string[] {
+  // TODO: one "name is age" string per entry, via Object.entries
+  return [];
+}
+`,
+
+  exportNames: ["ages", "getAge", "removeUser", "describeAll"],
+
+  requirements: [
+    { pattern: /Record<\s*string\s*,\s*number\s*>/, message: "Type the map as Record<string, number>" },
+    { pattern: /\?\?/, message: "Use the ?? operator in getAge — it is the comma-ok check in two characters" },
+    { pattern: /Object\.(entries|keys)\s*\(/, message: "Iterate with Object.entries (or Object.keys) in describeAll" },
+  ],
+
+  tests: [
+    { name: "ages holds ada: 36 and linus: 55", run: (x) => { expectEqual(x.ages.ada, 36); expectEqual(x.ages.linus, 55); } },
+    { name: 'getAge finds an existing key: getAge({ ada: 36 }, "ada") is 36', run: (x) => expectEqual(x.getAge({ ada: 36 }, "ada"), 36) },
+    { name: 'getAge returns -1 for a missing key ("grace")', run: (x) => expectEqual(x.getAge({ ada: 36 }, "grace"), -1) },
+    { name: "getAge returns a stored 0 as 0 (?? — not ||)", run: (x) => expectEqual(x.getAge({ newborn: 0 }, "newborn"), 0) },
+    { name: 'removeUser deletes the entry, like delete(m, k)', run: (x) => { const m = { a: 1, b: 2 }; x.removeUser(m, "a"); expectEqual("a" in m, false); expectEqual(m.b, 2); } },
+    { name: 'describeAll({ ada: 36, bo: 7 }) returns ["ada is 36", "bo is 7"]', run: (x) => expectDeepEqual(x.describeAll({ ada: 36, bo: 7 }), ["ada is 36", "bo is 7"]) },
+  ],
+
+  solution: `const ages: Record<string, number> = {
+  ada: 36,
+  linus: 55,
+};
+
+function getAge(ages: Record<string, number>, name: string): number {
+  return ages[name] ?? -1;
+}
+
+function removeUser(ages: Record<string, number>, name: string): void {
+  delete ages[name];
+}
+
+function describeAll(ages: Record<string, number>): string[] {
+  return Object.entries(ages).map(([name, age]) => \`\${name} is \${age}\`);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+  <tr><td>Type</td><td><code>map[string]int</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+  <tr><td>Literal</td><td><code>map[string]int{"a": 1}</code></td><td><code>{ a: 1 }</code></td></tr>
+  <tr><td>Missing key</td><td>zero value + <code>ok</code> flag</td><td><code>undefined</code></td></tr>
+  <tr><td>Read with fallback</td><td><code>v, ok := m[k]; if !ok {...}</code></td><td><code>m[k] ?? fallback</code></td></tr>
+  <tr><td>Delete</td><td><code>delete(m, k)</code></td><td><code>delete m[k];</code></td></tr>
+  <tr><td>Iterate</td><td><code>for k, v := range m</code> (random order)</td><td><code>Object.entries(m)</code> (insertion order)</td></tr>
+  <tr><td>Size</td><td><code>len(m)</code></td><td><code>Object.keys(m).length</code></td></tr>
+</table>
+<p>Go's design makes the <em>zero value</em> the signal for absence and gives
+you <code>ok</code> to disambiguate; TypeScript makes <em>absence itself</em>
+a value (<code>undefined</code>) and gives you <code>??</code> to dispatch on
+it. Same problem, inverted solution — and because
+<code>Record&lt;string, number&gt;</code> reads as
+<code>number | undefined</code> under strict settings, the compiler nags you
+about the missing-key case the way Go's compiler never did. (TypeScript also
+has a real <code>Map</code> class for non-string keys; for string-keyed data,
+plain objects are the idiom.)</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

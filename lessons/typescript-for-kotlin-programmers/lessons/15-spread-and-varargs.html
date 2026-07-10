@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Spread & Varargs</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Spread & Varargs",
+
+  intro: `
+<p>You already know half of this lesson: Kotlin's <code>vararg</code>
+(<code>fun log(vararg parts: String)</code>) exists in TypeScript as <em>rest
+parameters</em> — same idea, the keyword just turns into three dots to the
+left of the name: <code>function log(...parts: string[])</code>. Inside the
+function, <code>parts</code> is a real array either way. The other half is
+where TypeScript pulls ahead: those same three dots work in
+<em>expressions</em> too, spreading an existing array or object into a new
+one.</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td><code>fun sum(vararg nums: Int)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td><code>listA + listB</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td><code>defaults + overrides</code></td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+  <tr><td><code>items + item</code> (new list)</td><td><code>[...items, item]</code> (new array)</td></tr>
+  <tr><td><code>config.copy(timeout = 30)</code></td><td><code>{ ...config, timeout: 30 }</code></td></tr>
+</table>
+<p>If you lean on Kotlin's immutable collections, most of this will feel
+familiar — spread is just TypeScript's spelling for the tools you already
+reach for. Merging maps — Kotlin's <code>defaults + overrides</code> —
+becomes <code>{ ...defaults, ...overrides }</code>, and just like the map
+<code>+</code> operator, later entries win. Copy-with-changes — what Kotlin
+gives you for free as <code>data class</code> <code>copy()</code> — is
+<code>{ ...config, timeout: 30 }</code>: every field copied, one field
+replaced, original untouched. TypeScript has no <code>copy()</code> method,
+but object spread <em>is</em> that pattern, and it works on any object shape.</p>`,
+
+  kotlin: `fun sum(vararg nums: Int): Int {
+    var total = 0
+    for (n in nums) total += n
+    return total
+}
+sum(1, 2, 3)            // vararg call site
+sum(*existingArray)     // or spread an array in with *
+
+// Merging maps: the + operator, later entries win.
+val merged = defaultSettings + userSettings
+
+val both = listA + listB
+
+// Copy-with-changes on a data class:
+val updated = config.copy(timeout = 30)`,
+
+  task: `
+<p>The <code>Settings</code> interface is already in the starter. Write three
+functions — the last two must <strong>not mutate their arguments</strong>
+(the tests check):</p>
+<ol>
+  <li><code>sum(...nums: number[]): number</code> — a rest parameter, Kotlin's
+      <code>vararg nums: Int</code> written with three dots. Return the total
+      (a <code>reduce</code> with seed <code>0</code> handles the empty
+      call).</li>
+  <li><code>mergeSettings(defaults: Settings, overrides: Partial&lt;Settings&gt;): Settings</code>
+      — return a <strong>new</strong> object built with object spread:
+      <code>{ ...defaults, ...overrides }</code>. Later spreads win, exactly
+      like Kotlin's map <code>+</code>. (<code>Partial&lt;Settings&gt;</code>
+      means "Settings with every field optional" — a preview of Lesson 18.)</li>
+  <li><code>appendItem&lt;T&gt;(items: T[], item: T): T[]</code> — return a
+      <strong>new</strong> array with <code>item</code> at the end, via array
+      spread: <code>[...items, item]</code>. No <code>.push()</code> — that
+      mutates, like using a <code>MutableList</code> in place.</li>
+</ol>`,
+
+  starter: `interface Settings {
+  theme: string;
+  fontSize: number;
+  autoSave: boolean;
+}
+
+// 1. Java: static int sum(int... nums)
+//    TODO: give sum a rest parameter: ...nums: number[]
+function sum(): number {
+  // TODO: add up all the numbers (reduce with seed 0)
+  return 0;
+}
+
+// 2. new HashMap<>(defaults) + putAll(overrides), as one expression.
+//    Partial<Settings> = Settings with every field optional.
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  // TODO: return a NEW object: spread defaults, then overrides
+  return defaults;
+}
+
+// 3. Immutable append — no .push(), no mutation.
+function appendItem<T>(items: T[], item: T): T[] {
+  // TODO: return a NEW array containing items plus item at the end
+  return items;
+}
+`,
+
+  exportNames: ["sum", "mergeSettings", "appendItem"],
+
+  requirements: [
+    { pattern: /\.\.\./, message: "Use the three dots — rest parameters and spread are this lesson's whole point" },
+    { pattern: /sum\s*\(\s*\.\.\.\w+\s*:\s*number\s*\[\s*\]/, message: "Declare sum with a rest parameter: sum(...nums: number[])" },
+    { pattern: /\{\s*\.\.\./, message: "Build the merged settings with object spread: { ...defaults, ...overrides }" },
+    { pattern: /\[\s*\.\.\./, message: "Build the appended array with array spread: [...items, item]" },
+  ],
+
+  tests: [
+    { name: "sum(1, 2, 3) returns 6", run: (x) => expectEqual(x.sum(1, 2, 3), 6) },
+    { name: "sum() with no arguments returns 0", run: (x) => expectEqual(x.sum(), 0) },
+    {
+      name: "mergeSettings: overrides win, untouched fields survive",
+      run: (x) => expectDeepEqual(
+        x.mergeSettings({ theme: "light", fontSize: 14, autoSave: true }, { theme: "dark" }),
+        { theme: "dark", fontSize: 14, autoSave: true }
+      ),
+    },
+    {
+      name: "mergeSettings does NOT mutate the defaults object",
+      run: (x) => {
+        const defaults = { theme: "light", fontSize: 14, autoSave: true };
+        const merged = x.mergeSettings(defaults, { theme: "dark", fontSize: 16 });
+        expectTruthy(merged !== defaults);
+        expectEqual(defaults.theme, "light");
+        expectEqual(defaults.fontSize, 14);
+      },
+    },
+    {
+      name: 'appendItem(["a", "b"], "c") returns ["a", "b", "c"]',
+      run: (x) => expectDeepEqual(x.appendItem(["a", "b"], "c"), ["a", "b", "c"]),
+    },
+    {
+      name: "appendItem does NOT mutate the input array",
+      run: (x) => {
+        const items = [1, 2];
+        const result = x.appendItem(items, 3);
+        expectTruthy(result !== items);
+        expectDeepEqual(items, [1, 2]);
+      },
+    },
+  ],
+
+  solution: `interface Settings {
+  theme: string;
+  fontSize: number;
+  autoSave: boolean;
+}
+
+function sum(...nums: number[]): number {
+  return nums.reduce((total, n) => total + n, 0);
+}
+
+function mergeSettings(defaults: Settings, overrides: Partial<Settings>): Settings {
+  return { ...defaults, ...overrides };
+}
+
+function appendItem<T>(items: T[], item: T): T[] {
+  return [...items, item];
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Varargs / rest parameter</td><td><code>fun sum(vararg nums: Int)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+  <tr><td>Pass an array to varargs</td><td><code>sum(*arr)</code> (spread with <code>*</code>)</td><td><code>sum(...arr)</code> (spread at the call site)</td></tr>
+  <tr><td>Concatenate lists</td><td><code>a + b</code></td><td><code>[...a, ...b]</code></td></tr>
+  <tr><td>Merge maps</td><td><code>a + b</code> — later keys win</td><td><code>{ ...a, ...b }</code> — later keys win</td></tr>
+  <tr><td>Copy-with-changes</td><td><code>data class</code>: <code>obj.copy(x = 1)</code></td><td><code>{ ...obj, x: 1 }</code></td></tr>
+  <tr><td>Immutable append</td><td><code>items + item</code></td><td><code>[...items, item]</code></td></tr>
+</table>
+<p>One caveat before you spread everything in sight: spread makes a
+<em>shallow</em> copy, exactly like Kotlin's <code>copy()</code> — nested
+objects are still shared references, so <code>{ ...config }</code> clones the
+top level only. And symmetry worth noticing: the same three dots that
+<em>gather</em> arguments in a parameter list (<code>...nums</code>) also
+<em>scatter</em> a collection at a call site (<code>sum(...arr)</code>). You
+already know that split from Kotlin, where <code>vararg</code> gathers and the
+<code>*</code> spread operator scatters — TypeScript just uses one spelling
+for both, and it works on any iterable.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

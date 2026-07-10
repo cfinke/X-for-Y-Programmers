@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Streams</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Streams",
+
+  intro: `
+<p>In TypeScript you transform arrays with chained methods:
+<code>.filter()</code>, <code>.map()</code>, <code>.reduce()</code>. Java's
+answer is the <strong>Stream API</strong>. You call <code>.stream()</code> on a
+collection to open a pipeline, chain lazy operations, and finish with a
+<em>terminal</em> operation — usually <code>.collect(...)</code> or a reduction
+like <code>.sum()</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Java</th></tr>
+  <tr><td><code>arr.filter(x =&gt; x &gt; 0)</code></td><td><code>list.stream().filter(x -&gt; x &gt; 0)</code></td></tr>
+  <tr><td><code>arr.map(x =&gt; x.name)</code></td><td><code>list.stream().map(x -&gt; x.name())</code></td></tr>
+  <tr><td><code>arr.reduce((a, b) =&gt; a + b, 0)</code></td><td><code>stream.reduce(0, Integer::sum)</code></td></tr>
+  <tr><td><code>[...]</code> (already an array)</td><td><code>.collect(Collectors.toList())</code></td></tr>
+</table>
+<p>Two things differ from JavaScript arrays. First, a stream is
+<strong>single-use and lazy</strong>: nothing runs until a terminal operation
+pulls values through, and you cannot reuse a stream after that. Second, a
+pipeline does not produce a collection by itself — you must <em>collect</em> it.
+The <code>Collectors</code> class is the toolbox: <code>toList()</code>,
+<code>joining(", ")</code>, <code>groupingBy(...)</code>,
+<code>summingInt(...)</code>, and <code>counting()</code>. For plain number
+crunching, <code>mapToInt(...)</code> turns the stream into an
+<code>IntStream</code> with a direct <code>.sum()</code>.</p>`,
+
+  typescript: `type Product = { name: string; category: string; price: number };
+
+function namesUnder(products: Product[], max: number): string[] {
+  return products.filter(p => p.price < max).map(p => p.name);
+}
+
+function totalPrice(products: Product[]): number {
+  return products.reduce((sum, p) => sum + p.price, 0);
+}
+
+function totalByCategory(products: Product[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of products) out[p.category] = (out[p.category] ?? 0) + p.price;
+  return out;
+}`,
+
+  task: `
+<p>You are given a <code>record Product(String name, String category, int
+price)</code>. Write a <code>Catalog</code> class of <code>static</code> methods
+that process a <code>List&lt;Product&gt;</code> with stream pipelines —
+<strong>no manual <code>for</code> loops</strong>:</p>
+<ol>
+  <li><code>namesUnder(List&lt;Product&gt; products, int maxPrice)</code> —
+      <code>filter</code> to products cheaper than <code>maxPrice</code>,
+      <code>map</code> to the name, and <code>collect(Collectors.toList())</code>
+      into a <code>List&lt;String&gt;</code>.</li>
+  <li><code>totalPrice(List&lt;Product&gt; products)</code> — return the
+      <code>int</code> sum of prices using <code>mapToInt(...)</code> then
+      <code>.sum()</code>.</li>
+  <li><code>totalPriceReduce(List&lt;Product&gt; products)</code> — same total,
+      but built with <code>map(...)</code> and
+      <code>reduce(0, Integer::sum)</code>.</li>
+  <li><code>nameList(List&lt;Product&gt; products)</code> — join the names into
+      one string with <code>Collectors.joining(", ")</code>.</li>
+  <li><code>byCategory(List&lt;Product&gt; products)</code> — group into a
+      <code>Map&lt;String, List&lt;Product&gt;&gt;</code> with
+      <code>Collectors.groupingBy(...)</code>.</li>
+  <li><code>totalByCategory(List&lt;Product&gt; products)</code> — a
+      <code>Map&lt;String, Integer&gt;</code> of price totals per category using
+      <code>groupingBy</code> with a <code>Collectors.summingInt(...)</code>
+      downstream collector.</li>
+  <li><code>countByCategory(List&lt;Product&gt; products)</code> — a
+      <code>Map&lt;String, Long&gt;</code> of how many products per category
+      using <code>groupingBy</code> with <code>Collectors.counting()</code>.</li>
+</ol>`,
+
+  starter: `record Product(String name, String category, int price) {}
+
+class Catalog {
+  static List<String> namesUnder(List<Product> products, int maxPrice) {
+    return null; // TODO: filter + map + collect(Collectors.toList())
+  }
+
+  static int totalPrice(List<Product> products) {
+    return 0; // TODO: mapToInt(...).sum()
+  }
+
+  static int totalPriceReduce(List<Product> products) {
+    return 0; // TODO: map(...).reduce(0, Integer::sum)
+  }
+
+  static String nameList(List<Product> products) {
+    return ""; // TODO: map(...).collect(Collectors.joining(", "))
+  }
+
+  static Map<String, List<Product>> byCategory(List<Product> products) {
+    return null; // TODO: collect(Collectors.groupingBy(...))
+  }
+
+  static Map<String, Integer> totalByCategory(List<Product> products) {
+    return null; // TODO: groupingBy(..., Collectors.summingInt(...))
+  }
+
+  static Map<String, Long> countByCategory(List<Product> products) {
+    return null; // TODO: groupingBy(..., Collectors.counting())
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /\.stream\(\)/, message: "Open a pipeline with .stream()" },
+    { pattern: /\.filter\(/, message: "Use .filter() in namesUnder" },
+    { pattern: /Collectors\.groupingBy/, message: "Group with Collectors.groupingBy(...)" },
+  ],
+
+  tests: [
+    {
+      name: "namesUnder keeps cheap names in order",
+      code: "      var ps = List.of(new Product(\"Pen\", \"office\", 3), new Product(\"Desk\", \"office\", 200), new Product(\"Mug\", \"kitchen\", 8));\n      expect_eq(Catalog.namesUnder(ps, 10), List.of(\"Pen\", \"Mug\"));",
+    },
+    {
+      name: "totalPrice sums every price with mapToInt/sum",
+      code: "      var ps = List.of(new Product(\"Pen\", \"office\", 3), new Product(\"Desk\", \"office\", 200), new Product(\"Mug\", \"kitchen\", 8));\n      expect_eq(Catalog.totalPrice(ps), 211);",
+    },
+    {
+      name: "totalPriceReduce matches totalPrice",
+      code: "      var ps = List.of(new Product(\"Pen\", \"office\", 3), new Product(\"Desk\", \"office\", 200), new Product(\"Mug\", \"kitchen\", 8));\n      expect_eq(Catalog.totalPriceReduce(ps), 211);",
+    },
+    {
+      name: "nameList joins names with \", \"",
+      code: "      var ps = List.of(new Product(\"Pen\", \"office\", 3), new Product(\"Desk\", \"office\", 200), new Product(\"Mug\", \"kitchen\", 8));\n      expect_eq(Catalog.nameList(ps), \"Pen, Desk, Mug\");",
+    },
+    {
+      name: "byCategory groups products by category",
+      code: "      var ps = List.of(new Product(\"Pen\", \"office\", 3), new Product(\"Desk\", \"office\", 200), new Product(\"Mug\", \"kitchen\", 8));\n      var m = Catalog.byCategory(ps);\n      expect_eq(m.get(\"office\").size(), 2);\n      expect_eq(m.get(\"kitchen\").size(), 1);",
+    },
+    {
+      name: "totalByCategory sums prices per category",
+      code: "      var ps = List.of(new Product(\"Pen\", \"office\", 3), new Product(\"Desk\", \"office\", 200), new Product(\"Mug\", \"kitchen\", 8));\n      expect_eq(Catalog.totalByCategory(ps), Map.of(\"office\", 203, \"kitchen\", 8));",
+    },
+    {
+      name: "countByCategory counts products per category",
+      code: "      var ps = List.of(new Product(\"Pen\", \"office\", 3), new Product(\"Desk\", \"office\", 200), new Product(\"Mug\", \"kitchen\", 8));\n      expect_eq(Catalog.countByCategory(ps), Map.of(\"office\", 2L, \"kitchen\", 1L));",
+    },
+  ],
+
+  solution: `record Product(String name, String category, int price) {}
+
+class Catalog {
+  static List<String> namesUnder(List<Product> products, int maxPrice) {
+    return products.stream()
+        .filter(p -> p.price() < maxPrice)
+        .map(Product::name)
+        .collect(Collectors.toList());
+  }
+
+  static int totalPrice(List<Product> products) {
+    return products.stream()
+        .mapToInt(Product::price)
+        .sum();
+  }
+
+  static int totalPriceReduce(List<Product> products) {
+    return products.stream()
+        .map(Product::price)
+        .reduce(0, Integer::sum);
+  }
+
+  static String nameList(List<Product> products) {
+    return products.stream()
+        .map(Product::name)
+        .collect(Collectors.joining(", "));
+  }
+
+  static Map<String, List<Product>> byCategory(List<Product> products) {
+    return products.stream()
+        .collect(Collectors.groupingBy(Product::category));
+  }
+
+  static Map<String, Integer> totalByCategory(List<Product> products) {
+    return products.stream()
+        .collect(Collectors.groupingBy(Product::category,
+            Collectors.summingInt(Product::price)));
+  }
+
+  static Map<String, Long> countByCategory(List<Product> products) {
+    return products.stream()
+        .collect(Collectors.groupingBy(Product::category,
+            Collectors.counting()));
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Goal</th><th>TypeScript</th><th>Java</th></tr>
+  <tr><td>Start</td><td><code>arr</code></td><td><code>list.stream()</code></td></tr>
+  <tr><td>Keep some</td><td><code>.filter(f)</code></td><td><code>.filter(f)</code></td></tr>
+  <tr><td>Transform</td><td><code>.map(f)</code></td><td><code>.map(f)</code></td></tr>
+  <tr><td>Sum numbers</td><td><code>.reduce((a,b)=&gt;a+b,0)</code></td><td><code>.mapToInt(f).sum()</code></td></tr>
+  <tr><td>Fold</td><td><code>.reduce(f, init)</code></td><td><code>.reduce(init, f)</code></td></tr>
+  <tr><td>Back to a list</td><td>already an array</td><td><code>.collect(Collectors.toList())</code></td></tr>
+  <tr><td>Join to string</td><td><code>.join(", ")</code></td><td><code>.collect(Collectors.joining(", "))</code></td></tr>
+  <tr><td>Group</td><td>manual object / <code>Map</code></td><td><code>Collectors.groupingBy(f)</code></td></tr>
+  <tr><td>Count per group</td><td>manual</td><td><code>groupingBy(f, counting())</code></td></tr>
+</table>
+<p>Note the argument order flip on <code>reduce</code>: TypeScript takes
+<code>(reducer, initial)</code>, Java takes <code>(identity, accumulator)</code>.
+The method reference <code>Integer::sum</code> is Java shorthand for
+<code>(a, b) -&gt; a + b</code>. <code>counting()</code> yields a
+<code>Long</code>, not an <code>int</code>, which is why
+<code>countByCategory</code> returns <code>Map&lt;String, Long&gt;</code>.
+Remember a stream is one-shot: build the pipeline and finish it in a single
+chain, since you cannot iterate the same stream twice.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

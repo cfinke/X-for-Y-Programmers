@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null, ?? & ?-></title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null, ?? & ?->",
+
+  intro: `
+<p>The <code>NullPointerException</code> lives in PHP too — dereference
+<code>null</code> with <code>-></code> and you get a fatal
+<code>Error</code>. The difference is <em>when</em> you find out. Kotlin bakes
+null-safety into the type system: <code>User?</code> is a different type from
+<code>User</code>, and the compiler won't let you dereference it without a
+safe call <code>?.</code> or an Elvis fallback <code>?:</code>. PHP has no
+compile-time check, but it hands you the very same two operators. The
+<em>nullsafe</em> operator <code>?-></code> is Kotlin's <code>?.</code>: it
+short-circuits a property or method chain to <code>null</code> the moment any
+link is <code>null</code>. The <em>null coalescing</em> operator <code>??</code>
+is Kotlin's Elvis <code>?:</code>: it supplies the fallback. Your
+<code>user?.address?.city ?: "Unknown"</code> becomes almost
+character-for-character
+<code>$user?->address?->city ?? "Unknown"</code>.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>u?.addr?.city ?: d</code></td><td><code>$u?->addr?->city ?? $d</code></td></tr>
+  <tr><td><code>map.getOrDefault(key, def)</code></td><td><code>$data[$key] ?? $def</code></td></tr>
+  <tr><td><code>x = x ?: def</code></td><td><code>$x ??= $def;</code></td></tr>
+  <tr><td><code>User?</code> (nullable type)</td><td><code>?User</code> (nullable type declaration)</td></tr>
+  <tr><td><code>u != null &amp;&amp; u.address != null</code></td><td><code>isset($u->address)</code></td></tr>
+</table>
+<p><code>??</code> is even more forgiving than Kotlin's <code>?:</code>: it
+works on array keys, properties, and plain variables, and it treats "missing"
+and "null" identically without warnings — reading <code>$data["k"]</code> for an
+absent key raises nothing at all, so <code>$data["k"] ?? $def</code> is your
+<code>map["k"] ?: def</code>. <code>??=</code> assigns only when the left side
+is null, exactly like <code>x = x ?: def</code>. And <code>isset($x)</code>
+answers "is it defined <em>and</em> not null?" in one call — the runtime cousin
+of Kotlin's compile-time non-null guarantee. A nullable parameter is spelled by
+prefixing the type with a question mark: <code>?User $user</code> is Kotlin's
+<code>user: User?</code> with the mark moved to the front.</p>`,
+
+  kotlin: `data class Address(val city: String)
+data class User(val address: Address?)
+
+fun getCity(user: User?): String =
+    // Safe calls chain; Elvis supplies the fallback.
+    user?.address?.city ?: "Unknown"
+
+fun pick(data: Map<String, String>, key: String, def: String): String =
+    data[key] ?: def
+
+getCity(User(Address("Paris")))  // "Paris"
+getCity(User(null))              // "Unknown"
+getCity(null)                    // "Unknown"`,
+
+  task: `
+<p>The starter defines <code>Address</code> and <code>User</code> for you
+(note <code>?Address</code> — the address may be null, like Kotlin's
+<code>Address?</code>). Implement:</p>
+<ol>
+  <li><code>get_city(?User $user): string</code> — return the user's city, or
+      <code>"Unknown"</code> if the user, the address, or the city is missing.
+      This is a one-liner: chain <code>?-></code> through
+      <code>$user?->address?->city</code> and finish with
+      <code>?? "Unknown"</code> — the exact shape of Kotlin's
+      <code>user?.address?.city ?: "Unknown"</code>.</li>
+  <li><code>pick(array $data, string $key, string $default): string</code> —
+      look up <code>$key</code> in the array, falling back to
+      <code>$default</code> when the key is absent <em>or its value is
+      null</em>. That is exactly what <code>$data[$key] ?? $default</code>
+      does — the array-lookup form of Kotlin's
+      <code>map[key] ?: default</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Given: constructor property promotion (Lesson 9 covers it in depth).
+// ?Address means "Address or null" — like @Nullable Address.
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+// 1. One expression: nullsafe chain + null coalescing fallback.
+function get_city(?User $user): string {
+    throw new Exception("TODO: implement get_city with ?-> and ??");
+}
+
+// 2. getOrDefault, PHP-style: $data[$key] ?? $default.
+function pick(array $data, string $key, string $default): string {
+    throw new Exception("TODO: implement pick with ??");
+}
+`,
+
+  requirements: [
+    { pattern: /\?\?/, message: "Use the null coalescing operator ??" },
+    { pattern: /\?->/, message: "Use the nullsafe operator ?-> to chain through possibly-null objects" },
+    { pattern: /\?User|\?Address/, message: "Keep the nullable type declarations (?User / ?Address)" },
+  ],
+
+  tests: [
+    { name: 'get_city(new User(new Address("Paris"))) returns "Paris"',
+      code: 'expect_eq(get_city(new User(new Address("Paris"))), "Paris");' },
+    { name: "get_city(new User()) — null address — returns \"Unknown\"",
+      code: 'expect_eq(get_city(new User()), "Unknown");' },
+    { name: "get_city(null) — null user — returns \"Unknown\"",
+      code: 'expect_eq(get_city(null), "Unknown");' },
+    { name: 'pick(["name" => "Ada"], "name", "n/a") returns "Ada"',
+      code: 'expect_eq(pick(["name" => "Ada"], "name", "n/a"), "Ada");' },
+    { name: 'pick([], "name", "n/a") — missing key — returns "n/a"',
+      code: 'expect_eq(pick([], "name", "n/a"), "n/a");' },
+    { name: 'pick(["name" => null], "name", "n/a") — null value — returns "n/a"',
+      code: 'expect_eq(pick(["name" => null], "name", "n/a"), "n/a");' },
+  ],
+
+  solution: `<?php
+
+class Address {
+    public function __construct(public string $city) {}
+}
+
+class User {
+    public function __construct(public ?Address $address = null) {}
+}
+
+function get_city(?User $user): string {
+    return $user?->address?->city ?? "Unknown";
+}
+
+function pick(array $data, string $key, string $default): string {
+    return $data[$key] ?? $default;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Safe navigation</td><td><code>x?.prop?.deeper</code></td><td><code>$x?->prop?->deeper</code></td></tr>
+  <tr><td>Default value</td><td><code>?: def</code> (Elvis)</td><td><code>?? $def</code></td></tr>
+  <tr><td>Assign if null</td><td><code>x = x ?: def</code></td><td><code>$x ??= $def;</code></td></tr>
+  <tr><td>Nullable type</td><td><code>T?</code></td><td><code>?T</code></td></tr>
+  <tr><td>Defined and not null?</td><td><code>x != null</code> (then smart cast)</td><td><code>isset($x)</code></td></tr>
+  <tr><td>Deref null anyway</td><td><code>NullPointerException</code> (e.g. via <code>!!</code>)</td><td><code>Error: Call to a member function ... on null</code></td></tr>
+</table>
+<p>Good news: this maps almost perfectly onto habits you already have. Where
+Kotlin returns a nullable <code>Address?</code> and lets the caller pick a
+fallback with <code>?:</code>, PHP returns <code>?Address</code> and the caller
+reaches for <code>??</code>. The one thing PHP gives up is the compiler:
+nothing forces you to handle the null, so a forgotten <code>??</code> surfaces
+as a runtime <code>Error</code> rather than a red squiggle in the editor. The
+happy path still reads exactly like the unsafe version with two extra
+characters.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

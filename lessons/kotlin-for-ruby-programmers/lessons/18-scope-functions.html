@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Scope Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Scope Functions",
+
+  intro: `
+<p>Ruby doesn't have a single built-in vocabulary for "do a few things with this
+object and hand something back." You reach for <code>tap</code>, plain assignment,
+or just returning <code>self</code> from a method. Kotlin bakes five of
+these into the standard library: <code>let</code>, <code>run</code>,
+<code>with</code>, <code>apply</code>, and <code>also</code>. They all run a block
+"scoped to" a receiver — the only differences are <em>how the receiver is exposed</em>
+(as <code>it</code> or as <code>this</code>) and <em>what the whole expression
+returns</em> (the receiver itself, or the block's last line).</p>
+<table>
+  <tr><th>Ruby</th><th>Kotlin</th></tr>
+  <tr><td><code>c.tap { |o| o.host = host; o.port = port }</code></td><td><code>c.apply { this.host = host; this.port = port }</code></td></tr>
+  <tr><td><code>x&amp;.then { |v| f(v) }</code></td><td><code>x?.let { f(it) }</code></td></tr>
+  <tr><td><code>x.tap { |v| log(v) }</code></td><td><code>x.also { log(it) }</code></td></tr>
+</table>
+<p>The two you will use constantly: <code>apply</code> (configure an object and get
+<em>it</em> back — perfect for builders) and <code>let</code> (run a block only when
+a nullable is non-null, and get the <em>block's result</em> back — a null-safe
+<code>&amp;.then</code> for a single value). <code>also</code> is the "side effect and pass
+through" one: it hands the receiver to the block as <code>it</code>, ignores the
+block's value, and returns the receiver — just like Ruby's <code>tap</code>.</p>`,
+
+  ruby: `class Config
+  attr_accessor :host, :port, :secure
+
+  def initialize
+    @host = "localhost"
+    @port = 80
+    @secure = false
+  end
+end
+
+def configure(host, port)
+  c = Config.new
+  c.host = host
+  c.port = port
+  c.secure = (port == 443)
+  c
+end
+
+shout = ->(s) { s.nil? ? nil : s.upcase + "!" }`,
+
+  task: `
+<p>A mutable <code>Config</code> data class is already declared for you. Kotlin
+allows top-level declarations — no class wrapper or <code>main</code> needed.
+Write three functions, each showcasing one scope function:</p>
+<ol>
+  <li><code>configure(host: String, port: Int): Config</code> — create a fresh
+      <code>Config()</code> and use <strong><code>apply</code></strong> to set its
+      fields, then return the configured object. Inside the block, use
+      <code>this.host = host</code>, <code>this.port = port</code>, and
+      <code>secure = port == 443</code>.</li>
+  <li><code>shout(s: String?): String?</code> — use a null-guarded
+      <strong><code>?.let</code></strong> so that a non-null string becomes
+      <code>it.uppercase() + "!"</code> and <code>null</code> stays
+      <code>null</code>.</li>
+  <li><code>recordAndReturn(value: Int, log: MutableList&lt;Int&gt;): Int</code> —
+      use <strong><code>also</code></strong> to append <code>value</code> to
+      <code>log</code> as a side effect while returning <code>value</code>
+      unchanged.</li>
+</ol>`,
+
+  starter: `// A mutable data class to configure. Do not change this.
+data class Config(var host: String = "localhost", var port: Int = 80, var secure: Boolean = false)
+
+// 1. Build and configure a Config with apply, then return it.
+fun configure(host: String, port: Int): Config {
+    return Config() // TODO
+}
+
+// 2. Null-guarded transform with ?.let (null stays null).
+fun shout(s: String?): String? {
+    return null // TODO
+}
+
+// 3. Side effect with also: log the value, return it unchanged.
+fun recordAndReturn(value: Int, log: MutableList<Int>): Int {
+    return value // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\.apply\s*\{/, message: "Configure the object with .apply { ... }" },
+    { pattern: /\?\.let\s*\{/, message: "Use a null-guarded ?.let { ... } for shout" },
+    { pattern: /\.also\s*\{/, message: "Use .also { ... } for the side effect" },
+  ],
+
+  tests: [
+    { name: "configure sets host and port", code: "        expect_eq(configure(\"example.com\", 8080), Config(\"example.com\", 8080, false))" },
+    { name: "configure marks port 443 secure", code: "        expect_eq(configure(\"example.com\", 443), Config(\"example.com\", 443, true))" },
+    { name: "configure returns the same object it built", code: "        val c = configure(\"h\", 80)\n        expect_true(c.host == \"h\" && c.port == 80 && !c.secure)" },
+    { name: "shout uppercases and appends !", code: "        expect_eq(shout(\"hi\"), \"HI!\")" },
+    { name: "shout of null is null", code: "        expect_eq(shout(null), null)" },
+    { name: "recordAndReturn returns the value", code: "        val log = mutableListOf<Int>()\n        expect_eq(recordAndReturn(5, log), 5)" },
+    { name: "recordAndReturn logs as a side effect", code: "        val log = mutableListOf<Int>()\n        recordAndReturn(5, log)\n        recordAndReturn(9, log)\n        expect_eq(log, listOf(5, 9))" },
+  ],
+
+  solution: `data class Config(var host: String = "localhost", var port: Int = 80, var secure: Boolean = false)
+
+fun configure(host: String, port: Int): Config =
+    Config().apply {
+        this.host = host
+        this.port = port
+        secure = port == 443
+    }
+
+fun shout(s: String?): String? =
+    s?.let { it.uppercase() + "!" }
+
+fun recordAndReturn(value: Int, log: MutableList<Int>): Int =
+    value.also { log.add(it) }
+`,
+
+  notes: `
+<table>
+  <tr><th>Function</th><th>Receiver is</th><th>Returns</th><th>Reach for it when…</th></tr>
+  <tr><td><code>apply</code></td><td><code>this</code></td><td>the receiver</td><td>configuring an object (builders)</td></tr>
+  <tr><td><code>also</code></td><td><code>it</code></td><td>the receiver</td><td>a side effect in a chain (log, validate)</td></tr>
+  <tr><td><code>let</code></td><td><code>it</code></td><td>block result</td><td>null-guarded transforms: <code>x?.let { … }</code></td></tr>
+  <tr><td><code>run</code></td><td><code>this</code></td><td>block result</td><td>computing a value from a receiver</td></tr>
+  <tr><td><code>with</code></td><td><code>this</code> (arg)</td><td>block result</td><td>many calls on one object, no chaining</td></tr>
+</table>
+<p>Two axes decide everything: <strong>receiver as <code>it</code> vs
+<code>this</code></strong>, and <strong>returns the receiver vs the block's last
+line</strong>. <code>apply</code>/<code>also</code> return the receiver (so they
+disappear from the value of an expression — great in the middle of a chain);
+<code>let</code>/<code>run</code>/<code>with</code> return the block. Use
+<code>it</code>-flavored ones (<code>let</code>, <code>also</code>) when you want a
+name, or when you're diving through a nullable with <code>?.</code>; use the
+<code>this</code>-flavored ones (<code>apply</code>, <code>run</code>,
+<code>with</code>) when the block is mostly member access. And don't over-apply
+them — a plain local <code>val</code> is often clearer than a nested scope
+block.</p>
+<table>
+  <tr><th>Ruby</th><th>Kotlin</th></tr>
+  <tr><td><code>c = C.new; c.a = 1; c</code></td><td><code>C().apply { a = 1 }</code></td></tr>
+  <tr><td><code>x&amp;.then { |v| v.f }</code></td><td><code>x?.let { it.f() }</code></td></tr>
+  <tr><td><code>x.tap { |y| log(y) }</code></td><td><code>x.also { log(it) }</code></td></tr>
+</table>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

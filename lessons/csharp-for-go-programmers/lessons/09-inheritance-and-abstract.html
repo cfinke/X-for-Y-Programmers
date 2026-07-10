@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Go doesn't have classes, inheritance, or an <code>abstract</code> keyword at
+all — it reaches for two different tools instead: <em>interfaces</em> for
+polymorphism (any type with an <code>Area() float64</code> method satisfies a
+<code>Shape</code> interface, no <code>implements</code>/<code>:</code>
+declaration needed) and <em>struct embedding</em> for code reuse (a struct can
+embed another struct to pick up its fields and methods). C# instead builds a
+real class hierarchy with <code>:</code> in place of <code>extends</code>,
+constructors that chain to a parent, and <code>abstract</code>/<code>virtual</code>
+members that opt in to overriding.</p>
+<table>
+  <tr><th>Go</th><th>C#</th></tr>
+  <tr><td>(no inheritance — embed a struct)</td><td><code>class Dog : Animal {}</code></td></tr>
+  <tr><td><code>Rectangle{Name: "Rectangle", ...}</code></td><td><code>: base(name)</code> (constructor)</td></tr>
+  <tr><td><code>type Shape interface { Area() float64 }</code></td><td><code>abstract class Shape {}</code></td></tr>
+  <tr><td>interface method (no body)</td><td><code>public abstract double Area();</code></td></tr>
+  <tr><td>any matching method (implicit)</td><td><code>public override double Area()</code></td></tr>
+  <tr><td>(no equivalent)</td><td><code>sealed class</code> / <code>sealed override</code></td></tr>
+</table>
+<p>Three things to internalize. First, Go has no base-constructor call at all —
+a struct literal just sets every field directly, so there's nothing like
+<code>: base(...)</code> or a <code>super()</code> statement. Second, Go's
+embedding gives you a field and its methods "for free," but it does
+<em>not</em> give you virtual dispatch: a method promoted from an embedded
+struct still runs with the embedded struct as its receiver, not the outer
+type, so there's no equivalent of overriding a base method and having the
+base's other methods automatically call your version. C#'s
+<code>virtual</code>/<code>abstract</code>/<code>override</code> trio exists
+precisely to solve that problem. Third, <code>sealed</code> stops further
+subclassing (or seals a single overridden method) — Go has nothing like it,
+since there's no subclassing to stop in the first place.</p>`,
+
+  go: `type Shape interface {
+	Area() float64
+	Describe() string
+}
+
+type Rectangle struct {
+	Name          string
+	Width, Height float64
+}
+
+func NewRectangle(w, h float64) *Rectangle {
+	return &Rectangle{Name: "Rectangle", Width: w, Height: h}
+}
+
+func (r *Rectangle) Area() float64 {
+	return r.Width * r.Height
+}
+
+func (r *Rectangle) Describe() string {
+	return fmt.Sprintf("%s has area %g", r.Name, r.Area())
+}`,
+
+  task: `
+<p>Build a small shape hierarchy that shows off inheritance, abstract members,
+constructor chaining, and polymorphism.</p>
+<ol>
+  <li>Declare an <code>abstract class Shape</code> with a read-only
+      <code>string Name</code> property set through a <code>protected</code>
+      constructor <code>Shape(string name)</code>.</li>
+  <li>Give <code>Shape</code> an <code>abstract double Area()</code> (no body) and a
+      <code>virtual string Describe()</code> that returns
+      <code>$"{Name} has area {Area()}"</code>.</li>
+  <li><code>Rectangle : Shape</code> — constructor
+      <code>Rectangle(double width, double height) : base("Rectangle")</code>,
+      overriding <code>Area()</code> to return <code>Width * Height</code>.</li>
+  <li><code>Square : Shape</code> — mark it <code>sealed</code>, chain
+      <code>: base("Square")</code>, <code>override Area()</code> to return
+      <code>Side * Side</code>, and <code>override Describe()</code> to return
+      <code>$"Square with side {Side}"</code>.</li>
+</ol>`,
+
+  starter: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return ""; // TODO: "{Name} has area {Area()}"
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return 0; // TODO
+  }
+
+  public override string Describe() {
+    return ""; // TODO
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+double\s+Area/, message: "Declare Area() as an abstract method on Shape" },
+    { pattern: /override\s+double\s+Area/, message: "Override Area() with the override keyword in each subclass" },
+    { pattern: /:\s*base\(/, message: "Chain to the base constructor with : base(...)" },
+  ],
+
+  tests: [
+    { name: "Rectangle(3, 4).Area() is 12", code: "      expect_eq(new Rectangle(3, 4).Area(), 12.0);" },
+    { name: "Square(5).Area() is 25", code: "      expect_eq(new Square(5).Area(), 25.0);" },
+    { name: "Name set via base(...)", code: "      expect_eq(new Rectangle(1, 1).Name, \"Rectangle\");" },
+    { name: "virtual Describe() runs on a base reference", code: "      Shape s = new Rectangle(3, 4);\n      expect_eq(s.Describe(), \"Rectangle has area 12\");" },
+    { name: "Square overrides Describe()", code: "      Shape sq = new Square(5);\n      expect_eq(sq.Describe(), \"Square with side 5\");" },
+    { name: "polymorphism through a base array", code: "      Shape[] shapes = { new Rectangle(2, 3), new Square(4) };\n      double total = 0;\n      foreach (var shape in shapes) total += shape.Area();\n      expect_eq(total, 22.0);" },
+  ],
+
+  solution: `abstract class Shape {
+  public string Name { get; }
+
+  protected Shape(string name) {
+    Name = name;
+  }
+
+  public abstract double Area();
+
+  public virtual string Describe() {
+    return $"{Name} has area {Area()}";
+  }
+}
+
+class Rectangle : Shape {
+  public double Width { get; }
+  public double Height { get; }
+
+  public Rectangle(double width, double height) : base("Rectangle") {
+    Width = width;
+    Height = height;
+  }
+
+  public override double Area() {
+    return Width * Height;
+  }
+}
+
+sealed class Square : Shape {
+  public double Side { get; }
+
+  public Square(double side) : base("Square") {
+    Side = side;
+  }
+
+  public override double Area() {
+    return Side * Side;
+  }
+
+  public override string Describe() {
+    return $"Square with side {Side}";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+  <tr><td>Extend a type</td><td>embed a struct: <code>type D struct { B }</code></td><td><code>class D : B</code></td></tr>
+  <tr><td>Call base ctor</td><td>(none — set fields in a struct literal)</td><td><code>: base(x)</code></td></tr>
+  <tr><td>Abstract method</td><td>interface method: <code>Area() float64</code></td><td><code>public abstract T F();</code></td></tr>
+  <tr><td>Overridable method</td><td>(no virtual dispatch through embedding)</td><td>only <code>virtual</code>/<code>abstract</code></td></tr>
+  <tr><td>Override</td><td>define a same-named method on the outer type</td><td><code>override</code> keyword required</td></tr>
+  <tr><td>Block subclassing</td><td>(none — no subclassing to block)</td><td><code>sealed class</code></td></tr>
+</table>
+<p>C# is far more structured than Go here, and deliberately so: Go has no class
+hierarchy to be strict or loose about in the first place. Where C# lets an
+overriding method reach the parent's version with <code>base.Describe()</code>,
+Go has nothing analogous — embedding only forwards calls in one direction,
+from the outer struct down to the embedded one, never back up to a method
+defined on the outer type. An <code>abstract</code> class in C# cannot be
+instantiated with <code>new</code>; it exists only to be inherited. Go's
+closest analog is an interface, which likewise can't be instantiated on its
+own — only satisfied by a concrete type. <code>sealed</code> is C#'s way of
+saying "no further subclasses, ever," which lets the runtime devirtualize
+calls and documents that the type is a leaf; since Go has no subclassing to
+begin with, there's nothing to seal.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

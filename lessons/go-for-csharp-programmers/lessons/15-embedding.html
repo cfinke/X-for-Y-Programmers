@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Embedding & Composition</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Embedding & Composition",
+
+  intro: `
+<p>C# reaches for <code>class Car : Engine</code> when one type
+should reuse another. Go has no classes and no inheritance — instead you
+<em>embed</em> one type inside another. Write a type's name with no field name
+inside a struct, and its fields and methods are <strong>promoted</strong>: you
+call <code>car.Start()</code> even though <code>Start</code> is defined on the
+embedded <code>Engine</code>. This is composition, and Go leans on it everywhere
+in place of an inheritance tree.</p>
+<table>
+  <tr><th>C#</th><th>Go</th></tr>
+  <tr><td><code>class Car : Engine {}</code></td><td><code>type Car struct { Engine }</code></td></tr>
+  <tr><td><code>base.Start()</code></td><td><code>car.Engine.Start()</code></td></tr>
+  <tr><td><code>car.Start()</code> (inherited)</td><td><code>car.Start()</code> (promoted)</td></tr>
+  <tr><td><code>interface IVehicle : IA, IB {}</code></td><td><code>type V interface { A; B }</code></td></tr>
+</table>
+<p>There is no <code>: Engine</code> base-class syntax and no <code>base</code>
+keyword. Embedding is just a field with no name: the outer type gains the inner
+type's methods, but the inner value is still reachable by its type name
+(<code>car.Engine</code>) when you need it. Interfaces embed the same way —
+<code>Vehicle</code> can be built by listing the smaller interfaces it should
+include, and any type that has all the required methods satisfies it
+automatically.</p>`,
+
+  csharp: `class Engine
+{
+    public int Horsepower;
+    public Engine(int hp) { Horsepower = hp; }
+    public string Start() => "vroom";
+}
+
+class Car : Engine
+{
+    public string Brand;
+    public Car(string brand, int hp) : base(hp) { Brand = brand; }
+    public string Description() => $"{Brand} with {Horsepower} hp";
+}`,
+
+  task: `
+<p>The types are declared for you with embedding already in place (no
+<code>package</code>, <code>import</code>, or <code>main</code> — those are added
+for you). <code>Car</code> embeds <code>Engine</code>, and the <code>Vehicle</code>
+interface embeds <code>Starter</code> and <code>Describer</code>. Fill in the three
+bodies so the promoted members line up:</p>
+<ol>
+  <li><code>(Engine).Start() string</code> returns <code>"vroom"</code>. Because
+      <code>Car</code> embeds <code>Engine</code>, a <code>Car</code> value can
+      call <code>Start()</code> directly.</li>
+  <li><code>(Car).Description() string</code> returns something like
+      <code>"Tesla with 200 hp"</code> — read the promoted field as
+      <code>c.Horsepower</code> and use
+      <code>fmt.Sprintf("%s with %d hp", c.Brand, c.Horsepower)</code>.</li>
+  <li><code>Report(v Vehicle) string</code> returns
+      <code>v.Start() + " / " + v.Description()</code> via
+      <code>fmt.Sprintf("%s / %s", v.Start(), v.Description())</code>. A
+      <code>Car</code> satisfies <code>Vehicle</code> for free: it has
+      <code>Start</code> (promoted) and <code>Description</code> (its own).</li>
+</ol>`,
+
+  starter: `type Engine struct {
+	Horsepower int
+}
+
+func (e Engine) Start() string {
+	return "" // TODO
+}
+
+type Starter interface {
+	Start() string
+}
+
+type Describer interface {
+	Description() string
+}
+
+type Vehicle interface {
+	Starter
+	Describer
+}
+
+type Car struct {
+	Engine
+	Brand string
+}
+
+func (c Car) Description() string {
+	return "" // TODO: use the promoted c.Horsepower field
+}
+
+func Report(v Vehicle) string {
+	return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /type\s+Car\s+struct\s*{[\s\S]*?\bEngine\b/, message: "Embed Engine inside the Car struct" },
+    { pattern: /type\s+Vehicle\s+interface\s*{[\s\S]*?\bStarter\b/, message: "Embed Starter in the Vehicle interface" },
+    { pattern: /\.Horsepower\b/, message: "Read the promoted Horsepower field in Description" },
+  ],
+
+  tests: [
+    { name: "promoted Start() returns \"vroom\"", code: "\t\tc := Car{Engine: Engine{Horsepower: 200}, Brand: \"Tesla\"}\n\t\texpect_eq(c.Start(), \"vroom\")" },
+    { name: "promoted Horsepower field is readable", code: "\t\tc := Car{Engine: Engine{Horsepower: 200}, Brand: \"Tesla\"}\n\t\texpect_eq(c.Horsepower, 200)" },
+    { name: "Description uses the promoted field", code: "\t\tc := Car{Engine: Engine{Horsepower: 200}, Brand: \"Tesla\"}\n\t\texpect_eq(c.Description(), \"Tesla with 200 hp\")" },
+    { name: "Car satisfies the embedded Vehicle interface", code: "\t\tc := Car{Engine: Engine{Horsepower: 90}, Brand: \"Fiat\"}\n\t\texpect_eq(Report(c), \"vroom / Fiat with 90 hp\")" },
+    { name: "inner value still reachable by type name", code: "\t\tc := Car{Engine: Engine{Horsepower: 120}, Brand: \"Honda\"}\n\t\texpect_eq(c.Engine.Start(), \"vroom\")" },
+  ],
+
+  solution: `type Engine struct {
+	Horsepower int
+}
+
+func (e Engine) Start() string {
+	return "vroom"
+}
+
+type Starter interface {
+	Start() string
+}
+
+type Describer interface {
+	Description() string
+}
+
+type Vehicle interface {
+	Starter
+	Describer
+}
+
+type Car struct {
+	Engine
+	Brand string
+}
+
+func (c Car) Description() string {
+	return fmt.Sprintf("%s with %d hp", c.Brand, c.Horsepower)
+}
+
+func Report(v Vehicle) string {
+	return fmt.Sprintf("%s / %s", v.Start(), v.Description())
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+  <tr><td>Reuse a type</td><td><code>class B : A {}</code></td><td><code>type B struct { A }</code></td></tr>
+  <tr><td>Call reused method</td><td><code>b.Method()</code></td><td><code>b.method()</code> (promoted)</td></tr>
+  <tr><td>Reach the base</td><td><code>base.Method()</code></td><td><code>b.A.method()</code></td></tr>
+  <tr><td>Compose interfaces</td><td><code>interface IC : IA, IB {}</code></td><td><code>type C interface { A; B }</code></td></tr>
+  <tr><td>Satisfy interface</td><td><code>class C : IShape</code></td><td>implicit (has the methods)</td></tr>
+</table>
+<p>Embedding looks like inheritance but is not: there is no subtype relationship,
+no virtual dispatch, and the outer type does not "become" the inner one — a
+<code>Car</code> is not an <code>Engine</code>, it just <em>has</em> one whose
+members are promoted. If the outer type defines a method with the same name, that
+method wins and shadows the promoted one, and you can still reach the inner
+version explicitly with <code>car.Engine.Start()</code>. Go's proverb is "prefer
+composition over inheritance," and embedding is the ergonomic tool that makes
+composition feel as convenient as the inheritance you left behind.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

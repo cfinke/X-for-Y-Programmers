@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Sealed Types &amp; Pattern Matching</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Sealed Types & Pattern Matching",
+
+  intro: `
+<p>In Kotlin you already model a closed set of variants with a
+<em>sealed</em> class or interface: every direct subtype must live in the
+same module (and, before compilation, the same package), so the compiler
+knows the complete list without you spelling it out. A <code>when</code>
+expression over a sealed type smart-casts each branch and is checked for
+exhaustiveness — leave a subtype out and it fails to compile. Modern Java
+(17–21) reaches almost the same destination with two features working
+together: <strong>sealed</strong> types that spell out exactly which classes
+may implement an interface, and <strong>pattern matching</strong> that both
+tests a type and binds a typed variable in one step.</p>
+<table>
+  <tr><th>Kotlin</th><th>Java</th></tr>
+  <tr><td><code>sealed interface Shape</code> (permitted subtypes inferred)</td><td><code>sealed interface Shape permits Circle, Rect {}</code> (permitted subtypes spelled out)</td></tr>
+  <tr><td>the runtime class itself is the discriminant</td><td>the runtime class itself is the discriminant</td></tr>
+  <tr><td><code>if (s is Circle)</code> narrows via smart cast</td><td><code>if (s instanceof Circle c)</code> narrows and binds</td></tr>
+  <tr><td><code>when (s) { is Circle -> ... }</code></td><td><code>switch (s) { case Circle c -> ... }</code></td></tr>
+  <tr><td>exhaustive <code>when</code> needs no <code>else</code></td><td>a covered sealed hierarchy needs no <code>default</code></td></tr>
+</table>
+<p>Because a <code>sealed</code> hierarchy is closed, the Java compiler knows the
+complete list of subtypes — the main difference from Kotlin is that Java makes
+you write the <code>permits</code> clause out explicitly, where Kotlin infers
+it from whichever subtypes it finds in the module. A <code>switch</code> that
+has one <code>case</code> per permitted subtype is <em>exhaustive</em>, so you
+can drop the <code>default</code> branch entirely — and if you later add a
+variant, the switch stops compiling until you handle it, the same guarantee
+Kotlin's <code>when</code> gives you. Records make excellent sealed members:
+they are terse, final, and pair naturally with the arrow-form switch, much
+like Kotlin's data classes pair naturally with sealed hierarchies.</p>`,
+
+  kotlin: `sealed interface Shape
+data class Circle(val r: Double) : Shape
+data class Rect(val w: Double, val h: Double) : Shape
+
+fun area(s: Shape): Double = when (s) {
+    is Circle -> Math.PI * s.r * s.r
+    is Rect   -> s.w * s.h
+}`,
+
+  task: `
+<p>Model a small closed set of shapes and pattern-match over it — the same
+shape you'd reach for with a Kotlin sealed interface and a
+<code>when</code> expression. Records keep the data classes to one line
+each.</p>
+<ol>
+  <li>Declare a <code>sealed interface Shape</code> that <code>permits</code>
+      <code>Circle</code> and <code>Rect</code>.</li>
+  <li>Make <code>Circle(double r)</code> and <code>Rect(double w, double h)</code>
+      records that implement <code>Shape</code>.</li>
+  <li>In a class <code>Shapes</code>, write a <code>static double area(Shape s)</code>
+      that uses a <strong>switch with pattern matching</strong>
+      (<code>case Circle c -> ...</code>) over the hierarchy. A circle's area is
+      <code>Math.PI * r * r</code>; a rectangle's is <code>w * h</code>. No
+      <code>default</code> is needed — the hierarchy is sealed.</li>
+  <li>Also write <code>static String describe(Shape s)</code> that uses
+      <strong>pattern matching for <code>instanceof</code></strong> to return
+      <code>"circle"</code> for a <code>Circle</code> and <code>"rect"</code>
+      otherwise.</li>
+</ol>`,
+
+  starter: `sealed interface Shape permits Circle, Rect {}
+
+record Circle(double r) implements Shape {}
+
+record Rect(double w, double h) implements Shape {}
+
+class Shapes {
+  static double area(Shape s) {
+    return 0; // TODO: switch with pattern matching over the sealed hierarchy
+  }
+
+  static String describe(Shape s) {
+    return ""; // TODO: use instanceof pattern matching
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /sealed\s+interface\s+Shape\s+permits\s+Circle\s*,\s*Rect/, message: "Declare a sealed interface Shape that permits Circle, Rect" },
+    { pattern: /switch\s*\(\s*s\s*\)/, message: "Use a switch over the Shape value in area()" },
+    { pattern: /case\s+Circle\s+\w+\s*->/, message: "Use switch pattern matching (case Circle c -> ...)" },
+    { pattern: /instanceof\s+Circle\s+\w+/, message: "Use instanceof pattern matching in describe()" },
+  ],
+
+  tests: [
+    { name: "area of Circle(2) is PI*4", code: "      expect_eq(Shapes.area(new Circle(2)), Math.PI * 4);" },
+    { name: "area of Rect(3, 4) is 12", code: "      expect_eq(Shapes.area(new Rect(3, 4)), 12.0);" },
+    { name: "area of Circle(1) is PI", code: "      expect_eq(Shapes.area(new Circle(1)), Math.PI);" },
+    { name: 'describe(Circle) is "circle"', code: "      expect_eq(Shapes.describe(new Circle(5)), \"circle\");" },
+    { name: 'describe(Rect) is "rect"', code: "      expect_eq(Shapes.describe(new Rect(1, 2)), \"rect\");" },
+    { name: "Shape is a sealed interface", code: "      expect_true(Shape.class.isSealed());" },
+  ],
+
+  solution: `sealed interface Shape permits Circle, Rect {}
+
+record Circle(double r) implements Shape {}
+
+record Rect(double w, double h) implements Shape {}
+
+class Shapes {
+  static double area(Shape s) {
+    return switch (s) {
+      case Circle c -> Math.PI * c.r() * c.r();
+      case Rect r   -> r.w() * r.h();
+    };
+  }
+
+  static String describe(Shape s) {
+    if (s instanceof Circle c) {
+      return "circle";
+    }
+    return "rect";
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+  <tr><td>Closed variant set</td><td><code>sealed interface</code> / <code>sealed class</code></td><td><code>sealed … permits A, B</code></td></tr>
+  <tr><td>One-line data class</td><td><code>data class Circle(val r: Double) : Shape</code></td><td><code>record Circle(double r) implements Shape {}</code></td></tr>
+  <tr><td>Test + narrow</td><td><code>if (s is Circle)</code> (smart cast)</td><td><code>if (s instanceof Circle c)</code></td></tr>
+  <tr><td>Match on type</td><td><code>when (s) { is Circle -> … }</code></td><td><code>switch (s) { case Circle c -> … }</code></td></tr>
+  <tr><td>Exhaustiveness</td><td>compiler-checked over a sealed type</td><td>automatic over a sealed type</td></tr>
+</table>
+<p>A permitted subtype must itself be <code>final</code>, <code>sealed</code>, or
+<code>non-sealed</code> — records are implicitly final, which is why they slot in
+cleanly. The arrow form <code>case Circle c -&gt;</code> avoids fall-through and
+lets the whole <code>switch</code> be an expression that yields a value, just
+like Kotlin's <code>when</code> is already an expression.</p>
+<p>The payoff is the same guarantee Kotlin's exhaustive <code>when</code> gives
+you: because the hierarchy is closed and every branch is covered, there is no
+<code>default</code>, and adding a third shape turns the missing branch into a
+compile error rather than a silent runtime surprise (an unhandled branch in a
+Kotlin <code>when</code> used as an expression fails to compile the same way).
+Java 21 goes further with <em>record patterns</em>
+(<code>case Circle(double r) -&gt;</code>) that destructure in the label, much
+like Kotlin's destructuring declarations.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

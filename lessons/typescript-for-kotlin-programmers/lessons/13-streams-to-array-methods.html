@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Streams → Array Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Streams → Array Methods",
+
+  intro: `
+<p>Good news: this one is almost muscle memory. Kotlin's collection functions —
+<code>filter</code>, <code>map</code>, <code>sumOf</code>, <code>sortedBy</code> —
+already chain directly on any <code>List</code>, with no <code>.stream()</code> to
+open a pipeline and no terminal collector to close it. TypeScript arrays work the
+same way: <code>filter</code>, <code>map</code>, <code>reduce</code>, and friends
+are methods that each return a new array, so they chain immediately. The shapes
+line up nearly one to one:</p>
+<table>
+  <tr><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td><code>products.filter { it.inStock }</code></td><td><code>products.filter(p =&gt; p.inStock)</code></td></tr>
+  <tr><td><code>.map { it.name }</code></td><td><code>.map(p =&gt; p.name)</code></td></tr>
+  <tr><td>nothing — you already have a <code>List</code></td><td>nothing — you already have an array</td></tr>
+  <tr><td><code>.sumOf { it.price * it.quantity }</code></td><td><code>.reduce((sum, p) =&gt; sum + ..., 0)</code></td></tr>
+  <tr><td><code>.sortedBy { it.price }</code></td><td><code>[...arr].sort((a, b) =&gt; a.price - b.price)</code></td></tr>
+</table>
+<p>Two adjustments. First, there is no <code>sumOf</code> (or
+<code>sumBy</code>): the only reduction primitive is <code>reduce</code>, so
+summing is a plain <code>reduce</code> with a seed value — the same idea as
+Kotlin's <code>fold(0.0) { acc, p -&gt; acc + ... }</code>. Second, the one trap:
+<strong><code>.sort()</code> mutates the array in place</strong>, unlike Kotlin's
+<code>sortedBy</code>, which returns a new list and leaves the source untouched
+(that's <code>sort()</code> vs <code>sortedBy</code> in Kotlin terms). The idiom
+is to copy first with spread — <code>[...products].sort(...)</code> — and note
+that the comparator returns a number (negative/zero/positive), the same contract
+as a Kotlin <code>Comparator</code>.</p>`,
+
+  kotlin: `val inStockNames: List<String> = products
+    .filter { it.inStock }
+    .map { it.name }
+
+val totalValue: Double = products
+    .filter { it.inStock }
+    .sumOf { it.price * it.quantity }
+
+// sortedBy returns a new list; the source list is untouched.
+val byPrice: List<Product> = products.sortedBy { it.price }`,
+
+  task: `
+<p>The <code>Product</code> interface is already in the starter. Port the
+three pipelines:</p>
+<ol>
+  <li><code>inStockNames(products: Product[]): string[]</code> — the names of
+      in-stock products, via <code>.filter(...)</code> chained straight into
+      <code>.map(...)</code>.</li>
+  <li><code>totalValue(products: Product[]): number</code> — the sum of
+      <code>price * quantity</code> over in-stock products, using
+      <code>.reduce(...)</code> with <code>0</code> as the initial value
+      (Kotlin's <code>sumOf { ... }</code>).</li>
+  <li><code>sortByPrice(products: Product[]): Product[]</code> — a
+      <strong>new</strong> array sorted by ascending price. Copy with
+      <code>[...products]</code> before calling <code>.sort(...)</code>, or
+      you will mutate the caller's array — the tests check for this.</li>
+</ol>`,
+
+  starter: `interface Product {
+  name: string;
+  price: number;
+  quantity: number;
+  inStock: boolean;
+}
+
+// 1. No .stream(), no .collect() — filter and map chain directly.
+function inStockNames(products: Product[]): string[] {
+  // TODO: filter to in-stock products, then map to their names
+  return [];
+}
+
+// 2. mapToDouble(...).sum() becomes a single reduce with a seed of 0.
+function totalValue(products: Product[]): number {
+  // TODO: filter in-stock, then reduce price * quantity into a total
+  return 0;
+}
+
+// 3. CAREFUL: .sort() mutates in place, unlike stream().sorted().
+//    Copy first with [...products].
+function sortByPrice(products: Product[]): Product[] {
+  // TODO: return a NEW array sorted by ascending price
+  return [];
+}
+`,
+
+  exportNames: ["inStockNames", "totalValue", "sortByPrice"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter(...) — the direct equivalent of stream().filter(...)" },
+    { pattern: /\.map\s*\(/, message: "Use .map(...) — the direct equivalent of stream().map(...)" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce(...) for the total — TypeScript's mapToDouble(...).sum()" },
+    { pattern: /\[\s*\.\.\.\w+\s*\]\s*\.sort/, message: "Copy before sorting: [...products].sort(...) — .sort() mutates in place" },
+  ],
+
+  tests: [
+    {
+      name: 'inStockNames returns ["Keyboard", "Mouse"]',
+      run: (x) => expectDeepEqual(
+        x.inStockNames([
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ]),
+        ["Keyboard", "Mouse"]
+      ),
+    },
+    {
+      name: "totalValue sums price * quantity for in-stock products (280)",
+      run: (x) => expectEqual(
+        x.totalValue([
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ]),
+        280
+      ),
+    },
+    {
+      name: "totalValue of an empty array is 0 (the reduce seed)",
+      run: (x) => expectEqual(x.totalValue([]), 0),
+    },
+    {
+      name: "sortByPrice orders ascending: Mouse, Keyboard, Monitor",
+      run: (x) => expectDeepEqual(
+        x.sortByPrice([
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ]).map((p) => p.name),
+        ["Mouse", "Keyboard", "Monitor"]
+      ),
+    },
+    {
+      name: "sortByPrice does NOT mutate the input array",
+      run: (x) => {
+        const original = [
+          { name: "Keyboard", price: 90, quantity: 2, inStock: true },
+          { name: "Monitor", price: 350, quantity: 1, inStock: false },
+          { name: "Mouse", price: 25, quantity: 4, inStock: true },
+        ];
+        const sorted = x.sortByPrice(original);
+        expectTruthy(sorted !== original);
+        expectDeepEqual(original.map((p) => p.name), ["Keyboard", "Monitor", "Mouse"]);
+      },
+    },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  quantity: number;
+  inStock: boolean;
+}
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter(p => p.inStock).map(p => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products
+    .filter(p => p.inStock)
+    .reduce((sum, p) => sum + p.price * p.quantity, 0);
+}
+
+function sortByPrice(products: Product[]): Product[] {
+  return [...products].sort((a, b) => a.price - b.price);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>TypeScript</th></tr>
+  <tr><td>Chain / materialize</td><td>chains directly → returns a <code>List</code></td><td>nothing — arrays chain directly</td></tr>
+  <tr><td>Filter</td><td><code>.filter { it.inStock }</code></td><td><code>.filter(p =&gt; p.inStock)</code></td></tr>
+  <tr><td>Map</td><td><code>.map { it.name }</code></td><td><code>.map(p =&gt; p.name)</code></td></tr>
+  <tr><td>Sum</td><td><code>.sumOf { it.price * it.quantity }</code></td><td><code>.reduce((sum, p) =&gt; sum + ..., 0)</code></td></tr>
+  <tr><td>Sort (non-mutating)</td><td><code>.sortedBy { it.price }</code></td><td><code>[...arr].sort((a, b) =&gt; a.x - b.x)</code> — copy first!</td></tr>
+  <tr><td>any / all</td><td><code>.any { ... }</code> / <code>.all { ... }</code></td><td><code>.some(...)</code> / <code>.every(...)</code></td></tr>
+  <tr><td>find first</td><td><code>.firstOrNull { ... }</code> → <code>T?</code></td><td><code>.find(...)</code> → <code>T | undefined</code></td></tr>
+</table>
+<p>The mental model is nearly identical to Kotlin's collection functions: each
+call allocates and returns a real, eager array immediately — every intermediate
+result is a value you can inspect, log, or return. (Kotlin's <code>Sequence</code>
+is the lazy analogue, but plain <code>List</code> operations are eager, just like
+these.) Just remember the two mutators hiding among the pure methods:
+<code>.sort()</code> and <code>.reverse()</code> change the array in place — the
+counterparts to Kotlin's <code>sortedBy</code>/<code>reversed()</code> would be
+<code>sort()</code>/<code>reverse()</code> on a <code>MutableList</code>. Spread-copy
+first, exactly as you did here.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

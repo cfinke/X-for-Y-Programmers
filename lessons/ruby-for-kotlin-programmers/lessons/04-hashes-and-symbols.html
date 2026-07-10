@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Hashes & Symbols</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Hashes & Symbols",
+
+  intro: `
+<p>Kotlin's <code>Map&lt;String, Int&gt;</code> becomes Ruby's
+<code>Hash</code>, and the ceremony gap is at its widest here: no
+<code>mapOf</code> call, no type parameters, no <code>put</code>. A hash is a
+literal — <code>{ apples: 3, bananas: 5 }</code> — you read with
+<code>h[:apples]</code> and write with <code>h[:cherries] = 12</code>. Note
+those keys: <code>:apples</code> is a <strong>symbol</strong>, a lightweight
+interned identifier. You already know the concept — the JVM interns string
+literals behind the scenes — Ruby just makes the interned thing a visible,
+first-class type, and symbols are the idiomatic choice for hash keys.</p>
+<table>
+  <tr><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td><code>mapOf("apples" to 3, "bananas" to 5)</code></td><td><code>{ apples: 3, bananas: 5 }</code></td></tr>
+  <tr><td><code>map[k] = v</code> (on a <code>MutableMap</code>)</td><td><code>h[k] = v</code></td></tr>
+  <tr><td><code>map[k]</code> (<code>null</code> when missing)</td><td><code>h[k]</code> (<code>nil</code> when missing)</td></tr>
+  <tr><td><code>map.getOrDefault(k, 0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+  <tr><td><code>for ((k, v) in map)</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td><code>map.keys</code></td><td><code>h.keys</code></td></tr>
+</table>
+<p>One gotcha to tattoo somewhere visible: <code>h[:name]</code> and
+<code>h["name"]</code> are <em>different keys</em>. A symbol and a string
+never compare equal, so a hash built with symbol keys returns
+<code>nil</code> for string lookups — the classic first-week Ruby bug.
+And where Kotlin's <code>map[k]</code> hands you a nullable
+<code>Int?</code> to unpack, <code>h.fetch(k, 0)</code> is your
+<code>getOrDefault</code>; without the default, <code>fetch</code> raises on a
+missing key, which is often exactly the fail-fast behavior you want (think of
+it as the <code>!!</code> that also tells you which key was missing).</p>`,
+
+  kotlin: `fun main() {
+    val inventory = mutableMapOf("apples" to 3, "bananas" to 5)
+
+    val apples = inventory.getOrDefault("apples", 0)
+    val pears  = inventory.getOrDefault("pears", 0)   // 0, not null
+
+    for ((key, value) in inventory) {
+        println("\$key: \$value")
+    }
+
+    val stocked = "apples" in inventory.keys
+
+    // A copy with one count bumped — leaving the original untouched:
+    val updated = inventory + ("apples" to (inventory.getOrDefault("apples", 0) + 2))
+}`,
+
+  task: `
+<p>Rebuild the inventory in Ruby, with symbol keys throughout:</p>
+<ol>
+  <li><code>build_inventory</code> — the hash literal
+      <code>{ apples: 3, bananas: 5 }</code> as the last expression. No
+      <code>mapOf</code>, no <code>put</code>.</li>
+  <li><code>get_count(inv, name)</code> — the count for <code>name</code>, or
+      <code>0</code> when it isn't stocked: <code>inv.fetch(name, 0)</code>
+      is <code>getOrDefault</code>.</li>
+  <li><code>add_stock(inv, name, n)</code> — a <em>new</em> hash with
+      <code>n</code> added to <code>name</code>'s count, leaving
+      <code>inv</code> untouched:
+      <code>inv.merge(name =&gt; inv.fetch(name, 0) + n)</code>. (The
+      <code>=&gt;</code> "hash rocket" pairs a key <em>variable</em> with a
+      value — the <code>key: value</code> shorthand only works for literal
+      symbol keys.) The tests check that the original is not mutated.</li>
+  <li><code>has_apples?(inv)</code> — true when <code>:apples</code> appears
+      among <code>inv.keys</code> (Kotlin's <code>"apples" in map.keys</code>;
+      remember lesson 2's <code>include?</code>).</li>
+</ol>`,
+
+  starter: `# 1. build_inventory: a hash literal with symbol keys — { apples: 3, ... }
+def build_inventory
+  raise NotImplementedError, "TODO: implement build_inventory"
+end
+
+# 2. get_count: getOrDefault(name, 0)  ->  inv.fetch(name, 0)
+def get_count(inv, name)
+  raise NotImplementedError, "TODO: implement get_count"
+end
+
+# 3. add_stock: a NEW hash via merge — do not modify inv.
+#    inv.merge(name => inv.fetch(name, 0) + n)
+def add_stock(inv, name, n)
+  raise NotImplementedError, "TODO: implement add_stock"
+end
+
+# 4. has_apples?: is :apples among inv.keys?
+def has_apples?(inv)
+  raise NotImplementedError, "TODO: implement has_apples?"
+end
+`,
+
+  requirements: [
+    { pattern: /fetch\s*\(/, message: "Use fetch( with a default in get_count" },
+    { pattern: /merge/, message: "Use merge in add_stock (non-mutating)" },
+    { pattern: /:\w+/, message: "Use a symbol like :apples" },
+    { pattern: /\.each|\.keys/, message: "Use .keys (or .each) to look at the hash's keys" },
+  ],
+
+  tests: [
+    { name: "build_inventory returns { apples: 3, bananas: 5 }",
+      code: "  expect_eq(build_inventory, { apples: 3, bananas: 5 })" },
+    { name: "get_count({ apples: 3 }, :apples) returns 3",
+      code: "  expect_eq(get_count({ apples: 3 }, :apples), 3)" },
+    { name: "get_count({ apples: 3 }, :pears) returns 0",
+      code: "  expect_eq(get_count({ apples: 3 }, :pears), 0)" },
+    { name: "add_stock({ apples: 3 }, :apples, 2) returns { apples: 5 } without mutating the original",
+      code: "  inv = { apples: 3 }\n  expect_eq(add_stock(inv, :apples, 2), { apples: 5 })\n  expect_eq(inv, { apples: 3 })" },
+    { name: "add_stock({ apples: 3 }, :pears, 4) returns { apples: 3, pears: 4 }",
+      code: "  expect_eq(add_stock({ apples: 3 }, :pears, 4), { apples: 3, pears: 4 })" },
+    { name: "has_apples?({ apples: 1 }) is true; has_apples?({ bananas: 2 }) is false",
+      code: "  expect_true(has_apples?({ apples: 1 }))\n  expect_eq(has_apples?({ bananas: 2 }), false)" },
+  ],
+
+  solution: `def build_inventory
+  { apples: 3, bananas: 5 }
+end
+
+def get_count(inv, name)
+  inv.fetch(name, 0)
+end
+
+def add_stock(inv, name, n)
+  inv.merge(name => inv.fetch(name, 0) + n)
+end
+
+def has_apples?(inv)
+  inv.keys.include?(:apples)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Ruby</th></tr>
+  <tr><td>Create</td><td><code>mutableMapOf("apples" to 3)</code></td><td><code>{ apples: 3 }</code> or <code>{}</code></td></tr>
+  <tr><td>Write</td><td><code>map[k] = v</code></td><td><code>h[k] = v</code></td></tr>
+  <tr><td>Read</td><td><code>map[k]</code> (null if missing)</td><td><code>h[k]</code> (nil if missing)</td></tr>
+  <tr><td>Read with default</td><td><code>map.getOrDefault(k, 0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+  <tr><td>Read, fail fast</td><td><code>map.getValue(k)</code> throws <code>NoSuchElementException</code></td><td><code>h.fetch(k)</code> raises <code>KeyError</code></td></tr>
+  <tr><td>Iterate</td><td><code>for ((k, v) in map)</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+  <tr><td>Keys / values</td><td><code>map.keys</code> / <code>map.values</code></td><td><code>h.keys</code> / <code>h.values</code> (arrays)</td></tr>
+  <tr><td>Copy + update</td><td><code>map + (k to v)</code></td><td><code>h.merge(k =&gt; v)</code></td></tr>
+  <tr><td>Key present?</td><td><code>k in map</code> / <code>map.containsKey(k)</code></td><td><code>h.key?(k)</code></td></tr>
+</table>
+<p>Symbols are why Ruby hashes read like data: <code>:apples</code> is one
+immutable, interned object however many times it appears, so comparison is
+identity-fast and the literal doubles as documentation. The
+<code>{ apples: 3 }</code> shorthand is just sugar for
+<code>{ :apples =&gt; 3 }</code> — when the key is a variable or a string,
+you're back to the rocket. Keep the gotcha in mind when JSON enters the
+picture: parsed JSON has <em>string</em> keys unless you ask otherwise
+(lesson 19).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

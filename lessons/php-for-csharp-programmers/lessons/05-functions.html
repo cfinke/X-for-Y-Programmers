@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>A decade of C# has trained you to wrap everything in a class — even pure
+helpers end up as <code>static</code> methods on a <code>static class</code>.
+PHP simply lets functions exist: <code>function greet(...) { }</code> at the
+top level of a file, called as <code>greet(...)</code>. No
+<code>Program</code>, no <code>Utils</code> wrapper, no <code>static</code>.
+The good news is how much carries over unchanged: default parameter values use
+the same <code>= "Hello"</code> syntax, and named arguments are literally the
+C# syntax — <code>greet(name: "Ada")</code>.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>static class Utils { static string F()... }</code></td><td><code>function f(): string { ... }</code> (free function)</td></tr>
+  <tr><td><code>string greeting = "Hello"</code> (default)</td><td><code>string $greeting = "Hello"</code></td></tr>
+  <tr><td><code>string? last = null</code></td><td><code>?string $last = null</code> (prefix <code>?</code>)</td></tr>
+  <tr><td>overloads / <code>object</code></td><td><code>int|string $id</code> — a real union type</td></tr>
+  <tr><td><code>Greet(name: "Ada")</code></td><td><code>greet(name: "Ada")</code> — identical!</td></tr>
+</table>
+<p>Two type-system notes. Nullable moves to a <em>prefix</em>:
+<code>string?</code> becomes <code>?string</code>. And PHP 8 has genuine
+<strong>union types</strong> — <code>int|string $id</code> accepts either,
+enforced at runtime — where C# would push you toward overloads or an
+<code>object</code> parameter plus pattern matching. Inside the function you
+branch on the runtime type with <code>is_int($id)</code>,
+<code>is_string($id)</code>, and friends: your <code>id is int n</code>
+pattern, as a function call.</p>`,
+
+  csharp: `static class Greetings   // C#: even helpers need a class
+{
+    public static string Greet(string name, string greeting = "Hello")
+        => $"{greeting}, {name}!";
+
+    public static string FormatName(string first, string? last = null)
+        => last is null ? first : $"{first} {last}";
+
+    // No union types in C# — object + pattern matching instead.
+    public static string Describe(object id)
+        => id is int n ? $"ID number {n}" : $"ID code {id}";
+}
+
+var a = Greetings.Greet("Ada");                          // "Hello, Ada!"
+var b = Greetings.Greet(name: "Ada", greeting: "Howdy"); // named args
+var c = Greetings.Describe(42);                          // "ID number 42"`,
+
+  task: `
+<p>Unwrap the static class into three free functions:</p>
+<ol>
+  <li><code>greet(string $name, string $greeting = "Hello"): string</code> —
+      return <code>"$greeting, $name!"</code>. The default value syntax is the
+      one you already use. The tests also call it with named arguments —
+      <code>greet(greeting: "Hey", name: "Grace")</code> — which work as long
+      as your parameters keep these names.</li>
+  <li><code>format_name(string $first, ?string $last = null): string</code> —
+      note the <em>prefix</em> nullable. Return <code>"First Last"</code> when
+      <code>$last</code> is given, just <code>$first</code> when it's
+      <code>null</code> (<code>$last === null</code> is your
+      <code>last is null</code>).</li>
+  <li><code>describe(int|string $id): string</code> — a union type C# doesn't
+      have. Use <code>is_int($id)</code> to return
+      <code>"ID number 42"</code> for ints and <code>"ID code A-7"</code> for
+      strings.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Free function, no class. Default value syntax is unchanged from C#.
+function greet(string $name, string $greeting = "Hello"): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 2. string? last  ->  ?string $last (the ? moves in front).
+function format_name(string $first, ?string $last = null): string {
+    throw new Exception("TODO: implement format_name");
+}
+
+// 3. int|string is a real union type — branch with is_int($id).
+function describe(int|string $id): string {
+    throw new Exception("TODO: implement describe");
+}
+`,
+
+  requirements: [
+    { pattern: /=\s*"Hello"/, message: 'Give $greeting the default value "Hello"' },
+    { pattern: /\?string/, message: "Declare $last as ?string (prefix nullable)" },
+    { pattern: /int\|string/, message: "Declare $id with the union type int|string" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"',
+      code: 'expect_eq(greet("Ada"), "Hello, Ada!");' },
+    { name: 'greet("Ada", "Howdy") returns "Howdy, Ada!"',
+      code: 'expect_eq(greet("Ada", "Howdy"), "Howdy, Ada!");' },
+    { name: 'named arguments: greet(greeting: "Hey", name: "Grace")',
+      code: 'expect_eq(greet(greeting: "Hey", name: "Grace"), "Hey, Grace!");' },
+    { name: 'format_name("Ada", "Lovelace") returns "Ada Lovelace"',
+      code: 'expect_eq(format_name("Ada", "Lovelace"), "Ada Lovelace");' },
+    { name: 'format_name("Ada") returns "Ada" (null last name)',
+      code: 'expect_eq(format_name("Ada"), "Ada");' },
+    { name: "describe handles both sides of the union",
+      code: 'expect_eq(describe(42), "ID number 42");\nexpect_eq(describe("A-7"), "ID code A-7");' },
+  ],
+
+  solution: `<?php
+
+function greet(string $name, string $greeting = "Hello"): string {
+    return "$greeting, $name!";
+}
+
+function format_name(string $first, ?string $last = null): string {
+    if ($last === null) {
+        return $first;
+    }
+    return "$first $last";
+}
+
+function describe(int|string $id): string {
+    if (is_int($id)) {
+        return "ID number $id";
+    }
+    return "ID code $id";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Where functions live</td><td><code>static class</code> members</td><td>top-level free functions</td></tr>
+  <tr><td>Default parameter</td><td><code>string g = "Hello"</code></td><td><code>string $g = "Hello"</code></td></tr>
+  <tr><td>Nullable type</td><td><code>string?</code> (suffix)</td><td><code>?string</code> (prefix)</td></tr>
+  <tr><td>Union type</td><td>— (overloads / <code>object</code>)</td><td><code>int|string</code></td></tr>
+  <tr><td>Named argument</td><td><code>F(name: "Ada")</code></td><td><code>f(name: "Ada")</code> — same syntax</td></tr>
+  <tr><td>Runtime type test</td><td><code>x is int</code></td><td><code>is_int($x)</code>, <code>is_string($x)</code></td></tr>
+  <tr><td>Overloading</td><td>yes, by signature</td><td>no — defaults + unions instead</td></tr>
+</table>
+<p>PHP has no method overloading — one name, one function. Where you'd write
+two <code>Describe</code> overloads, PHP writes one function whose signature
+absorbs the variation: optional parameters for arity, union types for type,
+and an <code>is_int</code> branch where the compiler used to dispatch for you.
+Since PHP 8.0, named arguments make long optional-parameter lists pleasant to
+call — and because parameter names are part of your public API (exactly as in
+C#), renaming one is a breaking change.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

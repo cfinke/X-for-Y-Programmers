@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Nil &amp; Safe Navigation</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Nil & Safe Navigation",
+
+  intro: `
+<p>Go papers over absence with zero values: a missing map key gives you
+<code>0</code>, an unset string field gives you <code>""</code>, and you reach
+for the comma-ok idiom to learn whether the value was really there. Ruby makes
+absence a first-class, <em>explicit</em> value: <code>h[:missing]</code>
+returns <code>nil</code> — not a zero, not an empty string, but an object that
+says "nothing here." A stored <code>0</code> and a missing key are never
+confused.</p>
+<table>
+  <tr><th>Go</th><th>Ruby</th></tr>
+  <tr><td><code>v, ok := m[key]</code> (comma-ok)</td><td><code>h[key]</code> returns <code>nil</code> when absent</td></tr>
+  <tr><td>nil-pointer dereference → panic (crash)</td><td>method on <code>nil</code> → <code>NoMethodError</code> (rescuable)</td></tr>
+  <tr><td><code>if u != nil &amp;&amp; u.Addr != nil { ... }</code></td><td><code>u&amp;.address&amp;.city</code></td></tr>
+  <tr><td>comma-ok + <code>if !ok { v = def }</code></td><td><code>h[key] || default</code></td></tr>
+</table>
+<p>Calling a method on <code>nil</code> raises <code>NoMethodError</code> — an
+exception you can rescue, never a process crash. The <code>&amp;.</code> "safe
+navigation" operator collapses Go's nil-check pyramids into one chain:
+<code>x&amp;.y&amp;.z</code> returns <code>nil</code> the moment anything in the
+chain is <code>nil</code>. And because <strong>only <code>nil</code> and
+<code>false</code> are falsy</strong> — <code>0</code> and <code>""</code> are
+truthy! — <code>value || default</code> can't accidentally eat a legitimate
+zero or empty string. <code>x ||= default</code> assigns only when
+<code>x</code> is nil/false.</p>`,
+
+  go: `type Address struct{ City string }
+type User struct{ Addr *Address }
+
+func getCity(u *User) string {
+	if u != nil && u.Addr != nil && u.Addr.City != "" {
+		return u.Addr.City // the nil-check pyramid
+	}
+	return "Unknown"
+}
+
+func pick(m map[string]int, key string, def int) int {
+	// comma-ok: the only way to tell a stored 0
+	// from a missing key — both read back as 0.
+	if v, ok := m[key]; ok {
+		return v
+	}
+	return def
+}`,
+
+  task: `
+<p>The starter defines <code>Address</code> (with a <code>city</code>) and
+<code>User</code> (with an <code>address</code> that defaults to
+<code>nil</code>). Implement three methods:</p>
+<ol>
+  <li><code>get_city(user)</code> — return the user's city, or
+      <code>"Unknown"</code> if the user is <code>nil</code>, has no address,
+      or the city is <code>nil</code>. One line:
+      <code>user&amp;.address&amp;.city || "Unknown"</code>.</li>
+  <li><code>pick(hash, key, default)</code> — return
+      <code>hash[key] || default</code>. Because <code>0</code> is truthy in
+      Ruby, a stored <code>0</code> survives — no comma-ok needed.</li>
+  <li><code>first_or_default(arr, default)</code> — the first element of the
+      array, or <code>default</code> when the array is empty
+      (<code>arr.first</code> returns <code>nil</code> on empty arrays).</li>
+</ol>`,
+
+  starter: `# Given: two small classes. An address knows its city; a user may
+# or may not have an address (note the nil default — explicit absence).
+class Address
+  attr_reader :city
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+# 1. Collapse the nil-check pyramid: user&.address&.city || "Unknown"
+def get_city(user)
+  raise NotImplementedError, "TODO: implement get_city"
+end
+
+# 2. hash[key] is nil when the key is missing; || supplies the default.
+#    A stored 0 is truthy, so it survives.
+def pick(hash, key, default)
+  raise NotImplementedError, "TODO: implement pick"
+end
+
+# 3. arr.first is nil for an empty array.
+def first_or_default(arr, default)
+  raise NotImplementedError, "TODO: implement first_or_default"
+end
+`,
+
+  requirements: [
+    { pattern: /&\./, message: "Use the safe navigation operator &." },
+    { pattern: /\|\|/, message: "Use || to supply a default" },
+    { pattern: /nil/, message: "nil should appear (explicit absence, e.g. the User default)" },
+  ],
+
+  tests: [
+    { name: 'get_city(User.new(Address.new("Berlin"))) returns "Berlin"',
+      code: '  expect_eq(get_city(User.new(Address.new("Berlin"))), "Berlin")' },
+    { name: 'get_city(User.new) — no address — returns "Unknown"',
+      code: '  expect_eq(get_city(User.new), "Unknown")' },
+    { name: 'get_city(nil) returns "Unknown" (no panic, no crash)',
+      code: '  expect_eq(get_city(nil), "Unknown")' },
+    { name: "pick({ count: 0 }, :count, 10) returns the stored 0 — || does not eat it",
+      code: "  expect_eq(pick({ count: 0 }, :count, 10), 0)" },
+    { name: "pick({}, :count, 10) returns 10 for the missing key",
+      code: "  expect_eq(pick({}, :count, 10), 10)" },
+    { name: 'first_or_default([], "none") returns "none"; first_or_default([7, 8], 0) returns 7',
+      code: '  expect_eq(first_or_default([], "none"), "none")\n  expect_eq(first_or_default([7, 8], 0), 7)' },
+  ],
+
+  solution: `class Address
+  attr_reader :city
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+def get_city(user)
+  user&.address&.city || "Unknown"
+end
+
+def pick(hash, key, default)
+  hash[key] || default
+end
+
+def first_or_default(arr, default)
+  arr.first || default
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Ruby</th></tr>
+  <tr><td>Absent value</td><td>zero value (<code>0</code>, <code>""</code>, <code>nil</code> ptr)</td><td><code>nil</code>, always and explicitly</td></tr>
+  <tr><td>Missing map key</td><td><code>v, ok := m[k]</code></td><td><code>h[k]</code> → <code>nil</code> (or <code>h.fetch(k, def)</code>)</td></tr>
+  <tr><td>Method on nothing</td><td>panic: nil pointer dereference</td><td><code>NoMethodError</code> — rescuable, never a crash</td></tr>
+  <tr><td>Nil-safe chain</td><td>nested <code>if x != nil</code></td><td><code>x&amp;.y&amp;.z</code></td></tr>
+  <tr><td>Default</td><td><code>if !ok { v = def }</code></td><td><code>v || def</code>, or <code>v ||= def</code> to assign</td></tr>
+  <tr><td>Falsy values</td><td>n/a (conditions must be bool)</td><td>only <code>nil</code> and <code>false</code> — <code>0</code> and <code>""</code> are truthy</td></tr>
+</table>
+<p>The truthiness rule is the load-bearing wall here: because <code>0</code>
+and <code>""</code> are truthy, <code>hash[key] || default</code> is exactly
+as safe as Go's comma-ok for any stored value except a literal
+<code>nil</code>/<code>false</code> — one operator instead of three lines.
+When you genuinely need to distinguish a stored <code>nil</code> from a
+missing key, <code>hash.key?(key)</code> and <code>hash.fetch</code> are your
+comma-ok.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

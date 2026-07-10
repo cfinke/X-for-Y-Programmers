@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>Python's answer to "shared behavior" is duck typing — if it quacks, call
+<code>.quack()</code> and hope — with ABCs as the optional paper trail. A Rust
+<code>trait</code> is the duck contract written down and <em>checked</em>: it
+declares the methods a type must provide, and <code>impl Describe for Dog</code>
+is where a type signs the contract. Call <code>.describe()</code> on something
+that never implemented <code>Describe</code> and the program doesn't run
+wrong — it doesn't compile.</p>
+<table>
+  <tr><th>Python</th><th>Rust</th></tr>
+  <tr><td><code>class Describe(ABC):</code></td><td><code>trait Describe { … }</code></td></tr>
+  <tr><td><code>@abstractmethod def name(self) -&gt; str: ...</code></td><td><code>fn name(&amp;self) -&gt; String;</code> (no body = required)</td></tr>
+  <tr><td>Concrete method on the ABC</td><td>Default method (body in the trait)</td></tr>
+  <tr><td><code>class Dog(Describe):</code> (inherit)</td><td><code>impl Describe for Dog { … }</code> (separate block)</td></tr>
+  <tr><td>Forgot a method? <code>TypeError</code> when instantiated</td><td>Forgot a method? Compile error</td></tr>
+</table>
+<p>Two mechanical differences from ABCs. First, there's no inheritance:
+<code>Dog</code> stays a plain struct, and the trait implementation lives in
+its own <code>impl Describe for Dog</code> block — behavior is attached
+alongside the type, not baked into a class hierarchy. Second, default methods
+work exactly like concrete methods on an ABC: a trait method <em>with</em> a
+body is inherited for free by every implementor, and it can call the required
+methods (<code>self.name()</code>) that implementors fill in — the classic
+template-method pattern, minus the classes.</p>`,
+
+  python: `from abc import ABC, abstractmethod
+
+class Describe(ABC):
+    @abstractmethod
+    def name(self) -> str: ...
+
+    def describe(self) -> str:  # concrete method: inherited for free
+        return f"This is {self.name()}"
+
+class Dog(Describe):
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    def name(self) -> str:
+        return self._name
+
+class Robot(Describe):
+    def __init__(self, id: int) -> None:
+        self.id = id
+
+    def name(self) -> str:
+        return f"Robot #{self.id}"`,
+
+  task: `
+<p>Write the duck contract down, then have two unrelated types sign it:</p>
+<ol>
+  <li>In the trait <code>Describe</code>, keep <code>name()</code> required
+      (no body) and give the default method <code>describe()</code> a real
+      body: return <code>format!("This is {}", self.name())</code> — a
+      default method may call required methods it can't see yet, just like
+      a concrete ABC method calling an abstract one.</li>
+  <li>Complete <code>impl Describe for Dog</code>: <code>name()</code>
+      returns a clone of the dog's <code>name</code> field
+      (<code>self.name.clone()</code>).</li>
+  <li>Complete <code>impl Describe for Robot</code>: <code>name()</code>
+      returns <code>format!("Robot #{}", self.id)</code>.</li>
+  <li>Implement <code>describe()</code> in neither impl — both types inherit
+      the default, so <code>Robot { id: 7 }.describe()</code> yields
+      <code>"This is Robot #7"</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your methods
+directly.</p>`,
+
+  starter: `// The duck contract, written down and checked.
+trait Describe {
+    // Required method: no body, every implementor must provide it.
+    fn name(&self) -> String;
+
+    // Default method: like a concrete method on an ABC.
+    // Return "This is <name>" using self.name().
+    fn describe(&self) -> String {
+        todo!()
+    }
+}
+
+struct Dog {
+    name: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+// Dog signs the contract: name() returns a clone of the name field.
+impl Describe for Dog {
+    fn name(&self) -> String {
+        todo!()
+    }
+}
+
+// Robot signs it too: name() returns "Robot #<id>".
+impl Describe for Robot {
+    fn name(&self) -> String {
+        todo!()
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describe/, message: "Define the trait Describe" },
+    { pattern: /impl\s+Describe\s+for\s+/, message: "Implement Describe for your structs with impl Describe for …" },
+    { pattern: /self\.name\(\)/, message: "The default describe() body should call self.name()" },
+  ],
+
+  tests: [
+    { name: 'Dog { name: "Rex" }.name() returns "Rex"',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.name(), "Rex");' },
+    { name: 'Dog { name: "Rex" }.describe() returns "This is Rex" (default method)',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.describe(), "This is Rex");' },
+    { name: 'Robot { id: 7 }.name() returns "Robot #7"',
+      code: "let r = Robot { id: 7 };\nassert_eq!(r.name(), \"Robot #7\");" },
+    { name: 'Robot { id: 7 }.describe() returns "This is Robot #7" (same default)',
+      code: "let r = Robot { id: 7 };\nassert_eq!(r.describe(), \"This is Robot #7\");" },
+    { name: 'Dog { name: "Bella" }.describe() returns "This is Bella"',
+      code: 'let d = Dog { name: String::from("Bella") };\nassert_eq!(d.describe(), "This is Bella");' },
+  ],
+
+  solution: `trait Describe {
+    fn name(&self) -> String;
+
+    fn describe(&self) -> String {
+        format!("This is {}", self.name())
+    }
+}
+
+struct Dog {
+    name: String,
+}
+
+struct Robot {
+    id: u32,
+}
+
+impl Describe for Dog {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        format!("Robot #{}", self.id)
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+  <tr><td>The contract</td><td><code>class Describe(ABC):</code></td><td><code>trait Describe { … }</code></td></tr>
+  <tr><td>Required method</td><td><code>@abstractmethod</code></td><td>Signature only, no body</td></tr>
+  <tr><td>Shared default</td><td>Concrete method on the ABC</td><td>Trait method with a body</td></tr>
+  <tr><td>Signing the contract</td><td><code>class Dog(Describe):</code></td><td><code>impl Describe for Dog { … }</code></td></tr>
+  <tr><td>Overriding a default</td><td>Redefine in the subclass</td><td>Redefine in the <code>impl</code> block</td></tr>
+  <tr><td>Unfulfilled contract</td><td><code>TypeError</code> at instantiation (runtime)</td><td>Compile error</td></tr>
+</table>
+<p>The deeper shift: in Python, "quacks like a duck" is discovered when the
+call happens; in Rust the contract is a fact the compiler knows about the
+type. That fact is what the next lesson trades on — a generic function can
+demand <code>T: Describe</code> and call <code>t.describe()</code> on a value
+it's never seen, because the signature guarantees the quack. Also note
+<code>impl Describe for Robot</code> required no changes to
+<code>struct Robot</code> itself — you can implement your traits for types
+you didn't write, something class inheritance can't retrofit.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

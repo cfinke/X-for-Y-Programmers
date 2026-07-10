@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 7: Everything Is an Object</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 7,
+  title: "Everything Is an Object",
+
+  intro: `
+<p>Python is thoroughly object-oriented, but it keeps a global namespace of
+functions for the everyday stuff: <code>len(x)</code>, <code>abs(n)</code>,
+<code>round(f, 2)</code>, <code>list(s)</code>. Ruby goes all in: there is no
+builtins namespace at all. Every operation is a <em>method on a receiver</em> —
+you don't measure a string, you ask the string: <code>x.length</code>,
+<code>n.abs</code>, <code>f.round(2)</code>, <code>s.chars</code>.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>abs(-3)</code></td><td><code>-3.abs</code></td></tr>
+  <tr><td><code>len("ruby")</code></td><td><code>"ruby".length</code></td></tr>
+  <tr><td><code>round(3.14159, 2)</code></td><td><code>3.14159.round(2)</code></td></tr>
+  <tr><td><code>list("ruby")</code></td><td><code>"ruby".chars</code></td></tr>
+  <tr><td><code>n % 2 == 0</code></td><td><code>n.even?</code></td></tr>
+  <tr><td><code>for _ in range(5):</code></td><td><code>5.times { ... }</code></td></tr>
+</table>
+<p>Even integer literals are full objects: <code>2.even?</code> is
+<code>true</code>, <code>5.times</code> loops, <code>1.upto(3)</code> counts.
+The payoff is that everything <em>chains</em> —
+<code>s.chars.map(&amp;:upcase).join</code> reads left to right as a pipeline,
+where Python's <code>"".join(map(str.upper, list(s)))</code> reads inside-out.
+Chaining messages on receivers is the core Ruby style, and it's why the
+language has no equivalent of <code>len()</code>: there is nothing that isn't
+an object, so there is nothing a method can't hang off of.</p>`,
+
+  python: `n = -3
+print(abs(n))            # abs is a builtin function
+print(round(3.14159, 2)) # so is round
+
+nums = [1, 2, 3, 4, 5, 6]
+evens = [x for x in nums if x % 2 == 0]
+print(evens)             # [2, 4, 6]
+
+s = "ruby"
+print(len(s))            # len(), not s.len()
+print(list(s))           # ['r', 'u', 'b', 'y']
+
+# The operations live in a builtins namespace,
+# separate from the objects they operate on.`,
+
+  task: `
+<p>Rewrite each builtin call as a message to the object itself:</p>
+<ol>
+  <li><code>absolute(n)</code> — Python's <code>abs(n)</code> becomes
+      <code>n.abs</code>. No parentheses needed: it takes no arguments.</li>
+  <li><code>even_numbers(nums)</code> — replace the comprehension with
+      <code>nums.select { |n| n.even? }</code>: <code>select</code> is
+      Python's <code>filter</code>, and <code>.even?</code> replaces
+      <code>% 2 == 0</code>.</li>
+  <li><code>rounded(f, digits)</code> — <code>round(f, digits)</code> becomes
+      <code>f.round(digits)</code>: the float rounds itself.</li>
+  <li><code>char_list(s)</code> — <code>list(s)</code> becomes
+      <code>s.chars</code>.</li>
+</ol>`,
+
+  starter: `# 1. abs(n) -> n.abs  (a message to the integer)
+def absolute(n)
+  raise NotImplementedError, "TODO: implement absolute"
+end
+
+# 2. [x for x in nums if x % 2 == 0] -> nums.select { |n| n.even? }
+def even_numbers(nums)
+  raise NotImplementedError, "TODO: implement even_numbers"
+end
+
+# 3. round(f, digits) -> f.round(digits)
+def rounded(f, digits)
+  raise NotImplementedError, "TODO: implement rounded"
+end
+
+# 4. list(s) -> s.chars
+def char_list(s)
+  raise NotImplementedError, "TODO: implement char_list"
+end
+`,
+
+  requirements: [
+    { pattern: /\.abs/, message: "Call .abs on the number itself" },
+    { pattern: /\.even\?/, message: "Ask each number n.even? instead of n % 2 == 0" },
+    { pattern: /\.round\(/, message: "Call .round(digits) on the float" },
+    { pattern: /\.chars/, message: "Call .chars on the string" },
+  ],
+
+  tests: [
+    { name: "absolute(-3) returns 3 and absolute(4) returns 4",
+      code: "  expect_eq(absolute(-3), 3)\n  expect_eq(absolute(4), 4)" },
+    { name: "even_numbers([1, 2, 3, 4, 5, 6]) returns [2, 4, 6]",
+      code: "  expect_eq(even_numbers([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "even_numbers([1, 3, 5]) returns []",
+      code: "  expect_eq(even_numbers([1, 3, 5]), [])" },
+    { name: "rounded(3.14159, 2) returns 3.14",
+      code: "  expect_eq(rounded(3.14159, 2), 3.14)" },
+    { name: 'char_list("ruby") returns ["r", "u", "b", "y"]',
+      code: '  expect_eq(char_list("ruby"), ["r", "u", "b", "y"])' },
+  ],
+
+  solution: `def absolute(n)
+  n.abs
+end
+
+def even_numbers(nums)
+  nums.select { |n| n.even? }
+end
+
+def rounded(f, digits)
+  f.round(digits)
+end
+
+def char_list(s)
+  s.chars
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Absolute value</td><td><code>abs(n)</code></td><td><code>n.abs</code></td></tr>
+  <tr><td>Length</td><td><code>len(x)</code></td><td><code>x.length</code> (or <code>x.size</code>)</td></tr>
+  <tr><td>Rounding</td><td><code>round(f, 2)</code></td><td><code>f.round(2)</code></td></tr>
+  <tr><td>String to chars</td><td><code>list(s)</code></td><td><code>s.chars</code></td></tr>
+  <tr><td>Parity</td><td><code>n % 2 == 0</code></td><td><code>n.even?</code> / <code>n.odd?</code></td></tr>
+  <tr><td>Repeat N times</td><td><code>for _ in range(5):</code></td><td><code>5.times { ... }</code></td></tr>
+  <tr><td>Filter</td><td><code>[x for x in xs if p]</code></td><td><code>xs.select { |x| p }</code></td></tr>
+</table>
+<p>Once every operation is a method, chaining becomes the house style:
+<code>nums.select { |n| n.even? }.map { |n| n * n }.sum</code> is one
+left-to-right pipeline. There is also a shorthand you'll see everywhere:
+<code>nums.select(&amp;:even?)</code> passes the method name as the block —
+we'll unpack how that works in the blocks lesson.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

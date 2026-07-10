@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p>Two functions, straight swap: <code>JSON.stringify</code> →
+<code>json_encode</code>, <code>JSON.parse</code> → <code>json_decode</code>.
+Associative arrays encode as JSON objects, list arrays as JSON arrays, and it
+all round-trips. But <code>json_decode</code> hides the single most classic
+PHP stumble: <strong>by default it decodes JSON objects into
+<code>stdClass</code> objects</strong>, not arrays — so
+<code>$data["name"]</code> explodes and you're suddenly writing
+<code>$data-&gt;name</code>. Pass <code>true</code> as the second argument
+and everything comes back as the associative arrays this course has been
+using all along: <code>json_decode($json, true)</code>. Make it muscle
+memory.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>JSON.stringify(data)</code></td><td><code>json_encode($data)</code></td></tr>
+  <tr><td><code>JSON.parse(json)</code></td><td><code>json_decode($json, true)</code> — the <code>true</code> matters</td></tr>
+  <tr><td><code>JSON.parse(json)</code> throws on bad input</td><td>returns <code>null</code> by default; add <code>JSON_THROW_ON_ERROR</code> to throw</td></tr>
+  <tr><td><code>data.name ?? "unknown"</code></td><td><code>$data["name"] ?? "unknown"</code></td></tr>
+</table>
+<p>Error behavior differs too: <code>JSON.parse</code> throws on malformed
+input, but <code>json_decode</code> quietly returns <code>null</code> unless
+you pass the <code>JSON_THROW_ON_ERROR</code> flag —
+<code>json_decode($json, true, 512, JSON_THROW_ON_ERROR)</code> gets you a
+<code>JsonException</code> like a civilized language. For missing keys,
+<code>??</code> is your friend exactly as it is in JS, except it also
+suppresses the undefined-key warning — it's the idiomatic way to read
+optional fields out of decoded JSON.</p>`,
+
+  javascript: `const json = JSON.stringify({ name: "Ada", age: 36 });
+// '{"name":"Ada","age":36}'
+
+function parseUser(json) {
+  const data = JSON.parse(json);
+  return {
+    name: data.name ?? "unknown",
+    age: data.age ?? 0,
+  };
+}
+
+function pluckNames(json) {
+  const users = JSON.parse(json);
+  return users.map((u) => u.name);
+}
+
+console.log(parseUser('{"age":50}'));
+// { name: "unknown", age: 50 }
+console.log(pluckNames('[{"name":"Ada"},{"name":"Grace"}]'));
+// ["Ada", "Grace"]`,
+
+  task: `
+<p>Port the JSON helpers — and pass that second argument:</p>
+<ol>
+  <li><code>to_json(array $data): string</code> — one line:
+      <code>json_encode</code>. Associative arrays become JSON objects, list
+      arrays become JSON arrays.</li>
+  <li><code>parse_user(string $json): array</code> — decode with
+      <code>json_decode($json, true)</code>, then return a new array with
+      exactly two keys, in order: <code>"name"</code> (default
+      <code>"unknown"</code>) and <code>"age"</code> (default <code>0</code>),
+      using <code>??</code> for the defaults.</li>
+  <li><code>pluck_names(string $json): array</code> — decode a JSON array of
+      user objects (again: <code>, true</code>) and <code>array_map</code> out
+      each <code>"name"</code>. Remember the argument order — callback first,
+      array second, the reverse of JS's method call.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. to_json: JSON.stringify by another name.
+function to_json(array $data): string {
+    throw new Exception("TODO: implement to_json");
+}
+
+// 2. parse_user: json_decode($json, true) — forget the true and you'll
+//    get a stdClass object instead of an array. Then ?? the defaults.
+function parse_user(string $json): array {
+    throw new Exception("TODO: implement parse_user");
+}
+
+// 3. pluck_names: decode, then array_map(fn($u) => ..., $users).
+function pluck_names(string $json): array {
+    throw new Exception("TODO: implement pluck_names");
+}
+`,
+
+  requirements: [
+    { pattern: /json_encode/, message: "Use json_encode in to_json" },
+    { pattern: /json_decode\s*\(\s*\$\w+\s*,\s*true\s*\)/, message: "Call json_decode with true as the second argument (associative arrays, not stdClass)" },
+    { pattern: /\?\?/, message: "Use ?? to default the missing keys" },
+  ],
+
+  tests: [
+    { name: 'to_json(["name" => "Ada", "age" => 36]) produces the JSON object string',
+      code: `expect_eq(to_json(["name" => "Ada", "age" => 36]), '{"name":"Ada","age":36}');` },
+    { name: "to_json([1, 2, 3]) produces a JSON array, not an object",
+      code: `expect_eq(to_json([1, 2, 3]), "[1,2,3]");` },
+    { name: "parse_user round-trips a complete user",
+      code: `expect_eq(parse_user('{"name":"Ada","age":36}'), ["name" => "Ada", "age" => 36]);` },
+    { name: "parse_user defaults missing fields: {} becomes unknown/0",
+      code: `expect_eq(parse_user('{}'), ["name" => "unknown", "age" => 0]);
+expect_eq(parse_user('{"age":50}'), ["name" => "unknown", "age" => 50]);` },
+    { name: "pluck_names pulls every name out of a JSON list",
+      code: `expect_eq(pluck_names('[{"name":"Ada","age":36},{"name":"Grace","age":52}]'), ["Ada", "Grace"]);
+expect_eq(pluck_names('[]'), []);` },
+  ],
+
+  solution: `<?php
+
+function to_json(array $data): string {
+    return json_encode($data);
+}
+
+function parse_user(string $json): array {
+    $data = json_decode($json, true);
+    return [
+        "name" => $data["name"] ?? "unknown",
+        "age"  => $data["age"] ?? 0,
+    ];
+}
+
+function pluck_names(string $json): array {
+    $users = json_decode($json, true);
+    return array_map(fn($user) => $user["name"], $users);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Encode</td><td><code>JSON.stringify(x)</code></td><td><code>json_encode($x)</code></td></tr>
+  <tr><td>Decode</td><td><code>JSON.parse(s)</code></td><td><code>json_decode($s, true)</code></td></tr>
+  <tr><td>Decode (objects)</td><td>—</td><td><code>json_decode($s)</code> → <code>stdClass</code>, <code>$o-&gt;name</code></td></tr>
+  <tr><td>Bad input</td><td>throws <code>SyntaxError</code></td><td><code>null</code>, or <code>JsonException</code> with <code>JSON_THROW_ON_ERROR</code></td></tr>
+  <tr><td>Pretty print</td><td><code>JSON.stringify(x, null, 2)</code></td><td><code>json_encode($x, JSON_PRETTY_PRINT)</code></td></tr>
+  <tr><td>Optional field</td><td><code>data.name ?? d</code></td><td><code>$data["name"] ?? $d</code></td></tr>
+</table>
+<p>The deep insight: JS objects and JSON objects are the same shape, so
+<code>JSON.parse</code> has one obvious output. PHP has <em>two</em>
+candidate shapes — <code>stdClass</code> objects and associative arrays —
+and <code>json_decode</code> defaults to the one you almost never want in
+modern code. The full defensive incantation for untrusted input is
+<code>json_decode($json, true, 512, JSON_THROW_ON_ERROR)</code>: associative
+arrays, sane depth limit, and real exceptions instead of a silent
+<code>null</code> that <code>??</code> would happily paper over.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Exceptions & Error Handling</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Exceptions & Error Handling",
+
+  intro: `
+<p>Ruby's exception machinery maps almost one-to-one onto Java's:
+<code>begin/rescue/ensure</code> is <code>try/catch/finally</code>,
+<code>raise</code> is <code>throw</code>, and a custom error is a class that
+extends — sorry, <em>inherits from</em> — <code>StandardError</code>. The big
+difference is what's missing: <strong>there are no checked exceptions</strong>.
+No <code>throws IOException</code> clauses, no compiler forcing you to catch
+or declare. The discipline Java enforced at compile time moves into
+documentation and tests — a recurring theme by now.</p>
+<table>
+  <tr><th>Java</th><th>Ruby</th></tr>
+  <tr><td><code>try { ... } catch (E e) { ... } finally { ... }</code></td><td><code>begin ... rescue E =&gt; e ... ensure ... end</code></td></tr>
+  <tr><td><code>throw new IllegalArgumentException("msg");</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+  <tr><td><code>class MyError extends RuntimeException</code></td><td><code>class MyError &lt; StandardError; end</code></td></tr>
+  <tr><td><code>catch (Exception e)</code></td><td><code>rescue =&gt; e</code> (catches <code>StandardError</code> only)</td></tr>
+  <tr><td><code>int parse(String s) throws ParseException</code></td><td>— no checked exceptions, no <code>throws</code> clause</td></tr>
+</table>
+<p>Two idioms worth stealing immediately. First, a bare <code>rescue</code>
+catches <code>StandardError</code>, <em>not</em> <code>Exception</code> — the
+same good hygiene as catching <code>Exception</code> but never
+<code>Throwable</code>: things like out-of-memory and interrupt signals sail
+past it. Second, a whole method body can end with <code>rescue</code> — no
+<code>begin</code> needed. <code>def ... rescue ... end</code> is the
+Ruby equivalent of wrapping the entire method body in one
+<code>try/catch</code>, without the extra nesting level.</p>`,
+
+  java: `class EmptyCartException extends RuntimeException {
+    EmptyCartException(String msg) { super(msg); }
+}
+
+static int parseAge(String s) {
+    String t = s.strip();
+    if (!t.matches("\\d+")) {
+        throw new IllegalArgumentException("not a valid age: " + s);
+    }
+    return Integer.parseInt(t);
+}
+
+static int safeParseAge(String s, int defaultAge) {
+    try {
+        return parseAge(s);
+    } catch (IllegalArgumentException e) {
+        return defaultAge;
+    } finally {
+        // cleanup would go here — Ruby calls this "ensure"
+    }
+}`,
+
+  task: `
+<p>Port the Java — note there is no <code>throws</code> clause to
+write anywhere:</p>
+<ol>
+  <li>Write <code>parse_age(s)</code> that raises
+      <code>ArgumentError, "not a valid age: ..."</code> unless the stripped
+      string is all digits — check with
+      <code>s.strip.match?(/\\A\\d+\\z/)</code> — and otherwise returns
+      <code>s.to_i</code>.</li>
+  <li>Write <code>safe_parse_age(s, default)</code> that calls
+      <code>parse_age</code> and returns <code>default</code> if it raises.
+      Use a <strong>def-level rescue</strong>: the method body is the call,
+      then <code>rescue ArgumentError</code>, then the default — no
+      <code>begin</code> keyword anywhere.</li>
+  <li>Define <code>class EmptyCartError &lt; StandardError</code> (already
+      stubbed) and write <code>checkout(items)</code> that raises
+      <code>EmptyCartError</code> when <code>items</code> is empty and
+      otherwise returns <code>items.sum</code>.</li>
+</ol>`,
+
+  starter: `# 1. parse_age: raise ArgumentError unless the stripped string is all
+#    digits (s.strip.match?(/\\A\\d+\\z/)), else return s.to_i.
+def parse_age(s)
+  raise NotImplementedError, "TODO: implement parse_age"
+end
+
+# 2. safe_parse_age: def-level rescue — the method body itself ends with
+#    a rescue clause. No begin needed.
+def safe_parse_age(s, default)
+  raise NotImplementedError, "TODO: implement safe_parse_age"
+end
+
+# 3. A custom error is just a class. StandardError is the right parent —
+#    it is what a bare rescue catches.
+class EmptyCartError < StandardError
+end
+
+# 4. checkout: raise EmptyCartError if items is empty, else items.sum.
+def checkout(items)
+  raise NotImplementedError, "TODO: implement checkout"
+end
+`,
+
+  requirements: [
+    { pattern: /rescue\s+\w*Error/, message: "Rescue a specific class: rescue ArgumentError" },
+    { pattern: /raise\s+/, message: "Raise errors with raise" },
+    { pattern: /<\s*StandardError/, message: "EmptyCartError must subclass StandardError with <" },
+    { pattern: /match\?|to_i/, message: "Validate with match? / convert with to_i" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns 42 (and strips: "  7  " → 7)',
+      code: `  expect_eq(parse_age("42"), 42)
+  expect_eq(parse_age("  7  "), 7)` },
+    { name: 'parse_age("abc") and parse_age("12abc") raise ArgumentError',
+      code: `  begin
+    parse_age("abc")
+    raise "expected parse_age to raise ArgumentError for a non-number"
+  rescue ArgumentError
+  end
+  begin
+    parse_age("12abc")
+    raise "expected parse_age to raise ArgumentError for trailing junk"
+  rescue ArgumentError
+  end` },
+    { name: 'safe_parse_age("abc", 0) returns the default 0',
+      code: '  expect_eq(safe_parse_age("abc", 0), 0)' },
+    { name: 'safe_parse_age("30", 0) returns 30 (no rescue triggered)',
+      code: '  expect_eq(safe_parse_age("30", 0), 30)' },
+    { name: "checkout([]) raises EmptyCartError",
+      code: `  begin
+    checkout([])
+    raise "expected checkout([]) to raise EmptyCartError"
+  rescue EmptyCartError
+  end` },
+    { name: "checkout([100, 250, 399]) returns 749",
+      code: "  expect_eq(checkout([100, 250, 399]), 749)" },
+  ],
+
+  solution: `def parse_age(s)
+  raise ArgumentError, "not a valid age: #{s.inspect}" unless s.strip.match?(/\\A\\d+\\z/)
+  s.to_i
+end
+
+def safe_parse_age(s, default)
+  parse_age(s)
+rescue ArgumentError
+  default
+end
+
+class EmptyCartError < StandardError
+end
+
+def checkout(items)
+  raise EmptyCartError, "the cart is empty" if items.empty?
+  items.sum
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Ruby</th></tr>
+  <tr><td>Guarded block</td><td><code>try { ... }</code></td><td><code>begin ... end</code></td></tr>
+  <tr><td>Catch typed</td><td><code>catch (IOException e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+  <tr><td>Catch broadly</td><td><code>catch (Exception e)</code></td><td><code>rescue =&gt; e</code> (StandardError, never the whole Exception tree)</td></tr>
+  <tr><td>Always run</td><td><code>finally { ... }</code></td><td><code>ensure ... end</code></td></tr>
+  <tr><td>Throw</td><td><code>throw new X("msg");</code></td><td><code>raise X, "msg"</code></td></tr>
+  <tr><td>Re-throw current</td><td><code>throw e;</code></td><td>bare <code>raise</code> inside a rescue</td></tr>
+  <tr><td>Custom error</td><td><code>class E extends RuntimeException</code></td><td><code>class E &lt; StandardError; end</code></td></tr>
+  <tr><td>Whole-method guard</td><td><code>try</code> wrapping the body</td><td>def-level <code>rescue</code> — no <code>begin</code></td></tr>
+  <tr><td>Declare throws</td><td><code>throws IOException</code> (checked)</td><td>nothing — document it, test it</td></tr>
+</table>
+<p>The hierarchy insight: Ruby's root is <code>Exception</code>, but almost
+everything you'd ever want to catch lives under <code>StandardError</code> —
+and that is all a bare <code>rescue</code> catches. It's the
+<code>Throwable</code>/<code>Exception</code> split with the safe default
+built in: you cannot accidentally swallow the Ruby equivalents of
+<code>OutOfMemoryError</code> or <code>ThreadDeath</code> by being lazy.
+What you lose is the compiler telling you what a method might raise; what you
+gain is method signatures that say only what a method <em>does</em>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

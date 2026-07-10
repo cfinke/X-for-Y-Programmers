@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>When two unrelated JS classes need the same method, you reach for the
+mixin pattern: define an object of methods and bolt it on with
+<code>Object.assign(Class.prototype, mixin)</code>. It works, but it's a
+runtime trick — invisible to tooling, applied after the class exists, and
+easy to clobber. In PHP that pattern is a language feature:
+a <code>trait</code> is a named bundle of methods, and <code>use</code>
+inside a class body copies them in at parse time.</p>
+<table>
+  <tr><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td><code>const mixin = { describe() { ... } };</code></td><td><code>trait Describable { public function describe(): string { ... } }</code></td></tr>
+  <tr><td><code>Object.assign(Dog.prototype, mixin);</code></td><td><code>class Dog { use Describable; ... }</code></td></tr>
+  <tr><td><code>this.name()</code> inside the mixin</td><td><code>$this-&gt;name()</code> inside the trait</td></tr>
+  <tr><td>applied at runtime, after the class</td><td>compiled into the class itself</td></tr>
+</table>
+<p>Just like a mixin method calling <code>this.name()</code>, a trait method
+can call <code>$this-&gt;name()</code> and trust the <em>host class</em> to
+provide it — the trait supplies shared behavior, each class supplies the
+specifics. Because PHP has single inheritance only (one <code>extends</code>,
+remember), traits are the standard answer for horizontal reuse across
+unrelated classes: <code>Dog</code> and <code>Robot</code> share no ancestor,
+yet both can <code>use Describable</code>.</p>`,
+
+  javascript: `// The mixin pattern: shared methods, bolted onto prototypes.
+const describable = {
+  describe() {
+    return "This is " + this.name();
+  },
+};
+
+class Dog {
+  name() {
+    return "Rex the dog";
+  }
+}
+
+class Robot {
+  name() {
+    return "Unit 734";
+  }
+}
+
+Object.assign(Dog.prototype, describable);
+Object.assign(Robot.prototype, describable);`,
+
+  task: `
+<p>Port the mixin to a trait:</p>
+<ol>
+  <li>In <code>trait Describable</code>, implement
+      <code>describe(): string</code> so it returns
+      <code>"This is "</code> followed by <code>$this-&gt;name()</code> —
+      the trait leans on whatever class it's mixed into.</li>
+  <li>In <code>class Dog</code> (which has <code>use Describable;</code>),
+      implement <code>name(): string</code> returning
+      <code>'Rex the dog'</code>.</li>
+  <li>In <code>class Robot</code> (same <code>use</code>), implement
+      <code>name(): string</code> returning <code>'Unit 734'</code>.</li>
+</ol>
+<p>The tests call both <code>-&gt;name()</code> and <code>-&gt;describe()</code>
+on each class — one trait, two hosts.</p>`,
+
+  starter: `<?php
+
+// 1. The shared behavior. $this is whatever class uses the trait.
+trait Describable {
+    public function describe(): string {
+        throw new Exception("TODO: implement describe");
+    }
+}
+
+// 2. use Describable; copies describe() into Dog at parse time.
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: implement Dog::name");
+    }
+}
+
+// 3. Same trait, totally unrelated class — no shared ancestor needed.
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: implement Robot::name");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describable/, message: "Define the shared behavior in trait Describable" },
+    { pattern: /use\s+Describable/, message: "Mix the trait into each class with use Describable;" },
+  ],
+
+  tests: [
+    { name: "(new Dog())->name() returns 'Rex the dog'",
+      code: "expect_eq((new Dog())->name(), 'Rex the dog');" },
+    { name: "(new Dog())->describe() returns 'This is Rex the dog'",
+      code: "expect_eq((new Dog())->describe(), 'This is Rex the dog');" },
+    { name: "(new Robot())->name() returns 'Unit 734'",
+      code: "expect_eq((new Robot())->name(), 'Unit 734');" },
+    { name: "(new Robot())->describe() returns 'This is Unit 734' — one trait, two hosts",
+      code: "expect_eq((new Robot())->describe(), 'This is Unit 734');" },
+  ],
+
+  solution: `<?php
+
+trait Describable {
+    public function describe(): string {
+        return "This is " . $this->name();
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        return 'Rex the dog';
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        return 'Unit 734';
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+  <tr><td>Define shared methods</td><td><code>const mixin = { m() {...} };</code></td><td><code>trait Name { public function m() {...} }</code></td></tr>
+  <tr><td>Apply to a class</td><td><code>Object.assign(C.prototype, mixin)</code></td><td><code>use Name;</code> inside the class body</td></tr>
+  <tr><td>Call back into the host</td><td><code>this.method()</code></td><td><code>$this-&gt;method()</code></td></tr>
+  <tr><td>Several at once</td><td>repeated <code>Object.assign</code> calls</td><td><code>use A, B;</code></td></tr>
+  <tr><td>Name collision</td><td>last assign wins, silently</td><td>fatal error — resolve with <code>insteadof</code> / <code>as</code></td></tr>
+  <tr><td>When applied</td><td>runtime</td><td>parse time — tooling sees the methods</td></tr>
+</table>
+<p>Think of a trait as compiler-assisted copy-paste, not inheritance:
+<code>Dog</code> and <code>Robot</code> each get their <em>own</em>
+<code>describe()</code>, and <code>instanceof Describable</code> isn't a
+thing (that's what interfaces are for — a common PHP idiom pairs them, with
+an interface declaring the contract and a trait providing a default
+implementation). Traits can also hold properties and abstract methods:
+declaring <code>abstract public function name(): string;</code> inside the
+trait would force every host class to provide it, turning our informal
+"trust the host" arrangement into a checked one.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

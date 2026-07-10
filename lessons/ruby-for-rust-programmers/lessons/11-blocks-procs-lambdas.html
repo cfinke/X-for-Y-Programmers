@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Blocks, Procs &amp; Lambdas</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Blocks, Procs & Lambdas",
+
+  intro: `
+<p>In Rust, passing behavior means closures — and closures mean ceremony.
+You pick a bound (<code>Fn</code>, <code>FnMut</code>, or <code>FnOnce</code>),
+you decide whether the closure borrows or <code>move</code>s its captures,
+and returning one from a function means <code>impl Fn</code> or a
+<code>Box&lt;dyn Fn&gt;</code>. Ruby's answer is the <strong>block</strong>: a
+chunk of code written <em>after</em> the closing paren of a method call —
+<code>arr.each { |x| puts x }</code> — that captures everything in scope
+automatically and GC-safely. No move, no bounds, no borrow rules: the garbage
+collector keeps captured variables alive as long as the block might use them.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>fn apply&lt;F: Fn(i32) -&gt; i32&gt;(x: i32, f: F)</code></td><td><code>def apply(x)</code> — the block arrives invisibly</td></tr>
+  <tr><td><code>f(x)</code></td><td><code>yield(x)</code></td></tr>
+  <tr><td>closure argument is in the signature</td><td><code>block_given?</code> asks whether one was passed</td></tr>
+  <tr><td><code>move |x| x * n</code> + <code>impl Fn</code> to return it</td><td><code>-&gt;(x) { x * n }</code> — just return it</td></tr>
+  <tr><td><code>f.call(x)</code> via the <code>Fn</code> trait</td><td><code>f.call(x)</code> — no trait, it is just a method</td></tr>
+  <tr><td><code>.map(|w| w.to_uppercase())</code></td><td><code>.map(&amp;:upcase)</code> — symbol-to-block shorthand</td></tr>
+</table>
+<p>Every method can take a block without declaring it: inside the body,
+<code>yield</code> calls it, and <code>block_given?</code> tells you whether
+the caller supplied one. When you need a closure as a <em>value</em> — to
+store or return — reach for the lambda literal <code>-&gt;(x) { x * 2 }</code>
+and invoke it with <code>.call</code>. There is no <code>Fn</code> trait to
+implement and no lifetime to name.</p>`,
+
+  rust: `fn apply_twice<F: Fn(i32) -> i32>(x: i32, f: F) -> i32 {
+    f(f(x))
+}
+
+// Returning a closure: pick a bound, add impl Fn, move the capture.
+fn make_multiplier(n: i32) -> impl Fn(i32) -> i32 {
+    move |x| x * n
+}
+
+let doubled = apply_twice(3, |v| v * 2);   // 12
+let triple = make_multiplier(3);
+assert_eq!(triple(7), 21);
+
+let shouted: Vec<String> = vec!["hi", "yo"]
+    .iter()
+    .map(|w| w.to_uppercase())
+    .collect();`,
+
+  task: `
+<p>Rewrite the closure machinery as blocks and lambdas:</p>
+<ol>
+  <li><code>apply_twice(x)</code> — no closure parameter, no <code>F: Fn</code>
+      bound. The block arrives invisibly; apply it twice with
+      <code>yield(yield(x))</code>.</li>
+  <li><code>maybe_yield(x)</code> — if a block was given, return
+      <code>yield(x)</code>; otherwise return <code>x</code> unchanged. Use
+      <code>block_given?</code> with the ternary operator.</li>
+  <li><code>make_multiplier(n)</code> — return the lambda
+      <code>-&gt;(x) { x * n }</code>. The closure that needed
+      <code>impl Fn</code> and <code>move</code> in Rust is free here:
+      <code>n</code> is captured automatically.</li>
+  <li><code>shout_all(words)</code> — uppercase every word with
+      <code>words.map(&amp;:upcase)</code>, the symbol-to-block shorthand.</li>
+</ol>
+<p>The tests pass blocks the Ruby way, after the parens:
+<code>apply_twice(3) { |v| v * 2 }</code>.</p>`,
+
+  starter: `# 1. apply_twice: the block is invisible — no parameter for it.
+#    Call it twice: yield(yield(x)).
+def apply_twice(x)
+  raise NotImplementedError, "TODO: yield twice"
+end
+
+# 2. maybe_yield: block_given? ? yield(x) : x
+def maybe_yield(x)
+  raise NotImplementedError, "TODO: check block_given?"
+end
+
+# 3. make_multiplier: return ->(x) { x * n }.
+#    No move, no impl Fn — n is captured automatically and GC-safely.
+def make_multiplier(n)
+  raise NotImplementedError, "TODO: return a lambda"
+end
+
+# 4. shout_all: map with the &:symbol shorthand.
+def shout_all(words)
+  raise NotImplementedError, "TODO: map(&:upcase)"
+end
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Call the invisible block with yield" },
+    { pattern: /block_given\?/, message: "Guard with block_given? in maybe_yield" },
+    { pattern: /->\s*\(/, message: "Build the multiplier with a ->(x) { } lambda literal" },
+    { pattern: /&:/, message: "Use the &:symbol shorthand in shout_all" },
+  ],
+
+  tests: [
+    { name: "apply_twice(3) { |v| v * 2 } returns 12",
+      code: "  expect_eq(apply_twice(3) { |v| v * 2 }, 12)" },
+    { name: "apply_twice(2) { |v| v + 10 } returns 22",
+      code: "  expect_eq(apply_twice(2) { |v| v + 10 }, 22)" },
+    { name: "maybe_yield(5) { |v| v * 100 } returns 500",
+      code: "  expect_eq(maybe_yield(5) { |v| v * 100 }, 500)" },
+    { name: "maybe_yield(5) with no block returns 5",
+      code: "  expect_eq(maybe_yield(5), 5)" },
+    { name: "make_multiplier(3).call(7) returns 21",
+      code: "  triple = make_multiplier(3)\n  expect_eq(triple.call(7), 21)\n  expect_eq(triple.call(0), 0)" },
+    { name: 'shout_all(["hi", "yo"]) returns ["HI", "YO"]',
+      code: '  expect_eq(shout_all(["hi", "yo"]), ["HI", "YO"])\n  expect_eq(shout_all([]), [])' },
+  ],
+
+  solution: `def apply_twice(x)
+  yield(yield(x))
+end
+
+def maybe_yield(x)
+  block_given? ? yield(x) : x
+end
+
+def make_multiplier(n)
+  ->(x) { x * n }
+end
+
+def shout_all(words)
+  words.map(&:upcase)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>Accept a closure</td><td><code>fn f&lt;F: Fn(i32) -&gt; i32&gt;(g: F)</code></td><td>nothing — every method takes an invisible block</td></tr>
+  <tr><td>Call it</td><td><code>g(x)</code></td><td><code>yield(x)</code></td></tr>
+  <tr><td>Was one passed?</td><td>the signature says so</td><td><code>block_given?</code></td></tr>
+  <tr><td>Closure literal</td><td><code>|x| x * 2</code></td><td><code>-&gt;(x) { x * 2 }</code> (a lambda)</td></tr>
+  <tr><td>Invoke a stored closure</td><td><code>f(x)</code> via <code>Fn</code></td><td><code>f.call(x)</code>, or <code>f.(x)</code>, or <code>f[x]</code></td></tr>
+  <tr><td>Return a closure</td><td><code>impl Fn</code> / <code>Box&lt;dyn Fn&gt;</code> + <code>move</code></td><td>just return the lambda</td></tr>
+  <tr><td>Method reference in map</td><td><code>.map(|w| w.to_uppercase())</code></td><td><code>.map(&amp;:upcase)</code></td></tr>
+</table>
+<p>The whole <code>Fn</code>/<code>FnMut</code>/<code>FnOnce</code> hierarchy
+exists to tell the borrow checker how a closure touches its captures. Ruby has
+no borrow checker, so the hierarchy evaporates: blocks, procs, and lambdas all
+capture by reference, forever, and the GC cleans up. The one distinction that
+survives is lambda vs plain proc — a lambda checks its argument count and
+<code>return</code> returns from the lambda itself, which is why
+<code>-&gt;( ) { }</code> is the form that behaves like the closures you know.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

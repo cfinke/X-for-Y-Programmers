@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Associative Arrays</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Associative Arrays",
+
+  intro: `
+<p>Here is the map half of PHP's one-array-to-rule-them-all:
+<code>map[string]int{"apples": 3}</code> becomes
+<code>['apples' =&gt; 3]</code>. Same square brackets as a list — the
+<code>=&gt;</code> arrow is what makes it associative. Reading a key you use
+constantly in Go via the comma-ok idiom (<code>v, ok := m[k]</code>, then
+check <code>ok</code>) collapses into a single expression:
+<code>$m[$k] ?? 0</code> reads the key and falls back to a default when it's
+absent, no second variable, no <code>if</code>. When you genuinely need the
+boolean — "is the key there at all?" — that's
+<code>array_key_exists($k, $m)</code>.</p>
+<table>
+  <tr><th>Go</th><th>PHP</th></tr>
+  <tr><td><code>map[string]int{"apples": 3}</code></td><td><code>['apples' =&gt; 3]</code></td></tr>
+  <tr><td><code>v, ok := m[k]; if !ok { v = 0 }</code></td><td><code>$m[$k] ?? 0</code></td></tr>
+  <tr><td><code>_, ok := m[k]</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+  <tr><td><code>m[k] = v</code></td><td><code>$m[$k] = $v;</code></td></tr>
+  <tr><td><code>delete(m, k)</code></td><td><code>unset($m[$k]);</code></td></tr>
+  <tr><td><code>for k, v := range m</code></td><td><code>foreach ($m as $k =&gt; $v)</code></td></tr>
+</table>
+<p>Two differences deserve a highlight. First: <strong>insertion order is
+preserved</strong>. Go deliberately randomizes map iteration so you can't
+depend on order; a PHP array remembers the order keys were added, and
+<code>foreach</code> walks them in exactly that order, every time. Ordered
+output needs no sort-the-keys dance. Second, the value semantics from the
+last lesson apply here too: assign or pass an associative array and you get
+an independent copy, so the add-then-return shape is the idiomatic way to
+"mutate" a caller's map. And <code>delete(m, k)</code> becomes
+<code>unset($m[$k])</code> — a statement, not a function call.</p>`,
+
+  go: `inventory := map[string]int{
+    "apples":  3,
+    "oranges": 5,
+}
+
+// The comma-ok idiom, everywhere, forever:
+count, ok := inventory["pears"]
+if !ok {
+    count = 0
+}
+fmt.Println(count) // 0
+
+inventory["pears"] = 12
+delete(inventory, "oranges")
+
+for name, n := range inventory {
+    // Iteration order is deliberately randomized!
+    fmt.Printf("%s: %d\n", name, n)
+}`,
+
+  task: `
+<p>Port the inventory workflow:</p>
+<ol>
+  <li><code>build_inventory(): array</code> — return an associative array
+      with exactly two entries, in this order:
+      <code>'apples' =&gt; 3</code>, then <code>'oranges' =&gt; 5</code>.</li>
+  <li><code>get_count(array $inv, string $name): int</code> — the comma-ok
+      idiom in one expression: return the count for <code>$name</code>, or
+      <code>0</code> if the key is missing, using <code>??</code>.</li>
+  <li><code>add_stock(array $inv, string $name, int $n): array</code> — add
+      <code>$n</code> to the existing count for <code>$name</code> (treat a
+      missing key as <code>0</code>) and return the array. You received a
+      copy — returning it is how the caller sees the change.</li>
+  <li><code>format_inventory(array $inv): string</code> — loop with
+      <code>foreach ($inv as $name =&gt; $count)</code> and return the entries
+      joined as <code>"apples: 3, oranges: 5"</code>. Because insertion order
+      is preserved, this output is deterministic — try that with a Go
+      map.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. map[string]int{...} -> ['key' => value]
+function build_inventory(): array {
+    throw new Exception("TODO: implement build_inventory");
+}
+
+// 2. v, ok := m[k] -> $m[$k] ?? default, one expression
+function get_count(array $inv, string $name): int {
+    throw new Exception("TODO: implement get_count");
+}
+
+// 3. m[k] += n -> update the copy, return it
+function add_stock(array $inv, string $name, int $n): array {
+    throw new Exception("TODO: implement add_stock");
+}
+
+// 4. for k, v := range m -> foreach ($m as $k => $v)
+//    (insertion order preserved - the output is stable)
+function format_inventory(array $inv): string {
+    throw new Exception("TODO: implement format_inventory");
+}
+`,
+
+  requirements: [
+    { pattern: /=>/, message: "Use the 'key' => value arrow syntax" },
+    { pattern: /\?\?/, message: "Use the ?? null coalescing operator for missing keys" },
+    { pattern: /foreach\s*\(|array_keys/, message: "Iterate with foreach ($m as $k => $v) (or array_keys)" },
+  ],
+
+  tests: [
+    { name: "build_inventory() returns ['apples' => 3, 'oranges' => 5]",
+      code: "expect_eq(build_inventory(), ['apples' => 3, 'oranges' => 5]);" },
+    { name: "get_count finds an existing key",
+      code: "expect_eq(get_count(['apples' => 3, 'oranges' => 5], 'oranges'), 5);" },
+    { name: "get_count returns 0 for a missing key (?? in action)",
+      code: "expect_eq(get_count(['apples' => 3], 'pears'), 0);" },
+    { name: "add_stock updates an existing count and adds new keys at the end",
+      code: "expect_eq(add_stock(['apples' => 3], 'apples', 2), ['apples' => 5]);\nexpect_eq(add_stock(['apples' => 3], 'pears', 4), ['apples' => 3, 'pears' => 4]);" },
+    { name: "add_stock leaves the caller's array untouched (value semantics)",
+      code: "$inv = ['apples' => 3];\n$updated = add_stock($inv, 'apples', 9);\nexpect_eq($inv, ['apples' => 3]);\nexpect_eq($updated, ['apples' => 12]);" },
+    { name: "format_inventory walks keys in insertion order",
+      code: "expect_eq(format_inventory(['apples' => 3, 'oranges' => 5]), 'apples: 3, oranges: 5');\nexpect_eq(format_inventory(['zebras' => 1, 'apples' => 2]), 'zebras: 1, apples: 2');" },
+  ],
+
+  solution: `<?php
+
+function build_inventory(): array {
+    return ['apples' => 3, 'oranges' => 5];
+}
+
+function get_count(array $inv, string $name): int {
+    return $inv[$name] ?? 0;
+}
+
+function add_stock(array $inv, string $name, int $n): array {
+    $inv[$name] = ($inv[$name] ?? 0) + $n;
+    return $inv;
+}
+
+function format_inventory(array $inv): string {
+    $parts = [];
+    foreach ($inv as $name => $count) {
+        $parts[] = "$name: $count";
+    }
+    return implode(", ", $parts);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+  <tr><td>Literal</td><td><code>map[string]int{"a": 1}</code></td><td><code>['a' =&gt; 1]</code></td></tr>
+  <tr><td>Read with default</td><td><code>v, ok := m[k]</code> + <code>if</code></td><td><code>$m[$k] ?? $default</code></td></tr>
+  <tr><td>Key exists?</td><td><code>_, ok := m[k]</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+  <tr><td>Set</td><td><code>m[k] = v</code></td><td><code>$m[$k] = $v;</code></td></tr>
+  <tr><td>Delete</td><td><code>delete(m, k)</code></td><td><code>unset($m[$k]);</code></td></tr>
+  <tr><td>Iterate</td><td><code>for k, v := range m</code></td><td><code>foreach ($m as $k =&gt; $v)</code></td></tr>
+  <tr><td>Iteration order</td><td>randomized on purpose</td><td><strong>insertion order, guaranteed</strong></td></tr>
+  <tr><td>All keys / values</td><td>manual loop</td><td><code>array_keys($m)</code> / <code>array_values($m)</code></td></tr>
+</table>
+<p>The ordering guarantee is the habit-changer. Years of Go have trained you
+to never rely on map iteration order — PHP arrays are ordered dictionaries,
+so building a report, a JSON payload, or a menu in a specific sequence just
+means inserting in that sequence. The flip side: two arrays with the same
+pairs in different insertion orders are <em>not</em> <code>===</code> equal,
+which is why the tests above can (and do) pin the order down.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

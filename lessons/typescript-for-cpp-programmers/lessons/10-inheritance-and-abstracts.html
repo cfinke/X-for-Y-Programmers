@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Your pure-virtual idiom translates one-to-one:
+<code>virtual double area() const = 0;</code> becomes
+<code>abstract area(): number;</code> inside an <code>abstract class</code>.
+Derivation drops the access specifier — <code>class Circle : public Shape</code>
+is <code>class Circle extends Shape</code> — and the base constructor is
+called explicitly with <code>super(...)</code> instead of a member-initializer
+list. What disappears entirely: the <code>virtual</code> keyword. Every method
+is dispatched dynamically, always. There is no vtable to opt into, no slicing,
+no "forgot to mark it virtual so the base version ran" bug. The
+<code>override</code> keyword exists but is optional; redefining a method in a
+subclass just works.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>class Shape { virtual double area() const = 0; };</code></td><td><code>abstract class Shape { abstract area(): number; }</code></td></tr>
+  <tr><td><code>class Circle : public Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td><code>Circle(double r) : Shape(...), r_(r) {}</code></td><td><code>constructor(r: number) { super(...); }</code></td></tr>
+  <tr><td><code>double area() const override</code></td><td><code>area(): number</code> (<code>override</code> optional)</td></tr>
+  <tr><td>non-<code>virtual</code> = static dispatch</td><td>doesn't exist — dispatch is always dynamic</td></tr>
+  <tr><td>multiple base classes</td><td>one <code>extends</code>; use <code>implements</code> for interfaces</td></tr>
+</table>
+<p>One restriction going the other way: no multiple inheritance. A class
+<code>extends</code> exactly one base class; when you want several contracts,
+you <code>implements</code> any number of interfaces (which cost nothing —
+they're erased). The template-method pattern survives intact: a concrete
+method on the abstract base can call an abstract method, and at runtime the
+derived override is what runs — no CRTP gymnastics required.</p>`,
+
+  cpp: `#include <string>
+#include <cmath>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    Shape(std::string kind) : kind_(std::move(kind)) {}
+    virtual double area() const = 0;          // pure virtual
+    std::string describe() const {            // template method:
+        return kind_ + " with area " +        // calls the derived
+               std::to_string(area());        // class's area()
+    }
+private:
+    std::string kind_;
+};
+
+class Circle : public Shape {
+public:
+    explicit Circle(double r) : Shape("circle"), r_(r) {}
+    double area() const override { return M_PI * r_ * r_; }
+private:
+    double r_;
+};`,
+
+  task: `
+<p>Build the same hierarchy in TypeScript:</p>
+<ol>
+  <li>An <code>abstract class Shape</code> whose constructor takes and stores
+      <code>kind: string</code> (parameter properties from Lesson 9 are fine:
+      <code>constructor(public readonly kind: string) {}</code>). Declare
+      <code>abstract area(): number;</code> — the pure virtual — and a
+      <em>concrete</em> template method <code>describe(): string</code> that
+      returns <code>this.kind + " with area " + (Math.round(this.area() * 100) / 100)</code>.</li>
+  <li><code>class Circle extends Shape</code> — constructor takes
+      <code>radius: number</code>, calls <code>super("circle")</code>, and
+      implements <code>area()</code> as <code>Math.PI * this.radius * this.radius</code>.</li>
+  <li><code>class Rectangle extends Shape</code> — constructor takes
+      <code>width: number</code> and <code>height: number</code>, calls
+      <code>super("rectangle")</code>, and implements <code>area()</code> as
+      <code>this.width * this.height</code>.</li>
+</ol>
+<p>No <code>virtual</code>, no <code>override</code> needed, no destructor —
+just note that <code>describe</code> on the base dispatches to the derived
+<code>area()</code> every time.</p>`,
+
+  starter: `// 1. The abstract base: virtual double area() const = 0;
+//    becomes abstract area(): number;  — no vtable ceremony.
+abstract class Shape {
+  constructor(public readonly kind: string) {}
+
+  // TODO: declare abstract area(): number;
+
+  describe(): string {
+    // TODO: template method — this.kind + " with area " + rounded area
+    //       (round with Math.round(this.area() * 100) / 100)
+    return "";
+  }
+}
+
+// 2. class Circle : public Shape  →  class Circle extends Shape
+class Circle extends Shape {
+  constructor(public radius: number) {
+    super("circle"); // base ctor call replaces the initializer list
+  }
+  // TODO: implement area()
+}
+
+// 3. Rectangle: width × height.
+class Rectangle extends Shape {
+  // TODO: constructor(width, height) calling super("rectangle"),
+  //       then implement area()
+}
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class/, message: "Declare Shape with abstract class" },
+    { pattern: /abstract\s+area\s*\(\s*\)\s*:\s*number/, message: "Declare the pure virtual as abstract area(): number" },
+    { pattern: /extends\s+Shape/, message: "Derive with extends Shape (the : public Shape of TypeScript)" },
+    { pattern: /super\s*\(/, message: "Call the base constructor with super(...)" },
+  ],
+
+  tests: [
+    { name: "new Circle(2).area() is 12.57 (to 2 decimals)", run: (x) => expectEqual(Math.round(new x.Circle(2).area() * 100) / 100, 12.57) },
+    { name: "new Rectangle(3, 4).area() is 12", run: (x) => expectEqual(new x.Rectangle(3, 4).area(), 12) },
+    { name: "describe() on a rectangle uses the template method", run: (x) => expectEqual(new x.Rectangle(3, 4).describe(), "rectangle with area 12") },
+    { name: "describe() on a circle dispatches to Circle.area()", run: (x) => expectEqual(new x.Circle(2).describe(), "circle with area 12.57") },
+    { name: "a Shape[] array dispatches dynamically per element", run: (x) => { const shapes = [new x.Circle(1), new x.Rectangle(2, 2)]; expectDeepEqual(shapes.map((s) => s.describe()), ["circle with area 3.14", "rectangle with area 4"]); } },
+    { name: "Circle and Rectangle are instanceof Shape", run: (x) => { expectTruthy(new x.Circle(1) instanceof x.Shape); expectTruthy(new x.Rectangle(1, 1) instanceof x.Shape); } },
+  ],
+
+  solution: `abstract class Shape {
+  constructor(public readonly kind: string) {}
+
+  abstract area(): number;
+
+  describe(): string {
+    return this.kind + " with area " + (Math.round(this.area() * 100) / 100);
+  }
+}
+
+class Circle extends Shape {
+  constructor(public radius: number) {
+    super("circle");
+  }
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(public width: number, public height: number) {
+    super("rectangle");
+  }
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Abstract base</td><td>class with a pure virtual</td><td><code>abstract class Shape</code></td></tr>
+  <tr><td>Pure virtual</td><td><code>virtual double area() const = 0;</code></td><td><code>abstract area(): number;</code></td></tr>
+  <tr><td>Derive</td><td><code>class Circle : public Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td>Base ctor</td><td><code>Circle(double r) : Shape("circle")</code></td><td><code>super("circle")</code> inside <code>constructor</code></td></tr>
+  <tr><td>Override</td><td><code>override</code> (and base must be <code>virtual</code>)</td><td>just redefine; <code>override</code> keyword optional</td></tr>
+  <tr><td>Dispatch</td><td>static unless <code>virtual</code></td><td>always dynamic</td></tr>
+  <tr><td>Multiple inheritance</td><td><code>class D : A, B</code></td><td>one <code>extends</code> + any number of <code>implements</code></td></tr>
+  <tr><td>Virtual destructor</td><td>required for polymorphic delete</td><td>no destructors — GC handles it</td></tr>
+</table>
+<p>The mental unload: an entire category of C++ care disappears. No slicing
+(objects are always handled by reference), no forgetting <code>virtual</code>,
+no virtual destructor rule, no diamond problem. What remains is the part you
+actually wanted — <code>describe()</code> on the base calling
+<code>area()</code> and getting the derived implementation, i.e. the template
+method pattern, working with zero keywords beyond <code>abstract</code>. Note
+that <code>abstract</code> is compile-time-only: it stops <em>TypeScript</em>
+code from writing <code>new Shape(...)</code>, but it is erased from the
+emitted JavaScript rather than enforced at runtime.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

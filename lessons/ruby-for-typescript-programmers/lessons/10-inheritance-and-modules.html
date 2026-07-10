@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Modules</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Modules",
+
+  intro: `
+<p>Inheritance shrinks to a single character: <code>extends</code> becomes
+<code>&lt;</code>, as in <code>class Circle &lt; Shape</code>. Inside an
+overriding method, <code>super</code> calls the parent's version — with one
+gotcha worth pinning to the wall: bare <code>super</code> (no parentheses)
+automatically forwards <em>all</em> of the current method's arguments. Write
+<code>super()</code> when you mean "call the parent with nothing".</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>class Circle extends Shape</code></td><td><code>class Circle &lt; Shape</code></td></tr>
+  <tr><td><code>abstract area(): number;</code></td><td><code>def area; raise NotImplementedError; end</code></td></tr>
+  <tr><td><code>super(x)</code> / <code>super.method()</code></td><td><code>super(x)</code>; bare <code>super</code> forwards all args</td></tr>
+  <tr><td><code>namespace</code> / <code>implements</code></td><td><code>module</code> — namespacing <em>and</em> mixins</td></tr>
+  <tr><td>(no equivalent)</td><td><code>include Greetable</code> adds real instance methods</td></tr>
+</table>
+<p>There is no <code>abstract</code> keyword. The convention is a base method
+that raises <code>NotImplementedError</code> — a runtime check where
+TypeScript gives you a compile-time one; an honest trade, and it still lets
+the base class own <em>template methods</em> like <code>describe</code> that
+call the <code>area</code> a subclass will provide. The bigger novelty is
+<code>module</code>: it namespaces (that's the <code>Math</code> in
+<code>Math::PI</code> — note <code>::</code> for constant lookup), and it
+<em>mixes in</em>. <code>include Greetable</code> pastes real, inheritable
+instance methods into a class — like a TS interface that ships its own
+implementation. TypeScript has nothing quite like it.</p>`,
+
+  typescript: `abstract class Shape {
+  abstract area(): number;          // compile-time contract
+
+  describe(): string {              // template method
+    return \`This shape has area \${this.area()}\`;
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) { super(); }
+  area(): number {
+    return Math.round(Math.PI * this.radius ** 2 * 100) / 100;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(private w: number, private h: number) { super(); }
+  area(): number { return this.w * this.h; }
+}
+
+// interface Greetable { greet(): string }  // TS: contract only,
+// every implementer writes greet() again — no shared method body.`,
+
+  task: `
+<ol>
+  <li><code>Shape</code> — <code>area</code> already raises
+      <code>NotImplementedError</code> (keep it: that's the "abstract"
+      convention). Implement <code>describe</code> to return
+      <code>"This shape has area #{area}"</code> — a template method calling
+      the subclass's <code>area</code>.</li>
+  <li><code>Circle &lt; Shape</code> — <code>initialize(radius)</code> stores
+      <code>@radius</code>; <code>area</code> returns
+      <code>(Math::PI * @radius ** 2).round(2)</code>.</li>
+  <li><code>Rectangle &lt; Shape</code> — <code>initialize(width, height)</code>;
+      <code>area</code> multiplies them.</li>
+  <li><code>module Greetable</code> — a <code>greet</code> method returning
+      <code>"Hi from #{name}"</code>. It calls <code>name</code> on whatever
+      class includes it.</li>
+  <li><code>Robot</code> — <code>include Greetable</code>, store
+      <code>@name</code> in <code>initialize(name)</code>, expose it with
+      <code>attr_reader :name</code>.</li>
+</ol>`,
+
+  starter: `# The "abstract" base: no abstract keyword — raising NotImplementedError
+# in the base method is the Ruby convention (a runtime contract).
+class Shape
+  def area
+    raise NotImplementedError, "subclasses must implement area"
+  end
+
+  def describe
+    raise NotImplementedError, "TODO: the template string, using area"
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    raise NotImplementedError, "TODO: store @radius"
+  end
+
+  def area
+    raise NotImplementedError, "TODO: (Math::PI * @radius ** 2).round(2)"
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    raise NotImplementedError, "TODO: store @width and @height"
+  end
+
+  def area
+    raise NotImplementedError, "TODO: width times height"
+  end
+end
+
+# A mixin: instance methods that any class can include.
+module Greetable
+  def greet
+    raise NotImplementedError, "TODO: greet using the includer's name method"
+  end
+end
+
+class Robot
+  include Greetable
+
+  def initialize(name)
+    raise NotImplementedError, "TODO: store @name; expose it with attr_reader"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /<\s*Shape/, message: "Inherit with < Shape (extends becomes <)" },
+    { pattern: /NotImplementedError/, message: "Keep the NotImplementedError convention in Shape#area" },
+    { pattern: /module\s+Greetable/, message: "Define the Greetable module" },
+    { pattern: /include\s+Greetable/, message: "Mix Greetable into Robot with include" },
+  ],
+
+  tests: [
+    { name: "Circle.new(1).area is 3.14",
+      code: "  expect_eq(Circle.new(1).area, 3.14)" },
+    { name: "Rectangle.new(3, 4).area is 12",
+      code: "  expect_eq(Rectangle.new(3, 4).area, 12)" },
+    { name: 'describe (defined once on Shape) works for both subclasses',
+      code: '  expect_eq(Rectangle.new(3, 4).describe, "This shape has area 12")\n  expect_eq(Circle.new(2).describe, "This shape has area 12.57")' },
+    { name: "the bare Shape still raises NotImplementedError from area",
+      code: "  raised = false\n  begin\n    Shape.new.area\n  rescue NotImplementedError\n    raised = true\n  end\n  expect_true(raised)" },
+    { name: 'Robot.new("R2-D2").greet says "Hi from R2-D2" via the mixin',
+      code: '  robot = Robot.new("R2-D2")\n  expect_eq(robot.greet, "Hi from R2-D2")\n  expect_eq(robot.name, "R2-D2")' },
+  ],
+
+  solution: `class Shape
+  def area
+    raise NotImplementedError, "subclasses must implement area"
+  end
+
+  def describe
+    "This shape has area #{area}"
+  end
+end
+
+class Circle < Shape
+  def initialize(radius)
+    @radius = radius
+  end
+
+  def area
+    (Math::PI * @radius ** 2).round(2)
+  end
+end
+
+class Rectangle < Shape
+  def initialize(width, height)
+    @width = width
+    @height = height
+  end
+
+  def area
+    @width * @height
+  end
+end
+
+module Greetable
+  def greet
+    "Hi from #{name}"
+  end
+end
+
+class Robot
+  include Greetable
+  attr_reader :name
+
+  def initialize(name)
+    @name = name
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Inherit</td><td><code>class C extends S</code></td><td><code>class C &lt; S</code></td></tr>
+  <tr><td>Call parent method</td><td><code>super.m(args)</code></td><td><code>super(args)</code> inside the override</td></tr>
+  <tr><td>Forward all args</td><td>spell them out</td><td>bare <code>super</code> — no parens (gotcha!)</td></tr>
+  <tr><td>Parent with no args</td><td><code>super()</code></td><td><code>super()</code> — parens required</td></tr>
+  <tr><td>Abstract method</td><td><code>abstract m(): T;</code> (compile-time)</td><td><code>raise NotImplementedError</code> (runtime)</td></tr>
+  <tr><td>Namespacing</td><td><code>namespace</code> / modules</td><td><code>module Geometry</code>, <code>Math::PI</code></td></tr>
+  <tr><td>Share behavior</td><td>interface (contract only)</td><td><code>include Mixin</code> — methods included</td></tr>
+</table>
+<p>Mixins are how Ruby's standard library gets its power: define one method,
+<code>&lt;=&gt;</code>, and <code>include Comparable</code> hands you
+<code>&lt;</code>, <code>&gt;</code>, <code>between?</code>, and
+<code>clamp</code>; define <code>each</code> and <code>include
+Enumerable</code> hands you the entire lesson-12 toolkit. Ruby allows only
+single inheritance (one <code>&lt;</code>), but any number of includes — the
+mixin, not the superclass, is where most sharing happens.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

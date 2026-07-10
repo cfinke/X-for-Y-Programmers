@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Borrowing & References</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Borrowing & References",
+
+  intro: `
+<p>C# quietly gave you the preview of this lesson: <code>ref</code>,
+<code>in</code>, and <code>out</code> parameters. Rust's references are that
+idea, promoted from a niche performance feature to the backbone of the
+language. <code>&amp;T</code> is a <em>shared</em> borrow — like
+<code>in</code>: the callee may read but not modify, and any number can exist
+at once. <code>&amp;mut T</code> is an <em>exclusive</em> borrow — like
+<code>ref</code>: the callee may modify, but only <strong>one</strong> can
+exist at a time, with no readers alongside it.</p>
+<table>
+  <tr><th>C#</th><th>Rust</th></tr>
+  <tr><td><code>void F(in List&lt;int&gt; x)</code> — read-only</td><td><code>fn f(x: &amp;Vec&lt;i32&gt;)</code> — shared borrow</td></tr>
+  <tr><td><code>void F(ref List&lt;string&gt; x)</code> — may modify</td><td><code>fn f(x: &amp;mut Vec&lt;String&gt;)</code> — exclusive borrow</td></tr>
+  <tr><td><code>F(ref list)</code> — visible at call site</td><td><code>f(&amp;mut list)</code> — visible at call site</td></tr>
+  <tr><td>aliasing unchecked — any number of <code>ref</code>s</td><td>many <code>&amp;</code> <em>or</em> one <code>&amp;mut</code>, never both</td></tr>
+  <tr><td><code>IReadOnlyList&lt;T&gt;</code>-style views</td><td><code>&amp;[i32]</code> — a slice, view into any contiguous data</td></tr>
+</table>
+<p>That exclusivity rule — many readers <em>or</em> one writer, never both —
+is the part C# doesn't have, and it's what kills the whole family of
+"someone else mutated my collection while I was iterating it" bugs at compile
+time. Also familiar: the <code>&amp;</code> shows up at the <em>call site</em>
+(<code>total(&amp;numbers)</code>, <code>add_item(&amp;mut items, ...)</code>),
+just as C# makes you write <code>F(ref x)</code> — you can see at a glance
+which calls might change your data. One new friend: <code>&amp;[i32]</code>
+is a <em>slice</em>, a borrowed view of any contiguous run of integers.
+Prefer it over <code>&amp;Vec&lt;i32&gt;</code> for parameters, the way you'd
+prefer <code>IReadOnlyList&lt;int&gt;</code> over <code>List&lt;int&gt;</code>
+in a signature.</p>`,
+
+  csharp: `// C# marks intent at both ends -- for the few
+// parameter modes it has:
+static int Total(in List<int> numbers)    // in: read-only
+{
+    var sum = 0;
+    foreach (var n in numbers) sum += n;
+    return sum;
+}
+
+static void AddItem(ref List<string> items, string item)
+{
+    items.Add(item);            // caller's list changes
+}
+
+static int Longer(string a, string b) =>
+    Math.Max(a.Length, b.Length);
+
+var list = new List<string> { "tea" };
+AddItem(ref list, "coffee");    // ref visible at the call site
+Console.WriteLine(Total(new List<int> { 1, 2, 3 }));   // 6`,
+
+  task: `
+<p>Rewrite the C# with borrows instead of moves:</p>
+<ol>
+  <li><code>total</code>: takes <code>numbers: &amp;[i32]</code> (a shared
+      slice — the <code>in</code> parameter of Rust) and returns
+      <code>i32</code>, the sum. A <code>for n in numbers { ... }</code> loop
+      over a <code>let mut sum</code> works well.</li>
+  <li><code>add_item</code>: takes <code>items: &amp;mut Vec&lt;String&gt;</code>
+      (an exclusive borrow — the <code>ref</code> parameter) and
+      <code>item: String</code>, and pushes the item onto the vector. No
+      return value — mutating through the borrow <em>is</em> the point.</li>
+  <li><code>longer</code>: takes <code>a: &amp;str</code> and
+      <code>b: &amp;str</code>, returns <code>usize</code> — the byte length
+      of the longer one. (<code>.len()</code> returns <code>usize</code>,
+      Rust's <code>nuint</code>-like index type.)</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. total: borrow a slice, sum it. The caller keeps the data.
+fn total(numbers: &[i32]) -> i32 {
+    todo!()
+}
+
+// 2. add_item: an exclusive &mut borrow lets you .push()
+//    onto the caller's vector.
+fn add_item(items: &mut Vec<String>, item: String) {
+    todo!()
+}
+
+// 3. longer: two shared borrows in, one length out.
+fn longer(a: &str, b: &str) -> usize {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&\[i32\]/, message: "Take the numbers as a slice: &[i32]" },
+    { pattern: /&mut\s/, message: "Take the vector as an exclusive borrow: &mut Vec<String>" },
+  ],
+
+  tests: [
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total(&[]) returns 0 and the caller still owns the data",
+      code: "let nums = vec![10, -4, 6];\nassert_eq!(total(&[]), 0);\nassert_eq!(total(&nums), 12);\nassert_eq!(nums.len(), 3);" },
+    { name: "add_item pushes onto the caller's vector",
+      code: 'let mut items = vec![String::from("tea")];\nadd_item(&mut items, String::from("coffee"));\nassert_eq!(items, vec!["tea", "coffee"]);' },
+    { name: "add_item works on an empty vector",
+      code: 'let mut items: Vec<String> = Vec::new();\nadd_item(&mut items, String::from("first"));\nassert_eq!(items, vec!["first"]);' },
+    { name: 'longer("hi", "hello") returns 5',
+      code: 'assert_eq!(longer("hi", "hello"), 5);\nassert_eq!(longer("longest", "no"), 7);' },
+  ],
+
+  solution: `fn total(numbers: &[i32]) -> i32 {
+    let mut sum = 0;
+    for n in numbers {
+        sum += n;
+    }
+    sum
+}
+
+fn add_item(items: &mut Vec<String>, item: String) {
+    items.push(item);
+}
+
+fn longer(a: &str, b: &str) -> usize {
+    if a.len() > b.len() { a.len() } else { b.len() }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+  <tr><td>Read-only reference</td><td><code>in T</code></td><td><code>&amp;T</code> — shared, many allowed</td></tr>
+  <tr><td>Mutable reference</td><td><code>ref T</code></td><td><code>&amp;mut T</code> — exclusive, one at a time</td></tr>
+  <tr><td>Call-site marker</td><td><code>F(ref x)</code></td><td><code>f(&amp;x)</code> / <code>f(&amp;mut x)</code></td></tr>
+  <tr><td>Aliasing rule</td><td>none — mutation races are on you</td><td>many readers <em>or</em> one writer, compiler-enforced</td></tr>
+  <tr><td>Sequence view</td><td><code>IReadOnlyList&lt;T&gt;</code>, <code>ReadOnlySpan&lt;T&gt;</code></td><td><code>&amp;[T]</code> slice</td></tr>
+</table>
+<p>Where C# treats <code>ref</code>/<code>in</code> as an optimization detail
+most code never touches, borrowing is how everyday Rust avoids the moves you
+met in Lesson 4: lend a value with <code>&amp;</code>, keep owning it. The
+exclusivity of <code>&amp;mut</code> is the trade that pays for everything
+else — because no one can read while you write, the compiler can prove your
+mutations are safe, with no GC, no locks, and no defensive copies.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

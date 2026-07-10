@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "JSON",
+
+  intro: `
+<p>In Java, JSON handling comes from a third-party library like Jackson or Gson —
+you annotate a class with <code>@JsonProperty</code> and call
+<code>objectMapper.writeValueAsString(u)</code> or <code>readValue(s, User.class)</code>,
+and reflection does the rest. Go's <code>encoding/json</code> is built in and works the
+same way in spirit: you marshal <em>into</em> and unmarshal <em>out of</em> concrete
+types. A <code>struct</code> declares exactly which fields exist, and
+<strong>struct tags</strong> map Go field names to JSON keys — playing the same role
+as Jackson's annotations, but as a language feature rather than a library.</p>
+<table>
+  <tr><th>Java</th><th>Go</th></tr>
+  <tr><td><code>mapper.writeValueAsString(u)</code></td><td><code>b, err := json.Marshal(u)</code> (<code>[]byte</code>)</td></tr>
+  <tr><td><code>mapper.readValue(s, User.class)</code></td><td><code>json.Unmarshal([]byte(s), &amp;u)</code></td></tr>
+  <tr><td><code>@JsonProperty("name") String name;</code></td><td><code>Name string \`json:"name"\`</code></td></tr>
+  <tr><td><code>@JsonInclude(NON_NULL)</code></td><td><code>json:"email,omitempty"</code></td></tr>
+</table>
+<p>Two things surprise Java programmers. First, only <strong>exported</strong>
+(capitalized) fields are marshalled — <code>encoding/json</code> cannot see
+lowercase fields, so a JSON key like <code>"name"</code> comes from an exported
+<code>Name</code> field plus a tag, unlike Java where a library can reach into
+private fields via reflection. Second, <code>Marshal</code> returns
+<code>[]byte</code>, not a <code>String</code>, so you wrap it in <code>string(b)</code>
+to read it. And every call returns an <code>error</code> you are expected to check,
+rather than throwing a checked <code>JsonProcessingException</code>.</p>`,
+
+  java: `class User {
+    public String name;
+    public int age;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public String email;
+}
+
+User u = new User();
+u.name = "Ada";
+u.age = 36;
+String s = objectMapper.writeValueAsString(u); // {"name":"Ada","age":36}
+User back = objectMapper.readValue(s, User.class);`,
+
+  task: `
+<p>Write these as package-level declarations (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li>A struct <code>User</code> with three exported fields and JSON tags:
+      <code>Name string</code> tagged <code>json:"name"</code>,
+      <code>Age int</code> tagged <code>json:"age"</code>, and
+      <code>Email string</code> tagged <code>json:"email,omitempty"</code> so an
+      empty email is left out entirely.</li>
+  <li><code>ToJSON(u User) (string, error)</code>: call <code>json.Marshal(u)</code>
+      and return the bytes as a <code>string</code> (or <code>""</code> and the error).</li>
+  <li><code>FromJSON(data string) (User, error)</code>: declare a
+      <code>var u User</code>, call <code>json.Unmarshal([]byte(data), &amp;u)</code>,
+      and return <code>u</code> and the error.</li>
+  <li><code>ParseScores(data string) (map[string]int, error)</code>: unmarshal a JSON
+      object of numbers into a <code>map[string]int</code> — no struct needed when the
+      keys are dynamic.</li>
+</ol>
+<p><code>Marshal</code> writes struct fields in declaration order, so
+<code>ToJSON(User{Name: "Ada", Age: 36})</code> is exactly
+<code>{"name":"Ada","age":36}</code> — <code>omitempty</code> drops the empty email.</p>`,
+
+  starter: `type User struct {
+	Name  string \`json:"name"\`
+	Age   int    \`json:"age"\`
+	Email string \`json:"email,omitempty"\`
+}
+
+func ToJSON(u User) (string, error) {
+	return "", nil // TODO: json.Marshal
+}
+
+func FromJSON(data string) (User, error) {
+	return User{}, nil // TODO: json.Unmarshal into a User
+}
+
+func ParseScores(data string) (map[string]int, error) {
+	return nil, nil // TODO: json.Unmarshal into a map[string]int
+}
+`,
+
+  requirements: [
+    { pattern: /json:"email,omitempty"/, message: "Tag Email with json:\"email,omitempty\"" },
+    { pattern: /json\.Marshal/, message: "Use json.Marshal in ToJSON" },
+    { pattern: /json\.Unmarshal/, message: "Use json.Unmarshal to decode JSON" },
+  ],
+
+  tests: [
+    { name: "ToJSON marshals fields in order", code: "\t\ts, err := ToJSON(User{Name: \"Ada\", Age: 36, Email: \"ada@example.com\"})\n\t\texpect_true(err == nil)\n\t\texpect_eq(s, `{\"name\":\"Ada\",\"age\":36,\"email\":\"ada@example.com\"}`)" },
+    { name: "omitempty drops an empty email", code: "\t\ts, err := ToJSON(User{Name: \"Rob\", Age: 68})\n\t\texpect_true(err == nil)\n\t\texpect_eq(s, `{\"name\":\"Rob\",\"age\":68}`)" },
+    { name: "FromJSON fills the struct fields", code: "\t\tu, err := FromJSON(`{\"name\":\"Ada\",\"age\":36,\"email\":\"ada@example.com\"}`)\n\t\texpect_true(err == nil)\n\t\texpect_eq(u.Name, \"Ada\")\n\t\texpect_eq(u.Age, 36)\n\t\texpect_eq(u.Email, \"ada@example.com\")" },
+    { name: "round-trip preserves the value", code: "\t\torig := User{Name: \"Grace\", Age: 45, Email: \"grace@navy.mil\"}\n\t\ts, err := ToJSON(orig)\n\t\texpect_true(err == nil)\n\t\tback, err := FromJSON(s)\n\t\texpect_true(err == nil)\n\t\texpect_eq(back, orig)" },
+    { name: "ParseScores decodes into a map", code: "\t\tm, err := ParseScores(`{\"alice\":10,\"bob\":7}`)\n\t\texpect_true(err == nil)\n\t\texpect_eq(m, map[string]int{\"alice\": 10, \"bob\": 7})" },
+  ],
+
+  solution: `type User struct {
+	Name  string \`json:"name"\`
+	Age   int    \`json:"age"\`
+	Email string \`json:"email,omitempty"\`
+}
+
+func ToJSON(u User) (string, error) {
+	b, err := json.Marshal(u)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func FromJSON(data string) (User, error) {
+	var u User
+	err := json.Unmarshal([]byte(data), &u)
+	return u, err
+}
+
+func ParseScores(data string) (map[string]int, error) {
+	var m map[string]int
+	err := json.Unmarshal([]byte(data), &m)
+	return m, err
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Go</th></tr>
+  <tr><td>Encode</td><td><code>mapper.writeValueAsString(u)</code></td><td><code>json.Marshal(u)</code> → <code>[]byte</code></td></tr>
+  <tr><td>Decode</td><td><code>mapper.readValue(s, User.class)</code></td><td><code>json.Unmarshal(b, &amp;u)</code></td></tr>
+  <tr><td>Rename key</td><td><code>@JsonProperty("name")</code></td><td><code>\`json:"name"\`</code> tag</td></tr>
+  <tr><td>Skip empty</td><td><code>@JsonInclude(NON_NULL)</code></td><td><code>,omitempty</code></td></tr>
+  <tr><td>Dynamic keys</td><td><code>Map&lt;String, Integer&gt;</code></td><td><code>map[string]int</code></td></tr>
+</table>
+<p>The pointer in <code>Unmarshal(b, &amp;u)</code> is not optional: the decoder needs
+somewhere to <em>write</em>, so you always pass the address of the destination. Forget
+the <code>&amp;</code> and the compiler will not stop you (any value satisfies the
+<code>interface{}</code> parameter), but the fields stay at their zero values — a
+classic first bug. Java sidesteps this entirely because
+<code>readValue</code> returns a brand-new object rather than mutating one you hand it.</p>
+<p>A field with no tag still marshals, using the exported field name verbatim
+(<code>Name</code> → <code>"Name"</code>), which is rarely the JSON you want. So in
+practice every field in a wire struct gets a tag, much like every field in a Java DTO
+tends to get a Jackson annotation once its JSON name diverges from its Java name. Reach
+for a <code>map</code> only when the keys are genuinely dynamic; when the shape is
+known, a struct gives you type safety, autocompletion, and a compile error if you
+misspell a field — no <code>ObjectMapper</code> instance or reflection required.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

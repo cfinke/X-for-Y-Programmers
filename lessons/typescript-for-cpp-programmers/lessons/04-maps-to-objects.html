@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Maps → Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Maps → Objects",
+
+  intro: `
+<p>Where C++ reaches for <code>std::map&lt;std::string, int&gt;</code> or
+<code>std::unordered_map</code>, TypeScript's everyday answer is a plain
+object typed as <code>Record&lt;string, number&gt;</code> — a string-keyed
+dictionary written as a literal: <code>{ hammer: 12, nails: 400 }</code>.
+Lookup is <code>m[key]</code> or <code>m.key</code>, and iteration with
+C++17 structured bindings maps beautifully:
+<code>for (const auto&amp; [k, v] : m)</code> becomes
+<code>for (const [k, v] of Object.entries(m))</code>.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td><code>std::map&lt;std::string, int&gt; m = {{"a", 1}};</code></td><td><code>const m: Record&lt;string, number&gt; = { a: 1 };</code></td></tr>
+  <tr><td><code>m["a"]</code> (inserts 0 if missing!)</td><td><code>m["a"]</code> (missing → <code>undefined</code>, never inserts)</td></tr>
+  <tr><td><code>m.count("a") &gt; 0</code> / <code>m.contains("a")</code></td><td><code>"a" in m</code></td></tr>
+  <tr><td><code>it = m.find(k); it != m.end() ? it-&gt;second : 0</code></td><td><code>m[k] ?? 0</code></td></tr>
+  <tr><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>for (const [k, v] of Object.entries(m))</code></td></tr>
+  <tr><td><code>m.size()</code></td><td><code>Object.keys(m).length</code></td></tr>
+</table>
+<p>One trap to <em>unlearn</em>: in C++, <code>m[key]</code> on a missing key
+default-constructs and <strong>inserts</strong> a value — the classic "why did
+my const map not compile / why did my map grow" surprise. In TypeScript,
+reading a missing key never inserts anything; it just evaluates to
+<code>undefined</code>. That makes the find-then-dereference dance
+unnecessary: <code>m[k] ?? fallback</code> gives you the value if present and
+the fallback if not, in one expression. (<code>??</code> triggers only on
+<code>null</code>/<code>undefined</code> — a stored <code>0</code> is safe,
+unlike with <code>||</code>.) Presence testing is the <code>in</code>
+operator: <code>key in m</code>.</p>`,
+
+  cpp: `#include <map>
+#include <string>
+
+std::map<std::string, int> inventory = {
+    {"hammer", 12}, {"nails", 400}
+};
+
+int get_count(const std::map<std::string, int>& inv,
+              const std::string& key) {
+    auto it = inv.find(key);           // can't use inv[key]:
+    return it != inv.end() ? it->second : 0;  // it would insert!
+}
+
+bool has_item(const std::map<std::string, int>& inv,
+              const std::string& key) {
+    return inv.count(key) > 0;
+}
+
+int total_items(const std::map<std::string, int>& inv) {
+    int total = 0;
+    for (const auto& [name, count] : inv) total += count;
+    return total;
+}`,
+
+  task: `
+<p>Rewrite the map code in TypeScript:</p>
+<ol>
+  <li>Declare a constant <code>inventory</code> of type
+      <code>Record&lt;string, number&gt;</code> holding
+      <code>hammer: 12</code> and <code>nails: 400</code>, as an object
+      literal.</li>
+  <li><code>getCount(inv: Record&lt;string, number&gt;, key: string): number</code>
+      — return the count for <code>key</code>, or <code>0</code> if absent.
+      One line: <code>inv[key] ?? 0</code>. No find, no iterator, and no risk
+      of accidental insertion.</li>
+  <li><code>hasItem(inv: Record&lt;string, number&gt;, key: string): boolean</code>
+      — return whether the key exists, using the <code>in</code> operator
+      (<code>key in inv</code>), the counterpart of <code>m.count(k)</code>.</li>
+  <li><code>totalItems(inv: Record&lt;string, number&gt;): number</code> — sum
+      all the counts by iterating
+      <code>for (const [name, count] of Object.entries(inv))</code> — your
+      structured bindings, verbatim.</li>
+</ol>`,
+
+  starter: `// 1. inventory: a Record<string, number> object literal.
+//    C++: std::map<std::string, int> inventory = {{"hammer", 12}, ...};
+// TODO: declare inventory
+
+
+// 2. getCount: inv[key] ?? 0 — no find/npos dance, no accidental insert.
+function getCount(inv: Record<string, number>, key: string): number {
+  // TODO
+  return 0;
+}
+
+// 3. hasItem: the "in" operator replaces m.count(k).
+function hasItem(inv: Record<string, number>, key: string): boolean {
+  // TODO
+  return false;
+}
+
+// 4. totalItems: Object.entries gives [key, value] pairs,
+//    just like for (const auto& [name, count] : inv).
+function totalItems(inv: Record<string, number>): number {
+  // TODO
+  return 0;
+}
+`,
+
+  exportNames: ["inventory", "getCount", "hasItem", "totalItems"],
+
+  requirements: [
+    { pattern: /Record\s*<\s*string\s*,\s*number\s*>/, message: "Type the map values as Record<string, number>" },
+    { pattern: /\?\?/, message: "Use the ?? operator in getCount for the missing-key fallback" },
+    { pattern: /\w+\s+in\s+\w+/, message: 'Use the "in" operator (key in inv) in hasItem' },
+    { pattern: /Object\.(entries|keys)\s*\(/, message: "Iterate with Object.entries(…) (or Object.keys) in totalItems" },
+  ],
+
+  tests: [
+    { name: "inventory holds hammer: 12 and nails: 400", run: (x) => expectDeepEqual(x.inventory, { hammer: 12, nails: 400 }) },
+    { name: 'getCount(inventory, "nails") returns 400', run: (x) => expectEqual(x.getCount(x.inventory, "nails"), 400) },
+    { name: 'getCount(inventory, "screws") returns 0 (missing key, no insertion)', run: (x) => { expectEqual(x.getCount(x.inventory, "screws"), 0); expectEqual("screws" in x.inventory, false); } },
+    { name: 'hasItem finds "hammer" but not "screws"', run: (x) => { expectEqual(x.hasItem(x.inventory, "hammer"), true); expectEqual(x.hasItem(x.inventory, "screws"), false); } },
+    { name: "totalItems({ bolts: 2, washers: 3 }) returns 5", run: (x) => expectEqual(x.totalItems({ bolts: 2, washers: 3 }), 5) },
+    { name: "totalItems({}) returns 0", run: (x) => expectEqual(x.totalItems({}), 0) },
+  ],
+
+  solution: `const inventory: Record<string, number> = {
+  hammer: 12,
+  nails: 400,
+};
+
+function getCount(inv: Record<string, number>, key: string): number {
+  return inv[key] ?? 0;
+}
+
+function hasItem(inv: Record<string, number>, key: string): boolean {
+  return key in inv;
+}
+
+function totalItems(inv: Record<string, number>): number {
+  let total = 0;
+  for (const [name, count] of Object.entries(inv)) {
+    total += count;
+  }
+  return total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>Declare</td><td><code>std::map&lt;std::string, int&gt; m;</code></td><td><code>const m: Record&lt;string, number&gt; = {};</code></td></tr>
+  <tr><td>Insert / update</td><td><code>m["k"] = 1;</code></td><td><code>m["k"] = 1;</code> (same)</td></tr>
+  <tr><td>Read missing key</td><td><code>m["k"]</code> inserts a default!</td><td><code>m["k"]</code> → <code>undefined</code>, no insertion</td></tr>
+  <tr><td>Read with fallback</td><td><code>find</code> + <code>end()</code> + <code>it-&gt;second</code></td><td><code>m["k"] ?? fallback</code></td></tr>
+  <tr><td>Has key?</td><td><code>m.count("k")</code> / <code>m.contains("k")</code></td><td><code>"k" in m</code></td></tr>
+  <tr><td>Erase</td><td><code>m.erase("k");</code></td><td><code>delete m["k"];</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>for (const [k, v] of Object.entries(m))</code></td></tr>
+  <tr><td>Keys / values</td><td>iterate and collect</td><td><code>Object.keys(m)</code> / <code>Object.values(m)</code></td></tr>
+</table>
+<p>Two footnotes for the systems programmer: unlike <code>std::map</code>,
+plain objects make no ordering promise you should rely on (there is a
+specified order, but treat it as incidental, like
+<code>unordered_map</code>). And when you need non-string keys or heavy
+insert/delete churn, TypeScript also has a real <code>Map&lt;K, V&gt;</code>
+class with <code>.get</code>/<code>.set</code>/<code>.has</code> — but for
+string-keyed data, the humble <code>Record</code> object literal is the
+idiomatic default.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

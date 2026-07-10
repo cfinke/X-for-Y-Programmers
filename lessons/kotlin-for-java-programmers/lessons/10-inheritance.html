@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance",
+
+  intro: `
+<p>Inheritance in Kotlin looks familiar, but one default is flipped: in
+Java every non-final class is implicitly extendable, while in Kotlin classes
+(and their methods) are <strong>final by default</strong>. To let a class be
+subclassed you mark it <code>open</code>; to let a subclass replace a method you
+mark that method <code>open</code> too. The subclass then uses
+<code>override</code> — and unlike Java's <code>@Override</code>, which is an
+optional annotation, that keyword is <em>required</em>.</p>
+<table>
+  <tr><th>Java</th><th>Kotlin</th></tr>
+  <tr><td><code>class Dog extends Animal {}</code></td><td><code>class Dog : Animal() {}</code></td></tr>
+  <tr><td><code>abstract class Animal {}</code></td><td><code>abstract class Animal {}</code></td></tr>
+  <tr><td><code>abstract String sound();</code></td><td><code>abstract fun sound(): String</code></td></tr>
+  <tr><td><code>@Override String sound() { ... }</code></td><td><code>override fun sound() { ... }</code></td></tr>
+  <tr><td><code>super.describe()</code></td><td><code>super.describe()</code></td></tr>
+</table>
+<p>You call the base constructor right where you name the supertype:
+<code>class Dog(name: String) : Animal(name)</code> passes <code>name</code>
+straight up, instead of Java's explicit <code>super(name);</code> call inside the
+constructor body. An <code>abstract</code> class can't be instantiated and may
+declare members with no body (<code>abstract fun</code>); a subclass must
+implement them. Abstract and open members are the only ones a subclass may
+override.</p>`,
+
+  java: `abstract class Animal {
+    protected final String name;
+
+    Animal(String name) {
+        this.name = name;
+    }
+
+    abstract String sound();
+
+    String describe() {
+        return name + " says " + sound();
+    }
+}
+
+class Dog extends Animal {
+    Dog(String name) {
+        super(name);
+    }
+
+    @Override
+    String sound() { return "Woof"; }
+}
+
+class Puppy extends Dog {
+    Puppy(String name) {
+        super(name);
+    }
+
+    @Override
+    String sound() { return "Yip"; }
+
+    @Override
+    String describe() { return "Baby " + super.describe(); }
+}`,
+
+  task: `
+<p>The <code>Animal</code> base class is provided for you: it takes a
+<code>name</code>, declares an <code>abstract fun sound()</code>, and has an
+<code>open fun describe()</code>. Build the two subclasses:</p>
+<ol>
+  <li>Make <code>Dog</code> an <code>open class</code> extending
+      <code>Animal(name)</code> (so it passes <code>name</code> to the base
+      constructor) and <code>override</code> <code>sound()</code> to return
+      <code>"Woof"</code>.</li>
+  <li>Make <code>Puppy</code> extend <code>Dog(name)</code>,
+      <code>override sound()</code> to return <code>"Yip"</code>, and
+      <code>override describe()</code> to return
+      <code>"Baby "</code> prepended to <code>super.describe()</code>.</li>
+</ol>
+<p>Because <code>describe()</code> calls <code>sound()</code>, dynamic dispatch
+means a <code>Puppy</code>'s <code>describe()</code> uses the <code>Puppy</code>
+sound even when invoked through <code>super</code>.</p>`,
+
+  starter: `abstract class Animal(val name: String) {
+    // Subclasses must implement this (no body allowed on an abstract member).
+    abstract fun sound(): String
+
+    // 'open' lets subclasses override this; the default just uses sound().
+    open fun describe(): String = "$name says \${sound()}"
+}
+
+// 1. Dog: an open class so Puppy can extend it. Pass name to Animal(name).
+open class Dog(name: String) : Animal(name) {
+    override fun sound(): String = "" // TODO: return "Woof"
+}
+
+// 2. Puppy: extend Dog(name); override sound() and describe().
+class Puppy(name: String) : Dog(name) {
+    // TODO: override sound() to return "Yip"
+    // TODO: override describe() to return "Baby " + super.describe()
+}
+`,
+
+  requirements: [
+    { pattern: /\bopen\s+class\s+Dog\b/, message: "Declare Dog as an open class so Puppy can extend it" },
+    { pattern: /\boverride\s+fun\s+sound\b/, message: "Override sound() in the subclasses" },
+    { pattern: /super\.describe\s*\(\s*\)/, message: "Call the base implementation with super.describe()" },
+  ],
+
+  tests: [
+    { name: 'Dog("Rex").sound() is "Woof"', code: "        expect_eq(Dog(\"Rex\").sound(), \"Woof\")" },
+    { name: 'Dog("Rex").describe() is "Rex says Woof"', code: "        expect_eq(Dog(\"Rex\").describe(), \"Rex says Woof\")" },
+    { name: 'Puppy("Fido").sound() is "Yip"', code: "        expect_eq(Puppy(\"Fido\").sound(), \"Yip\")" },
+    { name: 'Puppy("Fido").describe() is "Baby Fido says Yip"', code: "        expect_eq(Puppy(\"Fido\").describe(), \"Baby Fido says Yip\")" },
+    { name: "base-constructor name is inherited", code: "        expect_eq(Puppy(\"Fido\").name, \"Fido\")" },
+    { name: "a Puppy is-an Animal", code: "        expect_true(Puppy(\"Fido\") is Animal)" },
+  ],
+
+  solution: `abstract class Animal(val name: String) {
+    abstract fun sound(): String
+
+    open fun describe(): String = "$name says \${sound()}"
+}
+
+open class Dog(name: String) : Animal(name) {
+    override fun sound(): String = "Woof"
+}
+
+class Puppy(name: String) : Dog(name) {
+    override fun sound(): String = "Yip"
+    override fun describe(): String = "Baby " + super.describe()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Kotlin</th></tr>
+  <tr><td>Subclassable</td><td>every non-final class (default)</td><td><code>open class</code> (opt in)</td></tr>
+  <tr><td>Overridable method</td><td>every non-final method (default)</td><td><code>open fun</code> (opt in)</td></tr>
+  <tr><td>Override keyword</td><td><code>@Override</code> (optional annotation)</td><td><code>override</code> (required)</td></tr>
+  <tr><td>Abstract member</td><td><code>abstract String sound();</code></td><td><code>abstract fun sound(): String</code></td></tr>
+  <tr><td>Base constructor</td><td><code>super(name);</code> in body</td><td><code>: Animal(name)</code> in header</td></tr>
+</table>
+<p>The <code>open</code>/<code>final</code> default is the big mindset shift: a
+Kotlin class you didn't write is a sealed box unless its author chose to open it,
+which makes accidental fragile-base-class bugs much rarer — the same effect
+Java's own <code>final</code> keyword gives you, just inverted as the default.
+Note that <code>abstract</code> members are implicitly open — you don't (and
+can't) write <code>open abstract fun</code>. To go the other way and stop an
+inherited method from being overridden further, mark the override itself
+<code>final</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

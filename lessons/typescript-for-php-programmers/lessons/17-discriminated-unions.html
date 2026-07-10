@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Discriminated Unions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Discriminated Unions",
+
+  intro: `
+<p>Every PHP codebase has one: an array with a <code>'type'</code> key, and a
+<code>switch ($event['type'])</code> somewhere that decides which <em>other</em>
+keys are safe to read. A <code>'payment'</code> event has an <code>amount</code>,
+a <code>'signup'</code> event has an <code>email</code> — but nothing enforces
+that. Read <code>$event['amount']</code> on a signup and PHP hands you
+<code>null</code> and a warning. Forget a whole <code>case</code> and PHP
+shrugs; you find out in production.</p>
+<p>TypeScript turns this pattern into a first-class feature called a
+<em>discriminated union</em> (or tagged union). Each variant is its own object
+type carrying a <em>literal</em> tag property — <code>kind: "circle"</code>,
+not <code>kind: string</code>. Inside each <code>case</code> of a
+<code>switch (shape.kind)</code>, the compiler <em>narrows</em> the type: in the
+<code>"circle"</code> branch, <code>shape.radius</code> exists and
+<code>shape.width</code> is a compile error.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>['type' => 'circle', 'radius' => 2]</code></td><td><code>type Circle = { kind: "circle"; radius: number }</code></td></tr>
+  <tr><td><code>switch ($shape['type'])</code></td><td><code>switch (shape.kind)</code> — each branch narrows the type</td></tr>
+  <tr><td>Forgotten case: silent <code>null</code></td><td>Forgotten case: <code>never</code> check fails at compile time</td></tr>
+</table>
+<p>The payoff is the <code>default</code> branch: assign the leftover value to a
+variable of type <code>never</code>. If every variant is handled, the leftover
+type <em>is</em> <code>never</code> and it compiles. Add a fourth shape later
+and forget its <code>case</code> — the compiler flags the <code>default</code>
+branch immediately. That is exhaustiveness checking: the safety net PHP never
+gives you.</p>`,
+
+  php: `<?php
+function area(array $shape): float {
+    switch ($shape['type']) {
+        case 'circle':
+            return M_PI * $shape['radius'] ** 2;
+        case 'rectangle':
+            return $shape['width'] * $shape['height'];
+        // Oops: 'triangle' was added to the system last month.
+        // No case for it, no error — we just fall through.
+    }
+    return 0.0; // silent wrong answer
+}
+
+echo area(['type' => 'circle', 'radius' => 2]);
+echo area(['type' => 'triangle', 'base' => 6, 'height' => 4]); // 0.0, no warning`,
+
+  task: `
+<p>Model shapes as a discriminated union and compute their areas:</p>
+<ol>
+  <li>Define three variant types, each with a literal <code>kind</code> tag:
+      <code>Circle</code> (<code>kind: "circle"</code>, <code>radius: number</code>),
+      <code>Rectangle</code> (<code>kind: "rectangle"</code>, <code>width</code> and
+      <code>height</code>), and <code>Triangle</code>
+      (<code>kind: "triangle"</code>, <code>base</code> and <code>height</code>).</li>
+  <li>Define <code>type Shape = Circle | Rectangle | Triangle</code>.</li>
+  <li>Write <code>area(shape: Shape): number</code> using a
+      <code>switch (shape.kind)</code>: circle is
+      <code>Math.PI * r²</code>, rectangle is <code>width * height</code>,
+      triangle is <code>base * height / 2</code>.</li>
+  <li>In the <code>default</code> branch, assign <code>shape</code> to a
+      variable of type <code>never</code> and throw an <code>Error</code> —
+      the exhaustiveness check.</li>
+</ol>`,
+
+  starter: `// 1 & 2. TODO: define Circle, Rectangle and Triangle, each with a
+// literal kind tag (e.g. kind: "circle"), then the Shape union.
+type Shape = { kind: string };
+
+// 3 & 4. TODO: switch on shape.kind, one case per variant,
+// and a never-typed exhaustiveness check in the default branch.
+function area(shape: Shape): number {
+  return 0;
+}
+`,
+
+  exportNames: ["area"],
+
+  requirements: [
+    { pattern: /kind\s*:\s*"/, message: 'Give each variant a literal kind tag, e.g. kind: "circle"' },
+    { pattern: /type\s+Shape\s*=\s*Circle\s*\|\s*Rectangle\s*\|\s*Triangle/, message: "Define Shape as the union Circle | Rectangle | Triangle" },
+    { pattern: /switch\s*\(\s*shape\.kind\s*\)/, message: "Use switch (shape.kind) to narrow each branch" },
+    { pattern: /never/, message: "Add a never-typed exhaustiveness check in the default branch" },
+  ],
+
+  tests: [
+    { name: "area of a circle with radius 2 is Math.PI * 4", run: (x) => expectEqual(x.area({ kind: "circle", radius: 2 }), Math.PI * 4) },
+    { name: "area of a 3×4 rectangle is 12", run: (x) => expectEqual(x.area({ kind: "rectangle", width: 3, height: 4 }), 12) },
+    { name: "area of a triangle with base 6, height 4 is 12", run: (x) => expectEqual(x.area({ kind: "triangle", base: 6, height: 4 }), 12) },
+    { name: "an unknown kind hits the exhaustiveness check and throws", run: (x) => expectThrows(() => x.area({ kind: "hexagon", side: 2 })) },
+  ],
+
+  solution: `type Circle = { kind: "circle"; radius: number };
+type Rectangle = { kind: "rectangle"; width: number; height: number };
+type Triangle = { kind: "triangle"; base: number; height: number };
+type Shape = Circle | Rectangle | Triangle;
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    case "rectangle":
+      return shape.width * shape.height;
+    case "triangle":
+      return (shape.base * shape.height) / 2;
+    default: {
+      const unhandled: never = shape;
+      throw new Error("Unhandled shape: " + JSON.stringify(unhandled));
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Tagged variant</td><td><code>['type' => 'circle', ...]</code> (convention only)</td><td><code>{ kind: "circle"; radius: number }</code> (enforced)</td></tr>
+  <tr><td>The union</td><td>Docblock comment, if you're lucky</td><td><code>type Shape = Circle | Rectangle | Triangle</code></td></tr>
+  <tr><td>Branching</td><td><code>switch ($s['type'])</code>, all keys visible everywhere</td><td><code>switch (s.kind)</code>, each branch sees only its variant's keys</td></tr>
+  <tr><td>Missing case</td><td>Falls through silently</td><td><code>const x: never = s;</code> in <code>default</code> fails to compile</td></tr>
+  <tr><td>Closest PHP relative</td><td>PHP 8.1 enums + <code>match()</code> (which throws on no match)</td><td>Literal tags + narrowing, checked before runtime</td></tr>
+</table>
+<p>PHP 8's <code>match()</code> expression throws an <code>UnhandledMatchError</code>
+at runtime — a step up from <code>switch</code>. Discriminated unions move that
+check to compile time: adding a variant instantly lights up every
+<code>switch</code> in the codebase that needs a new case. This is the single
+most PHP-array-shaped feature TypeScript has; reach for it whenever a
+<code>'type'</code> key decides an array's shape.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

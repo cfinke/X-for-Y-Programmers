@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Variables & Basic Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 1,
+  title: "Variables & Basic Types",
+
+  intro: `
+<p>In PHP, a variable is a <code>$name</code> that can hold anything: a string
+today, an integer tomorrow. TypeScript takes the opposite bet — every variable
+has a <em>static type</em>, checked before the code ever runs. If you have used
+PHP's type declarations on function parameters (<code>function f(int $x)</code>),
+you already know the feeling; TypeScript just applies it everywhere, including
+plain variables.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>$name = "Ada";</code></td><td><code>const name: string = "Ada";</code></td></tr>
+  <tr><td><code>$age = 36;</code> (int)</td><td><code>let age: number = 36;</code></td></tr>
+  <tr><td><code>$price = 9.99;</code> (float)</td><td><code>let price: number = 9.99;</code> (one number type!)</td></tr>
+  <tr><td><code>$active = true;</code></td><td><code>let active: boolean = true;</code></td></tr>
+</table>
+<p>Two things to internalize: <code>const</code> is for bindings that never get
+reassigned (use it by default), and <code>let</code> is for ones that do. And
+unlike PHP's separate <code>int</code> and <code>float</code>, TypeScript has a
+single <code>number</code> type for both.</p>`,
+
+  php: `<?php
+$name = "Ada";
+$age = 36;
+$isActive = true;
+
+// Nothing stops this in PHP:
+$age = "thirty-six"; // silently becomes a string
+
+function describeUser($name, $age) {
+    return $name . " is " . $age . " years old";
+}
+
+echo describeUser($name, $age);`,
+
+  task: `
+<p>Rewrite the PHP as TypeScript:</p>
+<ol>
+  <li>Declare a constant <code>userName</code> of type <code>string</code>
+      with the value <code>"Ada"</code>, and a variable <code>userAge</code>
+      of type <code>number</code> with the value <code>36</code>.
+      Write the type annotations explicitly.</li>
+  <li>Write a function <code>describeUser</code> that takes
+      <code>name: string</code> and <code>age: number</code>, and returns a
+      <code>string</code> like <code>"Ada is 36 years old"</code>.
+      Annotate the return type too.</li>
+</ol>
+<p>In TypeScript, reassigning <code>userAge = "thirty-six"</code> would now be
+a compile error — the mistake PHP happily allowed.</p>`,
+
+  starter: `// 1. Declare userName (string) and userAge (number) with explicit types.
+
+
+// 2. Write describeUser with typed parameters and a typed return value.
+function describeUser(name, age) {
+  // TODO: return "<name> is <age> years old"
+  return "";
+}
+`,
+
+  exportNames: ["userName", "userAge", "describeUser"],
+
+  requirements: [
+    { pattern: /const\s+userName\s*:\s*string/, message: "Declare userName as a const with an explicit : string annotation" },
+    { pattern: /let\s+userAge\s*:\s*number/, message: "Declare userAge with let and an explicit : number annotation" },
+    { pattern: /describeUser\s*\(\s*name\s*:\s*string\s*,\s*age\s*:\s*number\s*\)\s*:\s*string/, message: "Give describeUser typed parameters (name: string, age: number) and a : string return type" },
+  ],
+
+  tests: [
+    { name: 'userName is "Ada"', run: (x) => expectEqual(x.userName, "Ada") },
+    { name: "userAge is 36", run: (x) => expectEqual(x.userAge, 36) },
+    { name: 'describeUser("Ada", 36) returns "Ada is 36 years old"', run: (x) => expectEqual(x.describeUser("Ada", 36), "Ada is 36 years old") },
+    { name: 'describeUser("Rasmus", 55) returns "Rasmus is 55 years old"', run: (x) => expectEqual(x.describeUser("Rasmus", 55), "Rasmus is 55 years old") },
+  ],
+
+  solution: `const userName: string = "Ada";
+let userAge: number = 36;
+
+function describeUser(name: string, age: number): string {
+  return name + " is " + age + " years old";
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Declare a variable</td><td><code>$x = 1;</code></td><td><code>let x: number = 1;</code></td></tr>
+  <tr><td>Constant</td><td><code>const X = 1;</code> / <code>define()</code></td><td><code>const x = 1;</code> (block-scoped, use freely)</td></tr>
+  <tr><td>String / int / float / bool</td><td><code>string</code>, <code>int</code>, <code>float</code>, <code>bool</code></td><td><code>string</code>, <code>number</code> (covers both), <code>boolean</code></td></tr>
+  <tr><td>Check a type at runtime</td><td><code>is_string($x)</code></td><td><code>typeof x === "string"</code></td></tr>
+  <tr><td>When types are checked</td><td>At runtime (if declared)</td><td>At compile time, before running</td></tr>
+</table>
+<p>TypeScript can usually <em>infer</em> types (<code>const name = "Ada"</code>
+is already a string), so idiomatic code omits annotations where the value makes
+the type obvious. This lesson asks for explicit annotations so you get the
+syntax into your fingers.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

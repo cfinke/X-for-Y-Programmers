@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Common Traits &amp; Derive</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Common Traits & Derive",
+
+  intro: `
+<p>TypeScript hands you three abilities for free on every object:
+<code>console.log(obj)</code> renders it, <code>{ ...obj }</code> copies it,
+and <code>===</code> compares it (by identity, at least). Rust hands you
+<em>none</em> of them by default. Printing, copying, and comparing are each a
+trait — <code>Debug</code>, <code>Clone</code>, <code>PartialEq</code> — and a
+plain <code>struct</code> implements none of them until you say so.</p>
+<table>
+  <tr><th>TypeScript (free)</th><th>Rust (a trait, derived)</th></tr>
+  <tr><td><code>console.log(point)</code></td><td><code>Debug</code> → <code>format!("{:?}", point)</code></td></tr>
+  <tr><td><code>const copy = { ...point }</code></td><td><code>Clone</code> → <code>point.clone()</code></td></tr>
+  <tr><td><code>a === b</code> (identity) / hand-written equals</td><td><code>PartialEq</code> → <code>a == b</code> (by value, field by field)</td></tr>
+  <tr><td><code>{}</code> then fill in fields</td><td><code>Default</code> → <code>Point::default()</code></td></tr>
+</table>
+<p>The good news: you almost never write these impls by hand. One attribute —
+<code>#[derive(Debug, Clone, PartialEq, Default)]</code> — above the struct
+asks the compiler to generate them, field by field. It's the boilerplate
+TypeScript's runtime does implicitly, made explicit and opt-in. Note that
+derived <code>==</code> is <em>structural</em> equality: two separate
+<code>Point</code> values with the same fields are equal — closer to a
+hand-written <code>deepEquals</code> than to TS's identity <code>===</code>.</p>`,
+
+  typescript: `type Point = { x: number; y: number };
+
+const a: Point = { x: 1, y: 2 };
+const b: Point = { x: 1, y: 2 };
+
+// Rendering: console.log shows any object's structure.
+console.log(a);            // { x: 1, y: 2 }
+
+// Copying: spread gives a shallow duplicate.
+const copy: Point = { ...a };
+
+// Equality: === is identity, so you write it yourself.
+function pointsEqual(p: Point, q: Point): boolean {
+  return p.x === q.x && p.y === q.y;
+}
+
+console.log(a === b);          // false (different objects)
+console.log(pointsEqual(a, b)); // true`,
+
+  task: `
+<p>The starter defines <code>Point</code> with <em>no</em> derives, and three
+functions whose bodies need traits the struct doesn't have yet:</p>
+<ol>
+  <li>Add <code>#[derive(Debug, Clone, PartialEq)]</code> (and
+      <code>Default</code> if you like) directly above
+      <code>struct Point</code>.</li>
+  <li><code>points_equal(a: &amp;Point, b: &amp;Point) -&gt; bool</code> —
+      compare with <code>==</code> (works once <code>PartialEq</code> is
+      derived; compare <code>a</code> and <code>b</code> through the
+      references: <code>a == b</code>).</li>
+  <li><code>debug_string(p: &amp;Point) -&gt; String</code> — return
+      <code>format!("{:?}", p)</code> (works once <code>Debug</code> is
+      derived).</li>
+  <li><code>duplicate(p: &amp;Point) -&gt; Point</code> — return
+      <code>p.clone()</code> (works once <code>Clone</code> is derived).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Add the derive attribute here. Which traits do the three
+// functions below need?
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// Compare with == (needs the equality trait derived above).
+fn points_equal(a: &Point, b: &Point) -> bool {
+    todo!()
+}
+
+// Return format!("{:?}", p) (needs the debug-printing trait).
+fn debug_string(p: &Point) -> String {
+    todo!()
+}
+
+// Return p.clone() (needs the cloning trait).
+fn duplicate(p: &Point) -> Point {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /#\[derive\(/, message: "Add a #[derive(...)] attribute above struct Point" },
+    { pattern: /PartialEq/, message: "Derive PartialEq so == works on Points" },
+    { pattern: /Debug/, message: "Derive Debug so {:?} can print a Point" },
+    { pattern: /Clone/, message: "Derive Clone so .clone() can copy a Point" },
+  ],
+
+  tests: [
+    { name: "points_equal: same fields compare equal",
+      code: "assert!(points_equal(&Point { x: 1, y: 2 }, &Point { x: 1, y: 2 }));" },
+    { name: "points_equal: different fields compare unequal",
+      code: "assert!(!points_equal(&Point { x: 1, y: 2 }, &Point { x: 3, y: 2 }));" },
+    { name: 'debug_string names the struct and shows its fields',
+      code: 'let s = debug_string(&Point { x: 1, y: 2 });\nassert!(s.contains("Point"));\nassert!(s.contains("x"));\nassert!(s.contains("2"));' },
+    { name: "duplicate returns an independent copy with the same fields",
+      code: "let p = Point { x: 5, y: 7 };\nlet q = duplicate(&p);\nassert_eq!(q.x, 5);\nassert_eq!(q.y, 7);\nassert_eq!(p.x, 5);" },
+  ],
+
+  solution: `#[derive(Debug, Clone, PartialEq, Default)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn points_equal(a: &Point, b: &Point) -> bool {
+    a == b
+}
+
+fn debug_string(p: &Point) -> String {
+    format!("{:?}", p)
+}
+
+fn duplicate(p: &Point) -> Point {
+    p.clone()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Ability</th><th>TypeScript</th><th>Rust trait</th><th>You write</th></tr>
+  <tr><td>Print for debugging</td><td><code>console.log(p)</code></td><td><code>Debug</code></td><td><code>format!("{:?}", p)</code> / <code>println!("{:?}", p)</code></td></tr>
+  <tr><td>Duplicate a value</td><td><code>{ ...p }</code></td><td><code>Clone</code></td><td><code>p.clone()</code></td></tr>
+  <tr><td>Value equality</td><td>hand-rolled <code>equals</code></td><td><code>PartialEq</code></td><td><code>a == b</code></td></tr>
+  <tr><td>Zeroed starting value</td><td><code>{ x: 0, y: 0 }</code> by hand</td><td><code>Default</code></td><td><code>Point::default()</code></td></tr>
+  <tr><td>Get them all</td><td>built into the runtime</td><td colspan="2"><code>#[derive(Debug, Clone, PartialEq, Default)]</code></td></tr>
+</table>
+<p>The insight: in TypeScript these behaviors live in the runtime, so every
+object pays for them whether or not it wants them. In Rust they're generated
+code, so a struct only has what you asked for — and the compiler writes the
+field-by-field implementations, which stay correct when you add a field later.
+When a library function demands <code>T: Debug</code> or a test uses
+<code>assert_eq!</code> on your type, the fix is almost always one more name
+inside the <code>derive(...)</code> list.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

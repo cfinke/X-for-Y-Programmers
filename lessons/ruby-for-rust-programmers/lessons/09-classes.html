@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes &amp; Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>In Rust, data and behavior live apart: a <code>struct</code> declares fields,
+and a separate <code>impl</code> block hangs methods off it. Ruby folds both
+into a single <code>class ... end</code> block. The constructor you wrote as
+<code>fn new() -&gt; Self</code> becomes a method named <code>initialize</code>
+— you never call it directly; <code>BankAccount.new("Alice")</code> allocates
+the object and then forwards its arguments to <code>initialize</code>. Fields
+become <strong>instance variables</strong> prefixed with <code>@</code>
+(<code>@balance</code>), and they are genuinely private: there is no
+<code>account.@balance</code> from outside. The only way in is through methods,
+so accessors <em>are</em> the public API.</p>
+<table>
+  <tr><th>Rust</th><th>Ruby</th></tr>
+  <tr><td><code>struct</code> + <code>impl</code> (two blocks)</td><td><code>class ... end</code> (one block)</td></tr>
+  <tr><td><code>fn new() -&gt; Self</code></td><td><code>def initialize</code></td></tr>
+  <tr><td><code>self.balance</code> (field)</td><td><code>@balance</code> (instance var)</td></tr>
+  <tr><td><code>pub fn balance(&amp;self) -&gt; i64</code></td><td><code>attr_reader :balance</code></td></tr>
+  <tr><td><code>fn deposit(&amp;mut self, ...)</code></td><td><code>def deposit(...)</code></td></tr>
+</table>
+<p>Writing a getter by hand is tedious, so Ruby derives them:
+<code>attr_reader :owner, :balance</code> generates <code>owner</code> and
+<code>balance</code> methods that return the matching <code>@</code> variables —
+it is the equivalent of deriving simple accessor <code>fn</code>s.
+(<code>attr_accessor</code> adds setters too.) And notice what vanished:
+there is no <code>&amp;self</code> versus <code>&amp;mut self</code>
+distinction. Every method may freely mutate the receiver, because Ruby objects
+behave like <code>Rc&lt;RefCell&lt;T&gt;&gt;</code> under the hood — shared,
+mutable references, cleaned up by the garbage collector rather than the borrow
+checker.</p>`,
+
+  rust: `struct BankAccount {
+    owner: String,
+    balance: i64,
+}
+
+impl BankAccount {
+    fn new(owner: String) -> Self {
+        BankAccount { owner, balance: 0 }
+    }
+
+    fn deposit(&mut self, amount: i64) {
+        self.balance += amount;
+    }
+
+    fn withdraw(&mut self, amount: i64) -> bool {
+        if amount > self.balance {
+            false // insufficient funds — balance untouched
+        } else {
+            self.balance -= amount;
+            true
+        }
+    }
+}`,
+
+  task: `
+<p>Fold the Rust <code>struct</code> and <code>impl</code> into one Ruby
+<code>class BankAccount</code>:</p>
+<ol>
+  <li><code>initialize(owner)</code> — store the owner in <code>@owner</code>
+      and set <code>@balance</code> to <code>0</code>.</li>
+  <li>Expose <code>owner</code> and <code>balance</code> as read-only accessors
+      with <code>attr_reader :owner, :balance</code>.</li>
+  <li><code>deposit(amount)</code> — add <code>amount</code> to
+      <code>@balance</code>.</li>
+  <li><code>withdraw(amount)</code> — if <code>amount</code> exceeds the
+      balance, return <code>false</code> and leave <code>@balance</code>
+      unchanged; otherwise subtract it and return <code>true</code>.</li>
+</ol>`,
+
+  starter: `class BankAccount
+  attr_reader :owner, :balance
+
+  # BankAccount.new("Alice") calls this. Set @owner and @balance.
+  def initialize(owner)
+    raise NotImplementedError, "TODO: set @owner and @balance"
+  end
+
+  def deposit(amount)
+    raise NotImplementedError, "TODO: add amount to @balance"
+  end
+
+  # Return false (balance unchanged) if amount > @balance, else true.
+  def withdraw(amount)
+    raise NotImplementedError, "TODO: implement withdraw"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Define class BankAccount" },
+    { pattern: /def\s+initialize/, message: "Define an initialize constructor" },
+    { pattern: /attr_reader|attr_accessor/, message: "Expose owner and balance with attr_reader" },
+    { pattern: /@balance/, message: "Track state in the @balance instance variable" },
+  ],
+
+  tests: [
+    { name: "a new account exposes its owner and starts at zero",
+      code: `  acct = BankAccount.new("Alice")
+  expect_eq(acct.owner, "Alice")
+  expect_eq(acct.balance, 0)` },
+    { name: "deposit increases the balance",
+      code: `  acct = BankAccount.new("Bob")
+  acct.deposit(100)
+  expect_eq(acct.balance, 100)` },
+    { name: "a successful withdraw returns true and debits the balance",
+      code: `  acct = BankAccount.new("Cara")
+  acct.deposit(100)
+  expect_eq(acct.withdraw(40), true)
+  expect_eq(acct.balance, 60)` },
+    { name: "an over-withdraw returns false and leaves the balance unchanged",
+      code: `  acct = BankAccount.new("Dan")
+  acct.deposit(50)
+  expect_eq(acct.withdraw(80), false)
+  expect_eq(acct.balance, 50)` },
+    { name: "deposits and withdrawals accumulate",
+      code: `  acct = BankAccount.new("Eve")
+  acct.deposit(30)
+  acct.deposit(20)
+  acct.withdraw(15)
+  expect_eq(acct.balance, 35)` },
+  ],
+
+  solution: `class BankAccount
+  attr_reader :owner, :balance
+
+  def initialize(owner)
+    @owner = owner
+    @balance = 0
+  end
+
+  def deposit(amount)
+    @balance += amount
+  end
+
+  def withdraw(amount)
+    if amount > @balance
+      false
+    else
+      @balance -= amount
+      true
+    end
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+  <tr><td>Type + methods</td><td><code>struct</code> + <code>impl</code></td><td>one <code>class</code> block</td></tr>
+  <tr><td>Constructor</td><td><code>fn new() -&gt; Self</code></td><td><code>def initialize</code>, called by <code>.new</code></td></tr>
+  <tr><td>Field access</td><td><code>self.field</code></td><td><code>@field</code></td></tr>
+  <tr><td>Getter</td><td>hand-written <code>pub fn</code></td><td><code>attr_reader :field</code></td></tr>
+  <tr><td>Getter + setter</td><td>getter + <code>pub fn set_</code></td><td><code>attr_accessor :field</code></td></tr>
+  <tr><td>Mutation</td><td><code>&amp;mut self</code> required</td><td>any method mutates freely</td></tr>
+</table>
+<p><code>@balance</code> is invisible from outside the object — there is no
+syntax to read it except through a method, which is why <code>attr_reader</code>
+exists and why accessors define the boundary of your API. Losing the
+<code>&amp;self</code>/<code>&amp;mut self</code> split means the compiler no
+longer tracks who may mutate what; the flip side is that aliasing "just works"
+because every object reference is shared and the garbage collector, not the
+borrow checker, decides when it dies. Design your public methods deliberately,
+since encapsulation here is a convention you enforce rather than a type the
+compiler proves.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

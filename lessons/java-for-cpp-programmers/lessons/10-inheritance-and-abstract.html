@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>C++ and Java share the same core object model: a class inherits from a
+base — <code>: public Base</code> in C++, <code>extends Base</code> in Java —
+calls the base constructor, and can override methods. The biggest difference
+is dispatch. In C++, a method is only virtual — meaning subclasses can
+override it and calls resolve at runtime — if you mark it
+<code>virtual</code>; everything else binds statically at compile time. In
+Java, every instance method is virtual by default, so the opposite keyword,
+<code>final</code>, is what turns dispatch off.</p>
+<table>
+  <tr><th>C++</th><th>Java</th></tr>
+  <tr><td><code>class Manager : public Employee</code></td><td><code>class Manager extends Employee</code></td></tr>
+  <tr><td><code>Employee(name)</code> (base ctor init list)</td><td><code>super(name);</code></td></tr>
+  <tr><td><code>Employee::totalPay()</code></td><td><code>super.totalPay();</code></td></tr>
+  <tr><td><code>virtual T m() = 0;</code> (pure virtual)</td><td><code>abstract T m();</code></td></tr>
+  <tr><td><code>dynamic_cast&lt;Dog*&gt;(x) != nullptr</code></td><td><code>x instanceof Dog</code></td></tr>
+</table>
+<p>Two things trip up newcomers. First, the <code>override</code> keyword
+(C++11) is optional but you should always write it — if the signature does
+not actually match a virtual base method, the compiler errors instead of
+silently declaring an unrelated method. Second, Java's <code>final</code>
+does double duty: on a field or local it means "assign once" (like
+<code>const</code>), and on a class or method it forbids subclassing or
+overriding — C++ has a matching <code>final</code> specifier for classes and
+virtual methods, but it's used far less often than in Java.</p>`,
+
+  cpp: `class Employee {
+public:
+  explicit Employee(std::string name) : name_(std::move(name)) {}
+  virtual double basePay() const = 0;
+  virtual double totalPay() const { return basePay(); }
+  std::string describe() const {
+    return name_ + ": " + std::to_string(totalPay());
+  }
+protected:
+  const std::string name_;
+};
+
+class Manager : public Employee {
+public:
+  Manager(std::string name, double bonus)
+      : Employee(std::move(name)), bonus_(bonus) {}
+  double basePay() const override { return 8000; }
+  double totalPay() const override { return Employee::totalPay() + bonus_; }
+private:
+  const double bonus_;
+};`,
+
+  task: `
+<p>Build a small employee hierarchy that exercises every inheritance feature.</p>
+<ol>
+  <li>An <code>abstract class Employee</code> with a <code>final</code> field
+      <code>name</code>, a constructor that sets it, an
+      <code>abstract double basePay()</code>, a concrete
+      <code>double totalPay()</code> that returns <code>basePay()</code>, and a
+      <code>String describe()</code> returning <code>name + ": " + totalPay()</code>
+      (e.g. <code>"Ada: 5000.0"</code>).</li>
+  <li>A <code>Developer extends Employee</code> whose constructor calls
+      <code>super(name)</code> and whose <code>basePay()</code> (marked
+      <code>@Override</code>) returns <code>5000</code>.</li>
+  <li>A <code>Manager extends Employee</code> with an extra <code>double bonus</code>.
+      Its <code>basePay()</code> returns <code>8000</code>, and its
+      <code>totalPay()</code> returns <code>super.totalPay() + bonus</code>.</li>
+  <li>A class <code>Payroll</code> with static <code>double totalPayroll(Employee[] emps)</code>
+      (sum of every <code>totalPay()</code>) and
+      <code>int countManagers(Employee[] emps)</code> using
+      <code>instanceof</code>.</li>
+</ol>`,
+
+  starter: `abstract class Employee {
+  protected final String name;
+
+  protected Employee(String name) {
+    this.name = name;
+  }
+
+  abstract double basePay();
+
+  double totalPay() {
+    return 0; // TODO
+  }
+
+  String describe() {
+    return ""; // TODO
+  }
+}
+
+class Developer extends Employee {
+  Developer(String name) {
+    super(name);
+  }
+
+  @Override
+  double basePay() {
+    return 0; // TODO
+  }
+}
+
+class Manager extends Employee {
+  private final double bonus;
+
+  Manager(String name, double bonus) {
+    super(name);
+    this.bonus = bonus;
+  }
+
+  @Override
+  double basePay() {
+    return 0; // TODO
+  }
+
+  @Override
+  double totalPay() {
+    return 0; // TODO: add bonus to super.totalPay()
+  }
+}
+
+class Payroll {
+  static double totalPayroll(Employee[] emps) {
+    return 0; // TODO
+  }
+
+  static int countManagers(Employee[] emps) {
+    return 0; // TODO: use instanceof
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Employee/, message: "Make Employee an abstract class" },
+    { pattern: /extends\s+Employee/, message: "Have Developer and Manager extend Employee" },
+    { pattern: /instanceof/, message: "Use instanceof to count managers" },
+  ],
+
+  tests: [
+    { name: "Developer.totalPay() is 5000.0", code: "      expect_eq(new Developer(\"Ada\").totalPay(), 5000.0);" },
+    { name: "Manager.totalPay() adds bonus via super", code: "      expect_eq(new Manager(\"Rob\", 2000).totalPay(), 10000.0);" },
+    { name: "describe() uses name and totalPay", code: "      expect_eq(new Manager(\"Rob\", 2000).describe(), \"Rob: 10000.0\");" },
+    { name: "polymorphism: Employee ref calls override", code: "      Employee e = new Manager(\"Sue\", 500);\n      expect_eq(e.totalPay(), 8500.0);" },
+    { name: "Payroll.totalPayroll sums the team", code: "      Employee[] team = { new Developer(\"A\"), new Manager(\"B\", 1000) };\n      expect_eq(Payroll.totalPayroll(team), 14000.0);" },
+    { name: "Payroll.countManagers uses instanceof", code: "      Employee[] team = { new Developer(\"A\"), new Manager(\"B\", 1000), new Manager(\"C\", 0) };\n      expect_eq(Payroll.countManagers(team), 2);" },
+    { name: "a Manager is an Employee", code: "      expect_true(new Manager(\"X\", 0) instanceof Employee);" },
+  ],
+
+  solution: `abstract class Employee {
+  protected final String name;
+
+  protected Employee(String name) {
+    this.name = name;
+  }
+
+  abstract double basePay();
+
+  double totalPay() {
+    return basePay();
+  }
+
+  String describe() {
+    return name + ": " + totalPay();
+  }
+}
+
+class Developer extends Employee {
+  Developer(String name) {
+    super(name);
+  }
+
+  @Override
+  double basePay() {
+    return 5000;
+  }
+}
+
+class Manager extends Employee {
+  private final double bonus;
+
+  Manager(String name, double bonus) {
+    super(name);
+    this.bonus = bonus;
+  }
+
+  @Override
+  double basePay() {
+    return 8000;
+  }
+
+  @Override
+  double totalPay() {
+    return super.totalPay() + bonus;
+  }
+}
+
+class Payroll {
+  static double totalPayroll(Employee[] emps) {
+    double sum = 0;
+    for (Employee e : emps) {
+      sum += e.totalPay();
+    }
+    return sum;
+  }
+
+  static int countManagers(Employee[] emps) {
+    int count = 0;
+    for (Employee e : emps) {
+      if (e instanceof Manager) {
+        count++;
+      }
+    }
+    return count;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+  <tr><td>Subclass</td><td><code>class B : public A</code></td><td><code>class B extends A</code></td></tr>
+  <tr><td>Super constructor</td><td><code>A(x)</code> in the init list</td><td><code>super(x);</code></td></tr>
+  <tr><td>Super method</td><td><code>A::m()</code></td><td><code>super.m()</code></td></tr>
+  <tr><td>Mark an override</td><td><code>override</code> (compiler-checked)</td><td><code>@Override</code> (compiler-checked)</td></tr>
+  <tr><td>Abstract member</td><td><code>virtual T m() = 0;</code></td><td><code>abstract T m();</code></td></tr>
+  <tr><td>No subclassing</td><td><code>final</code> class/method (rarely used)</td><td><code>final class</code> / <code>final</code> method</td></tr>
+  <tr><td>Runtime type check</td><td><code>dynamic_cast&lt;B*&gt;(x)</code></td><td><code>x instanceof B</code></td></tr>
+</table>
+<p>Polymorphism works the same way it does through a C++ base-class pointer
+or reference calling a <code>virtual</code> function: an <code>Employee</code>
+reference holding a <code>Manager</code> runs <code>Manager.totalPay()</code>.
+The big win over C++ is that dispatch is virtual by default, so you can never
+forget the keyword and accidentally get static binding — and
+<code>@Override</code> catches typos in method names the same way
+<code>override</code> does. Note that a class with even one
+<code>abstract</code> method must itself be <code>abstract</code> and cannot
+be instantiated with <code>new</code>, just as a C++ class with an
+un-overridden pure virtual function can't be instantiated either.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

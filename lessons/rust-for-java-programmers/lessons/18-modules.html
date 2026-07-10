@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Modules &amp; Visibility</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Modules & Visibility",
+
+  intro: `
+<p>Java organizes code with packages and four visibility levels —
+<code>public</code>, <code>protected</code>, package-private (the default),
+and <code>private</code>. Rust collapses this to one rule with one keyword:
+everything inside a <code>mod</code> is private to that module unless you mark
+it <code>pub</code>. It's Java's package-private default, but stricter — and
+applied to <em>everything</em>: functions, structs, even individual struct
+fields.</p>
+<table>
+  <tr><th>Java</th><th>Rust</th></tr>
+  <tr><td><code>package com.example.store;</code></td><td><code>mod store { ... }</code></td></tr>
+  <tr><td><code>public static int itemCount(...)</code></td><td><code>pub fn item_count(...)</code></td></tr>
+  <tr><td><code>static String unit(...)</code> (package-private)</td><td><code>fn unit(...)</code> (module-private, the default)</td></tr>
+  <tr><td><code>import com.example.store.Inventory;</code></td><td><code>use store::inventory;</code></td></tr>
+  <tr><td><code>Inventory.itemCount(items)</code></td><td><code>inventory::item_count(&amp;items)</code></td></tr>
+</table>
+<p>Two Java rules simply disappear. There's no one-public-class-per-file rule:
+modules are logical groupings, not file boundaries. A single file can declare
+several modules, or one module can span several files — the module tree is
+whatever you say it is, and <code>mod</code> can even nest inline like you'll
+do below. And there's no class wrapper requirement: a module holds free
+functions directly, no <code>public class Utils</code> with a private
+constructor needed. <code>use</code> plays the role of <code>import</code>,
+and <code>::</code> is the path separator where Java uses <code>.</code>.</p>`,
+
+  java: `// com/example/store/Inventory.java — one public class per file,
+// living in the package the directory structure dictates.
+package com.example.store;
+
+import java.util.List;
+
+public class Inventory {
+    public static int itemCount(List<String> items) {
+        return items.size();
+    }
+
+    public static String describe(List<String> items) {
+        int n = itemCount(items);
+        return "Inventory: " + n + " " + unit(n);
+    }
+
+    // package-private: callers outside com.example.store can't see it
+    static String unit(int n) {
+        return n == 1 ? "item" : "items";
+    }
+}`,
+
+  task: `
+<p>Build the same API as a Rust module:</p>
+<ol>
+  <li>Declare <code>mod inventory { ... }</code> containing everything below.</li>
+  <li>Inside it, write <code>pub fn item_count(items: &amp;Vec&lt;String&gt;) -&gt; usize</code>
+      returning how many items there are (<code>.len()</code>).</li>
+  <li>Write <code>pub fn describe(items: &amp;Vec&lt;String&gt;) -&gt; String</code>
+      returning <code>"Inventory: 2 items"</code> (or
+      <code>"Inventory: 1 item"</code>, singular, for exactly one). Do the
+      singular/plural choice in a <em>private</em> helper function inside the
+      module — a plain <code>fn</code> with no <code>pub</code>, invisible from
+      outside, like the package-private <code>unit</code>.</li>
+</ol>
+<p>The tests live outside the module, so they can only reach what you marked
+<code>pub</code>, calling <code>inventory::item_count(...)</code> and
+<code>inventory::describe(...)</code> by path. Don't write
+<code>fn main</code> — the lesson's tests call your functions directly.</p>`,
+
+  starter: `mod inventory {
+    // Visible to callers outside the module.
+    pub fn item_count(items: &Vec<String>) -> usize {
+        todo!()
+    }
+
+    // "Inventory: 3 items" / "Inventory: 1 item".
+    // Delegate the singular/plural choice to a private helper below.
+    pub fn describe(items: &Vec<String>) -> String {
+        todo!()
+    }
+
+    // TODO: add your private helper here — a plain fn, no pub.
+    // Only code inside \`mod inventory\` can call it.
+}
+`,
+
+  requirements: [
+    { pattern: /mod\s+inventory/, message: "Declare a module named inventory" },
+    { pattern: /pub\s+fn/, message: "Mark the public API functions with pub fn" },
+  ],
+
+  tests: [
+    { name: 'inventory::item_count of ["apple", "banana"] is 2',
+      code: `let items = vec!["apple".to_string(), "banana".to_string()];
+assert_eq!(inventory::item_count(&items), 2);` },
+    { name: "inventory::item_count of an empty Vec is 0",
+      code: `let items: Vec<String> = Vec::new();
+assert_eq!(inventory::item_count(&items), 0);` },
+    { name: 'describe of three items is "Inventory: 3 items"',
+      code: `let items = vec!["apple".to_string(), "banana".to_string(), "cherry".to_string()];
+assert_eq!(inventory::describe(&items), "Inventory: 3 items");` },
+    { name: 'describe of one item is "Inventory: 1 item" (singular)',
+      code: `let items = vec!["apple".to_string()];
+assert_eq!(inventory::describe(&items), "Inventory: 1 item");` },
+    { name: 'describe of no items is "Inventory: 0 items"',
+      code: `let items: Vec<String> = Vec::new();
+assert_eq!(inventory::describe(&items), "Inventory: 0 items");` },
+  ],
+
+  solution: `mod inventory {
+    pub fn item_count(items: &Vec<String>) -> usize {
+        items.len()
+    }
+
+    pub fn describe(items: &Vec<String>) -> String {
+        let n = item_count(items);
+        format!("Inventory: {} {}", n, unit(n))
+    }
+
+    // Private: no pub, so nothing outside \`mod inventory\` can call it.
+    fn unit(n: usize) -> &'static str {
+        if n == 1 { "item" } else { "items" }
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Rust</th></tr>
+  <tr><td>Namespace unit</td><td><code>package</code> (tied to directories)</td><td><code>mod</code> (logical; nestable in one file)</td></tr>
+  <tr><td>Default visibility</td><td>package-private (classes); members vary</td><td>private to the module — everything, always</td></tr>
+  <tr><td>Making things visible</td><td><code>public</code></td><td><code>pub</code> (also <code>pub(crate)</code> for crate-wide)</td></tr>
+  <tr><td>Bringing names in</td><td><code>import com.example.store.*;</code></td><td><code>use store::inventory;</code></td></tr>
+  <tr><td>Path separator</td><td><code>Inventory.itemCount(...)</code></td><td><code>inventory::item_count(...)</code></td></tr>
+  <tr><td>Free functions</td><td>impossible — wrap in a class of statics</td><td>normal — a mod holds <code>fn</code>s directly</td></tr>
+</table>
+<p>The privacy rule does real work here: <code>unit</code> is an
+implementation detail, and the compiler <em>enforces</em> that — calling
+<code>inventory::unit(1)</code> from outside is a compile error, not a code
+review comment. When you refactor a private helper, you know with certainty
+that no caller anywhere depends on it. That's the same promise
+package-private tried to make in Java, minus the "everything in the package
+can still touch it" loophole.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

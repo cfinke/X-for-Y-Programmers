@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Utility Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Utility Types",
+
+  intro: `
+<p>Rust has no derive for "the same struct, but every field optional." When you
+need a patch type for partial updates, you write <code>UserPatch</code> by hand,
+field by <code>Option</code>-wrapped field — or pull in a builder crate and a
+proc macro. TypeScript's type system can <em>compute types from types</em>:
+<code>Partial&lt;User&gt;</code> is <code>User</code> with every field optional,
+derived on the spot, and it stays in sync when <code>User</code> changes.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>hand-written <code>UserPatch</code> with <code>Option&lt;T&gt;</code> fields</td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td>hand-written summary struct + <code>From</code> impl</td><td><code>Pick&lt;User, "id" | "name"&gt;</code> / <code>Omit&lt;User, "email"&gt;</code></td></tr>
+  <tr><td><code>&amp;User</code> — immutable by the borrow checker</td><td><code>Readonly&lt;User&gt;</code> — immutable to the compiler only</td></tr>
+  <tr><td><code>User { active: false, ..user }</code></td><td><code>{ ...user, active: false }</code></td></tr>
+</table>
+<p><code>Pick</code> and <code>Omit</code> are the projection types you'd
+otherwise define as separate structs with <code>From</code> impls;
+<code>Readonly&lt;T&gt;</code> is the closest thing to <code>&amp;T</code>, with a
+crucial caveat — it's compile-time only, nothing enforces it at runtime, and
+there is no borrow checker backing it up. To apply a patch, reach for the spread
+operator from the last lesson: <code>{ ...user, ...changes }</code> is struct
+update syntax with the dots on the other side, and because later spreads win,
+the fields present in <code>changes</code> override the originals while the
+original object stays untouched.</p>`,
+
+  rust: `struct User {
+    id: u32,
+    name: String,
+    email: String,
+    active: bool,
+}
+
+// No derive gives you this — every patch struct is hand-rolled.
+struct UserPatch {
+    name: Option<String>,
+    email: Option<String>,
+    active: Option<bool>,
+}
+
+fn update_user(user: User, patch: UserPatch) -> User {
+    User {
+        id: user.id,
+        name: patch.name.unwrap_or(user.name),
+        email: patch.email.unwrap_or(user.email),
+        active: patch.active.unwrap_or(user.active),
+    }
+}`,
+
+  task: `
+<p>Replace the hand-rolled patch machinery with computed types:</p>
+<ol>
+  <li>Keep the starter's <code>interface User</code>
+      (<code>id</code>, <code>name</code>, <code>email</code>,
+      <code>active</code>).</li>
+  <li>Write <code>updateUser(user: User, changes: Partial&lt;User&gt;): User</code>
+      that returns a <strong>new</strong> object with the changes applied, via
+      object spread — do not mutate <code>user</code>. No
+      <code>unwrap_or</code> chain: spread does the whole merge.</li>
+  <li>Write <code>toSummary(user: User): Pick&lt;User, "id" | "name"&gt;</code>
+      returning an object with only those two fields (build it explicitly —
+      spreading the whole user would smuggle <code>email</code> along at
+      runtime, even though the type says otherwise).</li>
+</ol>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+// 1. Partial<User> = User with every field optional — the UserPatch you
+//    didn't have to write. Merge with spread: later fields win.
+function updateUser(user: User, changes: Partial<User>): User {
+  // TODO: return a NEW object — struct update syntax, dots on the left:
+  //       User { ..user, ..changes } -> { ...user, ...changes }
+  return user;
+}
+
+// 2. Pick<User, "id" | "name"> = the two-field projection struct you also
+//    didn't have to write. TODO: set the return type, build the object.
+function toSummary(user: User) {
+  // TODO: return just { id, name }
+  return user;
+}`,
+
+  exportNames: ["updateUser", "toSummary"],
+
+  requirements: [
+    { pattern: /Partial\s*</, message: "Type the changes parameter as Partial<User>" },
+    { pattern: /(Pick|Omit)\s*</, message: "Use Pick or Omit for the summary projection type" },
+    { pattern: /\.\.\./, message: "Merge with object spread ({ ...user, ...changes })" },
+  ],
+
+  tests: [
+    {
+      name: "updateUser applies the patched fields",
+      run: (x) => {
+        const user = { id: 1, name: "Ferris", email: "ferris@rust.dev", active: true };
+        const updated = x.updateUser(user, { name: "Corro", active: false });
+        expectEqual(updated.name, "Corro");
+        expectEqual(updated.active, false);
+        expectEqual(updated.id, 1);
+        expectEqual(updated.email, "ferris@rust.dev");
+      },
+    },
+    {
+      name: "updateUser does not mutate the original (no &mut here — copy instead)",
+      run: (x) => {
+        const user = { id: 1, name: "Ferris", email: "ferris@rust.dev", active: true };
+        const updated = x.updateUser(user, { name: "Corro" });
+        expectEqual(user.name, "Ferris");
+        expectEqual(user.active, true);
+        expectTruthy(updated !== user);
+      },
+    },
+    {
+      name: "updateUser with an empty patch changes nothing",
+      run: (x) => {
+        const user = { id: 2, name: "Ada", email: "ada@lovelace.io", active: false };
+        const updated = x.updateUser(user, {});
+        expectEqual(updated.id, 2);
+        expectEqual(updated.name, "Ada");
+        expectEqual(updated.email, "ada@lovelace.io");
+        expectEqual(updated.active, false);
+      },
+    },
+    {
+      name: "toSummary keeps id and name",
+      run: (x) => {
+        const s = x.toSummary({ id: 7, name: "Grace", email: "grace@navy.mil", active: true });
+        expectEqual(s.id, 7);
+        expectEqual(s.name, "Grace");
+      },
+    },
+    {
+      name: "toSummary drops email and active at runtime, not just in the type",
+      run: (x) => {
+        const s = x.toSummary({ id: 7, name: "Grace", email: "grace@navy.mil", active: true });
+        expectEqual(s.email, undefined);
+        expectEqual(s.active, undefined);
+        expectEqual(Object.keys(s).length, 2);
+      },
+    },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+function updateUser(user: User, changes: Partial<User>): User {
+  return { ...user, ...changes };
+}
+
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  return { id: user.id, name: user.name };
+}`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>All-fields-optional patch</td><td>hand-written <code>Option&lt;T&gt;</code> struct / builder crate</td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td>All-fields-required</td><td>the struct itself</td><td><code>Required&lt;T&gt;</code> (undoes Partial)</td></tr>
+  <tr><td>Keep some fields</td><td>new struct + <code>From</code> impl</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td>Drop some fields</td><td>new struct + <code>From</code> impl</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+  <tr><td>Immutable view</td><td><code>&amp;T</code>, enforced at compile <em>and</em> borrow-check time</td><td><code>Readonly&lt;T&gt;</code>, compile-time only</td></tr>
+  <tr><td>Map-like</td><td><code>HashMap&lt;K, V&gt;</code></td><td><code>Record&lt;K, V&gt;</code> (an object type, not a class)</td></tr>
+  <tr><td>Apply a patch</td><td><code>unwrap_or</code> per field / <code>..user</code></td><td><code>{ ...user, ...changes }</code></td></tr>
+</table>
+<p>The insight: these are not magic built-ins, they're ordinary type-level
+functions — <code>Partial&lt;T&gt;</code> is just
+<code>{ [K in keyof T]?: T[K] }</code>, a for-loop over a struct's fields at the
+type level. Rust's type system deliberately has no equivalent of
+<code>keyof</code> + mapped types (macros fill that hole). But remember the
+trade: every one of these types is erased at runtime, so <code>Pick</code> only
+<em>describes</em> a projection — your code still has to build the smaller
+object, as <code>toSummary</code> just showed.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

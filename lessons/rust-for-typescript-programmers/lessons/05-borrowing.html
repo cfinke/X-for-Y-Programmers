@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Borrowing & References</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Borrowing & References",
+
+  intro: `
+<p>Last lesson every argument was moved in and lost. Usually you don't want to
+give a value away — you want to <em>lend</em> it. That's a reference:
+<code>&amp;T</code> is a shared, read-only borrow, and <code>&amp;mut T</code>
+is an exclusive, mutable one. The caller writes the <code>&amp;</code> too
+(<code>total(&amp;nums)</code>, <code>add_item(&amp;mut items, …)</code>) —
+like passing a pointer the callee isn't allowed to keep. When the function
+returns, the borrow ends and the caller still owns the value.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>f(arr)</code> — callee may read <em>and</em> mutate, silently</td><td><code>f(&amp;arr)</code> — read-only; mutation won't compile</td></tr>
+  <tr><td>same call for mutation</td><td><code>f(&amp;mut arr)</code> — mutation visible at the call site</td></tr>
+  <tr><td><code>readonly number[]</code> (types-only, erasable)</td><td><code>&amp;[i32]</code> — a borrowed slice, enforced for real</td></tr>
+  <tr><td>any number of live aliases</td><td>many <code>&amp;T</code> <em>or</em> one <code>&amp;mut T</code> — never both</td></tr>
+</table>
+<p>The two flavors come with an aliasing discipline TypeScript never enforces:
+at any moment a value can have <em>many readers or one writer, never both</em>.
+Any number of <code>&amp;T</code> borrows may coexist, but a
+<code>&amp;mut T</code> is exclusive — no other reference, not even a reader,
+may be live at the same time. In TS, a function that takes an array might
+mutate it and the signature won't tell you; in Rust,
+<code>&amp;[i32]</code> promises "look, don't touch", <code>&amp;mut Vec&lt;String&gt;</code>
+announces the mutation, and the <code>&amp;mut</code> at the call site means
+the caller signed off on it.</p>`,
+
+  typescript: `function total(numbers: number[]): number {
+  let sum = 0;
+  for (const n of numbers) sum += n;
+  return sum;
+}
+
+function addItem(items: string[], item: string): void {
+  items.push(item);      // mutates the caller's array — nothing marks it
+}
+
+function longer(a: string, b: string): number {
+  return Math.max(a.length, b.length);
+}
+
+const nums = [1, 2, 3];
+console.log(total(nums));            // reads only — but who could tell?
+const list = ["a"];
+addItem(list, "b");                  // call site looks identical
+console.log(list, longer("hi", "there"));`,
+
+  task: `
+<p>Rewrite the TypeScript, lending instead of moving:</p>
+<ol>
+  <li><code>total(numbers: &amp;[i32]) -> i32</code> — sum a borrowed slice.
+      Iterate with <code>for n in numbers { … }</code> over a
+      <code>let mut sum = 0;</code> (or use <code>.iter().sum()</code>).</li>
+  <li><code>add_item(items: &amp;mut Vec&lt;String&gt;, item: String)</code> —
+      push <code>item</code> onto the vector <em>through the mutable
+      borrow</em>. No return value: the caller sees the change.</li>
+  <li><code>longer(a: &amp;str, b: &amp;str) -> usize</code> — the larger of
+      the two lengths (<code>.len()</code> returns <code>usize</code>, Rust's
+      array-index integer; an if-expression or <code>a.len().max(b.len())</code>
+      both work).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. total: borrow a slice of i32s read-only, add them up.
+//    Note: n is a &i32 inside the loop; += happily handles it.
+fn total(numbers: &[i32]) -> i32 {
+    todo!()
+}
+
+// 2. add_item: an exclusive, mutable borrow — push through it.
+fn add_item(items: &mut Vec<String>, item: String) {
+    todo!()
+}
+
+// 3. longer: two shared borrows in, the bigger .len() out.
+fn longer(a: &str, b: &str) -> usize {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /&\[i32\]/, message: "total must borrow its input as a slice: &[i32]" },
+    { pattern: /&mut\s/, message: "add_item must take an exclusive &mut borrow to mutate the vector" },
+    { pattern: /\.len\(\)/, message: "Compare string lengths with .len()" },
+  ],
+
+  tests: [
+    { name: "total(&[1, 2, 3]) returns 6",
+      code: "assert_eq!(total(&[1, 2, 3]), 6);" },
+    { name: "total(&[]) returns 0, and the caller keeps the vector",
+      code: "assert_eq!(total(&[]), 0);\nlet nums = vec![10, 20];\nassert_eq!(total(&nums), 30);\nassert_eq!(nums.len(), 2); // still ours — it was only borrowed" },
+    { name: 'add_item pushes onto the caller\'s vector',
+      code: 'let mut items = vec![String::from("a")];\nadd_item(&mut items, String::from("b"));\nassert_eq!(items, vec![String::from("a"), String::from("b")]);' },
+    { name: "add_item works on an empty vector",
+      code: 'let mut items: Vec<String> = Vec::new();\nadd_item(&mut items, String::from("first"));\nassert_eq!(items, vec![String::from("first")]);' },
+    { name: 'longer("hi", "there") returns 5',
+      code: 'assert_eq!(longer("hi", "there"), 5);\nassert_eq!(longer("longest", "no"), 7);' },
+    { name: 'longer of two equal-length strings',
+      code: 'assert_eq!(longer("abc", "xyz"), 3);' },
+  ],
+
+  solution: `fn total(numbers: &[i32]) -> i32 {
+    let mut sum = 0;
+    for n in numbers {
+        sum += n;
+    }
+    sum
+}
+
+fn add_item(items: &mut Vec<String>, item: String) {
+    items.push(item);
+}
+
+fn longer(a: &str, b: &str) -> usize {
+    if a.len() > b.len() { a.len() } else { b.len() }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Read-only lend</td><td><code>readonly T[]</code> (compile-time fiction)</td><td><code>&amp;T</code> / <code>&amp;[i32]</code> — enforced, many at once</td></tr>
+  <tr><td>Mutable lend</td><td>indistinguishable at the call site</td><td><code>&amp;mut T</code> — exclusive, one at a time</td></tr>
+  <tr><td>Call site</td><td><code>f(arr)</code> either way</td><td><code>f(&amp;arr)</code> vs <code>f(&amp;mut arr)</code> — intent is visible</td></tr>
+  <tr><td>Aliasing rule</td><td>unlimited aliases, mutation anywhere</td><td>many readers <em>or</em> one writer, never both</td></tr>
+  <tr><td>After the call</td><td>caller still has it (always did)</td><td>caller still has it — the borrow ended</td></tr>
+</table>
+<p>Borrowing is the answer to last lesson's cliffhanger: most functions never
+needed ownership, only access — so lend with <code>&amp;</code> and the move
+problem evaporates. The "many readers or one writer" rule is the same
+discipline a good code reviewer enforces informally on shared state; Rust just
+makes the compiler the reviewer, which is exactly what lets it promise
+data-race freedom later when threads arrive.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

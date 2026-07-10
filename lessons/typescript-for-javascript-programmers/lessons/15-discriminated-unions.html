@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 15: Discriminated Unions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 15,
+  title: "Discriminated Unions",
+
+  intro: `
+<p>You have written this pattern a hundred times: objects with a
+<code>type</code> or <code>kind</code> field, dispatched with a
+<code>switch</code> — Redux actions, WebSocket messages, event objects. In
+JavaScript the tag is just a string, every branch is on the honor system, and
+a shape you forgot to handle silently returns <code>undefined</code>. In
+TypeScript, a union of tagged object types is a <em>discriminated union</em>,
+and the compiler joins the dispatch.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td><code>{ kind: "circle", radius: 2 }</code> — shape by convention</td><td><code>type Circle = { kind: "circle"; radius: number }</code></td></tr>
+  <tr><td>any tag, any fields</td><td><code>type Shape = Circle | Rectangle | Triangle</code></td></tr>
+  <tr><td><code>case "circle":</code> — hope the fields are there</td><td><code>case "circle":</code> — <code>shape</code> narrowed to <code>Circle</code>, <code>radius</code> guaranteed</td></tr>
+  <tr><td>forgotten case → <code>undefined</code> at runtime</td><td>forgotten case → <code>never</code> check fails at compile time</td></tr>
+</table>
+<p>Two mechanics make it work. Inside <code>case "circle":</code> the compiler
+<em>narrows</em> <code>shape</code> to <code>Circle</code> — last lesson's
+narrowing, driven by the tag field. And the <code>never</code> type makes the
+switch <em>exhaustive</em>: in the <code>default</code> branch, if every
+variant is handled, <code>shape</code> has type <code>never</code> — so
+assigning it to a <code>never</code>-typed constant compiles. Add a
+<code>Square</code> variant later and forget a <code>case</code>, and that
+one line turns red, pointing at every switch you need to update.</p>`,
+
+  javascript: `// Tagged objects + switch — you already write this everywhere:
+function area(shape) {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    case "rectangle":
+      return shape.width * shape.height;
+    case "triangle":
+      return (shape.base * shape.height) / 2;
+    // Add a "square" shape next month and forget this switch?
+    // JS silently returns undefined. Nothing warns you.
+  }
+}
+
+area({ kind: "circle", radius: 2 });               // 12.566...
+area({ kind: "rectangle", width: 3, height: 4 });  // 12
+area({ kind: "square", side: 5 });                 // undefined!`,
+
+  task: `
+<p>Build the typed version:</p>
+<ol>
+  <li>Define three tagged types — <code>Circle</code>
+      (<code>kind: "circle"</code>, <code>radius: number</code>),
+      <code>Rectangle</code> (<code>kind: "rectangle"</code>,
+      <code>width</code>, <code>height</code>), and <code>Triangle</code>
+      (<code>kind: "triangle"</code>, <code>base</code>,
+      <code>height</code>) — and the union
+      <code>type Shape = Circle | Rectangle | Triangle</code>.
+      Note the tags are <em>literal string types</em>, not just
+      <code>string</code>.</li>
+  <li>Write <code>area(shape: Shape): number</code> with a
+      <code>switch (shape.kind)</code> — circle is
+      <code>Math.PI * radius²</code>, rectangle is
+      <code>width * height</code>, triangle is
+      <code>base * height / 2</code>.</li>
+  <li>In the <code>default</code> branch, assign <code>shape</code> to a
+      constant of type <code>never</code>, then throw an <code>Error</code>.
+      This is the exhaustiveness check — and at runtime it means an unknown
+      tag throws instead of returning <code>undefined</code>.</li>
+</ol>`,
+
+  starter: `// 1. One type per variant — each kind is a literal string type.
+type Circle = { kind: "circle"; radius: number };
+// TODO: define Rectangle (width, height) and Triangle (base, height)
+
+type Shape = Circle; // TODO: make this Circle | Rectangle | Triangle
+
+// 2 & 3. Dispatch on the tag; make the default branch a never-check.
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    // TODO: rectangle and triangle cases
+    default: {
+      // TODO: const impossible: never = shape; then throw an Error
+      throw new Error("unhandled shape");
+    }
+  }
+}
+`,
+
+  exportNames: ["area"],
+
+  requirements: [
+    { pattern: /kind\s*:\s*"/, message: 'Tag each variant with a literal type like kind: "circle"' },
+    { pattern: /type\s+Shape\s*=\s*Circle\s*\|\s*Rectangle\s*\|\s*Triangle/, message: "Define the union: type Shape = Circle | Rectangle | Triangle" },
+    { pattern: /never/, message: "Use a never-typed constant in the default branch as an exhaustiveness check" },
+    { pattern: /switch\s*\(/, message: "Dispatch on the tag with a switch statement" },
+  ],
+
+  tests: [
+    { name: "area of a circle with radius 2 is 4π", run: (x) => expectEqual(x.area({ kind: "circle", radius: 2 }), Math.PI * 4) },
+    { name: "area of a 3×4 rectangle is 12", run: (x) => expectEqual(x.area({ kind: "rectangle", width: 3, height: 4 }), 12) },
+    { name: "area of a triangle with base 6, height 5 is 15", run: (x) => expectEqual(x.area({ kind: "triangle", base: 6, height: 5 }), 15) },
+    { name: "an unknown kind throws instead of returning undefined", run: (x) => expectThrows(() => x.area({ kind: "hexagon", side: 2 })) },
+  ],
+
+  solution: `type Circle = { kind: "circle"; radius: number };
+type Rectangle = { kind: "rectangle"; width: number; height: number };
+type Triangle = { kind: "triangle"; base: number; height: number };
+
+type Shape = Circle | Rectangle | Triangle;
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius * shape.radius;
+    case "rectangle":
+      return shape.width * shape.height;
+    case "triangle":
+      return (shape.base * shape.height) / 2;
+    default: {
+      const impossible: never = shape;
+      throw new Error("Unhandled shape: " + JSON.stringify(impossible));
+    }
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Tagged object</td><td><code>{ type: "ADD", ... }</code> by convention</td><td><code>{ kind: "circle"; radius: number }</code> — tag is a literal type</td></tr>
+  <tr><td>The set of variants</td><td>documentation, if you're lucky</td><td><code>type Shape = Circle | Rectangle | Triangle</code></td></tr>
+  <tr><td>Branch bodies</td><td>fields on the honor system</td><td><code>case "circle":</code> narrows to <code>Circle</code></td></tr>
+  <tr><td>Missed case</td><td><code>undefined</code>, discovered at runtime</td><td><code>const impossible: never = shape;</code> fails to compile</td></tr>
+  <tr><td>Where you've seen it</td><td>Redux actions, WS messages, DOM events</td><td>same data — now the compiler checks the dispatch</td></tr>
+</table>
+<p>The discriminated union is arguably TypeScript's best feature for everyday
+app code: it turns "objects that vary by a tag" from a convention into a
+contract. The <code>never</code> default is the part teams forget — without
+it the switch still compiles when a new variant appears, and you are back to
+JavaScript's silent <code>undefined</code>. With it, adding
+<code>Square</code> to <code>Shape</code> produces a to-do list of compile
+errors at every switch that needs a new case.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

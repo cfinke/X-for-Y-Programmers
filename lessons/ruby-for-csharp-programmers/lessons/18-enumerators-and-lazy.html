@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Enumerators & Lazy</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Enumerators & Lazy",
+
+  intro: `
+<p>C#'s iterator methods — <code>IEnumerable&lt;T&gt;</code> with
+<code>yield return</code> — have a direct Ruby translation:
+<code>Enumerator.new { |y| ... }</code>. The block receives a
+<em>yielder</em>, and <code>y &lt;&lt; value</code> <strong>is</strong>
+<code>yield return value</code>: the block suspends until a consumer asks for
+the next element. Wrap the yields in <code>loop do ... end</code> and you
+have an infinite generator, exactly like <code>while (true)</code> around a
+<code>yield return</code>.</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>IEnumerable&lt;int&gt;</code> + <code>yield return a;</code></td><td><code>Enumerator.new { |y| y &lt;&lt; a }</code></td></tr>
+  <tr><td><code>while (true) { yield return ... }</code></td><td><code>loop do ... end</code> inside the Enumerator</td></tr>
+  <tr><td><code>Enumerable.Range(1, n)</code> — bounds required</td><td><code>(1..Float::INFINITY)</code> — no bounds needed</td></tr>
+  <tr><td><code>.Where(...).Take(4)</code> (always deferred)</td><td><code>.lazy.select { ... }.first(4)</code> (deferred on request)</td></tr>
+  <tr><td><code>.Chunk(2)</code></td><td><code>.each_slice(2)</code></td></tr>
+</table>
+<p>The other half is laziness. LINQ defers everything by default, but
+<code>Enumerable.Range</code> still demands bounds up front — there is no
+infinite Range. Ruby flips both defaults: <code>map</code> and
+<code>select</code> are <em>eager</em> (each returns a fully-built array),
+but <code>(1..Float::INFINITY).lazy.select { ... }.first(n)</code> works —
+<code>.lazy</code> opts one chain into deferred execution, elements flow
+one at a time, and <code>first(n)</code> stops the flow. Without
+<code>.lazy</code>, that <code>select</code> would loop forever trying to
+build its array.</p>`,
+
+  csharp: `IEnumerable<int> Fibonacci()
+{
+    var (a, b) = (0, 1);
+    while (true)
+    {
+        yield return a;
+        (a, b) = (b, a + b);
+    }
+}
+
+var firstEight = Fibonacci().Take(8).ToList();
+
+// LINQ defers, but Range itself needs bounds up front —
+// there is no infinite Enumerable.Range:
+var multiples = Enumerable.Range(1, 1_000_000)
+    .Where(n => n % 3 == 0)
+    .Take(4)
+    .ToList();
+
+var pairs = new[] { 1, 2, 3, 4, 5 }.Chunk(2).ToList();`,
+
+  task: `
+<p>Rebuild the sequences in Ruby:</p>
+<ol>
+  <li><code>multiples_of(k, count)</code> — start from the genuinely infinite
+      <code>(1..Float::INFINITY)</code>, add <code>.lazy</code>, then
+      <code>select</code> the numbers divisible by <code>k</code> and take
+      <code>first(count)</code>.</li>
+  <li><code>fibonacci(count)</code> — the C# iterator, translated:
+      <code>Enumerator.new</code> with <code>a, b = 0, 1</code>, then
+      <code>loop do</code> ... <code>y &lt;&lt; a</code> and
+      <code>a, b = b, a + b</code>. Return its <code>first(count)</code>.</li>
+  <li><code>pairs(arr)</code> — <code>each_slice(2)</code> is
+      <code>Chunk(2)</code>; call <code>.to_a</code> to realize the slices.</li>
+</ol>`,
+
+  starter: `# 1. multiples_of: infinite Range -> .lazy -> select -> first(count).
+#    Without .lazy the select would never finish.
+def multiples_of(k, count)
+  raise NotImplementedError, "TODO: implement multiples_of"
+end
+
+# 2. fibonacci: Enumerator.new is your yield-return generator.
+#    a, b = 0, 1 then loop do; y << a; a, b = b, a + b; end
+def fibonacci(count)
+  raise NotImplementedError, "TODO: implement fibonacci"
+end
+
+# 3. pairs: each_slice(2) is Chunk(2). Remember .to_a at the end.
+def pairs(arr)
+  raise NotImplementedError, "TODO: implement pairs"
+end
+`,
+
+  requirements: [
+    { pattern: /\.lazy/, message: "Use .lazy to make the infinite chain deferred" },
+    { pattern: /Enumerator\.new/, message: "Build fibonacci with Enumerator.new" },
+    { pattern: /first\(/, message: "Take elements with first(n)" },
+    { pattern: /each_slice/, message: "Use each_slice for pairs" },
+  ],
+
+  tests: [
+    { name: "multiples_of(3, 4) returns [3, 6, 9, 12]",
+      code: "  expect_eq(multiples_of(3, 4), [3, 6, 9, 12])" },
+    { name: "multiples_of(7, 3) returns [7, 14, 21]",
+      code: "  expect_eq(multiples_of(7, 3), [7, 14, 21])" },
+    { name: "fibonacci(8) returns [0, 1, 1, 2, 3, 5, 8, 13]",
+      code: "  expect_eq(fibonacci(8), [0, 1, 1, 2, 3, 5, 8, 13])" },
+    { name: "fibonacci(1) returns [0]",
+      code: "  expect_eq(fibonacci(1), [0])" },
+    { name: "pairs([1, 2, 3, 4, 5]) returns [[1, 2], [3, 4], [5]]",
+      code: "  expect_eq(pairs([1, 2, 3, 4, 5]), [[1, 2], [3, 4], [5]])" },
+  ],
+
+  solution: `def multiples_of(k, count)
+  (1..Float::INFINITY).lazy.select { |n| n % k == 0 }.first(count)
+end
+
+def fibonacci(count)
+  fibs = Enumerator.new do |y|
+    a, b = 0, 1
+    loop do
+      y << a
+      a, b = b, a + b
+    end
+  end
+  fibs.first(count)
+end
+
+def pairs(arr)
+  arr.each_slice(2).to_a
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Generator method</td><td><code>IEnumerable&lt;T&gt;</code> + <code>yield return</code></td><td><code>Enumerator.new { |y| y &lt;&lt; value }</code></td></tr>
+  <tr><td>Infinite sequence</td><td><code>while (true)</code> in an iterator only</td><td><code>loop do</code> in an Enumerator, or an endless Range</td></tr>
+  <tr><td>Deferred execution</td><td>default for LINQ</td><td>opt-in per chain with <code>.lazy</code></td></tr>
+  <tr><td>Take n</td><td><code>.Take(n).ToList()</code></td><td><code>.first(n)</code> (returns a real Array)</td></tr>
+  <tr><td>Fixed-size chunks</td><td><code>.Chunk(2)</code></td><td><code>.each_slice(2)</code></td></tr>
+  <tr><td>Sliding window</td><td>hand-rolled</td><td><code>.each_cons(2)</code></td></tr>
+</table>
+<p>The mental flip: LINQ is lazy until you call <code>ToList()</code>; Ruby's
+Enumerable is eager until you call <code>.lazy</code>. Eager is the friendlier
+default for the 99% of chains over small arrays — every intermediate result
+is a plain Array you can inspect — and <code>.lazy</code> is there for the 1%
+where the source is infinite or expensive. <code>first(n)</code> plays the
+role of <code>ToList()</code>: it is the terminal call that forces the lazy
+chain to actually produce values.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

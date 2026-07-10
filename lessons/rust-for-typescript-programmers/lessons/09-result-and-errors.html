@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Result &amp; the ? Operator</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Result & the ? Operator",
+
+  intro: `
+<p>In TypeScript, <code>parseAge(s: string): number</code> is a signature
+that can lie: nothing tells you it throws. Callers find out in production.
+Rust has no exceptions — errors are ordinary return values. A function that
+can fail returns <code>Result&lt;T, E&gt;</code>, which is either
+<code>Ok(value)</code> or <code>Err(error)</code>. Like <code>Option</code>,
+it's a type you must unpack, so "can this fail?" is answered by the
+signature, and "did you handle it?" is answered by the compiler. No invisible
+control flow, no forgotten <code>catch</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>function parseAge(s: string): number</code> (throws, secretly)</td><td><code>fn parse_age(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code></td></tr>
+  <tr><td><code>throw new Error("bad age")</code></td><td><code>return Err("bad age".to_string());</code></td></tr>
+  <tr><td><code>return n;</code></td><td><code>Ok(n)</code></td></tr>
+  <tr><td><code>try { … } catch (e) { … }</code></td><td><code>match r { Ok(v) =&gt; …, Err(e) =&gt; … }</code></td></tr>
+  <tr><td>rethrow / let it bubble</td><td><code>let v = fallible()?;</code></td></tr>
+</table>
+<p>Manually matching every <code>Result</code> would be miserable, so Rust
+gives you <code>?</code>: <code>parse_age(s)?</code> means "if this is
+<code>Ok(v)</code>, give me <code>v</code>; if it's <code>Err(e)</code>,
+return that <code>Err</code> from <em>my</em> function right now." It's
+propagation with the ergonomics of <code>await</code> — one character at each
+point where failure can flow, visible in the code instead of hidden in the
+runtime. And when two libraries disagree about error types,
+<code>.map_err(...)</code> converts one into the other, the way you'd
+normalize thrown values in a <code>catch</code>.</p>`,
+
+  typescript: `function parseAge(s: string): number {
+  const n = Number(s.trim());
+  if (Number.isNaN(n) || !Number.isInteger(n) || n < 0) {
+    throw new Error(\`"\${s}" is not a valid age\`);   // invisible in the signature
+  }
+  return n;
+}
+
+function ageNextYear(s: string): number {
+  // Does parseAge throw? The signature won't tell you.
+  return parseAge(s) + 1;
+}
+
+try {
+  console.log(ageNextYear("41"));      // 42
+  console.log(ageNextYear("oops"));    // never logs — control flow teleports
+} catch (e) {
+  console.error(e);
+}`,
+
+  task: `
+<p>Port the throwing functions to <code>Result</code>:</p>
+<ol>
+  <li><code>parse_age(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code> —
+      call <code>s.trim().parse::&lt;u32&gt;()</code>, which returns a
+      <code>Result</code> with a library error type, then use
+      <code>.map_err(|_| format!(...))</code> to convert that error into your
+      own <code>String</code> message (any message you like).</li>
+  <li><code>age_next_year(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code>
+      — call <code>parse_age(s)?</code> to unwrap-or-propagate, then return
+      <code>Ok(age + 1)</code>. The <code>?</code> is the whole error-handling
+      story: one character where TypeScript has an invisible throw.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. parse_age: s.trim().parse::<u32>() gives Result<u32, ParseIntError>.
+//    Use .map_err(|_| format!("...")) to turn the library error into your String.
+fn parse_age(s: &str) -> Result<u32, String> {
+    todo!()
+}
+
+// 2. age_next_year: let age = parse_age(s)?;  <- Ok unwraps, Err early-returns.
+//    Then wrap the answer: Ok(age + 1).
+fn age_next_year(s: &str) -> Result<u32, String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Result</, message: "Keep the Result<u32, String> return types" },
+    { pattern: /map_err|Err\s*\(/, message: "Produce the error case (map_err or Err(...))" },
+    { pattern: /\)\?/, message: "Propagate with the ? operator in age_next_year" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") is Ok(42)',
+      code: 'assert_eq!(parse_age("42"), Ok(42));' },
+    { name: "parse_age trims whitespace first",
+      code: 'assert_eq!(parse_age("  30  "), Ok(30));' },
+    { name: 'parse_age("abc") and parse_age("-5") are Err',
+      code: 'assert!(parse_age("abc").is_err());\nassert!(parse_age("-5").is_err());' },
+    { name: 'age_next_year("41") is Ok(42)',
+      code: 'assert_eq!(age_next_year("41"), Ok(42));' },
+    { name: "age_next_year propagates the Err from parse_age",
+      code: 'assert!(age_next_year("oops").is_err());' },
+  ],
+
+  solution: `fn parse_age(s: &str) -> Result<u32, String> {
+    s.trim()
+        .parse::<u32>()
+        .map_err(|_| format!("{:?} is not a valid age", s))
+}
+
+fn age_next_year(s: &str) -> Result<u32, String> {
+    let age = parse_age(s)?;
+    Ok(age + 1)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Fallible signature</td><td><code>(s: string) =&gt; number</code> — throwing is invisible</td><td><code>fn(&amp;str) -&gt; Result&lt;u32, String&gt;</code></td></tr>
+  <tr><td>Fail</td><td><code>throw new Error("…")</code></td><td><code>Err("…".to_string())</code></td></tr>
+  <tr><td>Succeed</td><td><code>return n;</code></td><td><code>Ok(n)</code></td></tr>
+  <tr><td>Handle both</td><td><code>try / catch</code></td><td><code>match r { Ok(v) =&gt; …, Err(e) =&gt; … }</code></td></tr>
+  <tr><td>Propagate</td><td>don't catch (implicit)</td><td><code>fallible()?</code> (explicit, one char)</td></tr>
+  <tr><td>Convert error type</td><td><code>catch (e) { throw new MyError(e) }</code></td><td><code>.map_err(|e| MyError::from(e))</code></td></tr>
+</table>
+<p>Think of <code>?</code> the way you think of <code>await</code>: a marker
+on exactly the expressions where something non-local can happen. Reading a
+Rust function, every possible early exit is a visible <code>?</code> —
+there's no call that might teleport control to a <code>catch</code> five
+frames up. Errors travel the same road as data, so the compiler can check
+they arrive.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays & Lists</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays & Lists",
+
+  intro: `
+<p>Java gives you two sequence types and makes you choose:
+<code>int[]</code> (fixed length, primitives, fast) and
+<code>ArrayList&lt;Integer&gt;</code> (growable, but boxed — with
+<code>List.of(...)</code> when you want it immutable). TypeScript collapses
+both into one: <code>number[]</code>. It is dynamically sized like an
+<code>ArrayList</code>, there is no boxing because there is no
+primitive/wrapper split (no <code>Integer</code> vs <code>int</code>, no
+autoboxing surprises in <code>==</code>), and the literal syntax
+<code>[1, 2, 3]</code> works everywhere — no <code>new</code>, no
+<code>Arrays.asList</code>.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>int[] a = {1, 2, 3};</code></td><td><code>const a: number[] = [1, 2, 3];</code></td></tr>
+  <tr><td><code>List&lt;Integer&gt; l = new ArrayList&lt;&gt;();</code></td><td><code>const l: number[] = [];</code> (same type as above)</td></tr>
+  <tr><td><code>l.add(10);</code></td><td><code>l.push(10);</code></td></tr>
+  <tr><td><code>l.size()</code> / <code>a.length</code></td><td><code>l.length</code> (property, both cases)</td></tr>
+  <tr><td><code>l.contains(20)</code></td><td><code>l.includes(20)</code></td></tr>
+  <tr><td><code>for (int s : scores)</code></td><td><code>for (const s of scores)</code></td></tr>
+  <tr><td><code>l.get(0)</code> / <code>a[0]</code></td><td><code>l[0]</code> (brackets, always)</td></tr>
+</table>
+<p>The renames are small and consistent: <code>add</code> →
+<code>push</code>, <code>size()</code> → <code>.length</code> (a property —
+same as Java arrays, ironically), <code>contains</code> →
+<code>includes</code>, <code>get(i)</code> → <code>[i]</code>. The enhanced
+for-loop becomes <code>for..of</code> — colon swapped for <code>of</code>,
+and you declare the loop variable with <code>const</code>. Note that
+<code>const</code> on an array works like <code>final</code> on a Java
+list: the <em>reference</em> is fixed, but <code>push</code> still
+mutates the contents.</p>`,
+
+  java: `int[] fixed = {1, 2, 3};                  // fixed length, primitive ints
+
+List<Integer> scores = new ArrayList<>(); // growable, boxed Integers
+scores.add(10);
+scores.add(20);
+scores.add(30);
+
+int count = scores.size();                // 3
+boolean has20 = scores.contains(20);      // true
+
+int total = 0;
+for (int s : scores) {                    // enhanced for-loop
+    total += s;
+}
+
+List<String> names = List.of("Ada", "Grace");
+boolean hasAda = names.contains("Ada");`,
+
+  task: `
+<p>Port the list code, using explicit element-type annotations
+(<code>number[]</code>, <code>string[]</code>) throughout:</p>
+<ol>
+  <li>Write <code>buildScores(): number[]</code> that creates an empty
+      <code>number[]</code>, adds <code>10</code>, <code>20</code>, and
+      <code>30</code> with <code>.push(...)</code> (Java's
+      <code>.add(...)</code>), and returns it. One line of
+      <code>new ArrayList&lt;&gt;()</code> ceremony becomes
+      <code>[]</code>.</li>
+  <li>Write <code>sum(nums: number[]): number</code> that totals the array
+      with a <code>for..of</code> loop — the enhanced for-loop with
+      <code>of</code> instead of the colon.</li>
+  <li>Write <code>hasName(names: string[], name: string): boolean</code>
+      using <code>.includes(...)</code>, the rename of Java's
+      <code>.contains(...)</code>.</li>
+</ol>`,
+
+  starter: `// 1. new ArrayList<Integer>() + three .add() calls -> [] + .push().
+//    Annotate the return type: number[]
+function buildScores(): number[] {
+  // TODO: start from [], push 10, 20, 30, return the array
+  return [];
+}
+
+// 2. Java:  for (int s : nums) { total += s; }
+//    TS:    for (const s of nums) { total += s; }
+function sum(nums: number[]): number {
+  // TODO: total the numbers with a for..of loop
+  return 0;
+}
+
+// 3. Java's list.contains(x) is spelled .includes(x) here.
+function hasName(names: string[], name: string): boolean {
+  // TODO
+  return false;
+}
+`,
+
+  exportNames: ["buildScores", "sum", "hasName"],
+
+  requirements: [
+    { pattern: /:\s*number\[\]/, message: "Annotate at least one array as number[]" },
+    { pattern: /:\s*string\[\]/, message: "Annotate the names parameter as string[]" },
+    { pattern: /\.push\s*\(/, message: "Grow the array with .push(...) — Java's list.add(...)" },
+    { pattern: /for\s*\(\s*(const|let)\s+\w+\s+of\b/, message: "Use a for..of loop — the enhanced for-loop, with of instead of the colon" },
+  ],
+
+  tests: [
+    { name: "buildScores() returns [10, 20, 30]", run: (x) => expectDeepEqual(x.buildScores(), [10, 20, 30]) },
+    { name: "buildScores().length is 3 (size() is a property now)", run: (x) => expectEqual(x.buildScores().length, 3) },
+    { name: "sum([10, 20, 30]) is 60", run: (x) => expectEqual(x.sum([10, 20, 30]), 60) },
+    { name: "sum([]) is 0", run: (x) => expectEqual(x.sum([]), 0) },
+    { name: 'hasName(["Ada", "Grace"], "Ada") is true', run: (x) => expectEqual(x.hasName(["Ada", "Grace"], "Ada"), true) },
+    { name: 'hasName(["Ada", "Grace"], "Linus") is false', run: (x) => expectEqual(x.hasName(["Ada", "Grace"], "Linus"), false) },
+  ],
+
+  solution: `function buildScores(): number[] {
+  const scores: number[] = [];
+  scores.push(10);
+  scores.push(20);
+  scores.push(30);
+  return scores;
+}
+
+function sum(nums: number[]): number {
+  let total = 0;
+  for (const n of nums) {
+    total += n;
+  }
+  return total;
+}
+
+function hasName(names: string[], name: string): boolean {
+  return names.includes(name);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Type</td><td><code>int[]</code> or <code>List&lt;Integer&gt;</code></td><td><code>number[]</code> (also written <code>Array&lt;number&gt;</code>)</td></tr>
+  <tr><td>Create</td><td><code>new ArrayList&lt;&gt;()</code> / <code>List.of(1, 2)</code></td><td><code>[]</code> / <code>[1, 2]</code></td></tr>
+  <tr><td>Append</td><td><code>list.add(x)</code></td><td><code>arr.push(x)</code></td></tr>
+  <tr><td>Size</td><td><code>list.size()</code> / <code>arr.length</code></td><td><code>arr.length</code></td></tr>
+  <tr><td>Membership</td><td><code>list.contains(x)</code></td><td><code>arr.includes(x)</code></td></tr>
+  <tr><td>Index access</td><td><code>list.get(i)</code> / <code>arr[i]</code></td><td><code>arr[i]</code></td></tr>
+  <tr><td>Iterate</td><td><code>for (int s : scores)</code></td><td><code>for (const s of scores)</code></td></tr>
+  <tr><td>Boxing</td><td><code>int</code> vs <code>Integer</code>, autoboxing</td><td>None — one <code>number</code> type</td></tr>
+</table>
+<p>One habit to keep from Java and one to drop. Keep: arrays here are
+homogeneous by type — <code>number[]</code> rejects a pushed string at
+compile time, exactly like <code>List&lt;Integer&gt;</code>. Drop: bounds
+paranoia — <code>arr[99]</code> on a 3-element array does not throw an
+<code>IndexOutOfBoundsException</code>; it silently returns
+<code>undefined</code>, which is why <code>for..of</code> and the array
+methods you'll meet in the Streams lesson are preferred over hand-rolled
+index loops.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

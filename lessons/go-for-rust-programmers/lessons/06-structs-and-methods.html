@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Structs & Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Structs & Methods",
+
+  intro: `
+<p>A Go <code>struct</code> is the closest thing to a Rust <code>struct</code>:
+a named bundle of typed fields. Go keeps data and behavior loosely coupled the
+same way Rust does — you define the fields with <code>struct</code>, then
+attach methods separately by naming a <em>receiver</em> before the function
+name, much like Rust's <code>impl</code> block names <code>self</code>. There
+is no <code>impl</code> keyword in Go; the receiver is declared right on each
+method, and you pick its name (Go programmers avoid <code>self</code> by
+convention, using a short abbreviation instead).</p>
+<table>
+  <tr><th>Rust</th><th>Go</th></tr>
+  <tr><td><code>struct P { x: i32, y: i32 }</code></td><td><code>type P struct { X, Y int }</code></td></tr>
+  <tr><td><code>let p = P { x: 1, y: 2 };</code></td><td><code>p := P{X: 1, Y: 2}</code></td></tr>
+  <tr><td><code>impl C { fn m(&self) {…} }</code></td><td><code>func (c C) M() {…}</code></td></tr>
+  <tr><td><code>self.x</code></td><td><code>c.X</code> (receiver name is yours)</td></tr>
+</table>
+<p>The big new idea is the <strong>receiver kind</strong>. A <em>value receiver</em>
+(<code>func (c C) M()</code>) operates on a copy of the struct, so it cannot change
+the caller's data. A <em>pointer receiver</em> (<code>func (c *C) M()</code>)
+operates on the original, so it is required to mutate. This maps onto Rust's
+<code>&self</code> versus <code>&mut self</code> — except Go has no borrow
+checker enforcing exclusivity, so the choice is a convention you must get right
+yourself, not a rule the compiler verifies for you.</p>`,
+
+  rust: `struct Counter {
+    count: i32,
+}
+
+impl Counter {
+    fn new(start: i32) -> Self { Counter { count: start } }
+    fn value(&self) -> i32 { self.count }
+    fn increment(&mut self) { self.count += 1; }
+}
+
+let mut c = Counter::new(0);
+c.increment();
+c.value(); // 1`,
+
+  task: `
+<p>Write these as package-level declarations (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li>A struct <code>type Counter struct { Count int }</code>.</li>
+  <li>A <strong>value-receiver</strong> method <code>func (c Counter) Value() int</code>
+      that returns <code>c.Count</code>.</li>
+  <li>A <strong>pointer-receiver</strong> method <code>func (c *Counter) Increment()</code>
+      that does <code>c.Count++</code>. It must be a pointer receiver so the mutation
+      sticks — the Go equivalent of taking <code>&mut self</code>.</li>
+</ol>
+<p>Construct with a field literal: <code>c := Counter{Count: 0}</code>, then call
+<code>c.Increment()</code> — Go automatically takes the address of an addressable
+value, so you do not write <code>(&amp;c).Increment()</code>, and there is no
+borrow checker to satisfy first.</p>`,
+
+  starter: `type Counter struct {
+	Count int
+}
+
+func (c Counter) Value() int {
+	return 0 // TODO
+}
+
+func (c *Counter) Increment() {
+	// TODO: mutate c.Count
+}
+`,
+
+  requirements: [
+    { pattern: /type\s+Counter\s+struct/, message: "Define a struct type Counter" },
+    { pattern: /func\s+\(c\s+Counter\)\s+Value/, message: "Value must use a value receiver (c Counter)" },
+    { pattern: /func\s+\(c\s+\*Counter\)\s+Increment/, message: "Increment must use a pointer receiver (c *Counter)" },
+  ],
+
+  tests: [
+    { name: "Value reads the constructed field", code: "\t\tc := Counter{Count: 5}\n\t\texpect_eq(c.Value(), 5)" },
+    { name: "Increment mutates through the pointer receiver", code: "\t\tc := Counter{Count: 0}\n\t\tc.Increment()\n\t\texpect_eq(c.Value(), 1)" },
+    { name: "Increment is repeatable", code: "\t\tc := Counter{Count: 0}\n\t\tc.Increment()\n\t\tc.Increment()\n\t\tc.Increment()\n\t\texpect_eq(c.Count, 3)" },
+  ],
+
+  solution: `type Counter struct {
+	Count int
+}
+
+func (c Counter) Value() int {
+	return c.Count
+}
+
+func (c *Counter) Increment() {
+	c.Count++
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Go</th></tr>
+  <tr><td>Define shape</td><td><code>struct C { x: i32 }</code></td><td><code>type C struct { X int }</code></td></tr>
+  <tr><td>Construct</td><td><code>C { x: 1 }</code></td><td><code>C{X: 1}</code></td></tr>
+  <tr><td>Read method</td><td><code>fn m(&self) -> i32 { self.x }</code></td><td><code>func (c C) M() int {…}</code></td></tr>
+  <tr><td>Mutating method</td><td><code>fn m(&mut self) { self.x += 1; }</code></td><td><code>func (c *C) M() {…}</code></td></tr>
+  <tr><td>Receiver name</td><td><code>self</code> (fixed keyword)</td><td><code>c</code> (you choose)</td></tr>
+</table>
+<p>Rule of thumb: if a method changes the struct — or the struct is large enough that
+copying it is wasteful — use a pointer receiver, the same cases where Rust would
+reach for <code>&mut self</code> or pass by reference. Otherwise a value receiver is
+fine, just like a plain <code>&self</code>. In practice Go programmers keep receiver
+kinds consistent across a type, so once one method needs a pointer, most of them use
+a pointer too — Go has no borrow checker to catch a mismatched mix, so this
+consistency is a style convention, not an enforced rule.</p>
+<p>A subtle payoff: because <code>Increment</code> has a pointer receiver, calling
+<code>c.Increment()</code> on a value variable works only because <code>c</code> is
+<em>addressable</em>. Go silently rewrites it to <code>(&amp;c).Increment()</code>,
+roughly the auto-referencing Rust does when you call a <code>&mut self</code> method
+on a <code>mut</code> binding. A value receiver would have incremented a throwaway
+copy and the counter would never move — which is exactly the bug pointer receivers
+exist to prevent, and exactly the kind of mistake Rust's ownership rules would catch
+at compile time but Go leaves to you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

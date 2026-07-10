@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; Switch</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & Switch",
+
+  intro: `
+<p>Loops and conditionals will feel familiar coming from Kotlin — you already
+work with expression-oriented control flow. The <em>enhanced for</em>
+(<code>for (T x : coll)</code>) is Java's version of Kotlin's
+<code>for (x in coll)</code>, and modern <code>switch</code> is an
+<strong>expression</strong> just like Kotlin's <code>when</code>: it produces a
+value, uses arrow labels with no fall-through, and the compiler checks it is
+exhaustive.</p>
+<table>
+  <tr><th>Kotlin</th><th>Java</th></tr>
+  <tr><td><code>for (x in list)</code></td><td><code>for (T x : list)</code></td></tr>
+  <tr><td><code>while (c) { … }</code></td><td><code>while (c) { … }</code></td></tr>
+  <tr><td><code>when</code> expression, arrow <code>-></code></td><td><code>switch</code> <em>expression</em>, arrow <code>-></code></td></tr>
+  <tr><td><code>when</code> that returns a value</td><td><code>switch</code> that returns a value</td></tr>
+</table>
+<p>A switch expression pairs each label with <code>-></code>, exactly like a
+<code>when</code> branch. One label can list several constants
+(<code>case A, B -> …</code>, the same idea as Kotlin's comma-separated
+<code>A, B -> …</code>), there is no fall-through, and when a branch needs more
+than one statement you wrap it in a block and <code>yield</code> the result —
+Kotlin's block branches simply evaluate to their last expression, so this
+explicit <code>yield</code> is the one genuinely new keyword. Switching over an
+<code>enum</code> that covers every constant needs no <code>default</code>
+(Kotlin's <code>else</code>) — the compiler already knows it is exhaustive.</p>`,
+
+  kotlin: `enum class Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
+
+fun color(s: Suit): String = when (s) {
+    Suit.HEARTS, Suit.DIAMONDS -> "Red"
+    else -> "Black"
+}
+
+fun sumEven(nums: List<Int>): Int {
+    var total = 0
+    for (n in nums) {
+        if (n % 2 == 0) total += n
+    }
+    return total
+}`,
+
+  task: `
+<p>Build a class <code>Flow</code> with <code>static</code> methods, plus an
+<code>enum Suit</code>:</p>
+<ol>
+  <li>Declare <code>enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }</code>.</li>
+  <li><code>color(Suit s)</code> returns a <code>String</code> using a
+      <strong>switch expression</strong>: <code>case HEARTS, DIAMONDS -> "Red"</code>
+      and <code>case CLUBS, SPADES -> "Black"</code>. No <code>default</code> is
+      needed — an enum switch is exhaustive.</li>
+  <li><code>sumEven(List&lt;Integer&gt; nums)</code> returns the sum of the even
+      values, using an <strong>enhanced for</strong> (<code>for (int n : nums)</code>).</li>
+  <li><code>factorial(int n)</code> returns a <code>long</code>, computed with a
+      <code>while</code> loop.</li>
+  <li><code>sizeLabel(int count)</code> returns <code>"none"</code> for 0,
+      <code>"few"</code> for 1 or 2, and otherwise a block branch that
+      <code>yield</code>s <code>"huge"</code> when <code>count &gt; 100</code>
+      else <code>"many"</code>.</li>
+</ol>`,
+
+  starter: `enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
+
+class Flow {
+  static String color(Suit s) {
+    return ""; // TODO: switch expression with arrow labels
+  }
+
+  static int sumEven(List<Integer> nums) {
+    return 0; // TODO: enhanced for
+  }
+
+  static long factorial(int n) {
+    return 0; // TODO: while loop
+  }
+
+  static String sizeLabel(int count) {
+    return ""; // TODO: switch expression with a yield block
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /for\s*\([^;)]*:[^)]*\)/, message: "Use an enhanced for loop, for (T x : coll)" },
+    { pattern: /switch\s*\([^)]*\)\s*\{[\s\S]*->/, message: "Use a switch expression with arrow (->) labels" },
+    { pattern: /\byield\b/, message: "Use yield to return a value from a switch block branch" },
+  ],
+
+  tests: [
+    { name: "color(HEARTS) is Red", code: "      expect_eq(Flow.color(Suit.HEARTS), \"Red\");" },
+    { name: "color(DIAMONDS) is Red", code: "      expect_eq(Flow.color(Suit.DIAMONDS), \"Red\");" },
+    { name: "color(SPADES) is Black", code: "      expect_eq(Flow.color(Suit.SPADES), \"Black\");" },
+    { name: "sumEven([1..6]) is 12", code: "      expect_eq(Flow.sumEven(List.of(1, 2, 3, 4, 5, 6)), 12);" },
+    { name: "factorial(5) is 120", code: "      expect_eq(Flow.factorial(5), 120L);" },
+    { name: "sizeLabel(0) is none", code: "      expect_eq(Flow.sizeLabel(0), \"none\");" },
+    { name: "sizeLabel(2) is few, sizeLabel(50) is many, sizeLabel(500) is huge", code: "      expect_eq(Flow.sizeLabel(2), \"few\");\n      expect_eq(Flow.sizeLabel(50), \"many\");\n      expect_eq(Flow.sizeLabel(500), \"huge\");" },
+  ],
+
+  solution: `enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
+
+class Flow {
+  static String color(Suit s) {
+    return switch (s) {
+      case HEARTS, DIAMONDS -> "Red";
+      case CLUBS, SPADES -> "Black";
+    };
+  }
+
+  static int sumEven(List<Integer> nums) {
+    int total = 0;
+    for (int n : nums) {
+      if (n % 2 == 0) total += n;
+    }
+    return total;
+  }
+
+  static long factorial(int n) {
+    long result = 1;
+    int i = n;
+    while (i > 1) {
+      result *= i;
+      i--;
+    }
+    return result;
+  }
+
+  static String sizeLabel(int count) {
+    return switch (count) {
+      case 0 -> "none";
+      case 1, 2 -> "few";
+      default -> {
+        String label = count > 100 ? "huge" : "many";
+        yield label;
+      }
+    };
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+  <tr><td>Iterate values</td><td><code>for (x in xs)</code></td><td><code>for (T x : xs)</code></td></tr>
+  <tr><td>Multi-label branch</td><td><code>A, B -> …</code></td><td><code>case A, B -> …</code></td></tr>
+  <tr><td>Fall-through</td><td>none</td><td>none with <code>-></code></td></tr>
+  <tr><td>Value from a branch</td><td>block's last expression</td><td><code>yield</code> (in a block)</td></tr>
+  <tr><td>Exhaustiveness</td><td>required when used as an expression</td><td>required (enum switch needs no <code>default</code>)</td></tr>
+</table>
+<p>A single-expression branch (<code>case 0 -> "none"</code>) yields its value
+implicitly, the same way a one-line <code>when</code> branch does; only a
+<code>{ … }</code> block needs an explicit <code>yield</code>, since Java has no
+notion of a block "returning" its last expression the way Kotlin does. Because
+arrow labels never fall through, you drop every <code>break</code>, just as you
+never write <code>break</code> in a <code>when</code>. And when you switch over
+an <code>enum</code> and cover all constants, leaving out <code>default</code> is
+a feature: add a new constant later and the compiler flags the switch as no
+longer exhaustive, mirroring how Kotlin nags you about an unhandled branch in an
+exhaustive <code>when</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

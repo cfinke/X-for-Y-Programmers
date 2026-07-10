@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Modules & Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Modules & Capstone",
+
+  intro: `
+<p>PHP's code-organization story grew in layers: <code>require</code> /
+<code>include</code> textually paste files together, <code>namespace</code> +
+<code>use</code> keep class names from colliding, and Composer's PSR-4
+autoloader maps <code>App\\Cart\\Item</code> to a file so you never write
+<code>require</code> yourself. TypeScript collapses all three into one
+mechanism: <strong>every file is a module</strong>. Nothing leaks out unless
+you <code>export</code> it; nothing comes in unless you <code>import</code>
+it. There is no autoloader because the imports <em>are</em> the dependency
+graph.</p>
+<p>Exports come in two flavors. <em>Named</em> exports
+(<code>export function cartTotal ...</code>, imported as
+<code>import { cartTotal } from "./cart"</code>) behave like PHP's
+<code>use App\\Cart\\cartTotal;</code> — explicit names, several per file.
+A <em>default</em> export (<code>export default class Cart ...</code>) is the
+file's one headline value, imported with any name you like. Modern codebases
+lean heavily on named exports: they survive renames, autocomplete better, and
+grep cleanly.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>require 'cart.php';</code></td><td><code>import { cartTotal } from "./cart";</code></td></tr>
+  <tr><td><code>namespace App\\Cart;</code></td><td>The file itself is the namespace</td></tr>
+  <tr><td><code>use App\\Cart\\Item;</code></td><td><code>import { Item } from "./cart";</code> (types import too)</td></tr>
+  <tr><td>Composer PSR-4 autoloading</td><td>No autoloader — the import graph is explicit</td></tr>
+</table>
+<p>This lesson's editor is a single module, so you'll <code>export</code> (the
+harness collects your exported symbols) but not <code>import</code> — there is
+no second file to import from. Then the capstone: a small typed cart module
+that pulls together interfaces, generics, array methods, spread, and
+narrowing from the whole course.</p>`,
+
+  php: `<?php
+// src/Cart/functions.php
+namespace App\\Cart;
+
+require_once __DIR__ . '/Item.php'; // or let Composer autoload it
+
+function addItem(array $cart, array $item): array {
+    $cart[] = $item;          // hope $item has sku/name/price/quantity...
+    return $cart;
+}
+
+function cartTotal(array $cart): float {
+    return array_reduce($cart, fn($sum, $i) => $sum + $i['price'] * $i['quantity'], 0.0);
+}
+
+function findItem(array $cart, string $sku): ?array {
+    foreach ($cart as $item) {
+        if ($item['sku'] === $sku) return $item;
+    }
+    return null;
+}`,
+
+  task: `
+<p>Capstone: build a typed cart module. Everything must be <code>export</code>ed.</p>
+<ol>
+  <li>Define an <code>interface CartItem</code> with <code>sku: string</code>,
+      <code>name: string</code>, <code>price: number</code>,
+      <code>quantity: number</code>.</li>
+  <li><code>export function addItem(cart: CartItem[], item: CartItem): CartItem[]</code> —
+      return a <strong>new</strong> array via spread
+      (<code>[...cart, item]</code>); do not mutate <code>cart</code>.</li>
+  <li><code>export function findItem(cart: CartItem[], sku: string): CartItem | undefined</code> —
+      the typed cousin of PHP's <code>?array</code> return.</li>
+  <li><code>export function cartTotal(cart: CartItem[]): number</code> —
+      sum of <code>price * quantity</code> using <code>.reduce</code>.</li>
+  <li><code>export function firstOrDefault&lt;T&gt;(items: T[], fallback: T): T</code> —
+      a generic: the first element, or the fallback if the array is empty.</li>
+</ol>`,
+
+  starter: `// Capstone: a typed cart module. Export everything below.
+// (This editor is one module: use export, but no import — there is
+// no second file here.)
+
+// 1. TODO: define the CartItem interface (sku, name, price, quantity).
+interface CartItem {
+  sku: string;
+}
+
+// 2. TODO: return a NEW array via spread; do not mutate cart.
+export function addItem(cart: CartItem[], item: CartItem): CartItem[] {
+  return cart;
+}
+
+// 3. TODO: find by sku, or return undefined (like PHP's ?array).
+export function findItem(cart: CartItem[], sku: string): CartItem | undefined {
+  return undefined;
+}
+
+// 4. TODO: sum price * quantity with .reduce.
+export function cartTotal(cart: CartItem[]): number {
+  return 0;
+}
+
+// 5. TODO: make this generic over T instead of any.
+export function firstOrDefault(items: any[], fallback: any): any {
+  return fallback;
+}
+`,
+
+  exportNames: ["addItem", "findItem", "cartTotal", "firstOrDefault"],
+
+  requirements: [
+    { pattern: /export\s+(function|const)/, message: "Export your functions with the export keyword" },
+    { pattern: /interface\s+CartItem\s*\{/, message: "Define an interface CartItem" },
+    { pattern: /firstOrDefault\s*<\s*T\s*>/, message: "Make firstOrDefault generic: firstOrDefault<T>(items: T[], fallback: T): T" },
+    { pattern: /CartItem\s*\|\s*undefined/, message: "Give findItem the return type CartItem | undefined" },
+  ],
+
+  tests: [
+    {
+      name: "addItem returns a new array containing the item",
+      run: (x) => {
+        const cart = [{ sku: "TS-1", name: "Type Tea", price: 4.5, quantity: 2 }];
+        const next = x.addItem(cart, { sku: "PHP-8", name: "Elephant Mug", price: 12, quantity: 1 });
+        expectDeepEqual(next, [
+          { sku: "TS-1", name: "Type Tea", price: 4.5, quantity: 2 },
+          { sku: "PHP-8", name: "Elephant Mug", price: 12, quantity: 1 },
+        ]);
+      },
+    },
+    {
+      name: "addItem does not mutate the original cart",
+      run: (x) => {
+        const cart = [{ sku: "TS-1", name: "Type Tea", price: 4.5, quantity: 2 }];
+        x.addItem(cart, { sku: "PHP-8", name: "Elephant Mug", price: 12, quantity: 1 });
+        expectEqual(cart.length, 1);
+      },
+    },
+    {
+      name: "findItem finds by sku, and returns undefined when absent",
+      run: (x) => {
+        const cart = [
+          { sku: "TS-1", name: "Type Tea", price: 4.5, quantity: 2 },
+          { sku: "PHP-8", name: "Elephant Mug", price: 12, quantity: 1 },
+        ];
+        expectDeepEqual(x.findItem(cart, "PHP-8"), { sku: "PHP-8", name: "Elephant Mug", price: 12, quantity: 1 });
+        expectEqual(x.findItem(cart, "GO-1"), undefined);
+      },
+    },
+    {
+      name: "cartTotal sums price * quantity (4.5*2 + 12*1 = 21)",
+      run: (x) => {
+        const cart = [
+          { sku: "TS-1", name: "Type Tea", price: 4.5, quantity: 2 },
+          { sku: "PHP-8", name: "Elephant Mug", price: 12, quantity: 1 },
+        ];
+        expectEqual(x.cartTotal(cart), 21);
+      },
+    },
+    {
+      name: "cartTotal of an empty cart is 0",
+      run: (x) => expectEqual(x.cartTotal([]), 0),
+    },
+    {
+      name: "firstOrDefault works for numbers and strings alike",
+      run: (x) => {
+        expectEqual(x.firstOrDefault([7, 8, 9], 0), 7);
+        expectEqual(x.firstOrDefault([], 0), 0);
+        expectEqual(x.firstOrDefault(["a", "b"], "z"), "a");
+        expectEqual(x.firstOrDefault([], "z"), "z");
+      },
+    },
+  ],
+
+  solution: `interface CartItem {
+  sku: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export function addItem(cart: CartItem[], item: CartItem): CartItem[] {
+  return [...cart, item];
+}
+
+export function findItem(cart: CartItem[], sku: string): CartItem | undefined {
+  return cart.find((item) => item.sku === sku);
+}
+
+export function cartTotal(cart: CartItem[]): number {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+export function firstOrDefault<T>(items: T[], fallback: T): T {
+  return items.length > 0 ? items[0] : fallback;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Pull in code</td><td><code>require</code> / Composer autoload</td><td><code>import { x } from "./file"</code></td></tr>
+  <tr><td>Expose code</td><td>Everything in the file is visible</td><td>Only what you <code>export</code></td></tr>
+  <tr><td>Namespacing</td><td><code>namespace App\\Cart;</code> + <code>use</code></td><td>One file = one module, scoped by default</td></tr>
+  <tr><td>Named vs default</td><td><code>use App\\Cart\\{A, B};</code></td><td><code>import { A, B }</code> vs <code>import Cart from</code> (default)</td></tr>
+  <tr><td>"Maybe" return</td><td><code>?array</code> / <code>null</code></td><td><code>CartItem | undefined</code></td></tr>
+  <tr><td>Immutable add</td><td><code>array_merge($cart, [$item])</code></td><td><code>[...cart, item]</code></td></tr>
+</table>
+<p>And that's the course. Look back at the capstone: an interface as the
+contract (lesson 8), a union with <code>undefined</code> (lessons 6–7),
+<code>.find</code> and <code>.reduce</code> instead of <code>foreach</code>
+(lesson 13), spread for immutability (lesson 15), a generic instead of
+<code>mixed</code> (lesson 12), and <code>export</code> tying it into a
+module. TypeScript isn't a new discipline so much as the disciplines you
+already practiced in PHP — type hints, docblocks, PSR structure — promoted
+from convention to compiler-checked guarantee.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Maps → Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Maps → Objects",
+
+  intro: `
+<p>Where you would reach for <code>HashMap&lt;String, Integer&gt;</code>,
+idiomatic TypeScript reaches for a plain object typed as
+<code>Record&lt;string, number&gt;</code>. Read <code>Record&lt;K, V&gt;</code>
+exactly like <code>Map&lt;K, V&gt;</code>: the two type parameters are key
+and value types. The literal syntax replaces a constructor plus a chain of
+<code>put</code> calls: <code>{ apple: 3, banana: 5 }</code> is a fully
+populated map in one expression. Lookups use bracket indexing,
+<code>stock["apple"]</code> — or dot access, <code>stock.apple</code>, when
+the key is a fixed identifier.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>Map&lt;String, Integer&gt; m = new HashMap&lt;&gt;();</code></td><td><code>const m: Record&lt;string, number&gt; = {};</code></td></tr>
+  <tr><td><code>m.put("apple", 3);</code></td><td><code>m["apple"] = 3;</code></td></tr>
+  <tr><td><code>m.get("apple")</code></td><td><code>m["apple"]</code></td></tr>
+  <tr><td><code>m.getOrDefault("pear", 0)</code></td><td><code>m["pear"] ?? 0</code></td></tr>
+  <tr><td><code>m.containsKey("apple")</code></td><td><code>"apple" in m</code></td></tr>
+  <tr><td><code>for (var e : m.entrySet())</code></td><td><code>for (const [k, v] of Object.entries(m))</code></td></tr>
+  <tr><td><code>m.keySet()</code> / <code>m.values()</code></td><td><code>Object.keys(m)</code> / <code>Object.values(m)</code></td></tr>
+</table>
+<p>Your <code>getOrDefault</code> instinct maps to the <code>??</code>
+(nullish coalescing) operator: a missing key yields <code>undefined</code>
+rather than <code>null</code>, and <code>m[key] ?? fallback</code> supplies
+the default — same contract, infix spelling. <code>containsKey</code>
+becomes the <code>in</code> operator, and the <code>entrySet()</code> loop
+becomes <code>Object.entries</code>, which hands you <code>[key, value]</code>
+pairs you can unpack right in the loop header — no
+<code>e.getKey()</code>/<code>e.getValue()</code> ceremony. (TypeScript also
+has a real <code>Map</code> class for non-string keys; for string-keyed
+maps like this one, <code>Record</code> objects are the idiom.)</p>`,
+
+  java: `Map<String, Integer> stock = new HashMap<>();
+stock.put("apple", 3);
+stock.put("banana", 5);
+
+int apples = stock.get("apple");                // 3
+int pears  = stock.getOrDefault("pear", 0);     // 0 — no null, no NPE
+boolean hasApple = stock.containsKey("apple");  // true
+
+int total = 0;
+for (Map.Entry<String, Integer> e : stock.entrySet()) {
+    System.out.println(e.getKey() + " x" + e.getValue());
+    total += e.getValue();
+}`,
+
+  task: `
+<p>Port the inventory code:</p>
+<ol>
+  <li>Declare a constant <code>stock</code> of type
+      <code>Record&lt;string, number&gt;</code> holding
+      <code>apple: 3</code> and <code>banana: 5</code> — the
+      <code>new HashMap</code> plus two <code>put</code>s, as one
+      literal.</li>
+  <li>Write <code>getCount(inv: Record&lt;string, number&gt;, item: string): number</code>
+      that returns the count for <code>item</code>, or <code>0</code> if the
+      key is absent. This is <code>getOrDefault</code>: index with
+      <code>inv[item]</code> and supply the fallback with <code>??</code>.</li>
+  <li>Write <code>hasItem(inv: Record&lt;string, number&gt;, item: string): boolean</code>
+      — <code>containsKey</code> becomes the <code>in</code> operator:
+      <code>item in inv</code>.</li>
+  <li>Write <code>totalItems(inv: Record&lt;string, number&gt;): number</code>
+      that sums all the counts. Loop with
+      <code>for (const [item, count] of Object.entries(inv))</code> —
+      the <code>entrySet()</code> loop without the getters.</li>
+</ol>`,
+
+  starter: `// 1. new HashMap<>() + put("apple", 3) + put("banana", 5), as one literal.
+//    Type it Record<string, number> — read it like Map<String, Integer>.
+const stock = {};
+
+// 2. Java: inv.getOrDefault(item, 0)  ->  TS: inv[item] ?? 0
+function getCount(inv: Record<string, number>, item: string): number {
+  // TODO
+  return 0;
+}
+
+// 3. Java: inv.containsKey(item)  ->  TS: item in inv
+function hasItem(inv: Record<string, number>, item: string): boolean {
+  // TODO
+  return false;
+}
+
+// 4. Java: for (Map.Entry<String, Integer> e : inv.entrySet()) { ... }
+//    TS:   for (const [item, count] of Object.entries(inv)) { ... }
+function totalItems(inv: Record<string, number>): number {
+  // TODO: sum every count
+  return 0;
+}
+`,
+
+  exportNames: ["stock", "getCount", "hasItem", "totalItems"],
+
+  requirements: [
+    { pattern: /stock\s*:\s*Record<\s*string\s*,\s*number\s*>/, message: "Type stock as Record<string, number> — the Map<String, Integer> of TypeScript" },
+    { pattern: /\?\?/, message: "Use the ?? operator to supply the default — TypeScript's getOrDefault" },
+    { pattern: /\w+\s+in\s+\w+/, message: "Use the in operator for the containsKey check" },
+    { pattern: /Object\.(entries|keys)\s*\(/, message: "Iterate with Object.entries(...) (or Object.keys) — the entrySet() loop" },
+  ],
+
+  tests: [
+    { name: "stock is { apple: 3, banana: 5 }", run: (x) => expectDeepEqual(x.stock, { apple: 3, banana: 5 }) },
+    { name: 'getCount(stock, "apple") is 3', run: (x) => expectEqual(x.getCount({ apple: 3, banana: 5 }, "apple"), 3) },
+    { name: 'getCount(stock, "pear") falls back to 0', run: (x) => expectEqual(x.getCount({ apple: 3, banana: 5 }, "pear"), 0) },
+    { name: "hasItem finds present keys and rejects absent ones", run: (x) => { expectEqual(x.hasItem({ apple: 3 }, "apple"), true); expectEqual(x.hasItem({ apple: 3 }, "pear"), false); } },
+    { name: "totalItems({ apple: 3, banana: 5 }) is 8", run: (x) => expectEqual(x.totalItems({ apple: 3, banana: 5 }), 8) },
+    { name: "totalItems({}) is 0", run: (x) => expectEqual(x.totalItems({}), 0) },
+  ],
+
+  solution: `const stock: Record<string, number> = { apple: 3, banana: 5 };
+
+function getCount(inv: Record<string, number>, item: string): number {
+  return inv[item] ?? 0;
+}
+
+function hasItem(inv: Record<string, number>, item: string): boolean {
+  return item in inv;
+}
+
+function totalItems(inv: Record<string, number>): number {
+  let total = 0;
+  for (const [item, count] of Object.entries(inv)) {
+    total += count;
+  }
+  return total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Type</td><td><code>Map&lt;String, Integer&gt;</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+  <tr><td>Create + fill</td><td><code>new HashMap&lt;&gt;()</code> + <code>put(...)</code> calls</td><td><code>{ apple: 3, banana: 5 }</code></td></tr>
+  <tr><td>Read</td><td><code>m.get(k)</code></td><td><code>m[k]</code></td></tr>
+  <tr><td>Write</td><td><code>m.put(k, v)</code></td><td><code>m[k] = v</code></td></tr>
+  <tr><td>Default on miss</td><td><code>m.getOrDefault(k, d)</code></td><td><code>m[k] ?? d</code></td></tr>
+  <tr><td>Key check</td><td><code>m.containsKey(k)</code></td><td><code>k in m</code></td></tr>
+  <tr><td>Entries loop</td><td><code>for (var e : m.entrySet())</code> + getters</td><td><code>for (const [k, v] of Object.entries(m))</code></td></tr>
+  <tr><td>Keys / values</td><td><code>m.keySet()</code> / <code>m.values()</code></td><td><code>Object.keys(m)</code> / <code>Object.values(m)</code></td></tr>
+</table>
+<p>The contract difference worth internalizing: <code>Map.get</code> on a
+missing key returns <code>null</code> and sets up tomorrow's NPE, while
+<code>m[k]</code> returns <code>undefined</code> — and the type checker
+(with an index-checking flag) makes you handle it at the call site, which
+is exactly what <code>?? fallback</code> does. Prefer <code>??</code> over
+the older <code>||</code> trick: <code>||</code> also replaces legitimate
+falsy values like <code>0</code>, so <code>m["pear"] || 1</code> would
+"default" a real zero count — <code>??</code> only steps in for
+<code>null</code> and <code>undefined</code>.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

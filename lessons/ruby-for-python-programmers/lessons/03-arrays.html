@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Arrays</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Arrays",
+
+  intro: `
+<p>Python lists are Ruby Arrays, and you're on home turf immediately:
+literals look identical, they hold anything, and <strong>negative indexing
+works</strong> — <code>arr[-1]</code> is the last element in both languages,
+no apology needed. Appending gets a new idiom: <code>nums &lt;&lt; x</code>,
+the "shovel" operator (or <code>.push</code>, if you prefer — there's more
+than one way, this is Ruby).</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>nums.append(x)</code></td><td><code>nums &lt;&lt; x</code> (or <code>nums.push(x)</code>)</td></tr>
+  <tr><td><code>len(nums)</code></td><td><code>nums.size</code> or <code>nums.length</code></td></tr>
+  <tr><td><code>x in nums</code></td><td><code>nums.include?(x)</code></td></tr>
+  <tr><td><code>nums[-1]</code></td><td><code>nums[-1]</code> — same!</td></tr>
+  <tr><td><code>nums[1:3]</code></td><td><code>nums[1..2]</code> (inclusive!) or <code>nums[1...3]</code></td></tr>
+  <tr><td><code>sum(nums)</code></td><td><code>nums.sum</code></td></tr>
+</table>
+<p>One slice gotcha deserves a flag: Ruby slices with <em>ranges</em>, and
+the two-dot range <code>1..3</code> <strong>includes</strong> its end — the
+opposite of Python's half-open <code>[1:3)</code>. Python's
+<code>nums[1:3]</code> is Ruby's <code>nums[1..2]</code>, or
+<code>nums[1...3]</code> with <em>three</em> dots for the exclusive end.
+Better still, ranges take negative ends: <code>arr[1..-2]</code> is Python's
+<code>arr[1:-1]</code>. And the function-vs-method pattern continues:
+<code>len()</code> and <code>sum()</code> become <code>.size</code> and
+<code>.sum</code> — questions you ask the array.</p>`,
+
+  python: `scores = []
+scores.append(90)
+scores.append(85)
+scores.append(70)
+
+print(len(scores))       # 3
+print(scores[-1])        # 70   (negative indexing)
+print(scores[1:3])       # [85, 70]  (end EXCLUSIVE)
+print(sum(scores))       # 245
+print(85 in scores)      # True
+
+
+def append(arr, x):
+    arr.append(x)
+    return arr
+
+
+def middle(arr):
+    return arr[1:-1]     # everything but first and last
+
+
+print(middle([1, 2, 3, 4, 5]))  # [2, 3, 4]`,
+
+  task: `
+<p>Rewrite the Python as Ruby:</p>
+<ol>
+  <li><code>make_scores</code> — start with an empty array and shovel
+      <code>90</code>, <code>85</code>, and <code>70</code> into it with
+      <code>&lt;&lt;</code>, then make the array the last expression.</li>
+  <li><code>append(arr, x)</code> — push <code>x</code> onto <code>arr</code>
+      with <code>&lt;&lt;</code> and return the array. (Handy fact:
+      <code>&lt;&lt;</code> returns the array itself, so it may already
+      <em>be</em> your last expression.)</li>
+  <li><code>total(nums)</code> — Python's <code>sum(nums)</code> becomes the
+      method <code>nums.sum</code>.</li>
+  <li><code>middle(arr)</code> — everything but the first and last element.
+      Python's <code>arr[1:-1]</code> is a range slice like
+      <code>arr[1..-2]</code> — two dots, inclusive end, negative
+      indexes welcome.</li>
+  <li><code>contains?(nums, x)</code> — Python's <code>x in nums</code>
+      becomes <code>nums.include?(x)</code>: haystack first, and a
+      <code>?</code> on the name.</li>
+</ol>`,
+
+  starter: `# 1. make_scores: build [90, 85, 70] with the << shovel, one push at a time.
+def make_scores
+  raise NotImplementedError, "TODO: implement make_scores"
+end
+
+# 2. append: arr.append(x) -> arr << x  (<< returns the array itself).
+def append(arr, x)
+  raise NotImplementedError, "TODO: implement append"
+end
+
+# 3. total: sum(nums) -> nums.sum (a method, not a function).
+def total(nums)
+  raise NotImplementedError, "TODO: implement total"
+end
+
+# 4. middle: arr[1:-1] -> arr[1..-2] (two-dot range, INCLUSIVE end).
+def middle(arr)
+  raise NotImplementedError, "TODO: implement middle"
+end
+
+# 5. contains?: x in nums -> nums.include?(x).
+def contains?(nums, x)
+  raise NotImplementedError, "TODO: implement contains?"
+end
+`,
+
+  requirements: [
+    { pattern: /<</, message: "Use the << shovel operator to append" },
+    { pattern: /\.sum/, message: "Use .sum in total" },
+    { pattern: /\[\d+\.\./, message: "Slice middle with a range like arr[1..-2]" },
+    { pattern: /\.include\?|\.first/, message: "Use .include? in contains?" },
+  ],
+
+  tests: [
+    { name: "make_scores returns [90, 85, 70]",
+      code: "  expect_eq(make_scores, [90, 85, 70])" },
+    { name: "append([1, 2], 3) returns [1, 2, 3]",
+      code: "  expect_eq(append([1, 2], 3), [1, 2, 3])" },
+    { name: "total([90, 85, 70]) returns 245",
+      code: "  expect_eq(total([90, 85, 70]), 245)" },
+    { name: "middle([1, 2, 3, 4, 5]) returns [2, 3, 4]",
+      code: "  expect_eq(middle([1, 2, 3, 4, 5]), [2, 3, 4])" },
+    { name: "middle([1, 2, 3]) returns [2]",
+      code: "  expect_eq(middle([1, 2, 3]), [2])" },
+    { name: "contains?([1, 2, 3], 2) is true; contains?([1, 2], 5) is false",
+      code: "  expect_true(contains?([1, 2, 3], 2))\n  expect_eq(contains?([1, 2], 5), false)" },
+  ],
+
+  solution: `def make_scores
+  scores = []
+  scores << 90
+  scores << 85
+  scores << 70
+  scores
+end
+
+def append(arr, x)
+  arr << x
+end
+
+def total(nums)
+  nums.sum
+end
+
+def middle(arr)
+  arr[1..-2]
+end
+
+def contains?(nums, x)
+  nums.include?(x)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Append</td><td><code>nums.append(x)</code></td><td><code>nums &lt;&lt; x</code> or <code>nums.push(x)</code></td></tr>
+  <tr><td>Length</td><td><code>len(nums)</code></td><td><code>nums.size</code> / <code>nums.length</code></td></tr>
+  <tr><td>Membership</td><td><code>x in nums</code></td><td><code>nums.include?(x)</code></td></tr>
+  <tr><td>Last element</td><td><code>nums[-1]</code></td><td><code>nums[-1]</code>, or <code>nums.last</code></td></tr>
+  <tr><td>First element</td><td><code>nums[0]</code></td><td><code>nums[0]</code>, or <code>nums.first</code></td></tr>
+  <tr><td>Slice</td><td><code>nums[1:3]</code> (end exclusive)</td><td><code>nums[1..2]</code> inclusive, <code>nums[1...3]</code> exclusive</td></tr>
+  <tr><td>Sum</td><td><code>sum(nums)</code></td><td><code>nums.sum</code></td></tr>
+</table>
+<p>The two-dot / three-dot distinction is worth over-learning now:
+<code>1..3</code> is <code>[1, 2, 3]</code>, <code>1...3</code> is
+<code>[1, 2]</code>. More dots, fewer elements — everyone trips on it exactly
+once. Note also <code>nums.first</code> and <code>nums.last</code>: where
+Python has one obvious way (<code>nums[0]</code>, <code>nums[-1]</code>),
+Ruby offers named methods too, and idiomatic code usually prefers them for
+readability.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

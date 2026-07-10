@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes & Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>PHP classes will feel familiar: <code>class</code>, real
+<code>public</code>/<code>protected</code>/<code>private</code> visibility
+keywords, <code>new</code>, single constructors. The surface differences are
+mechanical. The constructor is always named <code>__construct</code> — there's
+no primary-constructor-in-the-header syntax like Kotlin's. Members are reached
+with <code>-></code> instead of <code>.</code>, so it's
+<code>$account->deposit(100)</code>. And <code>$this</code> is
+<em>mandatory</em>: inside a method, a bare <code>$balance</code> is a fresh
+local variable, not the property — you must write <code>$this->balance</code>
+every time, where Kotlin lets you refer to <code>balance</code> directly.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>class BankAccount(val owner: String)</code></td><td><code>public function __construct(private string $owner) {}</code></td></tr>
+  <tr><td><code>account.deposit(100)</code></td><td><code>$account->deposit(100)</code></td></tr>
+  <tr><td><code>balance += amount</code> (implicit this)</td><td><code>$this->balance += $amount;</code> (explicit, always)</td></tr>
+  <tr><td>constructor param + property in the header</td><td>one promoted constructor parameter</td></tr>
+  <tr><td><code>BankAccount("Ada")</code> (no <code>new</code>)</td><td><code>new BankAccount("Ada")</code></td></tr>
+</table>
+<p>The headline feature is PHP 8's <em>constructor property promotion</em>:
+put a visibility keyword on a constructor parameter and PHP declares the
+property, accepts the argument, and assigns it — the whole
+field/parameter/assignment triangle collapses into
+<code>public function __construct(private int $balance = 0) {}</code>. It's
+exactly what Kotlin's primary constructor does when you write
+<code>val</code>/<code>var</code> on a header parameter, but PHP spells the
+visibility (<code>private</code>) instead of the mutability. Culture note: PHP
+has no <code>getX()</code>/<code>setX()</code> reflex and no Kotlin-style
+synthesized property accessors. Expose data as <code>public readonly</code>
+properties, or keep it <code>private</code> and add a small
+intention-revealing method (<code>owner()</code>, <code>balance()</code>) only
+where callers need it.</p>`,
+
+  kotlin: `class BankAccount(
+    val owner: String,          // val + var in the header declare the
+    private var balance: Int = 0 // properties, take the params, assign them
+) {
+    fun deposit(amount: Int) {
+        balance += amount
+    }
+
+    fun withdraw(amount: Int): Boolean {
+        if (amount > balance) return false
+        balance -= amount
+        return true
+    }
+
+    fun balance(): Int = balance
+}`,
+
+  task: `
+<p>The starter gives you the promoted constructor — the same idea as Kotlin's
+primary constructor with <code>val</code>/<code>var</code> parameters, but on
+one PHP line. Finish <code>BankAccount</code>:</p>
+<ol>
+  <li><code>owner(): string</code> — return the owner. Remember:
+      <code>$this->owner</code>, never bare <code>$owner</code>.</li>
+  <li><code>deposit(int $amount): void</code> — add to the balance
+      (<code>$this->balance += $amount</code>).</li>
+  <li><code>withdraw(int $amount): bool</code> — if <code>$amount</code>
+      exceeds the balance, return <code>false</code> and leave the balance
+      <em>unchanged</em>; otherwise subtract and return <code>true</code>.</li>
+  <li><code>balance(): int</code> — return the current balance.</li>
+</ol>
+<p>The tests construct accounts with <code>new BankAccount("Ada")</code> and
+<code>new BankAccount("Ada", 50)</code> — the promoted <code>$balance</code>
+parameter's default covers the first form.</p>`,
+
+  starter: `<?php
+
+class BankAccount {
+    // Constructor property promotion: this one line declares BOTH private
+    // properties, takes them as parameters, and assigns them. No triangle.
+    public function __construct(private string $owner, private int $balance = 0) {}
+
+    public function owner(): string {
+        throw new Exception("TODO: return \\$this->owner");
+    }
+
+    public function deposit(int $amount): void {
+        throw new Exception("TODO: add \\$amount to the balance");
+    }
+
+    public function withdraw(int $amount): bool {
+        throw new Exception("TODO: false if insufficient funds, else subtract and true");
+    }
+
+    public function balance(): int {
+        throw new Exception("TODO: return the balance");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /__construct\s*\(\s*(private|public)/, message: "Keep the promoted constructor: __construct(private string $owner, ...)" },
+    { pattern: /private/, message: "Keep the properties private — expose them through methods" },
+    { pattern: /->/, message: "Access properties with $this-> (bare $balance is a local variable)" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada") — owner() returns "Ada"',
+      code: '$a = new BankAccount("Ada");\nexpect_eq($a->owner(), "Ada");' },
+    { name: "a new account has balance 0 (promoted default)",
+      code: '$a = new BankAccount("Ada");\nexpect_eq($a->balance(), 0);' },
+    { name: "deposit(100) then deposit(20) gives balance 120",
+      code: '$a = new BankAccount("Ada");\n$a->deposit(100);\n$a->deposit(20);\nexpect_eq($a->balance(), 120);' },
+    { name: "withdraw(40) from 100 returns true, leaves 60",
+      code: '$a = new BankAccount("Ada");\n$a->deposit(100);\nexpect_true($a->withdraw(40));\nexpect_eq($a->balance(), 60);' },
+    { name: "withdraw(100) from 50 returns false and leaves the balance unchanged",
+      code: '$a = new BankAccount("Ada", 50);\nexpect_true(!$a->withdraw(100));\nexpect_eq($a->balance(), 50);' },
+  ],
+
+  solution: `<?php
+
+class BankAccount {
+    public function __construct(private string $owner, private int $balance = 0) {}
+
+    public function owner(): string {
+        return $this->owner;
+    }
+
+    public function deposit(int $amount): void {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): bool {
+        if ($amount > $this->balance) {
+            return false;
+        }
+        $this->balance -= $amount;
+        return true;
+    }
+
+    public function balance(): int {
+        return $this->balance;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Constructor</td><td>primary constructor in the class header</td><td>always <code>__construct</code></td></tr>
+  <tr><td>Member access</td><td><code>obj.field</code> / <code>obj.method()</code></td><td><code>$obj->field</code> / <code>$obj->method()</code></td></tr>
+  <tr><td>Self-reference</td><td><code>this.</code> optional</td><td><code>$this-></code> mandatory</td></tr>
+  <tr><td>Boilerplate killer</td><td><code>data class Point(val x: Int, val y: Int)</code></td><td><code>__construct(private int $x, private int $y)</code></td></tr>
+  <tr><td>Immutable exposure</td><td><code>val x: Int</code></td><td><code>public readonly int $x</code></td></tr>
+  <tr><td>Accessors</td><td>synthesized <code>get()</code>/<code>set()</code></td><td>small named methods only where needed</td></tr>
+</table>
+<p>Why <code>$this-></code> is non-negotiable: PHP method bodies have no
+implicit member scope. Every undeclared variable in a method is a local, so
+<code>$balance += $amount;</code> silently creates and discards a local
+<code>$balance</code> — no compile error, wrong behavior. Kotlin programmers
+lose more time to this than to any other classes-related difference; type
+<code>$this-></code> reflexively and the rest of PHP OO behaves the way you
+already expect.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

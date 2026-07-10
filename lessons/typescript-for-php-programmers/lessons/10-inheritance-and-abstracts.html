@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance & Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Good news: this lesson is almost a find-and-replace. TypeScript uses the same
+keywords PHP does — <code>abstract class</code>, <code>extends</code>,
+<code>implements</code> — with the same semantics: an abstract class cannot be
+instantiated, abstract methods must be implemented by concrete subclasses, and a
+subclass constructor must call the parent's. The one renaming to learn is that
+PHP's <code>parent::__construct(...)</code> becomes <code>super(...)</code>, and
+calling a parent method is <code>super.describe()</code> instead of
+<code>parent::describe()</code>.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>abstract class Shape { }</code></td><td><code>abstract class Shape { }</code> (identical)</td></tr>
+  <tr><td><code>abstract public function area(): float;</code></td><td><code>abstract area(): number;</code></td></tr>
+  <tr><td><code>class Circle extends Shape</code></td><td><code>class Circle extends Shape</code> (identical)</td></tr>
+  <tr><td><code>parent::__construct('circle');</code></td><td><code>super("circle");</code></td></tr>
+  <tr><td><code>M_PI</code></td><td><code>Math.PI</code></td></tr>
+</table>
+<p>The template-method pattern you know from PHP works unchanged: the base class
+implements <code>describe()</code> once, calling the abstract <code>area()</code>
+that each subclass fills in. TypeScript also lets you declare <em>abstract
+properties</em>, and overriding a method just means redeclaring it (there is an
+optional <code>override</code> keyword to make it explicit). Method calls are
+dynamically dispatched exactly as in PHP — the subclass implementation wins.</p>`,
+
+  php: `<?php
+abstract class Shape
+{
+    public function __construct(public readonly string $name) {}
+
+    abstract public function area(): float;
+
+    // Template method: uses the subclass's area()
+    public function describe(): string
+    {
+        return "{$this->name} has an area of {$this->area()}";
+    }
+}
+
+class Circle extends Shape
+{
+    public function __construct(private float $radius)
+    {
+        parent::__construct('circle');
+    }
+
+    public function area(): float
+    {
+        return M_PI * $this->radius ** 2;
+    }
+}
+
+echo (new Circle(2))->describe();`,
+
+  task: `
+<p>Build the same shape hierarchy in TypeScript:</p>
+<ol>
+  <li>Define an <code>abstract class Shape</code> whose constructor takes
+      <code>public readonly name: string</code>, declares
+      <code>abstract area(): number;</code>, and implements
+      <code>describe(): string</code> returning
+      <code>"&lt;name&gt; has an area of &lt;area()&gt;"</code>
+      (e.g. <code>"rectangle has an area of 10"</code>).</li>
+  <li>Define <code>class Circle extends Shape</code>: the constructor takes a
+      private <code>radius: number</code> and calls <code>super("circle")</code>;
+      <code>area()</code> returns <code>Math.PI * radius * radius</code>.</li>
+  <li>Define <code>class Rectangle extends Shape</code>: the constructor takes
+      private <code>width</code> and <code>height</code> and calls
+      <code>super("rectangle")</code>; <code>area()</code> returns
+      width × height.</li>
+</ol>`,
+
+  starter: `abstract class Shape {
+  constructor(public readonly name: string) {}
+
+  // TODO: declare an abstract method area() that returns a number
+
+  describe(): string {
+    // TODO: return "<name> has an area of <area()>"
+    return "";
+  }
+}
+
+// TODO: class Circle extends Shape
+//  - constructor takes a private radius: number and calls super("circle")
+//  - area() returns Math.PI * radius * radius
+
+// TODO: class Rectangle extends Shape
+//  - constructor takes private width and height and calls super("rectangle")
+//  - area() returns width * height
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape as an abstract class" },
+    { pattern: /abstract\s+area\s*\(\s*\)\s*:\s*number/, message: "Declare an abstract method: abstract area(): number;" },
+    { pattern: /extends\s+Shape/, message: "Circle and Rectangle must extend Shape" },
+    { pattern: /super\s*\(/, message: "Call super(...) in the subclass constructors (PHP's parent::__construct)" },
+  ],
+
+  tests: [
+    { name: "new Rectangle(3, 4).area() is 12", run: (x) => expectEqual(new x.Rectangle(3, 4).area(), 12) },
+    { name: "new Circle(1).area() is 3.14 when rounded to 2 decimals", run: (x) => expectEqual(Math.round(new x.Circle(1).area() * 100) / 100, 3.14) },
+    { name: 'new Rectangle(5, 2).describe() returns "rectangle has an area of 10"', run: (x) => expectEqual(new x.Rectangle(5, 2).describe(), "rectangle has an area of 10") },
+    { name: 'a Circle reports its name as "circle"', run: (x) => expectEqual(new x.Circle(2).name, "circle") },
+    { name: "a Circle is an instanceof Shape", run: (x) => expectTruthy(new x.Circle(2) instanceof x.Shape) },
+  ],
+
+  solution: `abstract class Shape {
+  constructor(public readonly name: string) {}
+
+  abstract area(): number;
+
+  describe(): string {
+    return \`\${this.name} has an area of \${this.area()}\`;
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super("circle");
+  }
+
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(private width: number, private height: number) {
+    super("rectangle");
+  }
+
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Abstract class</td><td><code>abstract class Shape</code></td><td><code>abstract class Shape</code></td></tr>
+  <tr><td>Abstract method</td><td><code>abstract public function area(): float;</code></td><td><code>abstract area(): number;</code></td></tr>
+  <tr><td>Inherit</td><td><code>class Circle extends Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+  <tr><td>Parent constructor</td><td><code>parent::__construct($x)</code></td><td><code>super(x)</code> (must run before using <code>this</code>)</td></tr>
+  <tr><td>Parent method</td><td><code>parent::describe()</code></td><td><code>super.describe()</code></td></tr>
+  <tr><td>Implement an interface</td><td><code>class C implements Countable</code></td><td><code>class C implements HasArea</code> (same keyword)</td></tr>
+  <tr><td>Runtime type check</td><td><code>$c instanceof Shape</code></td><td><code>c instanceof Shape</code></td></tr>
+</table>
+<p>One rule with no PHP analogue: in a subclass constructor, <code>super(...)</code>
+must be called <em>before</em> any use of <code>this</code> — the compiler enforces
+it. And as in PHP, prefer an <code>interface</code> when you only need a contract;
+reach for an <code>abstract class</code> when the base should also ship shared
+behavior like <code>describe()</code>.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

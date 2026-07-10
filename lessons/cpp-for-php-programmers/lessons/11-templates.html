@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Templates</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Templates",
+
+  intro: `
+<p>PHP functions and classes are naturally "generic" — a function parameter
+or property has no declared type (or a loose union type), so the same
+<code>maxOf($a, $b)</code> just works on ints, floats, or strings without any
+special syntax. C++ templates solve the same problem — write code once, use
+it for many types — but by a completely different mechanism. A C++ template
+is a <em>recipe</em>: the compiler stamps out a fresh, fully concrete
+function or class for each type you actually use, then compiles that. So
+<code>max_of&lt;int&gt;</code> and <code>max_of&lt;double&gt;</code> are
+genuinely different functions in your binary, each type-checked separately —
+unlike PHP, where there is only ever one function body and any type errors
+surface at runtime.</p>
+<table>
+  <tr><th>PHP</th><th>C++</th></tr>
+  <tr><td><code>function id($x) { return $x; }</code></td><td><code>template&lt;class T&gt; T id(T x)</code></td></tr>
+  <tr><td><code>id(5)</code> (no type checking)</td><td><code>id(5)</code> (T deduced)</td></tr>
+  <tr><td><code>id("hi")</code></td><td><code>id&lt;std::string&gt;("hi")</code></td></tr>
+  <tr><td><code>class Box { … }</code> (untyped property)</td><td><code>template&lt;class T&gt; class Box { … }</code></td></tr>
+  <tr><td>one function body, checked at call time</td><td>each instantiation compiled separately</td></tr>
+</table>
+<p>Two practical notes. <code>class</code> and <code>typename</code> are
+interchangeable in a template parameter list — <code>template&lt;class T&gt;</code>
+and <code>template&lt;typename T&gt;</code> mean the same thing. And for function
+templates you usually let the compiler <em>deduce</em> <code>T</code> from the
+arguments, so the call site looks just as untyped as the PHP version; you only
+spell it out in angle brackets when there is nothing to deduce from.</p>`,
+
+  php: `function maxOf($a, $b) {
+  return $a > $b ? $a : $b;
+}
+
+class Box {
+  private $value;
+  public function __construct($value) { $this->value = $value; }
+  public function get() { return $this->value; }
+  public function set($v): void { $this->value = $v; }
+}
+
+$b = new Box(41);
+$b->set($b->get() + 1);   // 42`,
+
+  task: `
+<p>Build a generic function and a small generic container.</p>
+<ol>
+  <li><code>template&lt;class T&gt; T max_of(T a, T b)</code> — return the larger of
+      <code>a</code> and <code>b</code> using <code>&gt;</code>. It should work for
+      <code>int</code>, <code>double</code>, and <code>std::string</code> with no
+      changes.</li>
+  <li><code>template&lt;class T&gt; class Box</code> — a one-slot container:
+    <ul>
+      <li>a constructor <code>Box(T value)</code> that stores the value,</li>
+      <li><code>T get() const</code> returning the stored value,</li>
+      <li><code>void set(T value)</code> replacing it.</li>
+    </ul>
+  </li>
+</ol>
+<p>Because templates must be visible where they are used, write the whole
+definition inline (no separate .cpp file) — which is what you are doing here anyway.</p>`,
+
+  starter: `template<class T>
+T max_of(T a, T b) {
+  return a; // TODO: return the larger of a and b
+}
+
+template<class T>
+class Box {
+public:
+  Box(T value) {
+    // TODO: store value
+  }
+  T get() const {
+    return T{}; // TODO: return the stored value
+  }
+  void set(T value) {
+    // TODO: replace the stored value
+  }
+private:
+  T value_{};
+};
+`,
+
+  requirements: [
+    { pattern: /template\s*<\s*(class|typename)\s+\w+\s*>/, message: "Declare at least one template with template<class T>" },
+    { pattern: /a\s*>\s*b/, message: "max_of should compare with a > b" },
+  ],
+
+  tests: [
+    { name: "max_of(3, 7) is 7", code: "    expect_eq(max_of(3, 7), 7);" },
+    { name: "max_of(2.5, 1.5) is 2.5", code: "    expect_eq(max_of(2.5, 1.5), 2.5);" },
+    { name: "max_of on strings picks the larger", code: "    expect_eq(max_of(std::string(\"apple\"), std::string(\"banana\")), std::string(\"banana\"));" },
+    { name: "explicit type argument works", code: "    expect_eq(max_of<int>(4, 9), 9);" },
+    { name: "Box<int> get returns the stored value", code: "    Box<int> b(41); expect_eq(b.get(), 41);" },
+    { name: "Box<int> set replaces the value", code: "    Box<int> b(41); b.set(b.get() + 1); expect_eq(b.get(), 42);" },
+    { name: "Box<std::string> holds a string", code: "    Box<std::string> s(std::string(\"hi\")); expect_eq(s.get(), std::string(\"hi\"));" },
+  ],
+
+  solution: `template<class T>
+T max_of(T a, T b) {
+  return a > b ? a : b;
+}
+
+template<class T>
+class Box {
+public:
+  Box(T value) : value_(value) {}
+  T get() const {
+    return value_;
+  }
+  void set(T value) {
+    value_ = value;
+  }
+private:
+  T value_{};
+};
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>C++</th></tr>
+  <tr><td>Function generic</td><td><code>function f($x) { … }</code></td><td><code>template&lt;class T&gt; auto f(T x)</code></td></tr>
+  <tr><td>Class generic</td><td><code>class Box { … }</code> (untyped property)</td><td><code>template&lt;class T&gt; class Box</code></td></tr>
+  <tr><td>Inference / deduction</td><td><code>f(5)</code> (no declared type)</td><td><code>f(5)</code></td></tr>
+  <tr><td>Explicit type arg</td><td>n/a — PHP has no type parameters</td><td><code>f&lt;std::string&gt;(x)</code></td></tr>
+  <tr><td>Where it lives</td><td>one function, checked at runtime</td><td>instantiated per type, header-only</td></tr>
+</table>
+<p>The biggest surprise coming from PHP is that templates are duck-typed by
+the compiler, but at <em>compile</em> time rather than runtime: there is no
+<code>extends</code>-style constraint by default, so <code>max_of</code>
+compiles for <em>any</em> <code>T</code> that supports <code>&gt;</code> — and
+only fails, often verbosely, if you feed it a type that does not. This is the
+opposite of PHP's dynamic typing, where the same untyped function would
+happily accept anything and only blow up (or silently misbehave) when the
+operator doesn't make sense for the given values. C++20 adds
+<em>concepts</em> (e.g. <code>template&lt;std::totally_ordered T&gt;</code>)
+to state such requirements up front, giving far clearer errors than either
+plain templates or PHP's runtime type juggling. Also note the member
+initializer list <code>Box(T value) : value_(value) {}</code> — the idiomatic way to
+initialize members, preferred over assigning inside the constructor body.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

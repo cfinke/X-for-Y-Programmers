@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes",
+
+  intro: `
+<p>Rust structs default to strict privacy: fields and methods are private to
+their module unless marked <code>pub</code>, and the compiler enforces that at
+zero runtime cost. JavaScript classes default the other way — every field is
+public unless you spell it with a <code>#</code>. There is no compilation step
+erasing anything here either: what you write runs exactly as written, so
+ownership, borrowing, and <code>&amp;self</code>/<code>&amp;mut self</code>
+receivers simply have no JavaScript equivalent.</p>
+<table>
+  <tr><th>Rust</th><th>JavaScript</th></tr>
+  <tr><td><code>balance: f64,</code> (private field, in a struct)</td><td><code>#balance;</code> (truly private) or a plain field</td></tr>
+  <tr><td><code>fn new(x: i32) -&gt; Self { Self { x } }</code></td><td>no parameter properties — assign <code>this.x</code> yourself</td></tr>
+  <tr><td><code>id: String,</code> (immutable unless the binding is <code>mut</code>)</td><td>plain field (no runtime enforcement)</td></tr>
+  <tr><td><code>fn area(&amp;self) -&gt; f64 { … }</code> (called as <code>c.area()</code>)</td><td><code>get area() { … }</code> (accessed as <code>c.area</code>, no parens)</td></tr>
+  <tr><td>module-level <code>static</code> item (needs <code>Atomic*</code>/<code>Mutex</code> to mutate safely)</td><td><code>static count = 0;</code></td></tr>
+</table>
+<p>If you actually want a field that outside code cannot read or write, JavaScript
+gives you <code>#private</code> fields — a real runtime feature, matching the
+strict privacy Rust already gives you by default. That is the one class feature
+that behaves the way a Rust programmer already expects, so it is worth getting
+comfortable with as the exception rather than the rule.</p>`,
+
+  rust: `use std::sync::atomic::{AtomicU32, Ordering};
+
+static INSTANCES: AtomicU32 = AtomicU32::new(0);
+
+struct Counter {
+    label: String,
+    count: u32,
+}
+
+impl Counter {
+    fn new(label: &str, start: u32) -> Self {
+        INSTANCES.fetch_add(1, Ordering::SeqCst);
+        Counter { label: label.to_string(), count: start }
+    }
+
+    fn increment(&mut self) -> u32 {
+        self.count += 1;
+        self.count
+    }
+
+    fn value(&self) -> u32 {
+        self.count
+    }
+
+    fn describe(&self) -> String {
+        format!("{}: {}", self.label, self.count)
+    }
+
+    fn reset() {
+        INSTANCES.store(0, Ordering::SeqCst);
+    }
+}`,
+
+  task: `
+<p>Write the plain-JavaScript version of the <code>Counter</code> type above.
+No type annotations, no struct/impl split, no ownership rules —
+just the runtime constructs.</p>
+<ol>
+  <li>A <code>constructor(label, start = 0)</code> that stores the label and
+      seeds a <strong><code>#count</code> private field</strong> from
+      <code>start</code>. It must also bump a
+      <strong><code>static instances</code> field</strong> each time an instance
+      is created.</li>
+  <li>An instance method <code>increment()</code> that adds 1 to
+      <code>#count</code> and returns the new value.</li>
+  <li>A <strong>getter</strong> <code>value</code> that returns the current
+      <code>#count</code>.</li>
+  <li>An instance method <code>describe()</code> returning
+      <code>"&lt;label&gt;: &lt;count&gt;"</code>, e.g. <code>"hits: 3"</code>.</li>
+  <li>A <strong>static method</strong> <code>reset()</code> that sets
+      <code>Counter.instances</code> back to <code>0</code>.</li>
+</ol>
+<p>Export the class as <code>Counter</code>.</p>`,
+
+  starter: `class Counter {
+  // static field: total instances created
+
+  // #private field: the current count
+
+  constructor(label, start = 0) {
+    // TODO: store label, seed #count from start, bump the static counter
+  }
+
+  increment() {
+    // TODO: add 1 to #count and return the new value
+  }
+
+  get value() {
+    // TODO: return the current count
+  }
+
+  describe() {
+    // TODO: return "<label>: <count>"
+    return "";
+  }
+
+  static reset() {
+    // TODO: set instances back to 0
+  }
+}
+`,
+
+  exportNames: ["Counter"],
+
+  requirements: [
+    { pattern: /#count/, message: "Use a #private field named #count" },
+    { pattern: /static\s+instances/, message: "Declare a static field named instances" },
+    { pattern: /get\s+value\s*\(/, message: "Define a getter named value" },
+    { pattern: /static\s+reset\s*\(/, message: "Define a static method named reset" },
+  ],
+
+  tests: [
+    {
+      name: "constructor seeds count and value getter reads it",
+      run: (x) => {
+        const c = new x.Counter("hits", 5);
+        expectEqual(c.value, 5);
+      },
+    },
+    {
+      name: "start defaults to 0",
+      run: (x) => {
+        const c = new x.Counter("hits");
+        expectEqual(c.value, 0);
+      },
+    },
+    {
+      name: "increment returns the new value and mutates count",
+      run: (x) => {
+        const c = new x.Counter("hits", 0);
+        expectEqual(c.increment(), 1);
+        expectEqual(c.increment(), 2);
+        expectEqual(c.value, 2);
+      },
+    },
+    {
+      name: "describe formats label and count",
+      run: (x) => {
+        const c = new x.Counter("hits", 2);
+        c.increment();
+        expectEqual(c.describe(), "hits: 3");
+      },
+    },
+    {
+      name: "static instances counts constructions; reset zeroes it",
+      run: (x) => {
+        x.Counter.reset();
+        new x.Counter("a");
+        new x.Counter("b");
+        expectEqual(x.Counter.instances, 2);
+        x.Counter.reset();
+        expectEqual(x.Counter.instances, 0);
+      },
+    },
+    {
+      name: "#count is truly private (not an own enumerable property)",
+      run: (x) => {
+        const c = new x.Counter("hits", 9);
+        expectDeepEqual(Object.keys(c), ["label"]);
+      },
+    },
+  ],
+
+  solution: `class Counter {
+  static instances = 0;
+  #count = 0;
+
+  constructor(label, start = 0) {
+    this.label = label;
+    this.#count = start;
+    Counter.instances++;
+  }
+
+  increment() {
+    this.#count++;
+    return this.#count;
+  }
+
+  get value() {
+    return this.#count;
+  }
+
+  describe() {
+    return \`\${this.label}: \${this.#count}\`;
+  }
+
+  static reset() {
+    Counter.instances = 0;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>JavaScript runtime</th></tr>
+  <tr><td>Visibility</td><td><code>count</code> — private by default, checked by the compiler</td><td><code>#count</code> — enforced by the engine</td></tr>
+  <tr><td>Constructor shorthand</td><td><code>fn new(label: &amp;str) -&gt; Self { Self { label: label.to_string(), .. } }</code></td><td>write <code>this.label = label</code> by hand</td></tr>
+  <tr><td>Field types</td><td><code>count: u32,</code></td><td><code>count = 0</code> (no declared type)</td></tr>
+  <tr><td>Getter</td><td><code>fn value(&amp;self) -&gt; u32</code> — called as <code>c.value()</code></td><td><code>get value()</code> — accessed as <code>c.value</code>, no parens</td></tr>
+  <tr><td>Shared "static" state</td><td>module-level <code>static</code> item, mutated only through <code>Atomic*</code>/<code>Mutex</code></td><td><code>static count = 0</code> on the class, mutated freely</td></tr>
+</table>
+<p>A few runtime facts worth internalizing. <code>#count</code> is not a string
+key — <code>c["#count"]</code> is <code>undefined</code>, and reaching for
+<code>#count</code> from outside the class body is a <em>syntax</em> error,
+enforced by the engine itself, not a lint rule you could turn off. That is why
+<code>Object.keys(c)</code> lists only <code>label</code>. Static members live on
+the class object itself (<code>Counter.instances</code>), not on instances, so
+<code>this.instances</code> inside a method would be <code>undefined</code> —
+reference the class by name, the same way you'd reach a Rust <code>static</code>
+item through its path rather than through <code>self</code>. And there is no
+borrow checker here: every method can read and write every field freely, with no
+<code>&amp;mut self</code> to request permission and nothing stopping two callers
+from mutating the same counter at once — "safety" in JavaScript comes from the
+single-threaded event loop, not from ownership rules.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

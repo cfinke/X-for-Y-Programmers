@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Type Narrowing &amp; Guards</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Type Narrowing & Guards",
+
+  intro: `
+<p>When a PHP function receives <code>mixed</code>, you probe it at runtime:
+<code>is_string()</code>, <code>is_int()</code>, <code>is_array()</code>,
+<code>instanceof</code>, maybe a <code>gettype()</code> switch. TypeScript does
+the same runtime checks — but the compiler <em>watches you do them</em>. Inside
+an <code>if (typeof value === "string")</code> block, <code>value</code>
+literally <em>is</em> a <code>string</code>: autocomplete offers
+<code>.length</code>, and string-only operations type-check. This is called
+<strong>narrowing</strong>, and it is how you safely unwrap
+<code>unknown</code> — the type-safe <code>mixed</code> you met in Lesson 7
+that forbids every operation until you have proven what the value is.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>is_string($x)</code> / <code>is_int($x)</code> / <code>is_float($x)</code></td><td><code>typeof x === "string"</code> / <code>typeof x === "number"</code></td></tr>
+  <tr><td><code>is_array($x)</code></td><td><code>Array.isArray(x)</code> (typeof an array is "object"!)</td></tr>
+  <tr><td><code>array_key_exists('name', $x)</code> / <code>isset($x-&gt;name)</code></td><td><code>"name" in x</code></td></tr>
+  <tr><td><code>$x instanceof User</code></td><td><code>x instanceof User</code> (classes only, not interfaces)</td></tr>
+  <tr><td><code>function isUser(mixed $x): bool</code></td><td><code>function isUser(x: unknown): x is User</code></td></tr>
+</table>
+<p>The last row is the one PHP has no answer for: a <strong>type
+predicate</strong>. A PHP <code>isUser()</code> helper returns a plain
+<code>bool</code>, and after calling it your IDE still thinks the value is
+<code>mixed</code>. Declare the return type as <code>x is User</code> and the
+TypeScript compiler treats a <code>true</code> result as proof — in the
+<code>if (isUser(data))</code> branch, <code>data</code> is a <code>User</code>,
+no casts required. (Since interfaces are erased at compile time,
+<code>instanceof</code> cannot check them — custom predicates are exactly how
+you guard interface shapes.)</p>`,
+
+  php: `<?php
+function describeValue(mixed $value): string
+{
+    if (is_string($value)) {
+        return 'string of length ' . strlen($value);
+    }
+    if (is_int($value) || is_float($value)) {
+        return 'number ' . $value;
+    }
+    if (is_array($value)) {
+        return 'array of ' . count($value) . ' items';
+    }
+    if (is_object($value)) {
+        return 'object with ' . count(get_object_vars($value)) . ' keys';
+    }
+    return 'unknown value';
+}
+
+// Returns bool — the analyzer forgets the check one line later.
+function isUser(mixed $x): bool
+{
+    return is_array($x)
+        && is_string($x['name'] ?? null)
+        && is_string($x['email'] ?? null);
+}`,
+
+  task: `
+<ol>
+  <li>Write <code>describeValue(value: unknown): string</code> that narrows and
+      returns exactly:
+      <ul>
+        <li><code>"string of length 5"</code> for <code>"hello"</code> (via <code>typeof</code>)</li>
+        <li><code>"number 42"</code> for <code>42</code> (via <code>typeof</code>)</li>
+        <li><code>"array of 3 items"</code> for <code>[1, 2, 3]</code> (via <code>Array.isArray</code> — check this <em>before</em> the object branch)</li>
+        <li><code>"object with 2 keys"</code> for <code>{ a: 1, b: 2 }</code> (a non-null object; count with <code>Object.keys()</code>)</li>
+        <li><code>"unknown value"</code> for anything else</li>
+      </ul></li>
+  <li>Write a custom type-predicate guard
+      <code>isUser(x: unknown): x is User</code> for
+      <code>interface User { name: string; email: string }</code>: a non-null
+      object whose <code>name</code> and <code>email</code> are both strings.
+      Use the <code>in</code> operator to check the keys exist.</li>
+</ol>`,
+
+  starter: `interface User {
+  name: string;
+  email: string;
+}
+
+function describeValue(value: unknown): string {
+  // TODO: narrow with typeof, Array.isArray, and a non-null object check.
+  // Branch order matters: Array.isArray before the generic object branch,
+  // because typeof [] === "object".
+  return "unknown value";
+}
+
+function isUser(x: unknown): x is User {
+  // TODO: non-null object, has "name" and "email", both strings.
+  return false;
+}
+`,
+
+  exportNames: ["describeValue", "isUser"],
+
+  requirements: [
+    { pattern: /unknown/, message: "Accept unknown (the type-safe mixed), not any" },
+    { pattern: /typeof\s+\w+\s*===?\s*["']string["']/, message: 'Narrow strings with typeof value === "string"' },
+    { pattern: /Array\.isArray\s*\(/, message: "Detect arrays with Array.isArray() — TypeScript's is_array()" },
+    { pattern: /\)\s*:\s*x\s+is\s+User/, message: "Give isUser a type-predicate return type: x is User" },
+  ],
+
+  tests: [
+    { name: 'describeValue("hello") returns "string of length 5"', run: (x) => expectEqual(x.describeValue("hello"), "string of length 5") },
+    { name: 'describeValue(42) returns "number 42"', run: (x) => expectEqual(x.describeValue(42), "number 42") },
+    { name: 'describeValue([1, 2, 3]) returns "array of 3 items"', run: (x) => expectEqual(x.describeValue([1, 2, 3]), "array of 3 items") },
+    { name: 'describeValue({ a: 1, b: 2 }) returns "object with 2 keys"', run: (x) => expectEqual(x.describeValue({ a: 1, b: 2 }), "object with 2 keys") },
+    { name: 'describeValue(null) and describeValue(true) return "unknown value"', run: (x) => {
+        expectEqual(x.describeValue(null), "unknown value");
+        expectEqual(x.describeValue(true), "unknown value");
+      } },
+    { name: "isUser accepts a valid user", run: (x) => expectEqual(x.isUser({ name: "Ada", email: "ada@example.com" }), true) },
+    { name: "isUser rejects missing keys, wrong types, null, and strings", run: (x) => {
+        expectEqual(x.isUser({ name: "Ada" }), false);
+        expectEqual(x.isUser({ name: "Ada", email: 42 }), false);
+        expectEqual(x.isUser(null), false);
+        expectEqual(x.isUser("ada@example.com"), false);
+      } },
+  ],
+
+  solution: `interface User {
+  name: string;
+  email: string;
+}
+
+function describeValue(value: unknown): string {
+  if (typeof value === "string") {
+    return "string of length " + value.length;
+  }
+  if (typeof value === "number") {
+    return "number " + value;
+  }
+  if (Array.isArray(value)) {
+    return "array of " + value.length + " items";
+  }
+  if (typeof value === "object" && value !== null) {
+    return "object with " + Object.keys(value).length + " keys";
+  }
+  return "unknown value";
+}
+
+function isUser(x: unknown): x is User {
+  return (
+    typeof x === "object" &&
+    x !== null &&
+    "name" in x &&
+    "email" in x &&
+    typeof (x as User).name === "string" &&
+    typeof (x as User).email === "string"
+  );
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Is it a string / number / bool?</td><td><code>is_string()</code>, <code>is_int()</code>, <code>is_bool()</code></td><td><code>typeof x === "string" | "number" | "boolean"</code></td></tr>
+  <tr><td>Is it an array?</td><td><code>is_array($x)</code></td><td><code>Array.isArray(x)</code></td></tr>
+  <tr><td>Is it null?</td><td><code>is_null($x)</code></td><td><code>x === null</code> (typeof null is "object" — a legacy wart)</td></tr>
+  <tr><td>Does it have a key?</td><td><code>array_key_exists()</code>, <code>isset()</code></td><td><code>"key" in x</code></td></tr>
+  <tr><td>Is it an instance of a class?</td><td><code>$x instanceof User</code></td><td><code>x instanceof User</code></td></tr>
+  <tr><td>Reusable check the tooling trusts</td><td><code>bool</code> helper (analyzer forgets)</td><td><code>x is User</code> type predicate (compiler remembers)</td></tr>
+</table>
+<p>The mental shift: in PHP these checks only change what happens at runtime;
+in TypeScript they also change what the compiler knows on each branch —
+<code>unknown</code> becomes <code>string</code> here, <code>User</code> there,
+and by the last <code>else</code> the impossible cases are already gone. Write
+guards once as <code>x is T</code> predicates and every <code>if</code> that
+uses them narrows automatically, giving you <code>is_string()</code>-style
+runtime safety with compile-time memory PHP never had.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

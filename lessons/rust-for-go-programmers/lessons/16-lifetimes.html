@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>In Go, you can return a pointer to a local variable and never think about
+it again: escape analysis notices the value outlives its stack frame,
+silently moves it to the heap, and the GC frees it later. Convenient — and
+invisible. You can't even see it happening without
+<code>-gcflags=-m</code>. Rust has no GC, so when a function returns a
+<em>reference</em>, the compiler asks <strong>you</strong> the question Go's
+runtime answers for itself: whose data does this borrow, and how long does
+that data live?</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td>return <code>&amp;local</code> — escape analysis heap-allocates it silently</td><td>return <code>&amp;local</code> — compile error: the data dies with the frame</td></tr>
+  <tr><td>who tracks how long data lives?</td><td>the compiler, via lifetimes like <code>&lt;'a&gt;</code></td></tr>
+  <tr><td>cost: GC pauses at runtime</td><td>cost: an annotation, occasionally, at compile time</td></tr>
+  <tr><td><code>func first(s string) string</code></td><td><code>fn first_word(s: &amp;str) -&gt; &amp;str</code> — lifetime <em>inferred</em> (elision)</td></tr>
+</table>
+<p>A lifetime parameter names the answer.
+<code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+reads: "the returned reference borrows from <code>a</code> or <code>b</code>,
+so it's valid only while <em>both</em> are." That's it — no allocation, no
+new syntax for the body, just a label connecting inputs to output. And you
+write it rarely: when a function takes one reference and returns one, Rust
+infers the connection (the <em>elision rules</em>), exactly like Go infers
+escapes. You only spell out <code>&lt;'a&gt;</code> when it's genuinely
+ambiguous — two input references, one output. This is the price of no GC,
+paid in annotations instead of pauses.</p>`,
+
+  go: `// Go: return whichever string is longer. If the data needs to
+// outlive the frame, escape analysis quietly heap-allocates it —
+// you never say (or see) whose data the result came from.
+func longest(a, b string) string {
+	if len(a) >= len(b) {
+		return a
+	}
+	return b
+}
+
+func firstWord(s string) string {
+	fields := strings.Fields(s)
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
+}`,
+
+  task: `
+<p>Port both functions, noticing where the lifetime must be written and
+where Rust infers it:</p>
+<ol>
+  <li><code>longest&lt;'a&gt;</code> takes <code>a: &amp;'a str</code> and
+      <code>b: &amp;'a str</code> and returns <code>&amp;'a str</code>:
+      whichever is longer by <code>.len()</code> (return <code>a</code> on a
+      tie). Two input references, one output — the compiler can't guess
+      which one the result borrows from, so the <code>&lt;'a&gt;</code> in
+      the starter's signature is doing real work. Keep it.</li>
+  <li><code>first_word</code> takes <code>s: &amp;str</code> and returns
+      <code>&amp;str</code>: the first whitespace-separated word, or
+      <code>""</code> if there is none. Use
+      <code>s.split_whitespace().next().unwrap_or("")</code>. One input
+      reference — elision fills in the lifetime, so you write
+      <em>no annotation at all</em>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. longest: two input references -> the lifetime must be named.
+//    Return whichever is longer by .len() (a on a tie).
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// 2. first_word: ONE input reference -> elision infers the lifetime.
+//    s.split_whitespace().next().unwrap_or("")
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a lifetime parameter <'a> on longest" },
+    { pattern: /&'a\s+str/, message: "Annotate longest's references as &'a str" },
+  ],
+
+  tests: [
+    { name: 'longest("gopher", "crab") returns "gopher"',
+      code: 'assert_eq!(longest("gopher", "crab"), "gopher");' },
+    { name: 'longest("go", "rust") returns "rust"',
+      code: 'assert_eq!(longest("go", "rust"), "rust");' },
+    { name: 'longest("tie", "war") returns the first on a tie',
+      code: 'assert_eq!(longest("tie", "war"), "tie");' },
+    { name: 'first_word("hello concurrent world") returns "hello"',
+      code: 'assert_eq!(first_word("hello concurrent world"), "hello");' },
+    { name: 'first_word("   leading spaces") returns "leading"',
+      code: 'assert_eq!(first_word("   leading spaces"), "leading");' },
+    { name: 'first_word("") returns ""',
+      code: 'assert_eq!(first_word(""), "");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() >= b.len() {
+        a
+    } else {
+        b
+    }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Returning borrowed data</td><td>escape analysis heap-allocates silently</td><td>lifetime ties the output to an input</td></tr>
+  <tr><td>Naming the connection</td><td>never (invisible)</td><td><code>fn f&lt;'a&gt;(x: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>One input ref, one output ref</td><td>—</td><td>elided: write <code>fn f(s: &amp;str) -&gt; &amp;str</code></td></tr>
+  <tr><td>Two input refs, one output ref</td><td>—</td><td>ambiguous: you must write <code>&lt;'a&gt;</code></td></tr>
+  <tr><td>Dangling pointer</td><td>impossible (GC keeps it alive)</td><td>impossible (compiler rejects it)</td></tr>
+</table>
+<p>The reassuring part: <code>'a</code> changes nothing at runtime. No
+allocation, no copy, no check — it's purely a compile-time label, like a
+type annotation for <em>time</em> instead of shape. Both languages make
+dangling pointers impossible; Go does it by keeping data alive as long as
+anything points at it, Rust does it by proving at compile time that nothing
+points at dead data. You've already used lifetimes in every
+<code>&amp;str</code> you've written this course — elision was writing them
+for you. <code>longest</code> is just the first time the compiler needed
+your help.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

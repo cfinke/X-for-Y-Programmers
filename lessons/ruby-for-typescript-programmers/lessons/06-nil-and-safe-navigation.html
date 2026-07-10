@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Nil &amp; Safe Navigation</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Nil & Safe Navigation",
+
+  intro: `
+<p>TypeScript's two absences — <code>null</code> and <code>undefined</code> —
+collapse into a single Ruby value: <code>nil</code>. It's a real object
+(an instance of <code>NilClass</code>), so you can ask it questions:
+<code>x.nil?</code> is the idiomatic <code>x === null</code>. Your optional
+chaining survives the trip too — <code>user?.address</code> becomes
+<code>user&amp;.address</code>, the <em>safe navigation operator</em>
+(Rubyists call <code>&amp;.</code> the "lonely operator": a figure sitting
+alone, looking at a dot).</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td><code>null</code> / <code>undefined</code></td><td><code>nil</code> (just one)</td></tr>
+  <tr><td><code>user?.address?.city</code></td><td><code>user&amp;.address&amp;.city</code></td></tr>
+  <tr><td><code>value ?? fallback</code></td><td><code>value || fallback</code></td></tr>
+  <tr><td><code>x ??= fallback</code></td><td><code>x ||= fallback</code></td></tr>
+  <tr><td><code>x === null</code></td><td><code>x.nil?</code></td></tr>
+</table>
+<p>What about <code>??</code>? Here's the good news: you don't need it.
+In Ruby, <strong>only <code>nil</code> and <code>false</code> are falsy</strong>.
+<code>0</code>, <code>""</code>, and <code>[]</code> are all truthy! So plain
+<code>||</code> is safe in exactly the places TypeScript's <code>||</code>
+famously wasn't — <code>count || 5</code> will never clobber a legitimate
+<code>0</code>. The same logic gives you <code>||=</code> for defaults:
+"assign unless this already holds something (that isn't nil/false)".</p>`,
+
+  typescript: `interface Address { city: string }
+interface User { address?: Address }
+
+function getCity(user: User | null): string {
+  // ?. short-circuits on null/undefined; ?? supplies the default.
+  return user?.address?.city ?? "Unknown";
+}
+
+function pick(obj: Record<string, number>, key: string, fallback: number): number {
+  // Must be ?? here, NOT || — with ||, a stored 0 would be replaced!
+  return obj[key] ?? fallback;
+}
+
+function firstOrDefault<T>(arr: T[], fallback: T): T {
+  return arr[0] ?? fallback;
+}`,
+
+  task: `
+<p>The <code>Address</code> and <code>User</code> classes are provided in the
+starter (a user's address defaults to <code>nil</code>). Implement three
+methods:</p>
+<ol>
+  <li><code>get_city(user)</code> — return the user's address's city, or
+      <code>"Unknown"</code> if the user or the address is <code>nil</code>.
+      Chain <code>&amp;.</code> and fall back with <code>||</code>.</li>
+  <li><code>pick(hash, key, default)</code> — return <code>hash[key]</code>,
+      or <code>default</code> when the key is missing. Use <code>||</code> —
+      and notice the test that stores <code>0</code>: it survives, because
+      <code>0</code> is truthy in Ruby.</li>
+  <li><code>first_or_default(arr, default)</code> — the first element of the
+      array, or <code>default</code> when it's empty. <code>arr.first</code>
+      returns <code>nil</code> on an empty array, so <code>||</code> does the
+      rest.</li>
+</ol>`,
+
+  starter: `# The setup (already written): a User may or may not have an Address.
+class Address
+  attr_reader :city
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+# 1. TS: user?.address?.city ?? "Unknown"
+#    Ruby: chain &. and fall back with ||
+def get_city(user)
+  raise NotImplementedError, "TODO: implement get_city"
+end
+
+# 2. hash[key] || default  (0 is truthy in Ruby, so || is safe here!)
+def pick(hash, key, default)
+  raise NotImplementedError, "TODO: implement pick"
+end
+
+# 3. arr.first || default  (first returns nil on an empty array)
+def first_or_default(arr, default)
+  raise NotImplementedError, "TODO: implement first_or_default"
+end
+`,
+
+  requirements: [
+    { pattern: /&\./, message: "Use the safe navigation operator &." },
+    { pattern: /\|\|/, message: "Fall back to defaults with ||" },
+    { pattern: /nil/, message: "nil should appear somewhere (the default address, or a nil? check)" },
+  ],
+
+  tests: [
+    { name: 'get_city returns the city when the whole chain is present',
+      code: '  user = User.new(Address.new("Paris"))\n  expect_eq(get_city(user), "Paris")' },
+    { name: 'get_city returns "Unknown" for a user without an address, and for nil',
+      code: '  expect_eq(get_city(User.new), "Unknown")\n  expect_eq(get_city(nil), "Unknown")' },
+    { name: 'pick({count: 0}, :count, 5) returns 0 — the stored 0 survives ||',
+      code: '  expect_eq(pick({count: 0}, :count, 5), 0)' },
+    { name: 'pick({}, :count, 5) returns the default 5',
+      code: '  expect_eq(pick({}, :count, 5), 5)' },
+    { name: 'first_or_default takes the first element, or the default when empty',
+      code: '  expect_eq(first_or_default([1, 2, 3], 0), 1)\n  expect_eq(first_or_default([], "none"), "none")' },
+  ],
+
+  solution: `class Address
+  attr_reader :city
+  def initialize(city)
+    @city = city
+  end
+end
+
+class User
+  attr_reader :address
+  def initialize(address = nil)
+    @address = address
+  end
+end
+
+def get_city(user)
+  user&.address&.city || "Unknown"
+end
+
+def pick(hash, key, default)
+  hash[key] || default
+end
+
+def first_or_default(arr, default)
+  arr.first || default
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>The absent value</td><td><code>null</code> and <code>undefined</code></td><td><code>nil</code> (one value, a real object)</td></tr>
+  <tr><td>Optional chaining</td><td><code>a?.b?.c</code></td><td><code>a&amp;.b&amp;.c</code> (the lonely operator)</td></tr>
+  <tr><td>Default value</td><td><code>x ?? d</code> (|| is a footgun)</td><td><code>x || d</code> (safe: 0, "", [] are truthy)</td></tr>
+  <tr><td>Default assignment</td><td><code>x ??= d</code></td><td><code>x ||= d</code></td></tr>
+  <tr><td>Null check</td><td><code>x === null</code></td><td><code>x.nil?</code></td></tr>
+  <tr><td>Falsy values</td><td>false, 0, "", null, undefined, NaN</td><td><strong>only</strong> <code>nil</code> and <code>false</code></td></tr>
+</table>
+<p>The two-item falsy list is the insight to internalize: whole categories of
+TypeScript defensive code (<code>count ?? 0</code> vs <code>count || 0</code>
+code review debates) simply don't exist in Ruby. The one place to stay
+careful: <code>||=</code> will overwrite a stored <code>false</code>, so for
+hashes that may legitimately hold <code>false</code>, reach for
+<code>hash.fetch(key, default)</code> from lesson 4 instead.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

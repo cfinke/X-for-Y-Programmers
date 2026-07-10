@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Closures & Iterators</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Closures & Iterators",
+
+  intro: `
+<p>Good news: your <code>.filter().map()</code> instincts transfer straight
+across. The pipeline you'd write in JS —
+<code>products.filter(p =&gt; p.inStock).map(p =&gt; p.name)</code> — is, in
+Rust,
+<code>products.iter().filter(|p| p.in_stock).map(|p| p.name.clone()).collect()</code>.
+Three dialect differences: closures wear pipes (<code>|p| body</code> instead
+of <code>p =&gt; body</code>), you <em>enter</em> iterator-land explicitly with
+<code>.iter()</code>, and you <em>leave</em> it explicitly with
+<code>.collect()</code>.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>p =&gt; p.inStock</code></td><td><code>|p| p.in_stock</code></td></tr>
+  <tr><td><code>products.filter(...)</code> — arrays have the methods</td><td><code>products.iter().filter(...)</code> — opt in first</td></tr>
+  <tr><td>each step returns a new array</td><td>nothing runs until <code>.collect()</code></td></tr>
+  <tr><td><code>.reduce((sum, p) =&gt; sum + p.price, 0)</code></td><td><code>.map(|p| p.price_cents).sum()</code></td></tr>
+</table>
+<p>The behavioral difference hiding under the familiar syntax: Rust iterator
+chains are <strong>lazy</strong> — the opposite of JS. In JS, every
+<code>.filter</code> and <code>.map</code> eagerly builds a whole intermediate
+array before the next step starts. In Rust, <code>.filter</code> and
+<code>.map</code> just describe a recipe; <em>nothing executes</em> until a
+consumer like <code>.collect()</code> or <code>.sum()</code> pulls items
+through. A ten-step chain still makes exactly one pass and allocates one
+result — which is why long chains are idiomatic Rust, not a performance
+smell.</p>
+<p>And your reduce-for-sum reflex gets to retire: <code>.sum()</code> is a
+consumer, same family as <code>.collect()</code>. Map each product to its
+price, then <code>.sum()</code> — no accumulator, no <code>, 0</code>
+seed.</p>`,
+
+  javascript: `const products = [
+  { name: "Keyboard", priceCents: 4500,  inStock: true },
+  { name: "Mouse",    priceCents: 2500,  inStock: false },
+  { name: "Monitor",  priceCents: 12000, inStock: true },
+];
+
+// The chains you already write — each step EAGERLY
+// builds a complete new array before the next begins.
+const inStockNames = products
+  .filter(p => p.inStock)
+  .map(p => p.name);                       // ["Keyboard", "Monitor"]
+
+const totalValue = products
+  .reduce((sum, p) => sum + p.priceCents, 0); // 19000
+
+const evensDoubled = [1, 2, 3, 4, 5]
+  .filter(n => n % 2 === 0)
+  .map(n => n * 2);                        // [4, 8]`,
+
+  task: `
+<p>The starter defines <code>struct Product</code> (note the snake_case
+fields). Write three pipelines over slices:</p>
+<ol>
+  <li><code>in_stock_names(products: &amp;[Product]) -&gt; Vec&lt;String&gt;</code>
+      — names of the in-stock products, in order:
+      <code>.iter().filter(...).map(...).collect()</code>. Inside
+      <code>map</code>, clone the name with <code>p.name.clone()</code> — you
+      only borrowed the products, but the caller gets owned Strings.</li>
+  <li><code>total_value(products: &amp;[Product]) -&gt; u32</code> — the sum
+      of <em>every</em> product's <code>price_cents</code>:
+      <code>.iter().map(...).sum()</code>.</li>
+  <li><code>evens_doubled(nums: &amp;[i32]) -&gt; Vec&lt;i32&gt;</code> — keep
+      the even numbers, double them. One wrinkle: <code>.iter()</code> over
+      <code>&amp;[i32]</code> yields <em>references</em>, so the filter
+      closure tests <code>*n % 2 == 0</code> (deref to reach the number).</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// Already defined — leave as is. (camelCase -> snake_case.)
+struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+// 1. Names of in-stock products:
+//    .iter().filter(|p| ...).map(|p| p.name.clone()).collect()
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    todo!()
+}
+
+// 2. Sum of ALL products' price_cents: .iter().map(...).sum()
+fn total_value(products: &[Product]) -> u32 {
+    todo!()
+}
+
+// 3. Keep evens, double them. Remember: .iter() yields references,
+//    so the filter closure needs *n % 2 == 0.
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.iter\(\)/, message: "Enter iterator-land explicitly with .iter()" },
+    { pattern: /\.filter\(/, message: "Use .filter( with a |x| closure" },
+    { pattern: /\.map\(/, message: "Use .map( to transform the kept items" },
+    { pattern: /\.collect/, message: "Materialize a Vec with .collect()" },
+  ],
+
+  tests: [
+    { name: 'in_stock_names returns ["Keyboard", "Monitor"] for the sample products',
+      code: `let products = vec![
+    Product { name: String::from("Keyboard"), price_cents: 4500, in_stock: true },
+    Product { name: String::from("Mouse"), price_cents: 2500, in_stock: false },
+    Product { name: String::from("Monitor"), price_cents: 12000, in_stock: true },
+];
+assert_eq!(in_stock_names(&products), vec!["Keyboard", "Monitor"]);` },
+    { name: "in_stock_names returns an empty Vec when nothing is in stock",
+      code: `let products = vec![
+    Product { name: String::from("Cable"), price_cents: 900, in_stock: false },
+];
+assert_eq!(in_stock_names(&products), Vec::<String>::new());` },
+    { name: "total_value sums every product: 4500 + 2500 + 12000 = 19000",
+      code: `let products = vec![
+    Product { name: String::from("Keyboard"), price_cents: 4500, in_stock: true },
+    Product { name: String::from("Mouse"), price_cents: 2500, in_stock: false },
+    Product { name: String::from("Monitor"), price_cents: 12000, in_stock: true },
+];
+assert_eq!(total_value(&products), 19000);` },
+    { name: "total_value of no products is 0",
+      code: "assert_eq!(total_value(&[]), 0);" },
+    { name: "evens_doubled(&[1, 2, 3, 4, 5]) returns [4, 8]",
+      code: "assert_eq!(evens_doubled(&[1, 2, 3, 4, 5]), vec![4, 8]);" },
+    { name: "evens_doubled(&[1, 3, 5]) returns an empty Vec",
+      code: "assert_eq!(evens_doubled(&[1, 3, 5]), Vec::<i32>::new());" },
+  ],
+
+  solution: `struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    products
+        .iter()
+        .filter(|p| p.in_stock)
+        .map(|p| p.name.clone())
+        .collect()
+}
+
+fn total_value(products: &[Product]) -> u32 {
+    products.iter().map(|p| p.price_cents).sum()
+}
+
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    nums.iter()
+        .filter(|n| *n % 2 == 0)
+        .map(|n| n * 2)
+        .collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Closure</td><td><code>p =&gt; p.inStock</code></td><td><code>|p| p.in_stock</code></td></tr>
+  <tr><td>Start a chain</td><td>arrays have the methods built in</td><td><code>.iter()</code> (borrow), <code>.into_iter()</code> (consume)</td></tr>
+  <tr><td>Finish a chain</td><td>each step already returned an array</td><td><code>.collect()</code>, <code>.sum()</code>, <code>.count()</code>…</td></tr>
+  <tr><td>Evaluation</td><td>eager — intermediate array per step</td><td>lazy — one pass when a consumer runs</td></tr>
+  <tr><td>Sum</td><td><code>.reduce((s, x) =&gt; s + x, 0)</code></td><td><code>.map(...).sum()</code> (general fold: <code>.fold(0, ...)</code>)</td></tr>
+  <tr><td>Other friends</td><td><code>.find</code>, <code>.some</code>, <code>.every</code></td><td><code>.find</code>, <code>.any</code>, <code>.all</code></td></tr>
+</table>
+<p>Laziness has a tell: write <code>nums.iter().map(|n| n * 2);</code> alone
+and the compiler warns "unused ... iterators are lazy" — you described a
+computation and never ran it. That's the model in one line: adapters like
+<code>filter</code>/<code>map</code> stack up a recipe, consumers like
+<code>collect</code>/<code>sum</code> cook it, once. Your JS habits still
+apply — you've just moved from "each method returns an array" to "each method
+returns a better iterator."</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

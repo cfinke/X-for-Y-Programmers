@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Closures & Iterators</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Closures & Iterators",
+
+  intro: `
+<p>Your <code>.filter/.map/.reduce</code> instincts transfer directly —
+<code>products.iter().filter(|p| p.in_stock).map(|p| p.name.clone()).collect()</code>
+reads exactly like the chain you'd write on an array. Two spelling changes:
+closures are <code>|args| body</code> instead of <code>(args) =&gt; body</code>,
+and a chain needs explicit bookends — <code>.iter()</code> to start (a slice
+isn't an iterator itself) and <code>.collect()</code> to land the results in
+a <code>Vec</code>.</p>
+<table>
+  <tr><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td><code>(p) =&gt; p.inStock</code></td><td><code>|p| p.in_stock</code></td></tr>
+  <tr><td><code>products.filter(...).map(...)</code></td><td><code>products.iter().filter(...).map(...).collect()</code></td></tr>
+  <tr><td><code>nums.reduce((a, n) =&gt; a + n, 0)</code></td><td><code>nums.iter().sum()</code></td></tr>
+  <tr><td>Each step builds a new array (eager)</td><td>Chain is lazy — nothing runs until <code>.collect()</code>/<code>.sum()</code></td></tr>
+</table>
+<p>The deeper difference is evaluation order. TypeScript's array methods are
+eager: <code>.filter</code> allocates a whole intermediate array before
+<code>.map</code> even starts. Rust's iterator adapters are <em>lazy</em> —
+<code>.filter(...).map(...)</code> just builds a recipe, and only the
+consumer at the end (<code>.collect()</code>, <code>.sum()</code>,
+<code>.count()</code>…) pulls items through the whole pipeline one at a time.
+One pass, zero intermediate arrays, same one-liner.</p>`,
+
+  typescript: `interface Product {
+  name: string;
+  priceCents: number;
+  inStock: boolean;
+}
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter((p) => p.inStock).map((p) => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products.reduce((sum, p) => sum + p.priceCents, 0);
+}
+
+function evensDoubled(nums: number[]): number[] {
+  return nums.filter((n) => n % 2 === 0).map((n) => n * 2);
+}`,
+
+  task: `
+<p>Port the three functions to iterator chains (the <code>Product</code>
+struct is already defined in the starter):</p>
+<ol>
+  <li><code>in_stock_names(products: &amp;[Product]) -&gt; Vec&lt;String&gt;</code> —
+      <code>.iter()</code>, <code>.filter(|p| p.in_stock)</code>,
+      <code>.map(|p| p.name.clone())</code> (clone: you only borrowed the
+      products), then <code>.collect()</code>.</li>
+  <li><code>total_value(products: &amp;[Product]) -&gt; u32</code> — no
+      <code>reduce</code> needed: <code>.map(|p| p.price_cents)</code> then
+      <code>.sum()</code>. Sum every product, in stock or not.</li>
+  <li><code>evens_doubled(nums: &amp;[i32]) -&gt; Vec&lt;i32&gt;</code> —
+      keep the even numbers, double them:
+      <code>filter</code> + <code>map</code> + <code>collect</code>.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+// .iter() to start, |p| ... closures in the middle, .collect() to finish.
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    todo!()
+}
+
+// map to the price, then .sum() — Rust's reduce-for-sum.
+fn total_value(products: &[Product]) -> u32 {
+    todo!()
+}
+
+// filter the evens (n % 2 == 0), map to n * 2, collect.
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /\.iter\(\)/, message: "Start the chains with .iter()" },
+    { pattern: /\.filter\(/, message: "Use .filter( with a |p| ... closure" },
+    { pattern: /\.map\(/, message: "Use .map( to transform the items" },
+    { pattern: /\.collect/, message: "Finish the Vec-producing chains with .collect()" },
+  ],
+
+  tests: [
+    { name: "in_stock_names keeps only in-stock product names, in order",
+      code: 'let products = vec![\n    Product { name: String::from("Keyboard"), price_cents: 5000, in_stock: true },\n    Product { name: String::from("Mouse"), price_cents: 2500, in_stock: false },\n    Product { name: String::from("Monitor"), price_cents: 15000, in_stock: true },\n];\nassert_eq!(in_stock_names(&products), vec!["Keyboard".to_string(), "Monitor".to_string()]);' },
+    { name: "in_stock_names of an empty slice is an empty Vec",
+      code: "assert_eq!(in_stock_names(&[]), Vec::<String>::new());" },
+    { name: "total_value sums every price: 5000 + 2500 + 15000 = 22500",
+      code: 'let products = vec![\n    Product { name: String::from("Keyboard"), price_cents: 5000, in_stock: true },\n    Product { name: String::from("Mouse"), price_cents: 2500, in_stock: false },\n    Product { name: String::from("Monitor"), price_cents: 15000, in_stock: true },\n];\nassert_eq!(total_value(&products), 22500);' },
+    { name: "evens_doubled(&[1, 2, 3, 4, 5]) returns [4, 8]",
+      code: "assert_eq!(evens_doubled(&[1, 2, 3, 4, 5]), vec![4, 8]);" },
+    { name: "evens_doubled of an empty slice is an empty Vec",
+      code: "assert_eq!(evens_doubled(&[]), Vec::<i32>::new());" },
+  ],
+
+  solution: `struct Product {
+    name: String,
+    price_cents: u32,
+    in_stock: bool,
+}
+
+fn in_stock_names(products: &[Product]) -> Vec<String> {
+    products
+        .iter()
+        .filter(|p| p.in_stock)
+        .map(|p| p.name.clone())
+        .collect()
+}
+
+fn total_value(products: &[Product]) -> u32 {
+    products.iter().map(|p| p.price_cents).sum()
+}
+
+fn evens_doubled(nums: &[i32]) -> Vec<i32> {
+    nums.iter().filter(|n| *n % 2 == 0).map(|n| n * 2).collect()
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Rust</th></tr>
+  <tr><td>Closure</td><td><code>(p) =&gt; p.inStock</code></td><td><code>|p| p.in_stock</code></td></tr>
+  <tr><td>Start a chain</td><td>Arrays are iterable as-is</td><td><code>.iter()</code> (borrowing) or <code>.into_iter()</code> (consuming)</td></tr>
+  <tr><td>Finish a chain</td><td>Each method already returned an array</td><td><code>.collect()</code>, <code>.sum()</code>, <code>.count()</code>…</td></tr>
+  <tr><td>Sum</td><td><code>.reduce((a, n) =&gt; a + n, 0)</code></td><td><code>.sum()</code> (general fold: <code>.fold(0, |a, n| a + n)</code>)</td></tr>
+  <tr><td>Evaluation</td><td>Eager — an array per step</td><td>Lazy — one pass at the consumer, no intermediates</td></tr>
+</table>
+<p>Laziness is why the compiler warns if you write
+<code>nums.iter().map(...)</code> and never consume it: the recipe alone does
+nothing. And because <code>.collect()</code> can build many containers, the
+target type must be known — usually the function's return type pins it down,
+otherwise you annotate (<code>let v: Vec&lt;i32&gt; = ...</code> or
+<code>.collect::&lt;Vec&lt;i32&gt;&gt;()</code>).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: STL Algorithms</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "STL Algorithms",
+
+  intro: `
+<p>In PHP you rarely write index loops to process an array — you reach for
+<code>usort</code>, <code>array_filter</code>, <code>array_map</code>, and
+<code>array_reduce</code>. C++ has the same toolbox, but the functions live in
+<code>&lt;algorithm&gt;</code> and <code>&lt;numeric&gt;</code>, and instead of
+being standalone functions that take the whole array they are free functions
+that take a pair of <em>iterators</em> — <code>v.begin()</code> and
+<code>v.end()</code> — marking the range to work on.</p>
+<table>
+  <tr><th>PHP</th><th>C++</th></tr>
+  <tr><td><code>usort($a, fn($x, $y) =&gt; $x - $y)</code></td><td><code>std::sort(a.begin(), a.end(), cmp)</code></td></tr>
+  <tr><td><code>current(array_filter($a, $p))</code></td><td><code>std::find_if(a.begin(), a.end(), p)</code></td></tr>
+  <tr><td><code>count(array_filter($a, $p))</code></td><td><code>std::count_if(a.begin(), a.end(), p)</code></td></tr>
+  <tr><td><code>array_map($f, $a)</code></td><td><code>std::transform(a.begin(), a.end(), out, f)</code></td></tr>
+  <tr><td><code>array_reduce($a, $f, $init)</code></td><td><code>std::accumulate(a.begin(), a.end(), init, f)</code></td></tr>
+</table>
+<p>The predicates and mappers are lambdas, just like PHP's arrow functions and
+closures: <code>[](int x){ return x % 2 == 0; }</code>. The <code>[]</code> is
+the <em>capture list</em> — it names any surrounding variables the lambda
+uses (leave it empty when it needs none, similar to PHP's <code>fn()</code>
+arrow functions auto-capturing by value versus a <code>function() use (&amp;$x)</code>
+closure that captures by reference). Two things differ from the PHP array
+functions: <code>std::sort</code> mutates the vector in place and returns
+nothing (like PHP's <code>usort</code>), and <code>std::transform</code>
+writes into an existing output range rather than allocating a fresh array,
+so you size the destination first.</p>`,
+
+  php: `$nums = [5, 2, 8, 1, 9, 3];
+
+$sorted = $nums;
+usort($sorted, fn($a, $b) => $b - $a);                  // descending
+$firstBig = current(array_filter($nums, fn($n) => $n > 4)); // 5
+$evens = count(array_filter($nums, fn($n) => $n % 2 === 0)); // 2
+$doubled = array_map(fn($n) => $n * 2, $nums);           // [10, 4, ...]
+$total = array_reduce($nums, fn($acc, $n) => $acc + $n, 0); // 28`,
+
+  task: `
+<p>Work with <code>std::vector&lt;int&gt;</code> using the algorithms — no
+hand-written <code>for</code> loops. Write these free functions:</p>
+<ol>
+  <li><code>sortDescending(std::vector&lt;int&gt; v)</code> — takes the vector by
+      value, sorts it in place with <code>std::sort</code> and a comparator
+      lambda so the largest is first, and returns it.</li>
+  <li><code>firstGreaterThan(const std::vector&lt;int&gt;&amp; v, int threshold)</code>
+      — returns the first element greater than <code>threshold</code> using
+      <code>std::find_if</code>, or <code>-1</code> if none. Compare the returned
+      iterator against <code>v.end()</code>, and dereference it with
+      <code>*it</code>.</li>
+  <li><code>countEven(const std::vector&lt;int&gt;&amp; v)</code> — returns how many
+      elements are even, via <code>std::count_if</code>.</li>
+  <li><code>doubled(const std::vector&lt;int&gt;&amp; v)</code> — returns a new
+      vector with every element multiplied by 2, via <code>std::transform</code>.
+      Size the result with <code>std::vector&lt;int&gt; out(v.size());</code>
+      first.</li>
+  <li><code>sum(const std::vector&lt;int&gt;&amp; v)</code> — returns the total
+      using <code>std::accumulate</code> with an initial value of <code>0</code>.</li>
+</ol>`,
+
+  starter: `std::vector<int> sortDescending(std::vector<int> v) {
+  return {}; // TODO: std::sort with a comparator lambda
+}
+
+int firstGreaterThan(const std::vector<int>& v, int threshold) {
+  return 0; // TODO: std::find_if, return -1 if not found
+}
+
+int countEven(const std::vector<int>& v) {
+  return 0; // TODO: std::count_if
+}
+
+std::vector<int> doubled(const std::vector<int>& v) {
+  return {}; // TODO: std::transform into a sized output vector
+}
+
+int sum(const std::vector<int>& v) {
+  return 0; // TODO: std::accumulate
+}
+`,
+
+  requirements: [
+    { pattern: /std::sort\s*\(/, message: "Use std::sort to sort the vector" },
+    { pattern: /std::find_if\s*\(/, message: "Use std::find_if to locate the first matching element" },
+    { pattern: /std::count_if\s*\(/, message: "Use std::count_if to count the even elements" },
+    { pattern: /std::accumulate\s*\(/, message: "Use std::accumulate to total the vector" },
+  ],
+
+  tests: [
+    { name: "sortDescending puts the largest first", code: "    expect_eq(sortDescending({5, 2, 8, 1, 9, 3}), (std::vector<int>{9, 8, 5, 3, 2, 1}));" },
+    { name: "firstGreaterThan finds 5", code: "    expect_eq(firstGreaterThan({5, 2, 8, 1, 9, 3}, 4), 5);" },
+    { name: "firstGreaterThan returns -1 when none match", code: "    expect_eq(firstGreaterThan({1, 2, 3}, 10), -1);" },
+    { name: "countEven counts even numbers", code: "    expect_eq(countEven({5, 2, 8, 1, 9, 3}), 2);" },
+    { name: "doubled multiplies each element by 2", code: "    expect_eq(doubled({5, 2, 8}), (std::vector<int>{10, 4, 16}));" },
+    { name: "sum totals the vector", code: "    expect_eq(sum({5, 2, 8, 1, 9, 3}), 28);" },
+    { name: "sum of empty vector is 0", code: "    expect_eq(sum({}), 0);" },
+  ],
+
+  solution: `std::vector<int> sortDescending(std::vector<int> v) {
+  std::sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
+  return v;
+}
+
+int firstGreaterThan(const std::vector<int>& v, int threshold) {
+  auto it = std::find_if(v.begin(), v.end(),
+                         [threshold](int x) { return x > threshold; });
+  return it != v.end() ? *it : -1;
+}
+
+int countEven(const std::vector<int>& v) {
+  return static_cast<int>(
+      std::count_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; }));
+}
+
+std::vector<int> doubled(const std::vector<int>& v) {
+  std::vector<int> out(v.size());
+  std::transform(v.begin(), v.end(), out.begin(),
+                 [](int x) { return x * 2; });
+  return out;
+}
+
+int sum(const std::vector<int>& v) {
+  return std::accumulate(v.begin(), v.end(), 0);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>C++</th></tr>
+  <tr><td>Sort with comparator</td><td><code>usort($a, fn($x, $y) =&gt; $y - $x)</code></td><td><code>std::sort(b, e, [](int x, int y){ return x &gt; y; })</code></td></tr>
+  <tr><td>Find first match</td><td><code>current(array_filter($a, $p))</code></td><td><code>std::find_if(b, e, p)</code> → iterator</td></tr>
+  <tr><td>Count matches</td><td><code>count(array_filter($a, $p))</code></td><td><code>std::count_if(b, e, p)</code></td></tr>
+  <tr><td>Map</td><td><code>array_map($f, $a)</code></td><td><code>std::transform(b, e, out, f)</code></td></tr>
+  <tr><td>Reduce</td><td><code>array_reduce($a, $f, 0)</code></td><td><code>std::accumulate(b, e, 0, f)</code></td></tr>
+  <tr><td>Lambda / arrow</td><td><code>fn($x) =&gt; $x * 2</code></td><td><code>[](int x){ return x * 2; }</code></td></tr>
+</table>
+<p>A few gotchas coming from PHP. The search algorithms return an
+<em>iterator</em>, not the value or a key — you must test it against
+<code>end()</code> before dereferencing, since <code>end()</code> is the
+one-past-the-last sentinel (like <code>array_search</code> returning
+<code>false</code> when nothing matches, except you can't just
+<code>if (!$it)</code> your way past it). <code>std::count_if</code> returns a
+signed <code>difference_type</code>, which is why we <code>static_cast</code>
+it to <code>int</code>. And the initial value you hand to
+<code>std::accumulate</code> fixes the result type: pass <code>0</code> (an
+<code>int</code>) and you get integer math; pass <code>0.0</code> for a
+<code>double</code> sum — PHP's dynamically typed arrays give you that
+flexibility for free, but C++ needs you to be explicit up front. In C++20 you
+can also spell many of these as <a>ranges</a> (<code>std::ranges::sort(v)</code>)
+that take the container directly, but the iterator-pair form is the
+foundation worth knowing first.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

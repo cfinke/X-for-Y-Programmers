@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 17: Generics</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 17,
+  title: "Generics",
+
+  intro: `
+<p>Generics play the same role Kotlin's parameterized functions and classes do
+as C++ templates: write code once and have it work with many types. The
+mechanisms differ, though. A C++ template is duck-typed by default — the
+compiler only checks that the body compiles once you plug in a concrete type,
+and it generates a fresh, fully-specialized copy of the function or class for
+every distinct type you instantiate it with (monomorphization). A Kotlin
+generic is checked once, against whatever bound you declare, and compiled to a
+single implementation shared by every type argument.</p>
+<table>
+  <tr><th>C++</th><th>Kotlin</th></tr>
+  <tr><td><code>template &lt;typename T&gt; T first(const std::vector&lt;T&gt;&amp; xs)</code></td><td><code>fun &lt;T&gt; first(xs: List&lt;T&gt;): T</code></td></tr>
+  <tr><td><code>template &lt;typename T&gt; class Box { ... };</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td><code>template &lt;typename T&gt; requires std::totally_ordered&lt;T&gt;</code> (C++20)</td><td><code>&lt;T : Comparable&lt;T&gt;&gt;</code></td></tr>
+  <tr><td>no variance keyword (raw pointer/reference)</td><td><code>out</code> / <code>in</code> (declared)</td></tr>
+</table>
+<p>Two things differ. First, Kotlin's type parameter on a <em>function</em>
+goes right after <code>fun</code>, before the name —
+<code>fun &lt;T&gt; first(...)</code> — while C++ declares it on the line above
+with <code>template &lt;typename T&gt;</code>. Second, a bound in Kotlin uses a
+colon (<code>T : Comparable&lt;T&gt;</code>) that the compiler checks up front;
+in C++ before C++20 there was no way to state "T must be comparable" ahead of
+time at all — you just wrote <code>a &gt; b</code> and let the compiler
+complain, often with a wall of template errors, if some instantiation didn't
+support it. C++20 <code>concepts</code> add that upfront check with
+<code>requires std::totally_ordered&lt;T&gt;</code>, but a plain template still
+compiles against any type that happens to have the right operator.</p>`,
+
+  cpp: `template <typename T>
+class Box {
+public:
+  T value;
+  explicit Box(T value) : value(std::move(value)) {}
+
+  // T must support operator> so we can use it in largest()
+  template <typename R>
+  Box<R> map(std::function<R(const T&)> fn) const {
+    return Box<R>(fn(value));
+  }
+};
+
+template <typename T>
+T largest(const std::vector<T>& items) {
+  T best = items.front();
+  for (const auto& item : items) {
+    if (item > best) best = item;
+  }
+  return best;
+}`,
+
+  task: `
+<p>Build a small generic toolkit. Everything is top-level — no
+<code>main</code> needed.</p>
+<ol>
+  <li>Define a generic container <code>class Box&lt;T&gt;(val value: T)</code>.
+      Give it <code>fun &lt;R&gt; map(transform: (T) -&gt; R): Box&lt;R&gt;</code>
+      that returns a new box holding the transformed value, and a
+      <code>toString()</code> that returns <code>"Box(&lt;value&gt;)"</code>.</li>
+  <li>Write <code>describe(box: Box&lt;out Any?&gt;): String</code> that returns
+      <code>box.toString()</code>. The <code>out</code> projection is use-site
+      variance — it lets a <code>Box&lt;Int&gt;</code> be passed where any
+      <code>Box</code> is accepted.</li>
+  <li>Write <code>largest</code> as a constrained generic
+      <code>fun &lt;T : Comparable&lt;T&gt;&gt; largest(items: List&lt;T&gt;): T</code>
+      that returns the biggest element of a non-empty list using
+      <code>&gt;</code>.</li>
+</ol>`,
+
+  starter: `// 1. Box<T> — a generic container holding one value of type T
+class Box<T>(val value: T) {
+    // map: turn a Box<T> into a Box<R> by transforming the value
+    fun <R> map(transform: (T) -> R): Box<R> = TODO()
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+// 2. describe — accept a Box of anything using use-site variance (out)
+fun describe(box: Box<out Any?>): String = TODO()
+
+// 3. largest — the largest element of a non-empty list, via a Comparable constraint
+fun <T : Comparable<T>> largest(items: List<T>): T = TODO()
+`,
+
+  requirements: [
+    { pattern: /class\s+Box\s*<\s*T\s*>/, message: "Define a generic container: class Box<T>" },
+    { pattern: /fun\s*<\s*T\s*:\s*Comparable\s*<\s*T\s*>\s*>/, message: "Write largest with a constraint: fun <T : Comparable<T>>" },
+    { pattern: /Box\s*<\s*out\b/, message: "Accept any Box with use-site variance: Box<out Any?>" },
+  ],
+
+  tests: [
+    { name: "Box holds its value", code: "        expect_eq(Box(42).value, 42)" },
+    { name: "map transforms Int -> Int", code: "        expect_eq(Box(3).map { it * 2 }.value, 6)" },
+    { name: "map can change the type (String -> Int)", code: "        expect_eq(Box(\"hi\").map { it.length }.value, 2)" },
+    { name: "describe accepts a Box<Int> via out", code: "        expect_eq(describe(Box(5)), \"Box(5)\")" },
+    { name: "largest of Ints", code: "        expect_eq(largest(listOf(3, 9, 2)), 9)" },
+    { name: "largest of Strings", code: "        expect_eq(largest(listOf(\"apple\", \"pear\", \"kiwi\")), \"pear\")" },
+  ],
+
+  solution: `class Box<T>(val value: T) {
+    fun <R> map(transform: (T) -> R): Box<R> = Box(transform(value))
+
+    override fun toString(): String = "Box(\$value)"
+}
+
+fun describe(box: Box<out Any?>): String = box.toString()
+
+fun <T : Comparable<T>> largest(items: List<T>): T {
+    var result = items[0]
+    for (item in items) {
+        if (item > result) result = item
+    }
+    return result
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C++</th><th>Kotlin</th></tr>
+  <tr><td>Generic function</td><td><code>template &lt;typename T&gt; T f(T x)</code></td><td><code>fun &lt;T&gt; f(x: T)</code></td></tr>
+  <tr><td>Generic class</td><td><code>template &lt;typename T&gt; class Box { ... };</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+  <tr><td>Upper bound</td><td><code>requires std::totally_ordered&lt;T&gt;</code> (C++20)</td><td><code>&lt;T : X&gt;</code></td></tr>
+  <tr><td>Producer (covariant)</td><td>no variance keyword</td><td><code>class Src&lt;out T&gt;</code> / <code>Box&lt;out T&gt;</code></td></tr>
+  <tr><td>Consumer (contravariant)</td><td>no variance keyword</td><td><code>class Sink&lt;in T&gt;</code></td></tr>
+</table>
+<p>Kotlin makes variance <em>explicit</em>. An <code>out T</code> means the type
+only ever <em>produces</em> a <code>T</code> (like a read-only source), so
+<code>Box&lt;Int&gt;</code> can safely stand in for <code>Box&lt;Any?&gt;</code>.
+An <code>in T</code> means the type only <em>consumes</em> a <code>T</code>.
+You can declare it on the class (declaration-site) or, as in
+<code>Box&lt;out Any?&gt;</code> above, at the point of use (use-site
+projection). C++ has no real analog: a template parameter carries no variance
+annotation at all, so a <code>std::vector&lt;Derived&gt;</code> is simply not a
+<code>std::vector&lt;Base&gt;</code>, full stop — there's no projection that
+makes it one.</p>
+<p>The multiple upper bounds you'd write with
+<code>template &lt;typename T&gt; requires A&lt;T&gt; &amp;&amp; B&lt;T&gt;</code>
+in C++20 become a <code>where</code> clause in Kotlin:
+<code>fun &lt;T&gt; f(x: T) where T : A, T : B</code>. And unlike a C++
+template — which is monomorphized, so the compiler bakes out a distinct,
+fully-typed copy of <code>Box&lt;T&gt;</code> for every <code>T</code> you use,
+meaning the concrete type is always known inside that copy — Kotlin's generics
+are erased at runtime by default. Kotlin can get that knowledge back when a
+function is marked <code>inline</code> with a <code>reified</code> parameter,
+which lets it do <code>x is T</code> checks at runtime — something a C++
+template already gets for free simply by virtue of being instantiated
+per-type.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

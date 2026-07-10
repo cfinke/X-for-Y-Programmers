@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Interfaces &amp; Object Shapes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Interfaces & Object Shapes",
+
+  intro: `
+<p>C# interfaces are <em>nominal</em>: a class satisfies <code>IProduct</code>
+only if it explicitly declares <code>: IProduct</code>. TypeScript interfaces
+are <em>structural</em>: anything with the right shape qualifies, no
+declaration required. An object literal you typed out on the spot, a class
+instance, JSON straight off the wire — if it has a <code>name: string</code>
+and a <code>price: number</code>, it <em>is</em> a <code>Product</code>.
+Duck typing, but checked at compile time.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>interface IProduct { string Name { get; } }</code></td><td><code>interface Product { name: string; }</code></td></tr>
+  <tr><td>Class must opt in: <code>class Book : IProduct</code></td><td>Any value with the right shape qualifies</td></tr>
+  <tr><td><code>record Product(string Name, decimal Price);</code></td><td><code>const p: Product = { name: "…", price: 9 };</code></td></tr>
+  <tr><td>Optional-ish via <code>string? Notes { get; init; }</code></td><td><code>notes?: string</code> — may be absent entirely</td></tr>
+</table>
+<p>This dissolves a lot of C# ceremony. Where you would define a
+<code>record</code> or a POCO with init-only setters just to pass structured
+data around, TypeScript uses a plain object literal typed by an interface —
+no constructor, no class, no <code>I</code> prefix (the convention is
+<code>Product</code>, not <code>IProduct</code>, and camelCase members).
+Optional properties use the <code>?</code> you met in lesson 6: a
+<code>discount?: number</code> member may be missing altogether, and reading
+it gives <code>number | undefined</code> — which is exactly what
+<code>??</code> is for. One more thing to remember: interfaces are erased at
+compile time. They describe shapes; they produce zero runtime code.</p>`,
+
+  csharp: `// The nominal way: types must declare their allegiance.
+interface IProduct
+{
+    string Name { get; }
+    decimal Price { get; }
+    decimal? Discount { get; }
+}
+
+// A record opts in explicitly — without ": IProduct" it would not qualify,
+// no matter how perfectly its shape matched.
+record Product(string Name, decimal Price, decimal? Discount = null) : IProduct;
+
+decimal FinalPrice(IProduct p) => p.Price - (p.Discount ?? 0);
+
+string DescribeProduct(IProduct p) =>
+    $"{p.Name} costs \${FinalPrice(p)}";
+
+var widget = new Product("Widget", 100, 15);
+Console.WriteLine(DescribeProduct(widget)); // Widget costs $85`,
+
+  task: `
+<p>Model the product shape structurally:</p>
+<ol>
+  <li>Define an <code>interface Product</code> with <code>name: string</code>,
+      <code>price: number</code>, and an <em>optional</em>
+      <code>discount?: number</code>. (Drop the <code>I</code> prefix —
+      TypeScript convention — and use camelCase members.)</li>
+  <li>Write <code>finalPrice</code> taking <code>product: Product</code> and
+      returning the price minus the discount, treating a missing discount as
+      <code>0</code> (hint: <code>??</code>).</li>
+  <li>Write <code>describeProduct</code> taking <code>product: Product</code>
+      and returning e.g. <code>"Widget costs $85"</code> — reuse
+      <code>finalPrice</code> rather than repeating the math.</li>
+</ol>
+<p>Note what the tests do: they pass bare object literals like
+<code>{ name: "Widget", price: 100 }</code>. Nothing anywhere declares
+"I am a Product" — the shape alone is the membership card.</p>`,
+
+  starter: `// 1. C#: interface IProduct + record Product(...) : IProduct
+//    In TS one structural interface covers both jobs.
+interface Product {
+  name: string;
+  // TODO: price (number), and an optional discount (number)
+}
+
+// 2. C#: decimal FinalPrice(IProduct p) => p.Price - (p.Discount ?? 0);
+function finalPrice(product: Product): number {
+  // TODO
+  return 0;
+}
+
+// 3. C#: $"{p.Name} costs \${FinalPrice(p)}"
+function describeProduct(product: Product): string {
+  // TODO: "<name> costs $<finalPrice>"
+  return "";
+}
+`,
+
+  exportNames: ["finalPrice", "describeProduct"],
+
+  requirements: [
+    { pattern: /interface\s+Product/, message: "Define an interface named Product (no I prefix)" },
+    { pattern: /discount\?\s*:\s*number/, message: "Make discount an optional property with ?: number" },
+    { pattern: /product\s*:\s*Product/, message: "Type the function parameters as Product" },
+  ],
+
+  tests: [
+    { name: "finalPrice applies the discount: {price: 100, discount: 15} → 85", run: (x) => expectEqual(x.finalPrice({ name: "Widget", price: 100, discount: 15 }), 85) },
+    { name: "finalPrice treats a missing discount as 0: {price: 100} → 100", run: (x) => expectEqual(x.finalPrice({ name: "Widget", price: 100 }), 100) },
+    { name: 'describeProduct({name: "Widget", price: 100}) returns "Widget costs $100"', run: (x) => expectEqual(x.describeProduct({ name: "Widget", price: 100 }), "Widget costs $100") },
+    { name: 'describeProduct({name: "Gadget", price: 250, discount: 50}) returns "Gadget costs $200"', run: (x) => expectEqual(x.describeProduct({ name: "Gadget", price: 250, discount: 50 }), "Gadget costs $200") },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  discount?: number;
+}
+
+function finalPrice(product: Product): number {
+  return product.price - (product.discount ?? 0);
+}
+
+function describeProduct(product: Product): string {
+  return product.name + " costs $" + finalPrice(product);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Interface</td><td><code>interface IProduct { string Name { get; } }</code></td><td><code>interface Product { name: string; }</code></td></tr>
+  <tr><td>Membership</td><td>Nominal — must declare <code>: IProduct</code></td><td>Structural — right shape is enough</td></tr>
+  <tr><td>Simple data type</td><td><code>record</code> / POCO with <code>{ get; init; }</code></td><td>Typed object literal: <code>const p: Product = { … };</code></td></tr>
+  <tr><td>Optional property</td><td><code>decimal? Discount { get; init; }</code></td><td><code>discount?: number</code></td></tr>
+  <tr><td>Naming</td><td><code>IProduct</code>, <code>Name</code></td><td><code>Product</code>, <code>name</code> (no prefix, camelCase)</td></tr>
+  <tr><td>Runtime presence</td><td>Interface exists in the assembly; <code>is IProduct</code> works</td><td>Erased at compile time — no <code>instanceof Product</code></td></tr>
+</table>
+<p>Structural typing is why TypeScript feels so light around data: JSON from a
+fetch call, a test fixture literal, and a class instance can all flow into the
+same <code>Product</code>-typed parameter without adapters or mapping code.
+The flip side of erasure is that you cannot ask "is this a Product?" at
+runtime — there is no type to check against. When you genuinely need runtime
+discrimination, you add a field for it; that is the discriminated-unions
+lesson. And note the difference from C#'s <code>decimal? Discount</code>: an
+optional TS property is not "present but null" — it can be entirely absent
+from the object.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

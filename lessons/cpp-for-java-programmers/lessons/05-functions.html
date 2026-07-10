@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Java methods and C++ free functions serve the same purpose, but the
+structure differs. In Java every method lives inside a class — even a
+"free function" is usually a <code>static</code> method — while C++ lets you
+declare a function at namespace scope with no enclosing class at all. Method
+<em>overloading</em> works almost identically in both languages: several
+methods can share a name as long as their parameter lists differ, and the
+compiler picks one at compile time from the argument types. Where C++ pulls
+ahead is default arguments, which Java has no syntax for at all (Java
+programmers fake them with an overload that forwards to the fuller version),
+and its parameter-passing rules: how you declare a parameter decides whether
+the argument is copied, shared read-only, or made writable by the callee —
+something Java's "always copy the reference" rule cannot express for a
+primitive like <code>int</code>.</p>
+<table>
+  <tr><th>Java</th><th>C++</th></tr>
+  <tr><td><code>void f(int x)</code></td><td><code>void f(int x)</code> (by value — a copy)</td></tr>
+  <tr><td>pass an object (its reference is copied)</td><td><code>void f(const std::string&amp; s)</code> (read-only, no copy)</td></tr>
+  <tr><td>no way to write back a caller's <code>int</code></td><td><code>void f(std::string&amp; s)</code> (callee mutates caller's object)</td></tr>
+  <tr><td>overloaded methods, one per signature</td><td>truly separate functions per signature</td></tr>
+  <tr><td>no default parameters — overload instead</td><td><code>int g(int x = 10)</code></td></tr>
+</table>
+<p>The rule of thumb: pass small values (<code>int</code>, <code>double</code>,
+<code>bool</code>) <em>by value</em>; pass objects you only read
+(<code>std::string</code>, <code>std::vector</code>) by <code>const</code>
+<em>reference</em> to skip the copy; pass by plain reference
+(<code>T&amp;</code>) only when you intend to modify the caller's object.</p>`,
+
+  java: `// Overloading picks a body at compile time, same idea as C++:
+static int area(int size) {
+    return size * size;
+}
+
+static int area(int width, int height) {
+    return width * height;
+}
+
+// No default parameters in Java; overload instead:
+static String greet(String name) {
+    return greet(name, "Hello");
+}
+
+static String greet(String name, String greeting) {
+    return greeting + ", " + name + "!";
+}
+
+// Arrays are objects, so mutating in place works through the shared reference:
+static void doubleAll(int[] xs) {
+    for (int i = 0; i < xs.length; i++) xs[i] *= 2;
+}`,
+
+  task: `
+<p>Write these free functions:</p>
+<ol>
+  <li>Two <strong>overloads</strong> of <code>area</code>:
+    <ul>
+      <li><code>area(int side)</code> returns <code>side * side</code> (a square).</li>
+      <li><code>area(int width, int height)</code> returns <code>width * height</code>.</li>
+    </ul>
+  </li>
+  <li><code>greet(const std::string&amp; name, const std::string&amp; greeting = "Hello")</code>
+      takes its <code>name</code> by <strong>const reference</strong> and has a
+      <strong>default argument</strong>. Return
+      <code>greeting + ", " + name + "!"</code>.</li>
+  <li><code>doubleAll(std::vector&lt;int&gt;&amp; xs)</code> takes the vector by
+      plain <strong>reference</strong> and multiplies each element by 2 in place
+      (returns <code>void</code>).</li>
+  <li><code>sumOf(const std::vector&lt;int&gt;&amp; xs)</code> takes the vector by
+      <strong>const reference</strong> and returns the sum of its elements.</li>
+</ol>`,
+
+  starter: `int area(int side) {
+  return 0; // TODO: a square
+}
+
+int area(int width, int height) {
+  return 0; // TODO: a rectangle
+}
+
+std::string greet(const std::string& name, const std::string& greeting = "Hello") {
+  return ""; // TODO
+}
+
+void doubleAll(std::vector<int>& xs) {
+  // TODO: mutate xs in place
+}
+
+int sumOf(const std::vector<int>& xs) {
+  return 0; // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /int\s+area\s*\(\s*int\s+\w+\s*\)[\s\S]*int\s+area\s*\(\s*int\s+\w+\s*,\s*int\s+\w+\s*\)/, message: "Provide two overloads of area (one and two int parameters)" },
+    { pattern: /const\s+std::string&\s+\w+\s*,\s*const\s+std::string&\s+\w+\s*=\s*"Hello"/, message: "greet must take name by const reference and give greeting a default of \"Hello\"" },
+    { pattern: /void\s+doubleAll\s*\(\s*std::vector<int>&\s+\w+\s*\)/, message: "doubleAll must take the vector by plain reference so it can mutate it" },
+  ],
+
+  tests: [
+    { name: "area(4) is 16 (square overload)", code: "    expect_eq(area(4), 16);" },
+    { name: "area(3, 5) is 15 (rectangle overload)", code: "    expect_eq(area(3, 5), 15);" },
+    { name: "greet uses default greeting", code: "    expect_eq(greet(\"Ada\"), std::string(\"Hello, Ada!\"));" },
+    { name: "greet with explicit greeting", code: "    expect_eq(greet(\"Rob\", \"Hi\"), std::string(\"Hi, Rob!\"));" },
+    { name: "doubleAll mutates the caller's vector", code: "    std::vector<int> v{1, 2, 3};\n    doubleAll(v);\n    expect_eq(v, (std::vector<int>{2, 4, 6}));" },
+    { name: "sumOf reads without mutating", code: "    std::vector<int> nums{4, 5, 6};\n    expect_eq(sumOf(nums), 15);\n    expect_eq(nums, (std::vector<int>{4, 5, 6}));" },
+  ],
+
+  solution: `int area(int side) {
+  return side * side;
+}
+
+int area(int width, int height) {
+  return width * height;
+}
+
+std::string greet(const std::string& name, const std::string& greeting = "Hello") {
+  return greeting + ", " + name + "!";
+}
+
+void doubleAll(std::vector<int>& xs) {
+  for (int& x : xs) {
+    x *= 2;
+  }
+}
+
+int sumOf(const std::vector<int>& xs) {
+  int total = 0;
+  for (int x : xs) {
+    total += x;
+  }
+  return total;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>C++</th></tr>
+  <tr><td>By value (copy)</td><td>primitives are copied</td><td><code>void f(int x)</code></td></tr>
+  <tr><td>Read-only object</td><td>object reference is copied (still shared)</td><td><code>void f(const std::string&amp; s)</code></td></tr>
+  <tr><td>Mutate caller's object</td><td>mutate the shared object's fields</td><td><code>void f(std::string&amp; s)</code></td></tr>
+  <tr><td>Overloading</td><td>separate methods per signature</td><td>separate functions per signature</td></tr>
+  <tr><td>Default argument</td><td>no syntax — overload instead</td><td><code>int g(int x = 10)</code></td></tr>
+</table>
+<p>A subtle point that trips up Java programmers: in Java, <em>object</em>
+references are always copied by value, so a method that takes an array or a
+<code>List</code> can mutate the object it points at but can never make the
+caller's variable point somewhere else, and it has no way at all to write back
+a caller's <code>int</code> or <code>double</code>. In C++ you <em>choose</em>,
+uniformly, for every type. <code>const std::vector&lt;int&gt;&amp;</code> says
+"I will read this and not copy it"; drop the <code>const</code> and you are
+asking for a handle you can write through, which changes the caller's own
+vector — and the same mechanism works for an <code>int&amp;</code>, something
+Java simply has no syntax for. Pass an object by value
+(<code>std::vector&lt;int&gt; xs</code>) and the callee gets its own copy —
+mutations stay local, but you paid for the copy.</p>
+<p>Default arguments live in the declaration, not the call, and follow a
+"trailing only" rule: once a parameter has a default, everything after it must
+too. Java has no default-argument syntax at all — the idiomatic replacement is
+an overload that forwards to the fuller version, exactly like the Java
+<code>greet</code> snippet above. Overload resolution happens entirely at
+compile time in both languages — <code>area(4)</code> and <code>area(3, 5)</code>
+resolve to two genuinely different functions in C++, just as Java's two
+<code>area</code> overloads do.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

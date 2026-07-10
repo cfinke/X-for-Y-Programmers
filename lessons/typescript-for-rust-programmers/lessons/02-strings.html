@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>Rust's <code>format!("{name} is {age}")</code> maps almost one-to-one to
+TypeScript's template literals: <code>\`\${name} is \${age}\`</code>. The
+curly-brace interpolation survives the trip — it just gains a <code>$</code>
+and swaps the surrounding quotes for backticks. Unlike <code>format!</code>,
+a template literal isn't a macro; the braces can hold any expression,
+evaluated right there.</p>
+<table>
+  <tr><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td><code>format!("{name} is {age}")</code></td><td><code>\`\${name} is \${age}\`</code></td></tr>
+  <tr><td><code>s.to_uppercase()</code></td><td><code>s.toUpperCase()</code></td></tr>
+  <tr><td><code>s.contains("x")</code></td><td><code>s.includes("x")</code></td></tr>
+  <tr><td><code>s.len()</code> (bytes)</td><td><code>s.length</code> (a property — UTF-16 code units)</td></tr>
+  <tr><td><code>s.push_str(t)</code>, <code>s + &amp;t</code> (moves <code>s</code>)</td><td><code>s + t</code> — nothing moves, ever</td></tr>
+</table>
+<p>Two honest differences. First, <code>.length</code> is a property, not a
+method, and it counts UTF-16 code units — not bytes like Rust's
+<code>.len()</code>, and not characters either: <code>"🦀".length</code> is
+<code>2</code> (where Rust's <code>"🦀".len()</code> is 4 bytes). Second,
+concatenation is just <code>+</code> with no ownership dance: no
+<code>push_str</code> vs <code>+</code> decision, no "value moved here",
+because strings are GC'd and immutable values — every operation hands you a
+new one.</p>`,
+
+  rust: `let name = String::from("Ferris");
+let greeting = format!("{name} says hello");
+
+let loud = greeting.to_uppercase();
+let has_hello = greeting.contains("hello");
+let n = greeting.len(); // 17 -- and that's bytes
+
+// Concatenation is an ownership puzzle:
+let mut s = String::from("bor");
+s.push_str("row");
+let t = s + " checker"; // moves s...
+// println!("{s}");     // error[E0382]: borrow of moved value
+
+println!("{loud} {has_hello} {n} {t}");`,
+
+  task: `
+<p>Port the string handling. Write four functions:</p>
+<ol>
+  <li><code>describeCrate(name: string, downloads: number): string</code> —
+      return <code>"serde has 9001 downloads"</code>-style output using a
+      <em>template literal</em> (backticks and <code>\${...}</code>), the
+      way you'd reach for <code>format!</code>.</li>
+  <li><code>shout(s: string): string</code> — return the string uppercased
+      with <code>.toUpperCase()</code>.</li>
+  <li><code>containsWord(haystack: string, needle: string): boolean</code> —
+      Rust's <code>.contains()</code> is spelled <code>.includes()</code>
+      here.</li>
+  <li><code>letterCount(s: string): number</code> — return
+      <code>s.length</code>. No parentheses: it's a property.</li>
+</ol>`,
+
+  starter: `// 1. format!("{name} has {downloads} downloads")  ->  \`\${name} has ...\`
+function describeCrate(name: string, downloads: number): string {
+  // TODO: use a template literal, not + concatenation
+  return "";
+}
+
+// 2. .to_uppercase() -> .toUpperCase()
+function shout(s: string): string {
+  return ""; // TODO
+}
+
+// 3. .contains() -> .includes()
+function containsWord(haystack: string, needle: string): boolean {
+  return false; // TODO
+}
+
+// 4. .len() -> .length (a property, no call)
+function letterCount(s: string): number {
+  return 0; // TODO
+}
+`,
+
+  exportNames: ["describeCrate", "shout", "containsWord", "letterCount"],
+
+  requirements: [
+    { pattern: /`[^`]*\$\{[^}]+\}[^`]*`/, message: "Use a template literal (backticks with ${...} interpolation) in describeCrate" },
+    { pattern: /\.toUpperCase\s*\(\s*\)/, message: "Use .toUpperCase() in shout" },
+    { pattern: /\.includes\s*\(/, message: "Use .includes() in containsWord" },
+    { pattern: /\.length\b(?!\s*\()/, message: "Use the .length property (no parentheses) in letterCount" },
+  ],
+
+  tests: [
+    { name: 'describeCrate("serde", 9001) returns "serde has 9001 downloads"', run: (x) => expectEqual(x.describeCrate("serde", 9001), "serde has 9001 downloads") },
+    { name: 'describeCrate("tokio", 0) returns "tokio has 0 downloads"', run: (x) => expectEqual(x.describeCrate("tokio", 0), "tokio has 0 downloads") },
+    { name: 'shout("hello, ferris") returns "HELLO, FERRIS"', run: (x) => expectEqual(x.shout("hello, ferris"), "HELLO, FERRIS") },
+    { name: 'containsWord("borrow checker", "checker") is true, ...("borrow checker", "lifetime") is false', run: (x) => { expectEqual(x.containsWord("borrow checker", "checker"), true); expectEqual(x.containsWord("borrow checker", "lifetime"), false); } },
+    { name: 'letterCount("Ferris") is 6', run: (x) => expectEqual(x.letterCount("Ferris"), 6) },
+    { name: 'letterCount("🦀") is 2 — UTF-16 code units, not bytes (Rust says 4) or chars (1)', run: (x) => expectEqual(x.letterCount("🦀"), 2) },
+  ],
+
+  solution: `function describeCrate(name: string, downloads: number): string {
+  return \`\${name} has \${downloads} downloads\`;
+}
+
+function shout(s: string): string {
+  return s.toUpperCase();
+}
+
+function containsWord(haystack: string, needle: string): boolean {
+  return haystack.includes(needle);
+}
+
+function letterCount(s: string): number {
+  return s.length;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+  <tr><td>Interpolation</td><td><code>format!("{name}")</code></td><td><code>\`\${name}\`</code> (any expression allowed inside)</td></tr>
+  <tr><td>Uppercase</td><td><code>s.to_uppercase()</code></td><td><code>s.toUpperCase()</code></td></tr>
+  <tr><td>Substring test</td><td><code>s.contains("x")</code></td><td><code>s.includes("x")</code></td></tr>
+  <tr><td>Length</td><td><code>s.len()</code> — bytes; <code>s.chars().count()</code> — chars</td><td><code>s.length</code> — property, UTF-16 code units</td></tr>
+  <tr><td>Concatenation</td><td><code>push_str</code> / <code>+</code> with moves and borrows</td><td><code>a + b</code> — new string, nothing moved</td></tr>
+  <tr><td>Mutability</td><td><code>String</code> mutable with <code>mut</code></td><td>Strings are always immutable values</td></tr>
+</table>
+<p>The mental download: JS strings behave like a <code>&amp;str</code> you
+never have to think about — immutable, freely copyable, no
+owner. What you lose is Rust's precision about <em>what</em> you're
+counting: <code>.length</code> is neither bytes nor characters, so for
+emoji and many non-Latin scripts it will surprise you exactly the way
+<code>.len()</code> surprised you the first time. When you need real
+characters, iterate the string (<code>[...s]</code> splits on code points,
+close to <code>s.chars()</code>).</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 8: Control Flow &amp; match</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 8,
+  title: "Control Flow & match",
+
+  intro: `
+<p>Basic branching is a syntax swap: <code>if/elif/else</code> becomes
+<code>if/elseif/else</code>, conditions gain parentheses, and blocks gain
+braces instead of indentation. The interesting arrival is PHP 8's
+<code>match</code> — a cousin of the <code>match</code>/<code>case</code>
+you got in Python 3.10, with three differences worth knowing. First, PHP's
+<code>match</code> compares with strict <code>===</code> (no juggling, no
+structural patterns). Second, it's an <em>expression</em>: it returns a
+value, so <code>$label = match ($x) { ... };</code> works the way you wish
+a <code>match</code> statement assigned to a variable would. Third, there's
+no fallthrough and no <code>break</code> — each arm is one expression.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>if x &gt; 1:</code> … <code>elif</code> … <code>else:</code></td><td><code>if ($x &gt; 1) { … } elseif (…) { … } else { … }</code></td></tr>
+  <tr><td><code>match day: case "sat" | "sun": …</code></td><td><code>match ($day) { "sat", "sun" =&gt; … }</code></td></tr>
+  <tr><td><code>case _:</code></td><td><code>default =&gt;</code></td></tr>
+  <tr><td>match with no <code>case _</code>: falls through silently</td><td>no <code>default</code>: throws <code>UnhandledMatchError</code></td></tr>
+  <tr><td>if/elif ladder returning a value</td><td><code>match (true) { $x &gt;= 90 =&gt; "A", … }</code></td></tr>
+</table>
+<p>A miss with no <code>default</code> throws
+<code>UnhandledMatchError</code> — think of a <code>match</code> with no
+wildcard arm, except Python silently does nothing while PHP refuses to
+guess. And one idiom Python's version can't express: <code>match (true)</code>
+matches the first arm whose <em>condition</em> is <code>=== true</code>,
+turning a whole if/elif ladder of range checks into a single
+expression.</p>`,
+
+  python: `def grade(score: int) -> str:
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    else:
+        return "F"
+
+def day_type(day: str) -> str:
+    match day:
+        case "sat" | "sun":
+            return "weekend"
+        case "mon" | "tue" | "wed" | "thu" | "fri":
+            return "weekday"
+        case _:
+            return "unknown"`,
+
+  task: `
+<p>Rewrite both functions as single <code>return match ...</code>
+expressions:</p>
+<ol>
+  <li><code>grade(int $score): string</code> — use <code>match (true)</code>
+      with range arms (<code>$score &gt;= 90 =&gt; "A"</code>, then 80/"B",
+      70/"C") and <code>default =&gt; "F"</code>. Arms are checked top to
+      bottom, so ordering does the work, exactly like your elif ladder.</li>
+  <li><code>day_type(string $day): string</code> — use
+      <code>match ($day)</code> with grouped arms:
+      <code>"sat", "sun" =&gt; "weekend"</code> (a comma groups conditions,
+      like <code>case "sat" | "sun"</code>), the five weekdays grouped to
+      <code>"weekday"</code>, and <code>default =&gt; "unknown"</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. The elif ladder as ONE expression:
+//    return match (true) {
+//        $score >= 90 => "A",
+//        ...
+//        default => "F",
+//    };
+function grade(int $score): string {
+    throw new Exception("TODO: implement grade");
+}
+
+// 2. Grouped arms: "sat", "sun" => "weekend"  (like case "sat" | "sun")
+function day_type(string $day): string {
+    throw new Exception("TODO: implement day_type");
+}
+`,
+
+  requirements: [
+    { pattern: /match\s*\(/, message: "Use a match expression" },
+    { pattern: /match\s*\(\s*true\s*\)/, message: "Use match (true) for the range conditions in grade" },
+    { pattern: /default\s*=>/, message: "Include a default => arm" },
+  ],
+
+  tests: [
+    { name: 'grade: 95 and the 90 boundary are "A"',
+      code: 'expect_eq(grade(95), "A"); expect_eq(grade(90), "A");' },
+    { name: 'grade: 85 is "B", 70 is "C"',
+      code: 'expect_eq(grade(85), "B"); expect_eq(grade(70), "C");' },
+    { name: 'grade: 69 and 0 fall to the default "F"',
+      code: 'expect_eq(grade(69), "F"); expect_eq(grade(0), "F");' },
+    { name: 'day_type: "sat" and "sun" are grouped into "weekend"',
+      code: 'expect_eq(day_type("sat"), "weekend"); expect_eq(day_type("sun"), "weekend");' },
+    { name: 'day_type: "mon" and "fri" are "weekday"',
+      code: 'expect_eq(day_type("mon"), "weekday"); expect_eq(day_type("fri"), "weekday");' },
+    { name: 'day_type: anything else hits default => "unknown"',
+      code: 'expect_eq(day_type("blursday"), "unknown");' },
+  ],
+
+  solution: `<?php
+
+function grade(int $score): string {
+    return match (true) {
+        $score >= 90 => "A",
+        $score >= 80 => "B",
+        $score >= 70 => "C",
+        default => "F",
+    };
+}
+
+function day_type(string $day): string {
+    return match ($day) {
+        "sat", "sun" => "weekend",
+        "mon", "tue", "wed", "thu", "fri" => "weekday",
+        default => "unknown",
+    };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Else-if keyword</td><td><code>elif</code></td><td><code>elseif</code></td></tr>
+  <tr><td>Blocks</td><td>indentation + <code>:</code></td><td><code>{ braces }</code>, parens around condition</td></tr>
+  <tr><td>Multi-way branch</td><td><code>match x: case "a" | "b": …</code></td><td><code>match ($x) { "a", "b" =&gt; … }</code></td></tr>
+  <tr><td>Wildcard</td><td><code>case _:</code></td><td><code>default =&gt;</code></td></tr>
+  <tr><td>Comparison used</td><td>structural patterns</td><td>strict <code>===</code> only</td></tr>
+  <tr><td>Returns a value?</td><td>no (statement)</td><td>yes (expression)</td></tr>
+  <tr><td>Unmatched value</td><td>silently skips</td><td>throws <code>UnhandledMatchError</code></td></tr>
+  <tr><td>Range conditions</td><td>if/elif ladder or <code>case _ if x &gt;= 90:</code></td><td><code>match (true) { $x &gt;= 90 =&gt; … }</code></td></tr>
+</table>
+<p>PHP also has C-style <code>switch</code>, but it compares with juggling
+<code>==</code> and falls through without <code>break</code> — two foot-guns
+<code>match</code> was designed to remove. Treat <code>switch</code> as
+legacy: in new code, <code>match</code> is the default choice, and
+<code>match (true)</code> replaces the "return from an elif ladder" pattern
+you write constantly in Python. Ternaries exist too
+(<code>$x ? $a : $b</code>), and PHP's while/for/foreach loops hold no
+surprises beyond the braces.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Closures</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Closures",
+
+  intro: `
+<p>A closure is a function that remembers the variables of the scope it was
+created in. This works exactly like it does in PHP once you capture by
+reference: an inner function keeps a live reference to the enclosing variable,
+not a copy, so mutating it persists across calls. The syntax is the only thing
+that changes — Go writes anonymous functions as
+<code>func(params) returnType { ... }</code> and function types the same way,
+with no separate capture list required.</p>
+<table>
+  <tr><th>PHP</th><th>Go</th></tr>
+  <tr><td><code>Closure(): int</code></td><td><code>func() int</code></td></tr>
+  <tr><td><code>Closure(int): int</code></td><td><code>func(n int) int</code></td></tr>
+  <tr><td><code>$f = function () { ... };</code></td><td><code>f := func() int { ... }</code></td></tr>
+  <tr><td><code>$count = 0;</code> captured with <code>use (&amp;$count)</code></td><td><code>count := 0</code> captured</td></tr>
+</table>
+<p>Because the captured variable is shared, a factory that returns a closure hands
+back a private, persistent piece of state — the same trick you would use in
+PHP to make a counter without a class, as long as you remember
+<code>use (&amp;$count)</code> to capture by reference instead of by value. Go
+has no <code>use</code> clause to worry about — every variable from the
+enclosing scope is automatically available and automatically captured by
+reference, so the mental model is even simpler: the closure just reaches out
+and touches the variable that was in scope when it was defined.</p>`,
+
+  php: `function makeCounter(): Closure {
+    $count = 0;
+    return function () use (&$count): int {
+        $count += 1;
+        return $count;
+    };
+}
+
+$next = makeCounter();
+$next(); // 1
+$next(); // 2`,
+
+  task: `
+<p>Write these package-level functions (no <code>package</code>,
+<code>import</code>, or <code>main</code> — those are added for you):</p>
+<ol>
+  <li><code>MakeCounter() func() int</code> returns a closure. Each call to the
+      returned function increments a captured <code>count</code> and returns the
+      new value: first call gives <code>1</code>, then <code>2</code>, and so on.</li>
+  <li><code>MakeAdder(start int) func(int) int</code> captures <code>start</code>
+      as a running total. Each call adds its argument to the total and returns the
+      updated total, so <code>a := MakeAdder(10); a(5)</code> is <code>15</code>
+      and a following <code>a(3)</code> is <code>18</code>.</li>
+  <li><code>ApplyTwice(n int, f func(int) int) int</code> takes a closure as an
+      argument and returns <code>f(f(n))</code>.</li>
+</ol>`,
+
+  starter: `func MakeCounter() func() int {
+	return nil // TODO
+}
+
+func MakeAdder(start int) func(int) int {
+	return nil // TODO
+}
+
+func ApplyTwice(n int, f func(int) int) int {
+	return 0 // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /func\(\)\s*int\s*{/, message: "Return an anonymous func() int closure from MakeCounter" },
+    { pattern: /func\s+MakeAdder/, message: "Define MakeAdder that captures a running total" },
+    { pattern: /f\(f\(/, message: "In ApplyTwice, call the closure twice: f(f(n))" },
+  ],
+
+  tests: [
+    { name: "MakeCounter counts 1,2,3", code: "\t\tc := MakeCounter()\n\t\texpect_eq(c(), 1)\n\t\texpect_eq(c(), 2)\n\t\texpect_eq(c(), 3)" },
+    { name: "Separate counters are independent", code: "\t\ta := MakeCounter()\n\t\tb := MakeCounter()\n\t\texpect_eq(a(), 1)\n\t\texpect_eq(a(), 2)\n\t\texpect_eq(b(), 1)" },
+    { name: "MakeAdder accumulates", code: "\t\tadd := MakeAdder(10)\n\t\texpect_eq(add(5), 15)\n\t\texpect_eq(add(3), 18)" },
+    { name: "ApplyTwice applies the closure twice", code: "\t\tdouble := func(x int) int { return x * 2 }\n\t\texpect_eq(ApplyTwice(3, double), 12)" },
+  ],
+
+  solution: `func MakeCounter() func() int {
+	count := 0
+	return func() int {
+		count++
+		return count
+	}
+}
+
+func MakeAdder(start int) func(int) int {
+	total := start
+	return func(n int) int {
+		total += n
+		return total
+	}
+}
+
+func ApplyTwice(n int, f func(int) int) int {
+	return f(f(n))
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>Go</th></tr>
+  <tr><td>Anonymous function</td><td><code>fn($n) =&gt; $n * 2</code></td><td><code>func(n int) int { return n * 2 }</code></td></tr>
+  <tr><td>Function type</td><td><code>Closure(): int</code></td><td><code>func() int</code></td></tr>
+  <tr><td>Captured, mutated var</td><td><code>use (&amp;$count)</code> then <code>$count += 1</code></td><td><code>count++</code></td></tr>
+  <tr><td>Closure factory</td><td><code>makeCounter()</code></td><td><code>MakeCounter()</code></td></tr>
+  <tr><td>Closure as argument</td><td><code>array_map($f, $arr)</code></td><td><code>ApplyTwice(n, f)</code></td></tr>
+</table>
+<p>The captured variable lives as long as the closure does. Go's garbage collector
+keeps <code>count</code> alive even after <code>MakeCounter</code> returns, so the
+state survives across calls — exactly like a PHP closure that captured
+<code>$count</code> by reference. Each call to the factory creates a fresh
+variable, which is why two counters never share a value.</p>
+<p>One Go-specific gotcha to remember for later lessons: before Go 1.22, a loop
+variable was captured by reference and <em>shared</em> across iterations, so
+closures made inside a <code>for</code> loop all saw the final value. Go 1.22 gave
+each iteration its own copy, matching what a PHP <code>foreach</code> loop does
+when each closure captures the loop variable <code>by value</code> (the default,
+without an <code>&amp;</code>).</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

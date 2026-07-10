@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put it together. This capstone is a tiny in-memory <em>task store</em>
+that leans on almost everything this course has covered: a <strong>class</strong>
+to hold state and behavior, <strong>array-iteration methods</strong>
+(<code>find</code>, <code>filter</code>, <code>reduce</code>) to query and
+aggregate, and <strong>custom errors</strong> to refuse bad input. Nothing here
+is unfamiliar — you have written the equivalent of all of it in Ruby. The point is to feel
+how it behaves once the id-based <code>each</code>/<code>select</code>/<code>find</code>/<code>reduce</code>
+family gets replaced by JavaScript's own array methods, and the only thing standing between
+a caller and a corrupt store is the code <em>you</em> wrote.</p>
+<table>
+  <tr><th>Ruby</th><th>JavaScript</th></tr>
+  <tr><td><code>Struct.new(:id, :done)</code> or a plain class</td><td>a plain object shaped however you build it</td></tr>
+  <tr><td><code>@tasks = []</code> — an <code>Array</code> of whatever you push</td><td><code>this.tasks = []</code> — holds anything you push</td></tr>
+  <tr><td><code>raise ArgumentError if ...</code></td><td>you must <code>throw</code> to reject it</td></tr>
+  <tr><td><code>tasks.find { |t| t.id == id }</code> returns <code>nil</code> on a miss</td><td><code>find</code> returns <code>undefined</code>; guard it</td></tr>
+</table>
+<p>In Ruby, <code>Array#find</code> returning <code>nil</code> on a miss is a
+familiar shape — you already know to check for <code>nil</code> before calling a
+method on the result, or you get a <code>NoMethodError</code>. JavaScript's
+<code>find</code> behaves the same way, just with <code>undefined</code> standing
+in for <code>nil</code>: if you forget to check, the very next property access
+throws a <code>TypeError</code>. The runtime discipline is to <em>make the miss
+explicit</em> — detect it and throw a meaningful error instead of letting a
+cryptic one leak out later.</p>`,
+
+  ruby: `class NotFoundError < StandardError; end
+class ValidationError < StandardError; end
+
+Task = Struct.new(:id, :title, :priority, :done)
+
+class TaskStore
+  def initialize
+    @tasks = []
+    @next_id = 1
+  end
+
+  def add(title, priority = 1)
+    raise ValidationError, "title required" if title.strip == ""
+    task = Task.new(@next_id, title, priority, false)
+    @next_id += 1
+    @tasks.push(task)
+    task
+  end
+
+  def get(id)
+    task = @tasks.find { |t| t.id == id }
+    raise NotFoundError, "no task #{id}" unless task
+    task
+  end
+
+  def complete(id)
+    task = get(id)
+    task.done = true
+    task
+  end
+
+  def pending
+    @tasks.reject(&:done)
+  end
+
+  def summary
+    @tasks.reduce({ total: 0, done: 0, pending: 0 }) do |acc, t|
+      {
+        total: acc[:total] + 1,
+        done: acc[:done] + (t.done ? 1 : 0),
+        pending: acc[:pending] + (t.done ? 0 : 1),
+      }
+    end
+  end
+end`,
+
+  task: `
+<p>Build the plain-JavaScript version of the same store. Define two error
+classes and one <code>TaskStore</code> class.</p>
+<ol>
+  <li>Define <code>ValidationError</code> and <code>NotFoundError</code>, each a
+      subclass of <code>Error</code> whose constructor calls
+      <code>super(message)</code> and sets <code>this.name</code> to its own
+      class name.</li>
+  <li><code>TaskStore</code>'s constructor sets <code>this.tasks = []</code> and
+      <code>this.nextId = 1</code>.</li>
+  <li><code>add(title, priority = 1)</code>: if <code>title</code> is not a
+      string or is empty/whitespace, throw a <code>ValidationError</code>.
+      Otherwise create <code>{ id, title, priority, done: false }</code> using
+      the next id (which then increments), push it, and return it.</li>
+  <li><code>get(id)</code>: use <code>find</code> to locate the task; if there is
+      none, throw a <code>NotFoundError</code>. Otherwise return it.</li>
+  <li><code>complete(id)</code>: look the task up with <code>get</code>, set
+      <code>done</code> to <code>true</code>, and return it.</li>
+  <li><code>pending()</code>: return a <code>filter</code>ed array of the
+      not-done tasks.</li>
+  <li><code>summary()</code>: use <code>reduce</code> to return
+      <code>{ total, done, pending }</code> counts.</li>
+</ol>`,
+
+  starter: `// 1. Two custom error subclasses
+class ValidationError extends Error {
+  constructor(message) {
+    // TODO: super(message) and set this.name
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message) {
+    // TODO: super(message) and set this.name
+  }
+}
+
+// 2-7. The in-memory store
+class TaskStore {
+  constructor() {
+    // TODO: this.tasks and this.nextId
+  }
+
+  add(title, priority = 1) {
+    // TODO: validate, build the task, push it, return it
+  }
+
+  get(id) {
+    // TODO: find by id or throw NotFoundError
+  }
+
+  complete(id) {
+    // TODO: get the task, mark done, return it
+  }
+
+  pending() {
+    // TODO: filter to not-done tasks
+    return [];
+  }
+
+  summary() {
+    // TODO: reduce to { total, done, pending }
+    return { total: 0, done: 0, pending: 0 };
+  }
+}
+`,
+
+  exportNames: ["TaskStore", "ValidationError", "NotFoundError"],
+
+  requirements: [
+    { pattern: /class\s+TaskStore/, message: "Define a TaskStore class" },
+    { pattern: /class\s+\w*Error\s+extends\s+Error/, message: "Define a custom Error subclass" },
+    { pattern: /\.(find|filter|reduce)\s*\(/, message: "Use array-iteration methods (find/filter/reduce)" },
+    { pattern: /throw\s+new/, message: "Throw a custom error on bad input or a missing task" },
+  ],
+
+  tests: [
+    { name: "add returns a task with id 1, not done", run: (x) => {
+        const store = new x.TaskStore();
+        expectDeepEqual(store.add("Write", 2), { id: 1, title: "Write", priority: 2, done: false });
+      } },
+    { name: "ids auto-increment across adds", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        expectEqual(store.add("b").id, 2);
+      } },
+    { name: "add with an empty title throws ValidationError", run: (x) => {
+        const store = new x.TaskStore();
+        try { store.add("   "); } catch (e) { expectTruthy(e instanceof x.ValidationError); return; }
+        throw new Error("expected add('   ') to throw");
+      } },
+    { name: "get throws NotFoundError for a missing id", run: (x) => {
+        const store = new x.TaskStore();
+        try { store.get(99); } catch (e) { expectTruthy(e instanceof x.NotFoundError); return; }
+        throw new Error("expected get(99) to throw");
+      } },
+    { name: "complete marks a task done", run: (x) => {
+        const store = new x.TaskStore();
+        const t = store.add("ship");
+        expectEqual(store.complete(t.id).done, true);
+      } },
+    { name: "pending excludes completed tasks", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        const b = store.add("b");
+        store.complete(b.id);
+        expectDeepEqual(store.pending().map((t) => t.title), ["a"]);
+      } },
+    { name: "summary counts total/done/pending", run: (x) => {
+        const store = new x.TaskStore();
+        store.add("a");
+        store.add("b");
+        store.complete(store.add("c").id);
+        expectDeepEqual(store.summary(), { total: 3, done: 1, pending: 2 });
+      } },
+    { name: "custom errors carry a name, message, and stack", run: (x) => {
+        const err = new x.NotFoundError("nope");
+        expectTruthy(err instanceof x.NotFoundError);
+        expectEqual(err.name, "NotFoundError");
+        expectEqual(err.message, "nope");
+        expectTruthy(typeof err.stack === "string");
+      } },
+  ],
+
+  solution: `class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
+class TaskStore {
+  constructor() {
+    this.tasks = [];
+    this.nextId = 1;
+  }
+
+  add(title, priority = 1) {
+    if (typeof title !== "string" || title.trim() === "") {
+      throw new ValidationError("title must be a non-empty string");
+    }
+    const task = { id: this.nextId++, title, priority, done: false };
+    this.tasks.push(task);
+    return task;
+  }
+
+  get(id) {
+    const task = this.tasks.find((t) => t.id === id);
+    if (!task) {
+      throw new NotFoundError("no task with id " + id);
+    }
+    return task;
+  }
+
+  complete(id) {
+    const task = this.get(id);
+    task.done = true;
+    return task;
+  }
+
+  pending() {
+    return this.tasks.filter((t) => !t.done);
+  }
+
+  summary() {
+    return this.tasks.reduce(
+      (acc, t) => {
+        acc.total += 1;
+        if (t.done) acc.done += 1;
+        else acc.pending += 1;
+        return acc;
+      },
+      { total: 0, done: 0, pending: 0 }
+    );
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Ruby</th><th>JavaScript</th></tr>
+  <tr><td>Task shape</td><td><code>Struct.new(:id, :title, ...)</code> or a class with attrs</td><td>whatever object you construct</td></tr>
+  <tr><td>Bad input</td><td><code>raise ArgumentError</code> by hand</td><td>rejected only if you <code>throw</code></td></tr>
+  <tr><td>Missing lookup</td><td><code>find</code> returns <code>nil</code>; you check it</td><td><code>find</code> returns <code>undefined</code> silently</td></tr>
+  <tr><td>Aggregate</td><td><code>reduce</code>/<code>each_with_object</code> with a seed</td><td><code>reduce</code> with a seed object</td></tr>
+</table>
+<p>The lesson of the whole course lives in one line: <code>this.tasks.find(...)</code>
+returns a task <em>or</em> <code>undefined</code>, and the runtime will not stop
+you from reading <code>.done</code> off <code>undefined</code>. That is the same
+shape as Ruby's <code>find</code> handing back <code>nil</code> — the
+<code>if (!task) throw</code> guard here is exactly the <code>raise unless task</code>
+habit you already have, just spelled with JavaScript's syntax.</p>
+<p>Two other habits carried through here. Custom <code>Error</code> subclasses
+let callers tell <em>why</em> something failed with <code>instanceof</code>
+instead of string-matching messages — the same role Ruby's custom
+<code>StandardError</code> subclasses play with <code>rescue SomeError</code>,
+except each JavaScript constructor has to set <code>this.name</code> by hand
+since there is no automatic class-name-as-error-name behavior. And the array
+methods (<code>find</code>, <code>filter</code>, <code>reduce</code>) stayed the
+workhorses: they read almost exactly like Ruby's <code>find</code>,
+<code>select</code>, and <code>reduce</code>, just with block syntax swapped
+for arrow functions and no <code>Enumerable</code> mixin underneath — these are
+methods JavaScript's <code>Array.prototype</code> defines directly.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

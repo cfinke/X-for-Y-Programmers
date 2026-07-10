@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Vectors</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Vectors",
+
+  intro: `
+<p>A JavaScript <code>Array</code> is a growable, ordered list, and it
+is the collection you reach for by default. C++ gives you the same everyday tool
+under a different name: <code>std::vector&lt;T&gt;</code>. It stores its elements
+contiguously, grows as you push onto it, and — unlike a JavaScript array — holds
+exactly one element type, fixed at compile time.</p>
+<table>
+  <tr><th>JavaScript</th><th>C++</th></tr>
+  <tr><td><code>const xs = [];</code></td><td><code>std::vector&lt;int&gt; xs;</code></td></tr>
+  <tr><td><code>xs.push(5);</code></td><td><code>xs.push_back(5);</code></td></tr>
+  <tr><td><code>xs[0]</code></td><td><code>xs[0]</code> or <code>xs.at(0)</code></td></tr>
+  <tr><td><code>xs.length</code></td><td><code>xs.size()</code></td></tr>
+  <tr><td><code>for (const x of xs)</code></td><td><code>for (int x : xs)</code></td></tr>
+</table>
+<p>Two things to note. First, <code>xs.size()</code> returns an unsigned integer
+(<code>std::size_t</code>), not a plain <code>number</code>. Second, there are
+two ways to index: <code>xs[i]</code> is fast but unchecked (out of range is
+undefined behavior), while <code>xs.at(i)</code> does bounds-checking and throws
+<code>std::out_of_range</code> — the closer analogue to code that expects an
+error on a bad index.</p>`,
+
+  javascript: `function evensUpTo(n) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    if (i % 2 === 0) out.push(i);
+  }
+  return out;
+}
+
+function sum(xs) {
+  let total = 0;
+  for (const x of xs) total += x;
+  return total;
+}`,
+
+  task: `
+<p>Write these free functions that build and query
+<code>std::vector&lt;int&gt;</code>:</p>
+<ol>
+  <li><code>evensUpTo(int n)</code> returns a vector of every even number from
+      <code>0</code> to <code>n</code> inclusive. Build it with
+      <code>push_back</code>.</li>
+  <li><code>sum(const std::vector&lt;int&gt;&amp; xs)</code> returns the total of
+      all elements. Use a range-based <code>for</code>.</li>
+  <li><code>at(const std::vector&lt;int&gt;&amp; xs, int i)</code> returns the
+      element at index <code>i</code> using the bounds-checked
+      <code>xs.at(i)</code>.</li>
+  <li><code>withoutFirst(std::vector&lt;int&gt; xs)</code> takes a vector
+      <em>by value</em>, erases its first element with
+      <code>xs.erase(xs.begin())</code>, and returns it. (Erasing from an empty
+      vector is undefined; assume at least one element.)</li>
+</ol>`,
+
+  starter: `std::vector<int> evensUpTo(int n) {
+  return {}; // TODO
+}
+
+int sum(const std::vector<int>& xs) {
+  return 0; // TODO
+}
+
+int at(const std::vector<int>& xs, int i) {
+  return 0; // TODO: use bounds-checked access
+}
+
+std::vector<int> withoutFirst(std::vector<int> xs) {
+  return {}; // TODO: erase the first element
+}
+`,
+
+  requirements: [
+    { pattern: /push_back/, message: "Use push_back to grow the vector in evensUpTo" },
+    { pattern: /\.at\(/, message: "Use .at() for the bounds-checked accessor" },
+    { pattern: /\.erase\(/, message: "Use .erase() to remove the first element" },
+  ],
+
+  tests: [
+    { name: "evensUpTo(10) is {0,2,4,6,8,10}", code: "    expect_eq(evensUpTo(10), (std::vector<int>{0, 2, 4, 6, 8, 10}));" },
+    { name: "evensUpTo(0) is {0}", code: "    expect_eq(evensUpTo(0), (std::vector<int>{0}));" },
+    { name: "evensUpTo(1) is {0}", code: "    expect_eq(evensUpTo(1), (std::vector<int>{0}));" },
+    { name: "sum({1,2,3,4}) is 10", code: "    expect_eq(sum(std::vector<int>{1, 2, 3, 4}), 10);" },
+    { name: "sum({}) is 0", code: "    expect_eq(sum(std::vector<int>{}), 0);" },
+    { name: "at({10,20,30}, 1) is 20", code: "    expect_eq(at(std::vector<int>{10, 20, 30}, 1), 20);" },
+    { name: "withoutFirst({5,6,7}) is {6,7}", code: "    expect_eq(withoutFirst(std::vector<int>{5, 6, 7}), (std::vector<int>{6, 7}));" },
+  ],
+
+  solution: `std::vector<int> evensUpTo(int n) {
+  std::vector<int> out;
+  for (int i = 0; i <= n; i++) {
+    if (i % 2 == 0) out.push_back(i);
+  }
+  return out;
+}
+
+int sum(const std::vector<int>& xs) {
+  int total = 0;
+  for (int x : xs) total += x;
+  return total;
+}
+
+int at(const std::vector<int>& xs, int i) {
+  return xs.at(i);
+}
+
+std::vector<int> withoutFirst(std::vector<int> xs) {
+  xs.erase(xs.begin());
+  return xs;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>C++</th></tr>
+  <tr><td>Empty list</td><td><code>const xs = [];</code></td><td><code>std::vector&lt;T&gt; xs;</code></td></tr>
+  <tr><td>Append</td><td><code>xs.push(v)</code></td><td><code>xs.push_back(v)</code></td></tr>
+  <tr><td>Length</td><td><code>xs.length</code></td><td><code>xs.size()</code></td></tr>
+  <tr><td>Checked index</td><td><code>xs[i]</code> (undefined if OOB)</td><td><code>xs.at(i)</code> (throws)</td></tr>
+  <tr><td>Remove at index</td><td><code>xs.splice(0, 1)</code></td><td><code>xs.erase(xs.begin())</code></td></tr>
+  <tr><td>Insert at index</td><td><code>xs.splice(0, 0, v)</code></td><td><code>xs.insert(xs.begin(), v)</code></td></tr>
+</table>
+<p>The big mental shift is <em>copy vs. reference</em>. A parameter of type
+<code>std::vector&lt;int&gt;</code> (by value) is a full copy — mutating it does
+not touch the caller's vector, which is why <code>withoutFirst</code> can erase
+freely and hand back the result. A parameter of type
+<code>const std::vector&lt;int&gt;&amp;</code> (by <code>const</code> reference)
+avoids the copy and is the default for read-only access. In JavaScript every
+array is passed by reference; in C++ you choose per parameter.</p>
+<p><code>erase</code> and <code>insert</code> take <em>iterators</em>, not
+indices: <code>xs.begin()</code> points at the first element, and you can offset
+it with <code>xs.begin() + i</code>. That is the C++ equivalent of the index
+arithmetic <code>splice</code> hides for you.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

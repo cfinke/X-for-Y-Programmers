@@ -145,10 +145,10 @@ function runRustBinary(bin) {
 async function validateRust(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -252,10 +252,10 @@ function runPhp(program, label) {
 async function validatePhp(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -376,10 +376,10 @@ function runRuby(program, label) {
 async function validateRuby(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -492,10 +492,10 @@ async function runJava(program) {
 async function validateJava(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -626,10 +626,10 @@ function runCppBinary(bin) {
 async function validateCpp(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -755,10 +755,10 @@ function runPython(program, label) {
 async function validatePython(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -870,10 +870,10 @@ async function runCsharp(program) {
 async function validateCsharp(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -1013,10 +1013,10 @@ function runGo(program, label) {
 async function validateGo(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -1138,10 +1138,10 @@ async function runKotlin(program) {
 async function validateKotlin(html, file, course) {
   const problems = [];
   for (const ref of [
-    "../../shared/css/style.css",
+    "../../../shared/css/style.css",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -1256,11 +1256,11 @@ async function validate(file) {
   }
 
   for (const ref of [
-    "../../shared/css/style.css",
-    "../../shared/js/vendor/typescript.min.js",
+    "../../../shared/css/style.css",
+    "../../../shared/js/vendor/typescript.min.js",
     "../js/course.js",
     "../js/manifest.js",
-    "../../shared/js/harness.js",
+    "../../../shared/js/harness.js",
   ]) {
     if (!html.includes(ref)) problems.push(`missing reference to ${ref}`);
   }
@@ -1323,8 +1323,9 @@ async function validate(file) {
 }
 
 function discoverCourses() {
-  return fs.readdirSync(ROOT)
-    .map((d) => path.join(ROOT, d))
+  const base = path.join(ROOT, "lessons");
+  return fs.readdirSync(base)
+    .map((d) => path.join(base, d))
     .filter((d) => fs.existsSync(path.join(d, "js/course.js")))
     .sort();
 }

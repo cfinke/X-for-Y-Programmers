@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Associative Arrays → Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Associative Arrays → Objects",
+
+  intro: `
+<p>The other half of PHP's array — <code>['name' => 'Ada', 'role' => 'admin']</code>
+— maps to TypeScript <em>objects</em>. There are two distinct flavors, and PHP
+developers use associative arrays for both without noticing the difference. The
+first is a <strong>fixed shape</strong>: known keys, each with its own type.
+That gets an inline object type like
+<code>{ name: string; role: string }</code>. The second is a
+<strong>dictionary</strong>: arbitrary string keys mapping to one value type,
+like an array of usernames to ages. That gets
+<code>Record&lt;string, number&gt;</code>.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>['name' => 'Ada', 'role' => 'admin']</code></td><td><code>{ name: "Ada", role: "admin" }</code></td></tr>
+  <tr><td><code>$user['name']</code></td><td><code>user.name</code> (or <code>user["name"]</code>)</td></tr>
+  <tr><td><code>array_keys($ages)</code></td><td><code>Object.keys(ages)</code></td></tr>
+  <tr><td><code>foreach ($ages as $k => $v)</code></td><td><code>for (const [k, v] of Object.entries(ages))</code></td></tr>
+</table>
+<p>Iteration is the biggest habit change. You cannot <code>foreach</code> an
+object directly; instead <code>Object.keys(obj)</code> gives you the keys
+(PHP's <code>array_keys</code>) and <code>Object.entries(obj)</code> gives you
+<code>[key, value]</code> pairs — the direct equivalent of
+<code>foreach ($arr as $key => $value)</code>. Both return plain arrays, so
+everything from the previous lesson (and <code>.map()</code>, later) applies to
+them.</p>`,
+
+  php: `<?php
+$user = ['name' => 'Ada', 'role' => 'admin'];
+echo $user['name'];
+
+$ages = ['Ada' => 36, 'Rasmus' => 55];
+
+function listKeys(array $record): array {
+    return array_keys($record);
+}
+
+function summarize(array $ages): array {
+    $lines = [];
+    foreach ($ages as $name => $age) {
+        $lines[] = "$name is $age";
+    }
+    return $lines;
+}
+
+print_r(summarize($ages)); // ["Ada is 36", "Rasmus is 55"]`,
+
+  task: `
+<p>Rewrite the PHP as TypeScript:</p>
+<ol>
+  <li>Declare a constant <code>user</code> with the explicit inline object type
+      <code>{ name: string; role: string }</code> and the value
+      <code>{ name: "Ada", role: "admin" }</code> — the fixed-shape flavor.</li>
+  <li>Write <code>listKeys(record: Record&lt;string, number&gt;): string[]</code>
+      that returns the keys, using <code>Object.keys()</code> — the dictionary
+      flavor, PHP's <code>array_keys()</code>.</li>
+  <li>Write <code>summarize(ages: Record&lt;string, number&gt;): string[]</code>
+      that turns <code>{ Ada: 36, Rasmus: 55 }</code> into
+      <code>["Ada is 36", "Rasmus is 55"]</code>. Iterate with
+      <code>Object.entries()</code> — your <code>foreach ($ages as $name =>
+      $age)</code>.</li>
+</ol>`,
+
+  starter: `// 1. Give user an explicit inline object type: { name: string; role: string }
+const user = { name: "Ada", role: "admin" };
+
+// 2. array_keys($record) becomes Object.keys(record).
+function listKeys(record: Record<string, number>): string[] {
+  // TODO
+  return [];
+}
+
+// 3. foreach ($ages as $name => $age) becomes a loop over Object.entries(ages).
+function summarize(ages: Record<string, number>): string[] {
+  const lines: string[] = [];
+  // TODO: push one "<name> is <age>" line per entry
+  return lines;
+}
+`,
+
+  exportNames: ["user", "listKeys", "summarize"],
+
+  requirements: [
+    { pattern: /user\s*:\s*\{\s*name\s*:\s*string\s*[;,]\s*role\s*:\s*string\s*[;,]?\s*\}/, message: "Annotate user with the inline object type { name: string; role: string }" },
+    { pattern: /Record\s*<\s*string\s*,\s*number\s*>/, message: "Type the dictionaries as Record<string, number>" },
+    { pattern: /Object\s*\.\s*keys\s*\(/, message: "Use Object.keys() (TypeScript's array_keys)" },
+    { pattern: /Object\s*\.\s*entries\s*\(/, message: "Iterate key/value pairs with Object.entries() (your foreach $k => $v)" },
+  ],
+
+  tests: [
+    { name: 'user is { name: "Ada", role: "admin" }', run: (x) => expectDeepEqual(x.user, { name: "Ada", role: "admin" }) },
+    { name: "listKeys({ Ada: 36, Rasmus: 55 }) returns [\"Ada\", \"Rasmus\"]", run: (x) => expectDeepEqual(x.listKeys({ Ada: 36, Rasmus: 55 }), ["Ada", "Rasmus"]) },
+    { name: "listKeys({}) returns []", run: (x) => expectDeepEqual(x.listKeys({}), []) },
+    { name: 'summarize({ Ada: 36, Rasmus: 55 }) returns ["Ada is 36", "Rasmus is 55"]', run: (x) => expectDeepEqual(x.summarize({ Ada: 36, Rasmus: 55 }), ["Ada is 36", "Rasmus is 55"]) },
+    { name: 'summarize({ Grace: 85 }) returns ["Grace is 85"]', run: (x) => expectDeepEqual(x.summarize({ Grace: 85 }), ["Grace is 85"]) },
+    { name: "summarize({}) returns []", run: (x) => expectDeepEqual(x.summarize({}), []) },
+  ],
+
+  solution: `const user: { name: string; role: string } = { name: "Ada", role: "admin" };
+
+function listKeys(record: Record<string, number>): string[] {
+  return Object.keys(record);
+}
+
+function summarize(ages: Record<string, number>): string[] {
+  const lines: string[] = [];
+  for (const [name, age] of Object.entries(ages)) {
+    lines.push(\`\${name} is \${age}\`);
+  }
+  return lines;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>Fixed shape</td><td><code>['name' => 'Ada']</code></td><td><code>const u: { name: string } = { name: "Ada" };</code></td></tr>
+  <tr><td>Dictionary</td><td><code>['Ada' => 36, ...]</code></td><td><code>const ages: Record&lt;string, number&gt; = { Ada: 36 };</code></td></tr>
+  <tr><td>Read a value</td><td><code>$u['name']</code></td><td><code>u.name</code> or <code>u["name"]</code></td></tr>
+  <tr><td>All keys</td><td><code>array_keys($a)</code></td><td><code>Object.keys(a)</code></td></tr>
+  <tr><td>All values</td><td><code>array_values($a)</code></td><td><code>Object.values(a)</code></td></tr>
+  <tr><td>Iterate pairs</td><td><code>foreach ($a as $k => $v)</code></td><td><code>for (const [k, v] of Object.entries(a))</code></td></tr>
+  <tr><td>Key exists?</td><td><code>array_key_exists('k', $a)</code></td><td><code>"k" in a</code></td></tr>
+</table>
+<p>Choosing between the two flavors is the real skill: if you know the keys at
+design time (<code>name</code>, <code>role</code>), spell out the shape — the
+compiler will catch <code>user.nmae</code> typos that PHP would silently turn
+into a null. Reach for <code>Record&lt;string, T&gt;</code> only when keys are
+genuinely data, like usernames or IDs.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

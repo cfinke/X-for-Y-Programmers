@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>How do you share an implementation across classes that have no common
+ancestor? Kotlin's answers are interface methods with bodies — which cannot hold
+backing state — or interface delegation with <code>by</code>. PHP's answer is the
+<strong>trait</strong>: a real mixin. A trait is a bundle of methods (and even
+properties) that gets copy-pasted into any class that says
+<code>use TheTrait;</code>, as if you had written the methods in the class
+yourself.</p>
+<table>
+  <tr><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td><code>interface Describable { fun describe(): String {...} }</code></td><td><code>trait Describable { public function describe(): string {...} }</code></td></tr>
+  <tr><td><code>class Dog : Describable</code></td><td><code>class Dog { use Describable; }</code></td></tr>
+  <tr><td>Interface methods: no backing fields allowed</td><td>Traits may declare properties — stateful mixins</td></tr>
+  <tr><td>Diamond conflict: must override and call <code>super&lt;A&gt;</code></td><td>Conflict resolved with <code>insteadof</code> / <code>as</code></td></tr>
+  <tr><td>Is-a: the interface is a type</td><td>Not a type — <code>use</code> creates no type relationship</td></tr>
+</table>
+<p>Like an interface method with a body, a trait method can call <code>$this-&gt;name()</code>
+and trust the consuming class to provide it (declare it
+<code>abstract</code> in the trait to enforce that). Unlike a Kotlin interface method,
+a trait is <em>not a type</em>: using a trait gives a class behavior, not an
+<code>is</code> relationship — pair the trait with an interface when
+callers need one. When two traits collide on a method name, you pick a winner
+explicitly: <code>use A, B { A::greet insteadof B; }</code>.</p>`,
+
+  kotlin: `interface Describable {
+    fun name(): String // implementor must supply this
+
+    // Method with a body: shared behavior, but no backing state allowed.
+    fun describe(): String = "This is \${name()}"
+}
+
+class Dog : Describable {
+    override fun name(): String = "Rex"
+}
+
+class Robot : Describable {
+    override fun name(): String = "Unit 734"
+}
+
+// Dog().describe()   -> "This is Rex"
+// Robot().describe() -> "This is Unit 734"`,
+
+  task: `
+<p>Port the interface-method design to a PHP trait mixed into two unrelated
+classes:</p>
+<ol>
+  <li>Declare <code>trait Describable</code> with a public method
+      <code>describe(): string</code> that returns <code>"This is "</code>
+      followed by <code>$this-&gt;name()</code> — the trait calls a method it
+      does not define, exactly like the interface method calling
+      <code>name()</code>.</li>
+  <li>Declare <code>class Dog</code> that mixes the trait in with
+      <code>use Describable;</code> and defines
+      <code>name(): string</code> returning <code>"Rex"</code>.</li>
+  <li>Declare <code>class Robot</code> that also uses the trait and defines
+      <code>name(): string</code> returning <code>"Unit 734"</code>.</li>
+</ol>
+<p>The tests construct both classes and call <code>-&gt;describe()</code> and
+<code>-&gt;name()</code> on each.</p>`,
+
+  starter: `<?php
+
+// 1. The trait: a mixin. describe() may call $this->name() and
+//    trust the consuming class to provide it.
+trait Describable {
+    public function describe(): string {
+        throw new Exception('TODO: return "This is " followed by $this->name()');
+    }
+}
+
+// 2. "use Describable;" copies the trait's methods into the class —
+//    note: inside a class body, use means "mix in", not "import".
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: implement Dog::name");
+    }
+}
+
+// 3. Robot shares the behavior with no common superclass.
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        throw new Exception("TODO: implement Robot::name");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describable/, message: "Declare trait Describable" },
+    { pattern: /use\s+Describable/, message: "Mix the trait into each class with use Describable;" },
+  ],
+
+  tests: [
+    { name: "(new Dog())->describe() returns 'This is Rex'",
+      code: "expect_eq((new Dog())->describe(), 'This is Rex');" },
+    { name: "(new Robot())->describe() returns 'This is Unit 734'",
+      code: "expect_eq((new Robot())->describe(), 'This is Unit 734');" },
+    { name: "(new Dog())->name() returns 'Rex'",
+      code: "expect_eq((new Dog())->name(), 'Rex');" },
+    { name: "(new Robot())->name() returns 'Unit 734'",
+      code: "expect_eq((new Robot())->name(), 'Unit 734');" },
+    { name: "the trait's method really lives on both classes",
+      code: "expect_true(method_exists(Dog::class, 'describe'));\nexpect_true(method_exists(Robot::class, 'describe'));" },
+  ],
+
+  solution: `<?php
+
+trait Describable {
+    public function describe(): string {
+        return 'This is ' . $this->name();
+    }
+}
+
+class Dog {
+    use Describable;
+
+    public function name(): string {
+        return 'Rex';
+    }
+}
+
+class Robot {
+    use Describable;
+
+    public function name(): string {
+        return 'Unit 734';
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>PHP</th></tr>
+  <tr><td>Shared behavior, no ancestor</td><td>Interface methods with bodies</td><td><code>trait X { ... }</code> + <code>use X;</code></td></tr>
+  <tr><td>Shared <em>state</em></td><td>Impossible in interfaces — delegate instead</td><td>Traits may declare properties</td></tr>
+  <tr><td>Requiring a hook method</td><td>Abstract interface member (no body)</td><td><code>abstract public function name(): string;</code> in the trait</td></tr>
+  <tr><td>Name clash between two sources</td><td>Override and call <code>super&lt;A&gt;.greet()</code></td><td><code>use A, B { A::greet insteadof B; B::greet as greetB; }</code></td></tr>
+  <tr><td>Type relationship</td><td><code>is</code> works — the interface is a type</td><td>None — a trait is invisible to <code>instanceof</code></td></tr>
+  <tr><td>Multiple at once</td><td><code>class C : A, B</code></td><td><code>use A, B;</code></td></tr>
+</table>
+<p>Think of a trait as compiler-assisted copy-paste: the methods are flattened
+into each consuming class at compile time, so <code>$this</code> means the
+consuming object, private members are reachable, and there is no dispatch
+cost. The corollary is the design rule Kotlin's split enforces for you — a trait
+gives you reuse but not polymorphism, so idiomatic PHP pairs a trait with a
+small interface: the interface is the contract callers type against, the trait
+is the free default implementation.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

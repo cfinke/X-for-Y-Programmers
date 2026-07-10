@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>This is the most familiar lesson in the course: <code>extends</code>,
+<code>implements</code>, and <code>abstract</code> carry over from Java
+verbatim. An <code>abstract class</code> cannot be instantiated, may mix
+abstract method signatures with concrete implementations, and subclasses
+must fill in the abstract members — exactly the template-method setup you
+already write. Even the constructor chain is the same idea:
+a subclass constructor calls <code>super(...)</code> before touching
+<code>this</code>, and TypeScript enforces that ordering just as
+<code>javac</code> does.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>public abstract class Shape { ... }</code></td><td><code>abstract class Shape { ... }</code></td></tr>
+  <tr><td><code>public abstract double area();</code></td><td><code>abstract area(): number;</code></td></tr>
+  <tr><td><code>class Circle extends Shape { ... }</code></td><td><code>class Circle extends Shape { ... }</code></td></tr>
+  <tr><td><code>super(...)</code> first line of subclass constructor</td><td><code>super(...)</code> before any use of <code>this</code></td></tr>
+  <tr><td><code>@Override public double area() { ... }</code></td><td><code>area(): number { ... }</code> — no annotation needed</td></tr>
+  <tr><td><code>c instanceof Shape</code></td><td><code>c instanceof Shape</code></td></tr>
+</table>
+<p>The differences are subtractions. There is no <code>@Override</code>
+annotation to remember: the compiler checks every override against the base
+signature automatically, and a typo like <code>aera()</code> fails to
+compile because the abstract member is left unimplemented. There is also
+only <em>single</em> class inheritance, same as Java — one
+<code>extends</code>, any number of <code>implements</code>. One runtime
+caveat worth knowing: <code>abstract</code> is a compile-time concept that
+is erased from the emitted JavaScript, so the "cannot instantiate" guarantee
+comes from the type checker, not the runtime.</p>`,
+
+  java: `public abstract class Shape {
+    public abstract double area();          // subclasses must implement
+
+    public String describe() {              // template method — calls area()
+        return "A shape with area " + Math.round(area() * 100) / 100.0;
+    }
+}
+
+public class Circle extends Shape {
+    private final double radius;
+
+    public Circle(double radius) {
+        super();                            // implicit in Java, explicit here
+        this.radius = radius;
+    }
+
+    @Override
+    public double area() { return Math.PI * radius * radius; }
+}`,
+
+  task: `
+<p>Port the shape hierarchy:</p>
+<ol>
+  <li>Declare <code>abstract class Shape</code> with an abstract method
+      <code>area(): number</code> (signature only — no body, no braces,
+      just like Java) and a concrete
+      <code>describe(): string</code> that returns
+      <code>"A shape with area " + Math.round(this.area() * 100) / 100</code>.
+      That is the template method: the base class owns the wording,
+      subclasses own the math.</li>
+  <li>Write <code>class Circle extends Shape</code> whose constructor takes
+      <code>radius: number</code>, calls <code>super()</code>, and stores
+      the radius. Implement <code>area()</code> as
+      <code>Math.PI * radius * radius</code> — no <code>@Override</code>
+      annotation exists or is needed.</li>
+  <li>Write <code>class Rectangle extends Shape</code> whose constructor
+      takes <code>width: number</code> and <code>height: number</code>,
+      calls <code>super()</code>, and implements <code>area()</code> as
+      <code>width * height</code>.</li>
+</ol>`,
+
+  starter: `// 1. abstract class, exactly like Java. Declare the abstract method as
+//    a bare signature ending in a semicolon: abstract area(): number;
+abstract class Shape {
+  // TODO: abstract area(): number;
+
+  // TODO: the template method — concrete, calls this.area():
+  //       "A shape with area " + Math.round(this.area() * 100) / 100
+  describe(): string {
+    return "";
+  }
+}
+
+// 2. Same extends keyword. Constructor takes radius, calls super() first.
+//    Then implement area() — no @Override annotation exists in TS.
+class Circle extends Shape {
+  // TODO
+}
+
+// 3. Constructor takes width and height; area() is width * height.
+class Rectangle extends Shape {
+  // TODO
+}
+`,
+
+  exportNames: ["Shape", "Circle", "Rectangle"],
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Shape/, message: "Declare Shape with abstract class — the keyword carries over from Java" },
+    { pattern: /abstract\s+area\s*\(\s*\)\s*:\s*number/, message: "Declare the abstract method signature: abstract area(): number;" },
+    { pattern: /extends\s+Shape/, message: "Use extends Shape for the subclasses — same keyword as Java" },
+    { pattern: /super\s*\(\s*\)/, message: "Call super() in the subclass constructors before using this" },
+  ],
+
+  tests: [
+    { name: "new Circle(2).area() is about 12.57", run: (x) => expectEqual(Math.round(new x.Circle(2).area() * 100) / 100, 12.57) },
+    { name: "new Rectangle(3, 4).area() is 12", run: (x) => expectEqual(new x.Rectangle(3, 4).area(), 12) },
+    { name: "Circle inherits describe() from Shape (template method)", run: (x) => expectEqual(new x.Circle(1).describe(), "A shape with area 3.14") },
+    { name: "Rectangle inherits describe() too", run: (x) => expectEqual(new x.Rectangle(3, 4).describe(), "A shape with area 12") },
+    { name: "both subclasses are instanceof Shape", run: (x) => { expectTruthy(new x.Circle(1) instanceof x.Shape); expectTruthy(new x.Rectangle(1, 2) instanceof x.Shape); } },
+  ],
+
+  solution: `abstract class Shape {
+  abstract area(): number;
+
+  describe(): string {
+    return "A shape with area " + Math.round(this.area() * 100) / 100;
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super();
+  }
+
+  area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(private width: number, private height: number) {
+    super();
+  }
+
+  area(): number {
+    return this.width * this.height;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Abstract class</td><td><code>public abstract class Shape</code></td><td><code>abstract class Shape</code></td></tr>
+  <tr><td>Abstract method</td><td><code>public abstract double area();</code></td><td><code>abstract area(): number;</code></td></tr>
+  <tr><td>Subclassing</td><td><code>class Circle extends Shape</code></td><td><code>class Circle extends Shape</code> — identical</td></tr>
+  <tr><td>Constructor chaining</td><td><code>super(...)</code> first statement</td><td><code>super(...)</code> before any <code>this</code> access</td></tr>
+  <tr><td>Override marker</td><td><code>@Override</code> annotation</td><td>none needed — checked by signature</td></tr>
+  <tr><td>Multiple inheritance</td><td>one <code>extends</code>, many <code>implements</code></td><td>same rule</td></tr>
+  <tr><td>Runtime type check</td><td><code>x instanceof Shape</code></td><td><code>x instanceof Shape</code></td></tr>
+</table>
+<p>The design insight transfers untouched: <code>describe()</code> is a
+template method, written once in the base class in terms of the abstract
+<code>area()</code> that each subclass supplies. What is worth internalizing
+is <em>when</em> to reach for this in TypeScript. Java pushes you toward
+class hierarchies because classes are the only tool; TypeScript offers
+structural interfaces (lesson 8) and discriminated unions (lesson 17) that
+often replace inheritance entirely. Reserve <code>abstract class</code> for
+the cases it is genuinely best at — shared concrete behavior plus enforced
+extension points — and remember that <code>abstract</code> is erased at
+runtime, so the no-instantiation rule is enforced by the compiler rather
+than by a thrown exception.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

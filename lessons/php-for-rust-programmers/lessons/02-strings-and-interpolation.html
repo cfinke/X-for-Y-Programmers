@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings & Interpolation</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings & Interpolation",
+
+  intro: `
+<p>The <code>String</code> vs <code>&amp;str</code> split — owned buffer
+versus borrowed slice, and every lifetime annotation that comes with it —
+simply does not exist in PHP. There is <em>one</em> string type. You never
+borrow it, you never clone it to appease a checker, and concatenation needs
+no ownership dance: the concat operator is <code>.</code> (a period), and
+<code>+</code> is strictly arithmetic — <code>"a" + "b"</code> is a
+<code>TypeError</code>, not "ab".</p>
+<table>
+  <tr><th>Rust</th><th>PHP</th></tr>
+  <tr><td><code>format!("{name} is {age}")</code></td><td><code>"$name is $age"</code></td></tr>
+  <tr><td><code>a + &amp;b</code> (moves <code>a</code>)</td><td><code>$a . $b</code> (no moves anywhere)</td></tr>
+  <tr><td><code>s.to_uppercase()</code></td><td><code>strtoupper($s)</code></td></tr>
+  <tr><td><code>haystack.contains(needle)</code></td><td><code>str_contains($haystack, $needle)</code></td></tr>
+  <tr><td><code>s.len()</code> (bytes)</td><td><code>strlen($s)</code> (bytes — same caveat!)</td></tr>
+  <tr><td><code>vec.join(", ")</code></td><td><code>implode(", ", $arr)</code></td></tr>
+</table>
+<p>Interpolation lives in every double-quoted string: <code>"$name is
+$age"</code> is <code>format!</code> as plain syntax. Single-quoted strings
+are literal — <code>'$name'</code> is six characters starting with a dollar
+sign. And where Rust hangs methods off the string, PHP's toolbox is
+free functions with a <code>str</code>-ish prefix, taking the string as an
+argument: <code>strtoupper($s)</code>, not <code>$s-&gt;to_uppercase()</code>.
+One familiar face: <code>strlen</code> counts <em>bytes</em>, exactly like
+<code>s.len()</code> — both languages make you reach for other tools
+(<code>mb_strlen</code> / <code>.chars().count()</code>) for characters.</p>`,
+
+  rust: `fn shout(s: &str) -> String {
+    s.to_uppercase()
+}
+
+fn greet(name: &str, age: u32) -> String {
+    format!("{name} is {age}")
+}
+
+fn contains_word(haystack: &str, needle: &str) -> bool {
+    haystack.contains(needle)
+}
+
+fn join_words(words: &[String]) -> String {
+    words.join(", ")
+}
+
+fn main() {
+    let words = vec!["one".to_string(), "two".to_string()];
+    println!("{}", join_words(&words)); // "one, two"
+    println!("{}", shout("hello"));     // "HELLO"
+}`,
+
+  task: `
+<p>Port the four helpers, using PHP's string toolbox:</p>
+<ol>
+  <li><code>shout(string $s): string</code> — uppercase the input with
+      <code>strtoupper</code> (a free function, not a method).</li>
+  <li><code>greet(string $name, int $age): string</code> — return
+      <code>"Ada is 36"</code>-style text via double-quote interpolation:
+      <code>"$name is $age"</code>.</li>
+  <li><code>contains_word(string $haystack, string $needle): bool</code> —
+      wrap <code>str_contains</code>; note the argument order matches
+      the Rust method's receiver-then-argument reading.</li>
+  <li><code>join_words(array $words): string</code> — glue with
+      <code>", "</code> using <code>implode</code>. Careful: the glue comes
+      <em>first</em>, flipped from <code>vec.join(", ")</code>.</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. Uppercase. Rust: s.to_uppercase()  PHP: strtoupper($s)
+function shout(string $s): string {
+    throw new Exception("TODO: implement shout");
+}
+
+// 2. format!("{name} is {age}")  ->  "$name is $age"
+function greet(string $name, int $age): string {
+    throw new Exception("TODO: implement greet");
+}
+
+// 3. haystack.contains(needle)  ->  str_contains($haystack, $needle)
+function contains_word(string $haystack, string $needle): bool {
+    throw new Exception("TODO: implement contains_word");
+}
+
+// 4. vec.join(", ")  ->  implode(", ", $words) — glue first!
+function join_words(array $words): string {
+    throw new Exception("TODO: implement join_words");
+}
+`,
+
+  requirements: [
+    { pattern: /"\$\w+|\{\$\w+/, message: "Use double-quote interpolation in greet" },
+    { pattern: /strtoupper/, message: "Use strtoupper in shout" },
+    { pattern: /str_contains/, message: "Use str_contains in contains_word" },
+    { pattern: /implode/, message: "Use implode in join_words" },
+  ],
+
+  tests: [
+    { name: 'shout("hello") returns "HELLO"',
+      code: 'expect_eq(shout("hello"), "HELLO");' },
+    { name: 'greet("Ada", 36) returns "Ada is 36"',
+      code: 'expect_eq(greet("Ada", 36), "Ada is 36");' },
+    { name: 'contains_word("the quick brown fox", "quick") is true',
+      code: 'expect_true(contains_word("the quick brown fox", "quick"));' },
+    { name: 'contains_word("the quick brown fox", "slow") is false',
+      code: 'expect_eq(contains_word("the quick brown fox", "slow"), false);' },
+    { name: 'join_words(["one", "two", "three"]) returns "one, two, three"',
+      code: 'expect_eq(join_words(["one", "two", "three"]), "one, two, three");' },
+    { name: 'join_words([]) returns ""',
+      code: 'expect_eq(join_words([]), "");' },
+  ],
+
+  solution: `<?php
+
+function shout(string $s): string {
+    return strtoupper($s);
+}
+
+function greet(string $name, int $age): string {
+    return "$name is $age";
+}
+
+function contains_word(string $haystack, string $needle): bool {
+    return str_contains($haystack, $needle);
+}
+
+function join_words(array $words): string {
+    return implode(", ", $words);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>PHP</th></tr>
+  <tr><td>String types</td><td><code>String</code> + <code>&amp;str</code> (+ lifetimes)</td><td>One <code>string</code> type, no borrows</td></tr>
+  <tr><td>Interpolation</td><td><code>format!("{name}")</code></td><td><code>"$name"</code>; <code>'$name'</code> stays literal</td></tr>
+  <tr><td>Concatenation</td><td><code>a + &amp;b</code>, <code>format!</code></td><td><code>$a . $b</code> (<code>+</code> is numbers only)</td></tr>
+  <tr><td>Uppercase</td><td><code>s.to_uppercase()</code></td><td><code>strtoupper($s)</code></td></tr>
+  <tr><td>Substring test</td><td><code>h.contains(n)</code></td><td><code>str_contains($h, $n)</code></td></tr>
+  <tr><td>Length</td><td><code>s.len()</code> — bytes</td><td><code>strlen($s)</code> — bytes too</td></tr>
+  <tr><td>Join</td><td><code>vec.join(", ")</code></td><td><code>implode(", ", $arr)</code> — glue first</td></tr>
+</table>
+<p>What vanished with <code>&amp;str</code> is real: no signature tells you
+whether a function keeps your string, and nothing stops an accidental copy.
+But strings here are cheap copy-on-write values, so the whole
+clone-or-borrow decision tree — the thing that makes Rust string code
+paragraph-long — collapses into "just pass it". The complexity you keep is
+remembering which of the ~100 <code>str_*</code> functions takes the
+haystack first; when in doubt, the needle is usually last.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

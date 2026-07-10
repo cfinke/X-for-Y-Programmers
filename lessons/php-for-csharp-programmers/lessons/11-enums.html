@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Enums</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Enums",
+
+  intro: `
+<p>A C# <code>enum</code> is, under the hood, a set of named integers — which
+is why serializing one means <code>(int)</code> casts or
+<code>ToString()</code>, and why any stray <code>int</code> can be cast into
+an enum value that doesn't exist. PHP arrived at enums late (8.1, in 2021)
+and skipped that legacy entirely: a <em>backed enum</em> declares its backing
+type up front — <code>enum OrderStatus: string</code> — and each case carries
+a real string (or int) value. Reading it is just <code>-&gt;value</code>; no
+cast, and no way to conjure a case that wasn't declared.</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>enum OrderStatus { Pending, ... }</code> (named ints)</td><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td></tr>
+  <tr><td><code>(int)status</code> / <code>status.ToString()</code></td><td><code>$status-&gt;value</code> (the backing value), <code>$status-&gt;name</code></td></tr>
+  <tr><td><code>Enum.Parse&lt;T&gt;(s)</code> (throws)</td><td><code>OrderStatus::from($s)</code> (throws <code>ValueError</code>)</td></tr>
+  <tr><td><code>Enum.TryParse(s, out var v)</code></td><td><code>OrderStatus::tryFrom($s)</code> — returns <code>null</code>, no <code>out</code> param</td></tr>
+  <tr><td><code>Enum.GetValues&lt;T&gt;()</code></td><td><code>OrderStatus::cases()</code></td></tr>
+</table>
+<p>Two more upgrades over C#. First, each case is a genuine singleton object,
+so <code>===</code> comparison is exact and <code>match($status)</code> can
+dispatch on cases with exhaustiveness checking at runtime (an unhandled case
+throws <code>\\UnhandledMatchError</code>). Second, enums can declare
+<em>methods</em> — behavior lives on the enum itself instead of in scattered
+extension methods or switch helpers.</p>`,
+
+  csharp: `enum OrderStatus { Pending, Shipped, Delivered }
+
+string StatusLabel(OrderStatus status) => status switch
+{
+    OrderStatus.Pending   => "Awaiting fulfillment",
+    OrderStatus.Shipped   => "In transit",
+    OrderStatus.Delivered => "Delivered",
+    _ => throw new ArgumentOutOfRangeException(nameof(status)),
+};
+
+OrderStatus? ParseStatus(string value) =>
+    Enum.TryParse<OrderStatus>(value, true, out var s)
+        ? s : null;
+
+// Serialization means casting the named int around:
+Console.WriteLine((int)OrderStatus.Shipped);          // 1
+Console.WriteLine(StatusLabel(OrderStatus.Shipped));  // In transit`,
+
+  task: `
+<p>The string-backed enum is written for you in the starter. Port the two
+helpers:</p>
+<ol>
+  <li><code>status_label(OrderStatus $status): string</code> — a
+      <code>match($status)</code> over the three cases, returning
+      <code>"Awaiting fulfillment"</code> for <code>Pending</code>,
+      <code>"In transit"</code> for <code>Shipped</code>, and
+      <code>"Delivered"</code> for <code>Delivered</code>. No default arm
+      needed — with all cases covered, <code>match</code> is already
+      exhaustive.</li>
+  <li><code>parse_status(string $value): ?OrderStatus</code> — the whole
+      <code>TryParse</code> dance is one call:
+      <code>OrderStatus::tryFrom($value)</code>. It returns the case whose
+      <em>backing value</em> matches (so <code>"pending"</code>, not
+      <code>"Pending"</code>), or <code>null</code> — which is exactly your
+      declared return type.</li>
+</ol>`,
+
+  starter: `<?php
+
+// Given: a string-backed enum. Each case carries its wire value —
+// no (int) casts, no ToString() round-trips.
+enum OrderStatus: string {
+    case Pending   = 'pending';
+    case Shipped   = 'shipped';
+    case Delivered = 'delivered';
+}
+
+// 1. C#: status switch { ... }  ->  PHP: match($status) { ... }
+//    Arms are OrderStatus::Pending => "Awaiting fulfillment", etc.
+function status_label(OrderStatus $status): string {
+    throw new Exception("TODO: implement status_label");
+}
+
+// 2. C#: Enum.TryParse(value, out var s) ? s : null
+//    PHP: one call, null on a miss, no out param.
+function parse_status(string $value): ?OrderStatus {
+    throw new Exception("TODO: implement parse_status");
+}
+`,
+
+  requirements: [
+    { pattern: /enum\s+OrderStatus\s*:\s*string/, message: "Keep the string-backed enum declaration: enum OrderStatus: string" },
+    { pattern: /case\s+\w+\s*=/, message: "Each case carries a backing value: case Pending = 'pending';" },
+    { pattern: /::tryFrom|::from/, message: "Parse the string with OrderStatus::tryFrom (or ::from)" },
+    { pattern: /match\s*\(/, message: "Dispatch on the case with a match(...) expression in status_label" },
+  ],
+
+  tests: [
+    { name: "OrderStatus::Pending->value reads the backing string, no cast",
+      code: 'expect_eq(OrderStatus::Pending->value, "pending");' },
+    { name: 'status_label(OrderStatus::Pending) returns "Awaiting fulfillment"',
+      code: 'expect_eq(status_label(OrderStatus::Pending), "Awaiting fulfillment");' },
+    { name: 'status_label(OrderStatus::Shipped) returns "In transit"',
+      code: 'expect_eq(status_label(OrderStatus::Shipped), "In transit");' },
+    { name: 'parse_status("delivered") returns the OrderStatus::Delivered case',
+      code: 'expect_eq(parse_status("delivered"), OrderStatus::Delivered);' },
+    { name: 'parse_status("bogus") returns null (tryFrom, not from)',
+      code: 'expect_eq(parse_status("bogus"), null);' },
+    { name: "OrderStatus::cases() lists all 3 cases (GetValues)",
+      code: 'expect_eq(count(OrderStatus::cases()), 3);' },
+  ],
+
+  solution: `<?php
+
+enum OrderStatus: string {
+    case Pending   = 'pending';
+    case Shipped   = 'shipped';
+    case Delivered = 'delivered';
+}
+
+function status_label(OrderStatus $status): string {
+    return match($status) {
+        OrderStatus::Pending   => "Awaiting fulfillment",
+        OrderStatus::Shipped   => "In transit",
+        OrderStatus::Delivered => "Delivered",
+    };
+}
+
+function parse_status(string $value): ?OrderStatus {
+    return OrderStatus::tryFrom($value);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Declare</td><td><code>enum E { A, B }</code> (int-backed, implicitly)</td><td><code>enum E: string { case A = 'a'; }</code> (or <code>: int</code>, or pure — no backing at all)</td></tr>
+  <tr><td>Backing value</td><td><code>(int)e</code></td><td><code>$e-&gt;value</code></td></tr>
+  <tr><td>Case name</td><td><code>e.ToString()</code></td><td><code>$e-&gt;name</code></td></tr>
+  <tr><td>Parse (throwing)</td><td><code>Enum.Parse&lt;E&gt;(s)</code></td><td><code>E::from($s)</code></td></tr>
+  <tr><td>Parse (safe)</td><td><code>Enum.TryParse(s, out var v)</code></td><td><code>E::tryFrom($s)</code> — <code>?E</code>, no out param</td></tr>
+  <tr><td>All values</td><td><code>Enum.GetValues&lt;E&gt;()</code></td><td><code>E::cases()</code></td></tr>
+  <tr><td>Behavior</td><td>extension methods, switch helpers</td><td>methods declared inside the enum body</td></tr>
+</table>
+<p>The mental upgrade: a PHP enum case is an <em>object</em>, not a number in
+a costume. <code>(OrderStatus)42</code> — C#'s classic hole, where an
+undeclared value sneaks into the type — simply cannot happen;
+<code>from</code>/<code>tryFrom</code> are the only doors in, and both check.
+Since cases can carry methods (and implement interfaces), the
+"enum + static helper class" pattern you've written a hundred times in C#
+collapses into one declaration.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

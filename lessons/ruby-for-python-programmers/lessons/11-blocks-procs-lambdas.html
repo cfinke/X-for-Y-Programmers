@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Blocks, Procs & Lambdas</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Blocks, Procs & Lambdas",
+
+  intro: `
+<p>Python gives you two ways to hand code to a function, and both chafe:
+<code>lambda</code> is limited to a single expression, and anything bigger
+needs a full <code>def</code> somewhere above, then passed in by name. Ruby's
+answer is the <strong>block</strong> — a full multi-line anonymous callback
+that rides along <em>outside</em> the parentheses:
+<code>arr.each { |x| puts x }</code> for one-liners, <code>do ... end</code>
+for longer bodies. Nearly every Ruby method you'll meet accepts one.</p>
+<table>
+  <tr><th>Python</th><th>Ruby</th></tr>
+  <tr><td><code>map(str.upper, words)</code></td><td><code>words.map(&amp;:upcase)</code></td></tr>
+  <tr><td><code>f = lambda x: x * 2</code> (one expression only)</td><td><code>f = -&gt;(x) { x * 2 }</code> (any length)</td></tr>
+  <tr><td><code>f(3)</code></td><td><code>f.call(3)</code></td></tr>
+  <tr><td>pass a callback: <code>retry_op(handler)</code></td><td>pass a block: <code>retry_op { |e| log(e) }</code></td></tr>
+</table>
+<p>Inside a method, the block is invisible until you <code>yield</code> to it —
+<code>yield(x)</code> calls the block with <code>x</code>, and
+<code>block_given?</code> tells you whether a caller supplied one (Ruby's
+<code>yield</code> has nothing to do with Python generators). When you need a
+callback as a first-class <em>value</em> — stored, returned, passed around —
+reach for the lambda literal <code>-&gt;(x) { x * 2 }</code>, invoked with
+<code>.call</code>. And the idiom you'll see everywhere:
+<code>map(&amp;:upcase)</code>, where <code>&amp;:symbol</code> expands to
+"call this method on each element" — Ruby's spelling of
+<code>map(str.upper, words)</code>.</p>`,
+
+  python: `from typing import Callable
+
+# Python: lambda is one expression only.
+double = lambda x: x * 2
+
+def apply_twice(f: Callable, x):
+    return f(f(x))
+
+print(apply_twice(double, 3))        # 12
+
+# Anything multi-line needs a full def...
+def shout(s: str) -> str:
+    return s.upper() + "!"
+
+# ...passed by name, inside the parens.
+words = ["hi", "there"]
+print(list(map(str.upper, words)))   # ['HI', 'THERE']
+print([shout(w) for w in words])     # ['HI!', 'THERE!']`,
+
+  task: `
+<p>Rewrite the callback patterns the Ruby way:</p>
+<ol>
+  <li><code>apply_twice(x)</code> — takes a value <em>and a block</em>, and
+      applies the block twice: <code>yield(yield(x))</code>. Callers will
+      write <code>apply_twice(3) { |v| v * 2 }</code>. Note: the block is not
+      a parameter — it arrives invisibly, and <code>yield</code> calls it.</li>
+  <li><code>maybe_yield(x)</code> — if a block was given
+      (<code>block_given?</code>), return <code>yield(x)</code>; otherwise
+      return <code>x</code> unchanged.</li>
+  <li><code>make_multiplier(n)</code> — return a lambda
+      <code>-&gt;(x) { x * n }</code>. Like a Python closure returning a
+      <code>lambda</code>, but callers invoke it with <code>.call</code>.</li>
+  <li><code>shout_all(words)</code> — uppercase every word using the
+      <code>&amp;:symbol</code> shorthand: <code>words.map(&amp;:upcase)</code>.</li>
+</ol>`,
+
+  starter: `# 1. apply_twice: the block arrives invisibly — call it with yield.
+#    Python: f(f(x))  ->  Ruby: yield(yield(x))
+def apply_twice(x)
+  raise NotImplementedError, "TODO: implement apply_twice"
+end
+
+# 2. maybe_yield: block_given? tells you whether the caller passed a block.
+def maybe_yield(x)
+  raise NotImplementedError, "TODO: implement maybe_yield"
+end
+
+# 3. make_multiplier: return a lambda ->(x) { ... } closing over n.
+def make_multiplier(n)
+  raise NotImplementedError, "TODO: implement make_multiplier"
+end
+
+# 4. shout_all: map(str.upper, words) becomes map with &:upcase.
+def shout_all(words)
+  raise NotImplementedError, "TODO: implement shout_all"
+end
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Call the block with yield inside apply_twice" },
+    { pattern: /block_given\?/, message: "Guard maybe_yield with block_given?" },
+    { pattern: /->\s*\(/, message: "Build the multiplier with the ->(x) { } lambda literal" },
+    { pattern: /&:/, message: "Use the &:symbol shorthand in shout_all" },
+  ],
+
+  tests: [
+    { name: "apply_twice(3) { |v| v * 2 } returns 12",
+      code: '  expect_eq(apply_twice(3) { |v| v * 2 }, 12)' },
+    { name: 'apply_twice("a") { |s| s + "!" } returns "a!!"',
+      code: '  expect_eq(apply_twice("a") { |s| s + "!" }, "a!!")' },
+    { name: "maybe_yield(5) { |v| v * 10 } returns 50",
+      code: '  expect_eq(maybe_yield(5) { |v| v * 10 }, 50)' },
+    { name: "maybe_yield(5) with no block returns 5",
+      code: '  expect_eq(maybe_yield(5), 5)' },
+    { name: "make_multiplier(3).call(7) returns 21",
+      code: '  expect_eq(make_multiplier(3).call(7), 21)' },
+    { name: 'shout_all(["hi", "there"]) returns ["HI", "THERE"]',
+      code: '  expect_eq(shout_all(["hi", "there"]), ["HI", "THERE"])' },
+  ],
+
+  solution: `def apply_twice(x)
+  yield(yield(x))
+end
+
+def maybe_yield(x)
+  block_given? ? yield(x) : x
+end
+
+def make_multiplier(n)
+  ->(x) { x * n }
+end
+
+def shout_all(words)
+  words.map(&:upcase)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+  <tr><td>Inline callback</td><td><code>lambda x: x * 2</code> (one expression)</td><td>block: <code>{ |x| x * 2 }</code> or <code>do ... end</code> (any length)</td></tr>
+  <tr><td>Call the callback</td><td><code>f(x)</code> — it's a parameter</td><td><code>yield(x)</code> — the block is implicit</td></tr>
+  <tr><td>Was one passed?</td><td><code>if f is not None:</code></td><td><code>block_given?</code></td></tr>
+  <tr><td>First-class function</td><td><code>f = lambda x: x * 2</code></td><td><code>f = -&gt;(x) { x * 2 }</code>, then <code>f.call(3)</code></td></tr>
+  <tr><td>Method-by-name map</td><td><code>map(str.upper, words)</code></td><td><code>words.map(&amp;:upcase)</code></td></tr>
+  <tr><td>Closure factory</td><td><code>def make(n): return lambda x: x * n</code></td><td><code>-&gt;(x) { x * n }</code> as the last expression</td></tr>
+</table>
+<p>The deep difference: Python treats functions as values first, so callbacks
+go inside the parens like any argument. Ruby treats the trailing block as its
+own grammatical slot — every method call may carry exactly one — which is why
+Ruby never needed multi-line lambdas to feel ergonomic. When you genuinely
+need the value form, <code>-&gt;</code> gives you one, and <code>.call</code>
+(not parentheses alone) invokes it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

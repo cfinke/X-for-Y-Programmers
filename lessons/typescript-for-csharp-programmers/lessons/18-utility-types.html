@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Utility Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Utility Types",
+
+  intro: `
+<p>Every C# codebase accumulates them: the <code>UserPatch</code> record where
+every property is nullable, the <code>UserSummary</code> DTO with two of the
+five fields, the <code>UserWithoutEmail</code> projection for the public API.
+Each is a hand-written type that must be kept in sync with <code>User</code>
+by hand. TypeScript's utility types <em>derive</em> these shapes instead:
+<code>Partial&lt;User&gt;</code> makes every property optional,
+<code>Pick&lt;User, "id" | "name"&gt;</code> keeps just those keys,
+<code>Omit&lt;User, "email"&gt;</code> drops one, and
+<code>Readonly&lt;User&gt;</code> freezes them all. Rename a field on
+<code>User</code> and every derived shape updates itself.</p>
+<table>
+  <tr><th>C#</th><th>TypeScript</th></tr>
+  <tr><td><code>record UserPatch(string? Name = null, ...)</code></td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td><code>new { u.Id, u.Name }</code> (anonymous, can't leave the method)</td><td><code>Pick&lt;User, "id" | "name"&gt;</code> (named, reusable, exportable)</td></tr>
+  <tr><td>a <code>UserWithoutEmail</code> DTO</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+  <tr><td><code>init</code>-only properties</td><td><code>Readonly&lt;User&gt;</code></td></tr>
+  <tr><td><code>user with { Name = "Grace" }</code></td><td><code>{ ...user, name: "Grace" }</code></td></tr>
+</table>
+<p>The runtime half of the story is spread, which you met in lesson 15: where
+a C# record's <code>with</code>-expression copies and overrides, TypeScript
+spreads the original first and the changes second — later properties win, so
+<code>{ ...user, ...changes }</code> is "user, with whatever
+<code>changes</code> supplies". Combined with <code>Partial&lt;User&gt;</code>
+as the type of <code>changes</code>, that one line is the entire patch
+endpoint: callers may pass any subset of fields, and the compiler rejects
+fields <code>User</code> doesn't have.</p>`,
+
+  csharp: `public record User(int Id, string Name, string Email, bool Active);
+
+// A "patch" in C# usually means ANOTHER type, everything nullable...
+public record UserPatch(string? Name = null, string? Email = null,
+                        bool? Active = null);
+
+static User UpdateUser(User user, UserPatch patch) =>
+    user with
+    {
+        Name   = patch.Name   ?? user.Name,
+        Email  = patch.Email  ?? user.Email,
+        Active = patch.Active ?? user.Active,
+    };
+
+// ...and a projection means yet another record (or an anonymous
+// type that cannot leave the method it was created in).
+public record UserSummary(int Id, string Name);
+static UserSummary ToSummary(User u) => new(u.Id, u.Name);`,
+
+  task: `
+<p>Replace the hand-written DTO zoo with derived types:</p>
+<ol>
+  <li>Keep the <code>User</code> interface: <code>id: number</code>,
+      <code>name: string</code>, <code>email: string</code>,
+      <code>active: boolean</code>.</li>
+  <li>Write <code>updateUser(user: User, changes: Partial&lt;User&gt;): User</code>.
+      Return a <strong>new</strong> object built with spread —
+      <code>user</code> first, <code>changes</code> second — and do not mutate
+      <code>user</code>. No <code>??</code> chains needed: spread's
+      "later wins" rule replaces the whole <code>with</code>-block.</li>
+  <li>Write <code>toSummary(user: User): Pick&lt;User, "id" | "name"&gt;</code>
+      returning an object with exactly the <code>id</code> and
+      <code>name</code> fields — the anonymous-type projection, but named and
+      reusable.</li>
+</ol>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+// 1. changes should accept ANY subset of User's fields.
+//    Derive that type from User instead of declaring a UserPatch record.
+function updateUser(user: User, changes: User): User {
+  // TODO: return a new object; spread user first, then changes
+  return user;
+}
+
+// 2. Return just id and name - annotate the return type by picking
+//    those keys out of User.
+function toSummary(user: User) {
+  // TODO: return an object with exactly id and name
+  return user;
+}
+`,
+
+  exportNames: ["updateUser", "toSummary"],
+
+  requirements: [
+    { pattern: /Partial\s*</, message: "Type changes as Partial<User> — the nullable-everything patch record, derived for free" },
+    { pattern: /(Pick|Omit)\s*</, message: "Derive the summary's return type with Pick (or Omit) instead of declaring a new interface" },
+    { pattern: /\.\.\.\s*user/, message: "Build the updated object with spread ({ ...user, ...changes }), the with-expression of TS" },
+  ],
+
+  tests: [
+    { name: "updateUser applies a one-field patch", run: (x) => {
+        const user = { id: 1, name: "Ada", email: "ada@example.com", active: true };
+        expectDeepEqual(x.updateUser(user, { name: "Grace" }),
+          { id: 1, name: "Grace", email: "ada@example.com", active: true });
+      } },
+    { name: "updateUser applies a multi-field patch", run: (x) => {
+        const user = { id: 1, name: "Ada", email: "ada@example.com", active: true };
+        expectDeepEqual(x.updateUser(user, { email: "ada@math.org", active: false }),
+          { id: 1, name: "Ada", email: "ada@math.org", active: false });
+      } },
+    { name: "updateUser does not mutate the original (records are immutable; objects are not — spread keeps it that way)", run: (x) => {
+        const user = { id: 1, name: "Ada", email: "ada@example.com", active: true };
+        const result = x.updateUser(user, { name: "Grace", active: false });
+        expectEqual(user.name, "Ada");
+        expectEqual(user.active, true);
+        expectTruthy(result !== user);
+      } },
+    { name: "updateUser with an empty patch returns a copy, not the same object", run: (x) => {
+        const user = { id: 7, name: "Linus", email: "linus@example.com", active: false };
+        const result = x.updateUser(user, {});
+        expectDeepEqual(result, user);
+        expectTruthy(result !== user);
+      } },
+    { name: "toSummary keeps id and name, and drops email and active", run: (x) => {
+        const summary = x.toSummary({ id: 1, name: "Ada", email: "ada@example.com", active: true });
+        expectEqual(summary.id, 1);
+        expectEqual(summary.name, "Ada");
+        expectEqual(summary.email, undefined);
+        expectEqual(summary.active, undefined);
+      } },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+function updateUser(user: User, changes: Partial<User>): User {
+  return { ...user, ...changes };
+}
+
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  return { id: user.id, name: user.name };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+  <tr><td>Patch shape</td><td>separate record, all properties nullable</td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td>Projection</td><td><code>UserSummary</code> record or anonymous type</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td>Exclusion</td><td>hand-maintained DTO</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+  <tr><td>Immutable view</td><td><code>init</code> accessors / <code>IReadOnlyList</code></td><td><code>Readonly&lt;User&gt;</code>, <code>ReadonlyArray&lt;T&gt;</code></td></tr>
+  <tr><td>Required-everything</td><td>(no equivalent)</td><td><code>Required&lt;User&gt;</code></td></tr>
+  <tr><td>Copy-and-override</td><td><code>user with { Name = "Grace" }</code></td><td><code>{ ...user, name: "Grace" }</code></td></tr>
+  <tr><td>Keyed lookup type</td><td><code>Dictionary&lt;string, User&gt;</code></td><td><code>Record&lt;string, User&gt;</code></td></tr>
+</table>
+<p>The insight: C#'s type system can only <em>declare</em> types, so every
+variant of a shape is a new declaration to maintain. TypeScript's type system
+can <em>compute</em> types from other types — <code>Partial</code>,
+<code>Pick</code>, and <code>Omit</code> are not compiler magic but ordinary
+mapped types you could write yourself, and they are erased at compile time
+just like interfaces. The single source of truth is <code>User</code>; every
+DTO is a formula over it.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

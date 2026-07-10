@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Enumerable → Array Methods</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Enumerable → Array Methods",
+
+  intro: `
+<p>Here is the best news in the whole course: your <code>Enumerable</code>
+instincts transfer nearly 1:1. The chains you write in Ruby —
+<code>select</code>, then <code>map</code>, then <code>reduce</code> — are
+the same chains in TypeScript, with two renames and two traps.
+The renames: <code>select</code> is <code>filter</code>, and
+<code>reject</code> has no direct twin — it is <code>filter</code> with the
+condition negated.</p>
+<table>
+  <tr><th>Ruby</th><th>TypeScript</th></tr>
+  <tr><td><code>arr.map { |x| x * 2 }</code></td><td><code>arr.map((x) =&gt; x * 2)</code></td></tr>
+  <tr><td><code>arr.select { |x| x.even? }</code></td><td><code>arr.filter((x) =&gt; x % 2 === 0)</code></td></tr>
+  <tr><td><code>arr.reject { |x| x.even? }</code></td><td><code>arr.filter((x) =&gt; x % 2 !== 0)</code></td></tr>
+  <tr><td><code>arr.reduce(0) { |sum, x| sum + x }</code></td><td><code>arr.reduce((sum, x) =&gt; sum + x, 0)</code></td></tr>
+  <tr><td><code>arr.sort_by { |p| p.price }</code></td><td><code>[...arr].sort((a, b) =&gt; a.price - b.price)</code></td></tr>
+</table>
+<p>The traps. First, <code>reduce</code>: the accumulator is the block's
+<em>first</em> argument (same as <code>inject</code>), but the initial value
+moves to the <em>end</em> of the call — and you should always supply it,
+because it is what tells TypeScript the accumulator's type. Second,
+<code>sort</code>: Ruby's <code>sort_by</code> takes a key block and returns
+a new array; JavaScript's <code>sort</code> takes a <em>comparator</em>
+(negative / zero / positive, hence the <code>a.price - b.price</code> idiom)
+and — the real trap — <strong>mutates the array in place</strong>. The
+idiomatic defense is to copy first with a spread: <code>[...arr].sort(...)</code>.</p>`,
+
+  ruby: `Product = Struct.new(:name, :price, :in_stock)
+
+products = [
+  Product.new("Keyboard", 80, true),
+  Product.new("Monitor", 300, false),
+  Product.new("Mouse", 25, true),
+]
+
+in_stock_names = products.select(&:in_stock).map(&:name)
+# => ["Keyboard", "Mouse"]
+
+total_value = products.reduce(0) { |sum, p| sum + p.price }
+# => 405
+
+cheapest_first = products.sort_by(&:price)
+# => Mouse, Keyboard, Monitor — and products itself is untouched`,
+
+  task: `
+<p>Rebuild the product pipeline with typed array methods. A
+<code>Product</code> interface (<code>name: string</code>,
+<code>price: number</code>, <code>inStock: boolean</code>) is provided in
+the starter.</p>
+<ol>
+  <li><code>inStockNames(products: Product[]): string[]</code> — names of the
+      in-stock products, in order. Ruby's
+      <code>select(&amp;:in_stock).map(&amp;:name)</code> becomes a
+      <code>.filter(...).map(...)</code> chain.</li>
+  <li><code>totalValue(products: Product[]): number</code> — the sum of all
+      prices via <code>.reduce</code>. Accumulator first in the callback,
+      initial value <code>0</code> as the second argument (required — it
+      types the accumulator and covers the empty array).</li>
+  <li><code>sortByPrice(products: Product[]): Product[]</code> — cheapest
+      first, <strong>without mutating the input</strong>: copy with
+      <code>[...products]</code>, then <code>.sort</code> with a
+      comparator.</li>
+</ol>`,
+
+  starter: `interface Product {
+  name: string;
+  price: number;
+  inStock: boolean;
+}
+
+// 1. Ruby: products.select(&:in_stock).map(&:name)
+function inStockNames(products: Product[]): string[] {
+  // TODO: .filter(...) then .map(...)
+  return [];
+}
+
+// 2. Ruby: products.reduce(0) { |sum, p| sum + p.price }
+//    Note: the initial value moves to the END of the call.
+function totalValue(products: Product[]): number {
+  // TODO: .reduce((sum, p) => ..., 0)
+  return 0;
+}
+
+// 3. Ruby: products.sort_by(&:price) — non-mutating over there,
+//    but .sort mutates here. Copy first!
+function sortByPrice(products: Product[]): Product[] {
+  // TODO: [...products].sort((a, b) => ...)
+  return products;
+}
+`,
+
+  exportNames: ["inStockNames", "totalValue", "sortByPrice"],
+
+  requirements: [
+    { pattern: /\.filter\s*\(/, message: "Use .filter (Ruby's select) for the in-stock check" },
+    { pattern: /\.map\s*\(/, message: "Use .map to pull out the names" },
+    { pattern: /\.reduce\s*\(/, message: "Use .reduce with an initial value for the total" },
+    { pattern: /\[\s*\.\.\.\w+\s*\]\s*\.sort/, message: "Copy before sorting: [...products].sort(...) — .sort mutates in place" },
+  ],
+
+  tests: [
+    {
+      name: 'inStockNames returns ["Keyboard", "Mouse"]',
+      run: (x) => expectDeepEqual(
+        x.inStockNames([
+          { name: "Keyboard", price: 80, inStock: true },
+          { name: "Monitor", price: 300, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ]),
+        ["Keyboard", "Mouse"]
+      ),
+    },
+    {
+      name: "totalValue sums all prices to 405",
+      run: (x) => expectEqual(
+        x.totalValue([
+          { name: "Keyboard", price: 80, inStock: true },
+          { name: "Monitor", price: 300, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ]),
+        405
+      ),
+    },
+    { name: "totalValue([]) returns 0 (the initial value covers the empty case)", run: (x) => expectEqual(x.totalValue([]), 0) },
+    {
+      name: "sortByPrice orders cheapest first",
+      run: (x) => expectDeepEqual(
+        x.sortByPrice([
+          { name: "Keyboard", price: 80, inStock: true },
+          { name: "Monitor", price: 300, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ]).map((p) => p.name),
+        ["Mouse", "Keyboard", "Monitor"]
+      ),
+    },
+    {
+      name: "sortByPrice does NOT mutate its input (like sort_by, unlike .sort)",
+      run: (x) => {
+        const original = [
+          { name: "Keyboard", price: 80, inStock: true },
+          { name: "Monitor", price: 300, inStock: false },
+          { name: "Mouse", price: 25, inStock: true },
+        ];
+        x.sortByPrice(original);
+        expectDeepEqual(original.map((p) => p.name), ["Keyboard", "Monitor", "Mouse"]);
+      },
+    },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  inStock: boolean;
+}
+
+function inStockNames(products: Product[]): string[] {
+  return products.filter((p) => p.inStock).map((p) => p.name);
+}
+
+function totalValue(products: Product[]): number {
+  return products.reduce((sum, p) => sum + p.price, 0);
+}
+
+function sortByPrice(products: Product[]): Product[] {
+  return [...products].sort((a, b) => a.price - b.price);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Enumerable</th><th>Array method</th><th>Watch out for</th></tr>
+  <tr><td><code>map</code></td><td><code>.map(fn)</code></td><td>Same idea, arrow instead of block</td></tr>
+  <tr><td><code>select</code></td><td><code>.filter(fn)</code></td><td>The rename</td></tr>
+  <tr><td><code>reject</code></td><td><code>.filter((x) =&gt; !cond)</code></td><td>No direct method — negate</td></tr>
+  <tr><td><code>reduce</code> / <code>inject</code></td><td><code>.reduce(fn, init)</code></td><td>Initial value last, and always supply it</td></tr>
+  <tr><td><code>sort_by { |p| p.price }</code></td><td><code>[...arr].sort((a, b) =&gt; a.price - b.price)</code></td><td>Comparator, not key — and <code>.sort</code> mutates</td></tr>
+  <tr><td><code>find</code> / <code>detect</code></td><td><code>.find(fn)</code></td><td>Returns <code>undefined</code>, not <code>nil</code></td></tr>
+  <tr><td><code>any?</code> / <code>all?</code></td><td><code>.some(fn)</code> / <code>.every(fn)</code></td><td>Renames only</td></tr>
+</table>
+<p>The insight: types flow <em>through</em> these chains without a single
+annotation. Start with <code>Product[]</code>, and after
+<code>.filter</code> it is still <code>Product[]</code>; after
+<code>.map((p) =&gt; p.name)</code> it is <code>string[]</code>; the
+<code>0</code> you hand to <code>.reduce</code> makes the whole expression a
+<code>number</code>. You write the same one-liners you wrote in Ruby — the
+compiler just rides along. The habit to burn in is the <code>.sort</code>
+one: Ruby spoiled you with non-mutating defaults, so spell
+<code>[...arr].sort(...)</code> until it is muscle memory.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

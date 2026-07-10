@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>Time to put it together. You will build a <strong>mini expression
+evaluator</strong>: parse a string like <code>"(1 + 2) * 3"</code> into a small
+tree of nodes, then walk the tree to compute the answer. This one exercise
+touches almost everything from the course — a class or two, an owned tree of
+polymorphic nodes, and two flavors of error handling.</p>
+<p>The shape is the same one a C# programmer would draw: a recursive
+<em>node</em> type (a base class with a virtual <code>Eval</code>, overridden by
+each kind of node) and a recursive walk that evaluates it. The differences are
+all about <strong>ownership and errors</strong>. In C# the garbage collector
+owns the tree and every error is an exception you may or may not catch. In C++
+you own the tree explicitly with <code>std::unique_ptr</code>, and you get to
+<em>choose</em> your error channel: throw for the strict path, or return
+<code>std::optional</code> for the "just tell me if it worked" path.</p>
+<table>
+  <tr><th>C#</th><th>C++</th></tr>
+  <tr><td>abstract <code>Node</code> with <code>override</code>d <code>Eval()</code></td><td>base class + <code>override</code>d <code>eval()</code></td></tr>
+  <tr><td>GC owns the tree</td><td><code>std::unique_ptr&lt;Node&gt;</code> owns each child</td></tr>
+  <tr><td><code>throw new Exception(...)</code></td><td><code>throw std::runtime_error(...)</code></td></tr>
+  <tr><td><code>double?</code></td><td><code>std::optional&lt;double&gt;</code></td></tr>
+  <tr><td><code>try { ... } catch { }</code></td><td><code>try { ... } catch (const std::exception&amp;)</code></td></tr>
+</table>
+<p>Grammar (standard precedence, left-associative):
+<code>expr := term (('+'|'-') term)*</code>,
+<code>term := factor (('*'|'/') factor)*</code>,
+<code>factor := number | '(' expr ')' | '-' factor</code>.</p>`,
+
+  csharp: `abstract class Node {
+    public abstract double Eval();
+}
+
+class Num : Node {
+    public double Value;
+    public Num(double v) { Value = v; }
+    public override double Eval() => Value;
+}
+
+class BinOp : Node {
+    public char Op;
+    public Node Lhs, Rhs;
+    public BinOp(char op, Node lhs, Node rhs) { Op = op; Lhs = lhs; Rhs = rhs; }
+    public override double Eval() {
+        double a = Lhs.Eval(), b = Rhs.Eval();
+        switch (Op) {
+            case '+': return a + b;
+            case '-': return a - b;
+            case '*': return a * b;
+            case '/':
+                if (b == 0) throw new DivideByZeroException("division by zero");
+                return a / b;
+        }
+        throw new Exception("bad operator");
+    }
+}
+
+// Evaluate() parses then walks; TryEvaluate() swallows the throw:
+double? TryEvaluate(string src) {
+    try { return Evaluate(src); } catch { return null; }
+}`,
+
+  task: `
+<p>The node classes and the <code>Parser</code> shell are scaffolded for you.
+Fill in the three TODO bodies so the tree builds and evaluates.</p>
+<ol>
+  <li><code>BinOp::eval()</code> — evaluate <code>lhs</code> and <code>rhs</code>
+      (call <code>-&gt;eval()</code> through the child pointers), then apply
+      <code>op</code>. On <code>'/'</code> with a zero right operand,
+      <code>throw std::runtime_error("division by zero")</code>.</li>
+  <li>The recursive-descent parser: implement <code>parseExpr</code>,
+      <code>parseTerm</code>, <code>parseFactor</code>, and <code>parseNumber</code>.
+      Build each operator node with
+      <code>std::make_unique&lt;BinOp&gt;(op, std::move(lhs), rhs)</code> — moving
+      the left child in, since a <code>unique_ptr</code> cannot be copied. A
+      leading <code>'-'</code> is unary negation (parse it as <code>0 - factor</code>).
+      Throw <code>std::runtime_error</code> on anything malformed (a missing
+      number, an unbalanced <code>')'</code>, trailing junk).</li>
+  <li><code>evaluate(const std::string&amp;)</code> — build a <code>Parser</code>,
+      <code>parse()</code> the tree, and return <code>tree-&gt;eval()</code>. Let
+      exceptions propagate.</li>
+  <li><code>tryEvaluate(const std::string&amp;)</code> — call <code>evaluate</code>
+      inside a <code>try</code>/<code>catch (const std::exception&amp;)</code> and
+      return <code>std::nullopt</code> on failure, otherwise the value.</li>
+</ol>`,
+
+  starter: `struct Node {
+  virtual ~Node() = default;
+  virtual double eval() const = 0;
+};
+
+struct Num : Node {
+  double value;
+  explicit Num(double v) : value(v) {}
+  double eval() const override { return value; }
+};
+
+struct BinOp : Node {
+  char op;
+  std::unique_ptr<Node> lhs, rhs;
+  BinOp(char o, std::unique_ptr<Node> l, std::unique_ptr<Node> r)
+    : op(o), lhs(std::move(l)), rhs(std::move(r)) {}
+  double eval() const override {
+    return 0.0; // TODO: eval lhs/rhs, apply op, throw on divide-by-zero
+  }
+};
+
+class Parser {
+public:
+  explicit Parser(const std::string& src) : src_(src), pos_(0) {}
+
+  std::unique_ptr<Node> parse() {
+    return std::make_unique<Num>(0.0); // TODO: parseExpr(), then reject trailing input
+  }
+
+private:
+  const std::string& src_;
+  std::size_t pos_;
+
+  void skipSpaces() {
+    while (pos_ < src_.size() && std::isspace(static_cast<unsigned char>(src_[pos_]))) pos_++;
+  }
+  char peek() {
+    skipSpaces();
+    return pos_ < src_.size() ? src_[pos_] : '\\0';
+  }
+  // TODO: parseExpr(), parseTerm(), parseFactor(), parseNumber()
+};
+
+double evaluate(const std::string& expr) {
+  return 0.0; // TODO: Parser p(expr); return p.parse()->eval();
+}
+
+std::optional<double> tryEvaluate(const std::string& expr) {
+  return std::nullopt; // TODO: call evaluate inside try/catch
+}
+`,
+
+  requirements: [
+    { pattern: /std::(make_unique|unique_ptr)/, message: "Own the AST nodes with std::unique_ptr / std::make_unique" },
+    { pattern: /std::optional/, message: "Return a std::optional from tryEvaluate for the no-throw path" },
+    { pattern: /throw\b/, message: "Signal malformed input and divide-by-zero by throwing" },
+  ],
+
+  tests: [
+    { name: "precedence: 1 + 2 * 3 is 7", code: "    expect_eq(evaluate(std::string(\"1 + 2 * 3\")), 7.0);" },
+    { name: "parentheses: (1 + 2) * 3 is 9", code: "    expect_eq(evaluate(std::string(\"(1 + 2) * 3\")), 9.0);" },
+    { name: "left-associative: 20 / 4 / 5 is 1", code: "    expect_eq(evaluate(std::string(\"20 / 4 / 5\")), 1.0);" },
+    { name: "unary minus: 2 * -3 + 1 is -5", code: "    expect_eq(evaluate(std::string(\"2 * -3 + 1\")), -5.0);" },
+    { name: "tryEvaluate returns the value on success", code: "    expect_eq(tryEvaluate(std::string(\"3 + 4\")), std::optional<double>(7.0));" },
+    { name: "divide-by-zero yields nullopt", code: "    auto r = tryEvaluate(std::string(\"1 / 0\"));\n    expect_true(!r.has_value());" },
+    { name: "malformed input yields nullopt", code: "    auto r = tryEvaluate(std::string(\"2 +\"));\n    expect_true(!r.has_value());" },
+  ],
+
+  solution: `struct Node {
+  virtual ~Node() = default;
+  virtual double eval() const = 0;
+};
+
+struct Num : Node {
+  double value;
+  explicit Num(double v) : value(v) {}
+  double eval() const override { return value; }
+};
+
+struct BinOp : Node {
+  char op;
+  std::unique_ptr<Node> lhs, rhs;
+  BinOp(char o, std::unique_ptr<Node> l, std::unique_ptr<Node> r)
+    : op(o), lhs(std::move(l)), rhs(std::move(r)) {}
+  double eval() const override {
+    double a = lhs->eval();
+    double b = rhs->eval();
+    switch (op) {
+      case '+': return a + b;
+      case '-': return a - b;
+      case '*': return a * b;
+      case '/':
+        if (b == 0.0) throw std::runtime_error("division by zero");
+        return a / b;
+    }
+    throw std::runtime_error("unknown operator");
+  }
+};
+
+class Parser {
+public:
+  explicit Parser(const std::string& src) : src_(src), pos_(0) {}
+
+  std::unique_ptr<Node> parse() {
+    auto node = parseExpr();
+    skipSpaces();
+    if (pos_ != src_.size()) throw std::runtime_error("trailing input");
+    return node;
+  }
+
+private:
+  const std::string& src_;
+  std::size_t pos_;
+
+  void skipSpaces() {
+    while (pos_ < src_.size() && std::isspace(static_cast<unsigned char>(src_[pos_]))) pos_++;
+  }
+  char peek() {
+    skipSpaces();
+    return pos_ < src_.size() ? src_[pos_] : '\\0';
+  }
+
+  std::unique_ptr<Node> parseExpr() {
+    auto node = parseTerm();
+    for (char c = peek(); c == '+' || c == '-'; c = peek()) {
+      pos_++;
+      node = std::make_unique<BinOp>(c, std::move(node), parseTerm());
+    }
+    return node;
+  }
+
+  std::unique_ptr<Node> parseTerm() {
+    auto node = parseFactor();
+    for (char c = peek(); c == '*' || c == '/'; c = peek()) {
+      pos_++;
+      node = std::make_unique<BinOp>(c, std::move(node), parseFactor());
+    }
+    return node;
+  }
+
+  std::unique_ptr<Node> parseFactor() {
+    char c = peek();
+    if (c == '-') {
+      pos_++;
+      return std::make_unique<BinOp>('-', std::make_unique<Num>(0.0), parseFactor());
+    }
+    if (c == '(') {
+      pos_++;
+      auto node = parseExpr();
+      if (peek() != ')') throw std::runtime_error("expected )");
+      pos_++;
+      return node;
+    }
+    return parseNumber();
+  }
+
+  std::unique_ptr<Node> parseNumber() {
+    skipSpaces();
+    std::size_t start = pos_;
+    while (pos_ < src_.size() &&
+           (std::isdigit(static_cast<unsigned char>(src_[pos_])) || src_[pos_] == '.')) {
+      pos_++;
+    }
+    if (pos_ == start) throw std::runtime_error("expected a number");
+    return std::make_unique<Num>(std::stod(src_.substr(start, pos_ - start)));
+  }
+};
+
+double evaluate(const std::string& expr) {
+  Parser parser(expr);
+  std::unique_ptr<Node> tree = parser.parse();
+  return tree->eval();
+}
+
+std::optional<double> tryEvaluate(const std::string& expr) {
+  try {
+    return evaluate(expr);
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>C++</th></tr>
+  <tr><td>Polymorphic node</td><td>base class + <code>override</code>d <code>Eval()</code></td><td>base class + virtual <code>eval()</code></td></tr>
+  <tr><td>Owning a child</td><td>field reference (GC)</td><td><code>std::unique_ptr&lt;Node&gt;</code></td></tr>
+  <tr><td>Hand off ownership</td><td>assign the reference</td><td><code>std::move(child)</code></td></tr>
+  <tr><td>Strict errors</td><td><code>throw</code></td><td><code>throw std::runtime_error</code></td></tr>
+  <tr><td>Soft errors</td><td><code>T?</code></td><td><code>std::optional&lt;T&gt;</code></td></tr>
+</table>
+<p>Three things to carry forward. First, <code>std::move(node)</code> is
+mandatory, not optional: a <code>unique_ptr</code> cannot be copied, so
+transferring a child into <code>BinOp</code> means <em>moving</em> it — the old
+handle is left empty and the new one owns the subtree. When the root
+<code>unique_ptr</code> in <code>evaluate</code> goes out of scope it deletes the
+whole tree recursively; there is no <code>delete</code> to write and no leak to
+chase.</p>
+<p>Second, the two error channels are a deliberate design choice, not
+redundancy. <code>evaluate</code> throws so a caller who expects valid input
+gets a loud failure; <code>tryEvaluate</code> wraps that throw and hands back
+<code>std::nullopt</code> for callers who treat bad input as normal — the same
+split as a language that offers both a throwing call and a <code>TryXxx</code>
+sibling that returns a nullable result instead of throwing. Third, catching
+<code>const std::exception&amp;</code> (by reference, to the base type) catches
+every standard exception at once, including the <code>std::runtime_error</code>
+you threw and the <code>std::invalid_argument</code> that <code>std::stod</code>
+can raise — the C++ equivalent of a bare <code>catch (Exception)</code>, but
+with the base type spelled out.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

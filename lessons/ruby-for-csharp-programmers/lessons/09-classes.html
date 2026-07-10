@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes &amp; Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>A Ruby class will feel like a C# class with the ceremony sanded off: no
+namespace, no access modifiers on every line, no <code>static void Main</code>
+anywhere. Your constructor is a method named <code>initialize</code>, and you
+never call it directly — <code>User.new("Ada")</code> allocates the object
+and forwards the arguments (yes, <code>new</code> moved: it's a <em>method on
+the class</em>, not a keyword in front of it).</p>
+<table>
+  <tr><th>C#</th><th>Ruby</th></tr>
+  <tr><td><code>public string Owner { get; }</code></td><td><code>attr_reader :owner</code></td></tr>
+  <tr><td><code>public int Age { get; set; }</code></td><td><code>attr_accessor :age</code></td></tr>
+  <tr><td><code>public User(string name) { ... }</code></td><td><code>def initialize(name) ... end</code></td></tr>
+  <tr><td><code>new User("Ada")</code></td><td><code>User.new("Ada")</code></td></tr>
+  <tr><td><code>this.name</code> / backing field</td><td><code>@name</code> (instance variable)</td></tr>
+</table>
+<p>Fields are <em>instance variables</em>: any name starting with
+<code>@</code>, springing into existence on first assignment, and
+<strong>truly private</strong> — no <code>public</code> field even exists;
+outside code can never touch <code>@balance</code> directly. To expose one,
+you declare accessors in a single line: <code>attr_reader :owner</code>
+generates the getter, <code>attr_accessor :age</code> generates getter and
+setter — Ruby's <code>{ get; set; }</code> auto-properties, written as one
+declaration that <em>generates real methods</em> for you.</p>`,
+
+  csharp: `public class BankAccount
+{
+    public string Owner { get; }
+    public int Balance { get; private set; }
+
+    public BankAccount(string owner)
+    {
+        Owner = owner;
+        Balance = 0;
+    }
+
+    public void Deposit(int amount) => Balance += amount;
+
+    public bool Withdraw(int amount)
+    {
+        if (amount > Balance) return false;
+        Balance -= amount;
+        return true;
+    }
+}`,
+
+  task: `
+<p>Port <code>BankAccount</code> to Ruby:</p>
+<ol>
+  <li>Declare <code>class BankAccount</code> with
+      <code>attr_reader :owner, :balance</code> — read-only from outside,
+      like <code>{ get; private set; }</code>.</li>
+  <li>Write <code>initialize(owner)</code> that stores <code>@owner</code>
+      and starts <code>@balance</code> at <code>0</code>.</li>
+  <li>Write <code>deposit(amount)</code> that adds to <code>@balance</code>.</li>
+  <li>Write <code>withdraw(amount)</code> that returns <code>false</code>
+      (leaving the balance untouched) when <code>amount</code> exceeds the
+      balance; otherwise subtracts it and returns <code>true</code>. A
+      modifier-if guard (<code>return false if ...</code>) keeps it tidy.</li>
+</ol>
+<p>The tests create accounts with <code>BankAccount.new("Ada")</code> — note
+the failed-withdraw test asserts the balance did not move.</p>`,
+
+  starter: `class BankAccount
+  attr_reader :owner, :balance
+
+  # C#: public BankAccount(string owner) { Owner = owner; Balance = 0; }
+  def initialize(owner)
+    raise NotImplementedError, "TODO: store @owner and set @balance to 0"
+  end
+
+  def deposit(amount)
+    raise NotImplementedError, "TODO: add amount to @balance"
+  end
+
+  # Return false (and change nothing) if amount > balance; otherwise
+  # subtract and return true.
+  def withdraw(amount)
+    raise NotImplementedError, "TODO: implement withdraw"
+  end
+end
+`,
+
+  requirements: [
+    { pattern: /class\s+BankAccount/, message: "Define class BankAccount" },
+    { pattern: /def\s+initialize/, message: "Write the constructor as def initialize" },
+    { pattern: /attr_reader|attr_accessor/, message: "Generate accessors with attr_reader (or attr_accessor)" },
+    { pattern: /@balance/, message: "Track the money in the @balance instance variable" },
+  ],
+
+  tests: [
+    { name: 'BankAccount.new("Ada") exposes owner "Ada" and balance 0',
+      code: '  acct = BankAccount.new("Ada")\n  expect_eq(acct.owner, "Ada")\n  expect_eq(acct.balance, 0)' },
+    { name: "deposit(100) then deposit(50) brings the balance to 150",
+      code: '  acct = BankAccount.new("Ada")\n  acct.deposit(100)\n  acct.deposit(50)\n  expect_eq(acct.balance, 150)' },
+    { name: "withdraw(30) from 100 returns true and leaves 70",
+      code: '  acct = BankAccount.new("Ada")\n  acct.deposit(100)\n  expect_eq(acct.withdraw(30), true)\n  expect_eq(acct.balance, 70)' },
+    { name: "withdraw(500) from 100 returns false and the balance is unchanged",
+      code: '  acct = BankAccount.new("Ada")\n  acct.deposit(100)\n  expect_eq(acct.withdraw(500), false)\n  expect_eq(acct.balance, 100)' },
+    { name: "two accounts keep independent balances (@ivars belong to the instance)",
+      code: '  a = BankAccount.new("Ada")\n  b = BankAccount.new("Bob")\n  a.deposit(10)\n  expect_eq(a.balance, 10)\n  expect_eq(b.balance, 0)' },
+  ],
+
+  solution: `class BankAccount
+  attr_reader :owner, :balance
+
+  def initialize(owner)
+    @owner = owner
+    @balance = 0
+  end
+
+  def deposit(amount)
+    @balance += amount
+  end
+
+  def withdraw(amount)
+    return false if amount > @balance
+
+    @balance -= amount
+    true
+  end
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+  <tr><td>Constructor</td><td><code>public User(string n)</code></td><td><code>def initialize(n)</code></td></tr>
+  <tr><td>Instantiation</td><td><code>new User("Ada")</code></td><td><code>User.new("Ada")</code></td></tr>
+  <tr><td>Read-only property</td><td><code>{ get; }</code></td><td><code>attr_reader :name</code></td></tr>
+  <tr><td>Read/write property</td><td><code>{ get; set; }</code></td><td><code>attr_accessor :name</code></td></tr>
+  <tr><td>Field / backing store</td><td><code>private int _balance;</code></td><td><code>@balance</code> (always private)</td></tr>
+  <tr><td>Entry point</td><td><code>static void Main</code></td><td>none — the file just runs top to bottom</td></tr>
+</table>
+<p>The mental flip: in C#, fields default to accessible-within-the-assembly
+machinery you lock down; in Ruby, <code>@ivars</code> are unreachable from
+outside, full stop, and <code>attr_reader</code> is you <em>choosing</em> to
+open a window. Those <code>attr_*</code> lines aren't compiler magic either —
+they're ordinary methods that metaprogram real getter/setter methods onto
+your class at load time, which is why they take symbols
+(<code>:owner</code>) rather than names.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4: Maps</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 4,
+  title: "Maps",
+
+  intro: `
+<p>Kotlin splits the concept you know from Java into two types by
+mutability. A <code>mapOf(...)</code> is a <em>read-only</em> <code>Map</code>
+(no <code>put</code> in its interface), while a <code>mutableMapOf(...)</code>
+is a <code>MutableMap</code> you can add to. Both are backed by a
+<code>LinkedHashMap</code>, so insertion order is preserved — just like Java's
+<code>LinkedHashMap</code>.</p>
+<table>
+  <tr><th>Java</th><th>Kotlin</th></tr>
+  <tr><td><code>Map.of("a", 1, "b", 2)</code></td><td><code>mapOf("a" to 1, "b" to 2)</code></td></tr>
+  <tr><td><code>new HashMap&lt;String, Integer&gt;()</code></td><td><code>mutableMapOf&lt;String, Int&gt;()</code></td></tr>
+  <tr><td><code>m.get("a")</code></td><td><code>m["a"]</code> (returns <code>Int?</code>)</td></tr>
+  <tr><td><code>m.getOrDefault(k, d)</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+  <tr><td><code>m.put(k, v)</code></td><td><code>m[k] = v</code> (mutable only)</td></tr>
+  <tr><td><code>m.containsKey(k)</code></td><td><code>m.containsKey(k)</code></td></tr>
+</table>
+<p>The key difference from Java is that indexing a map,
+<code>m[k]</code>, returns a <em>nullable</em> <code>V?</code> — the type system
+forces you to handle a missing key, exactly as if <code>get</code> had returned
+<code>null</code> and the compiler wouldn't let you forget to check. Reach for
+<code>getOrDefault</code> when you have a sensible fallback.</p>`,
+
+  java: `Map<String, String> capitals =
+    Map.of("France", "Paris", "Japan", "Tokyo", "Kenya", "Nairobi");
+
+String paris = capitals.get("France");          // String (or null)
+String capital = capitals.getOrDefault("Narnia", "Unknown");
+
+Map<String, Integer> counts = new HashMap<>();
+for (String w : words) {
+    counts.put(w, counts.getOrDefault(w, 0) + 1);
+}`,
+
+  task: `
+<p>Build and query some maps. Everything is top-level — no class or
+<code>main</code> needed:</p>
+<ol>
+  <li>Declare <code>capitals</code> as a read-only <code>Map&lt;String, String&gt;</code>
+      with <code>mapOf</code>: <code>"France"→"Paris"</code>,
+      <code>"Japan"→"Tokyo"</code>, <code>"Kenya"→"Nairobi"</code>.</li>
+  <li><code>isKnown(country: String): Boolean</code> — true if
+      <code>capitals</code> has that key (<code>containsKey</code>).</li>
+  <li><code>capitalOr(country: String, fallback: String): String</code> — the
+      capital, or <code>fallback</code> if absent, via <code>getOrDefault</code>.</li>
+  <li><code>wordCounts(words: List&lt;String&gt;): Map&lt;String, Int&gt;</code> —
+      count occurrences with a <code>mutableMapOf</code>.</li>
+  <li><code>entryLines(m: Map&lt;String, Int&gt;): List&lt;String&gt;</code> —
+      one <code>"key=value"</code> string per entry, sorted by key, built by
+      iterating with <code>for ((k, v) in ...)</code>.</li>
+</ol>`,
+
+  starter: `// 1. A read-only country -> capital map
+val capitals: Map<String, String> = mapOf() // TODO
+
+// 2. Does capitals contain this country?
+fun isKnown(country: String): Boolean {
+    return false // TODO
+}
+
+// 3. Capital for country, or fallback if absent
+fun capitalOr(country: String, fallback: String): String {
+    return "" // TODO
+}
+
+// 4. Count how many times each word appears
+fun wordCounts(words: List<String>): Map<String, Int> {
+    return mapOf() // TODO
+}
+
+// 5. "key=value" per entry, sorted alphabetically by key
+fun entryLines(m: Map<String, Int>): List<String> {
+    return listOf() // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\bmapOf\s*\(/, message: "Build capitals with mapOf(...)" },
+    { pattern: /\bmutableMapOf\b/, message: "Use mutableMapOf to accumulate word counts" },
+    { pattern: /\.getOrDefault\s*\(/, message: "Use getOrDefault for the capitalOr fallback" },
+    { pattern: /for\s*\(\s*\(\s*\w+\s*,\s*\w+\s*\)/, message: "Iterate entries with for ((k, v) in ...)" },
+  ],
+
+  tests: [
+    { name: 'capitals["France"] is "Paris"', code: '        expect_eq(capitals["France"], "Paris")' },
+    { name: "capitals has 3 entries", code: '        expect_eq(capitals.size, 3)' },
+    { name: "missing key is null", code: '        expect_true(capitals["Narnia"] == null)' },
+    { name: 'isKnown("Japan") is true', code: '        expect_true(isKnown("Japan"))' },
+    { name: 'isKnown("Narnia") is false', code: '        expect_true(!isKnown("Narnia"))' },
+    { name: "capitalOr returns known capital", code: '        expect_eq(capitalOr("Kenya", "?"), "Nairobi")' },
+    { name: "capitalOr returns fallback", code: '        expect_eq(capitalOr("Narnia", "Unknown"), "Unknown")' },
+    { name: "wordCounts tallies words", code: '        expect_eq(wordCounts(listOf("a", "b", "a", "a", "b")), mapOf("a" to 3, "b" to 2))' },
+    { name: "wordCounts of empty list", code: '        expect_eq(wordCounts(listOf()), mapOf<String, Int>())' },
+    { name: "entryLines sorted by key", code: '        expect_eq(entryLines(mapOf("b" to 2, "a" to 1)), listOf("a=1", "b=2"))' },
+  ],
+
+  solution: `val capitals: Map<String, String> = mapOf(
+    "France" to "Paris",
+    "Japan" to "Tokyo",
+    "Kenya" to "Nairobi",
+)
+
+fun isKnown(country: String): Boolean {
+    return capitals.containsKey(country)
+}
+
+fun capitalOr(country: String, fallback: String): String {
+    return capitals.getOrDefault(country, fallback)
+}
+
+fun wordCounts(words: List<String>): Map<String, Int> {
+    val counts = mutableMapOf<String, Int>()
+    for (w in words) {
+        counts[w] = counts.getOrDefault(w, 0) + 1
+    }
+    return counts
+}
+
+fun entryLines(m: Map<String, Int>): List<String> {
+    val lines = mutableListOf<String>()
+    for ((k, v) in m.toSortedMap()) {
+        lines.add("$k=$v")
+    }
+    return lines
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Kotlin</th></tr>
+  <tr><td>Read-only map</td><td><code>Map.of(...)</code> / <code>Collections.unmodifiableMap(...)</code></td><td><code>mapOf(...)</code> → <code>Map</code></td></tr>
+  <tr><td>Mutable map</td><td><code>new HashMap&lt;&gt;()</code></td><td><code>mutableMapOf(...)</code> → <code>MutableMap</code></td></tr>
+  <tr><td>Lookup</td><td><code>m.get(k)</code> → <code>V</code> (or <code>null</code>)</td><td><code>m[k]</code> → <code>V?</code></td></tr>
+  <tr><td>With default</td><td><code>m.getOrDefault(k, d)</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+  <tr><td>Insert / update</td><td><code>m.put(k, v)</code></td><td><code>m[k] = v</code></td></tr>
+  <tr><td>Views</td><td><code>m.keySet()</code> / <code>m.values()</code></td><td><code>m.keys</code> / <code>m.values</code> / <code>m.entries</code></td></tr>
+  <tr><td>Iterate pairs</td><td><code>for (Map.Entry&lt;K,V&gt; e : m.entrySet())</code></td><td><code>for ((k, v) in m)</code></td></tr>
+</table>
+<p>Note that <code>m[k] = v</code> is the idiomatic way to write
+<code>put</code>; it only compiles on a <code>MutableMap</code>, so the read-only
+<code>Map</code> from <code>mapOf</code> won't let you accidentally mutate it,
+the way an unwary caller might accidentally call <code>put</code> on what was
+meant to be a read-only reference in Java. For counting and grouping, Kotlin
+also ships higher-level helpers — <code>words.groupingBy { it }.eachCount()</code>
+is the one-liner equivalent of the <code>wordCounts</code> loop, and
+<code>groupBy</code> collects items into <code>Map&lt;K, List&lt;V&gt;&gt;</code>,
+similar to Java's <code>Collectors.groupingBy</code>. Iterating a map yields
+<code>Map.Entry</code> objects, which destructure straight into
+<code>(k, v)</code> instead of requiring <code>entry.getKey()</code> /
+<code>entry.getValue()</code> calls.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

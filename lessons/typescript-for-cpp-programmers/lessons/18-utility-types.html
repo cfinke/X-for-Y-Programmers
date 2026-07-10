@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 18: Utility Types</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 18,
+  title: "Utility Types",
+
+  intro: `
+<p>Here is a task C++ simply cannot express: "give me the same struct, but
+with every member optional." You need it constantly — a PATCH request, a
+config override, a partial update — and in C++ the only answers are a
+hand-written twin struct full of <code>std::optional</code>, an X-macro, or
+a code generator. Template metaprogramming can compute types <em>from</em>
+types, but it cannot reach inside a struct and enumerate its members
+(reflection still isn't in a shipped standard). So the twin struct drifts
+out of sync with the original, one field at a time.</p>
+<table>
+  <tr><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>hand-written <code>UserPatch</code> with <code>std::optional</code> members</td><td><code>Partial&lt;User&gt;</code></td></tr>
+  <tr><td>hand-written <code>UserSummary { id, name }</code></td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+  <tr><td>hand-written "everything except password" struct</td><td><code>Omit&lt;User, "password"&gt;</code></td></tr>
+  <tr><td><code>const User&amp;</code> — a read-only view</td><td><code>Readonly&lt;User&gt;</code> — assignment is a compile error</td></tr>
+</table>
+<p>TypeScript has <em>type operators</em>: generic types that take a type
+and derive a new one from its members. <code>Partial&lt;User&gt;</code> is
+User with every property optional; <code>Pick&lt;User, "id" | "name"&gt;</code>
+keeps only the named fields; <code>Omit</code> drops them instead;
+<code>Readonly&lt;T&gt;</code> is the <code>const</code> view — mutation
+becomes a compile error, like calling a non-<code>const</code> member
+function through a <code>const&amp;</code>. Because these are
+<em>derived</em>, they can never drift: add a field to <code>User</code> and
+every <code>Partial</code>, <code>Pick</code>, and <code>Omit</code> of it
+updates instantly. All of it is erased at compile time — at runtime there
+are only plain objects.</p>`,
+
+  cpp: `struct User {
+    int id;
+    std::string name;
+    std::string email;
+    bool active;
+};
+
+// Want "User, but every field optional" for a PATCH update?
+// You write the twin by hand — and keep it in sync by hand.
+struct UserPatch {
+    std::optional<int> id;
+    std::optional<std::string> name;
+    std::optional<std::string> email;
+    std::optional<bool> active;
+};
+
+// Want just id + name for a list view? Another hand-written struct.
+struct UserSummary { int id; std::string name; };
+
+// Add a field to User and pray you remembered every twin.`,
+
+  task: `
+<p>Derive the twins instead of writing them:</p>
+<ol>
+  <li>Declare an interface <code>User</code> with <code>id: number</code>,
+      <code>name: string</code>, <code>email: string</code>, and
+      <code>active: boolean</code>.</li>
+  <li>Write <code>updateUser(user: User, changes: Partial&lt;User&gt;): User</code>
+      that returns a <strong>new</strong> object with the changes applied —
+      use object spread (<code>{ ...user, ...changes }</code>), and do
+      <em>not</em> mutate the original. <code>Partial&lt;User&gt;</code> is
+      the <code>UserPatch</code> you never have to write.</li>
+  <li>Write <code>toSummary(user: User): Pick&lt;User, "id" | "name"&gt;</code>
+      returning an object with <em>only</em> the <code>id</code> and
+      <code>name</code> fields — the hand-written <code>UserSummary</code>,
+      derived.</li>
+</ol>
+<p>The tests check that <code>updateUser</code> leaves its input untouched
+(value semantics, like returning a fresh struct by value) and that the
+summary really has only two fields.</p>`,
+
+  starter: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+// 2. changes is Partial<User>: any subset of User's fields.
+//    Return a NEW object; do not mutate user.
+function updateUser(user: User, changes: Partial<User>): User {
+  // TODO: spread user, then spread changes over it
+  return user;
+}
+
+// 3. Pick<User, "id" | "name"> is { id: number; name: string }.
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  // TODO: return an object with only id and name
+  return { id: 0, name: "" };
+}
+`,
+
+  exportNames: ["updateUser", "toSummary"],
+
+  requirements: [
+    { pattern: /Partial\s*</, message: "Type the changes parameter as Partial<User>" },
+    { pattern: /Pick\s*<|Omit\s*</, message: "Use Pick or Omit to derive the summary type" },
+    { pattern: /\.\.\./, message: "Merge with object spread, not field-by-field assignment" },
+  ],
+
+  tests: [
+    { name: "updateUser applies a one-field patch", run: (x) => {
+        const u = { id: 1, name: "Ada", email: "ada@example.com", active: true };
+        expectDeepEqual(x.updateUser(u, { email: "ada@lovelace.dev" }),
+          { id: 1, name: "Ada", email: "ada@lovelace.dev", active: true });
+      } },
+    { name: "updateUser applies a multi-field patch", run: (x) => {
+        const u = { id: 2, name: "Grace", email: "grace@example.com", active: false };
+        expectDeepEqual(x.updateUser(u, { name: "Grace Hopper", active: true }),
+          { id: 2, name: "Grace Hopper", email: "grace@example.com", active: true });
+      } },
+    { name: "updateUser does NOT mutate the original user", run: (x) => {
+        const u = { id: 3, name: "Alan", email: "alan@example.com", active: true };
+        x.updateUser(u, { name: "A. M. Turing", active: false });
+        expectEqual(u.name, "Alan");
+        expectEqual(u.active, true);
+        expectEqual(u.email, "alan@example.com");
+      } },
+    { name: "toSummary keeps id and name", run: (x) => {
+        const s = x.toSummary({ id: 4, name: "Barbara", email: "b@example.com", active: true });
+        expectEqual(s.id, 4);
+        expectEqual(s.name, "Barbara");
+      } },
+    { name: "toSummary drops email and active", run: (x) => {
+        const s = x.toSummary({ id: 5, name: "Bjarne", email: "bs@example.com", active: true });
+        expectEqual(s.email, undefined);
+        expectEqual(s.active, undefined);
+        expectEqual(Object.keys(s).length, 2);
+      } },
+  ],
+
+  solution: `interface User {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+// Partial<User> = every field optional — the derived UserPatch.
+function updateUser(user: User, changes: Partial<User>): User {
+  return { ...user, ...changes };  // later spread wins; user untouched
+}
+
+// Pick<User, "id" | "name"> — the derived UserSummary.
+function toSummary(user: User): Pick<User, "id" | "name"> {
+  return { id: user.id, name: user.name };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>You want</th><th>C++</th><th>TypeScript</th></tr>
+  <tr><td>All fields optional</td><td>hand-written <code>std::optional</code> twin</td><td><code>Partial&lt;T&gt;</code></td></tr>
+  <tr><td>All fields required</td><td>the original struct</td><td><code>Required&lt;T&gt;</code></td></tr>
+  <tr><td>A projection of fields</td><td>hand-written summary struct</td><td><code>Pick&lt;T, "a" | "b"&gt;</code></td></tr>
+  <tr><td>Everything but some fields</td><td>hand-written struct again</td><td><code>Omit&lt;T, "secret"&gt;</code></td></tr>
+  <tr><td>Read-only view</td><td><code>const T&amp;</code></td><td><code>Readonly&lt;T&gt;</code></td></tr>
+  <tr><td>Map from keys to values</td><td><code>std::map&lt;K, V&gt;</code></td><td><code>Record&lt;K, V&gt;</code></td></tr>
+</table>
+<p>The insight: these are ordinary generic types, not compiler magic —
+<code>Partial&lt;T&gt;</code> is defined in the standard library as a
+<em>mapped type</em> that loops over <code>keyof T</code> and adds
+<code>?</code> to each member. That member-enumeration step is exactly what
+C++ templates cannot do without reflection. Since derived types are erased,
+<code>updateUser</code> compiles to a one-line object spread; the safety
+costs nothing at runtime.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

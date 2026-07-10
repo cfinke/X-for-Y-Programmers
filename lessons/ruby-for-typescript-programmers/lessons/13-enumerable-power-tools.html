@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 13: Enumerable Power Tools</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 13,
+  title: "Enumerable Power Tools",
+
+  intro: `
+<p>Every TypeScript codebase has the same three hand-rolled reducers: the
+"group items into an object of arrays" reduce, the "count occurrences into an
+object" reduce, and the "accumulate totals by key" reduce. Ruby shipped each
+of them as a single method, years ago. <code>.group_by { |w| w.length }</code>
+buckets elements by whatever the block returns — one call, no
+<code>Object.groupBy</code> polyfill drama. <code>.tally</code> counts
+occurrences: the entire reduce-into-an-object idiom, one word.</p>
+<table>
+  <tr><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>8-line <code>reduce</code> with <code>??= []</code></td><td><code>words.group_by { |w| w.length }</code></td></tr>
+  <tr><td><code>reduce</code> with <code>(acc[v] ?? 0) + 1</code></td><td><code>votes.tally</code></td></tr>
+  <tr><td><code>reduce</code> returning the acc every time</td><td><code>each_with_object({}) { |x, acc| ... }</code></td></tr>
+  <tr><td>two <code>.filter</code> passes</td><td><code>nums.partition(&amp;:even?)</code> — one pass</td></tr>
+  <tr><td><code>.reduce((s, n) =&gt; s + n, 0)</code></td><td><code>.reduce(:+)</code> — yes, a bare symbol</td></tr>
+</table>
+<p>When you genuinely need a custom accumulator, skip <code>reduce</code>'s
+"don't forget to return the accumulator" trap and use
+<code>.each_with_object({})</code> — the object rides along as the block's
+second argument and is returned at the end automatically. Pair it with
+<code>Hash.new(0)</code> (a hash whose missing keys read as 0) and the
+<code>?? 0</code> dance disappears too. Rounding out the kit:
+<code>.partition</code> splits a collection into [matches, rest] in one pass,
+and <code>.min_by</code>/<code>.max_by</code> you met last lesson.</p>`,
+
+  typescript: `// The three reducers every TS codebase hand-rolls:
+const wordLengths = (words: string[]) =>
+  words.reduce<Record<number, string[]>>((acc, w) => {
+    (acc[w.length] ??= []).push(w);
+    return acc;
+  }, {});
+
+const voteCounts = (votes: string[]) =>
+  votes.reduce<Record<string, number>>((acc, v) => {
+    acc[v] = (acc[v] ?? 0) + 1;
+    return acc;
+  }, {});
+
+const totalsByCategory = (items: { category: string; price: number }[]) =>
+  items.reduce<Record<string, number>>((acc, it) => {
+    acc[it.category] = (acc[it.category] ?? 0) + it.price;
+    return acc;
+  }, {});
+
+const splitEvens = (nums: number[]) =>
+  [nums.filter((n) => n % 2 === 0), nums.filter((n) => n % 2 !== 0)];`,
+
+  task: `
+<p>Replace each hand-rolled reducer with the one-word (or one-call) Ruby tool:</p>
+<ol>
+  <li><code>word_lengths(words)</code> — a hash of length → array of words,
+      via <code>group_by(&amp;:length)</code>.</li>
+  <li><code>vote_counts(votes)</code> — a hash of vote → count, via
+      <code>tally</code>. That's the whole body.</li>
+  <li><code>totals_by_category(items)</code> — items are hashes like
+      <code>{ category: "desk", price: 100 }</code>; build a hash of category
+      → summed price via <code>each_with_object(Hash.new(0))</code>, adding
+      <code>item[:price]</code> into <code>acc[item[:category]]</code>.</li>
+  <li><code>split_evens(nums)</code> — return <code>[evens, odds]</code> in
+      one pass via <code>partition(&amp;:even?)</code>.</li>
+</ol>`,
+
+  starter: `# 1. group_by buckets by whatever the block (or &:method) returns.
+def word_lengths(words)
+  raise NotImplementedError, "TODO: words.group_by(&:length)"
+end
+
+# 2. tally IS the count-occurrences reduce. One word.
+def vote_counts(votes)
+  raise NotImplementedError, "TODO: votes.tally"
+end
+
+# 3. each_with_object carries the accumulator for you; Hash.new(0)
+#    makes missing keys read as 0, so += just works.
+def totals_by_category(items)
+  raise NotImplementedError, "TODO: items.each_with_object(Hash.new(0)) { |item, acc| ... }"
+end
+
+# 4. partition splits into [matches, rest] in a single pass.
+def split_evens(nums)
+  raise NotImplementedError, "TODO: nums.partition(&:even?)"
+end
+`,
+
+  requirements: [
+    { pattern: /group_by/, message: "Bucket the words with group_by" },
+    { pattern: /tally/, message: "Count the votes with tally" },
+    { pattern: /each_with_object/, message: "Accumulate category totals with each_with_object" },
+    { pattern: /partition/, message: "Split evens from odds with partition" },
+  ],
+
+  tests: [
+    { name: 'word_lengths(["a", "bb", "cc", "ddd"]) groups by length',
+      code: '  expect_eq(word_lengths(["a", "bb", "cc", "ddd"]), { 1 => ["a"], 2 => ["bb", "cc"], 3 => ["ddd"] })' },
+    { name: 'vote_counts(["yes", "no", "yes", "yes"]) counts occurrences',
+      code: '  expect_eq(vote_counts(["yes", "no", "yes", "yes"]), { "yes" => 3, "no" => 1 })' },
+    { name: "vote_counts([]) is an empty hash",
+      code: "  expect_eq(vote_counts([]), {})" },
+    { name: "totals_by_category sums prices into category keys",
+      code: `  items = [
+    { category: "desk", price: 100 },
+    { category: "chair", price: 40 },
+    { category: "desk", price: 60 }
+  ]
+  expect_eq(totals_by_category(items), { "desk" => 160, "chair" => 40 })` },
+    { name: "split_evens([1, 2, 3, 4, 5]) returns [[2, 4], [1, 3, 5]]",
+      code: "  expect_eq(split_evens([1, 2, 3, 4, 5]), [[2, 4], [1, 3, 5]])" },
+  ],
+
+  solution: `def word_lengths(words)
+  words.group_by(&:length)
+end
+
+def vote_counts(votes)
+  votes.tally
+end
+
+def totals_by_category(items)
+  items.each_with_object(Hash.new(0)) do |item, acc|
+    acc[item[:category]] += item[:price]
+  end
+end
+
+def split_evens(nums)
+  nums.partition(&:even?)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>TypeScript</th><th>Ruby</th></tr>
+  <tr><td>Group into buckets</td><td>hand-rolled reduce / <code>Object.groupBy</code></td><td><code>.group_by { |x| key }</code></td></tr>
+  <tr><td>Count occurrences</td><td>reduce with <code>?? 0</code></td><td><code>.tally</code></td></tr>
+  <tr><td>Build an accumulator</td><td><code>.reduce(..., {})</code>, return acc every time</td><td><code>.each_with_object({}) { |x, acc| ... }</code></td></tr>
+  <tr><td>Default hash values</td><td><code>acc[k] ?? 0</code></td><td><code>Hash.new(0)</code></td></tr>
+  <tr><td>Split in two</td><td>two <code>.filter</code> passes</td><td><code>.partition { ... }</code></td></tr>
+  <tr><td>Fold</td><td><code>.reduce((a, b) =&gt; a + b)</code></td><td><code>.reduce(:+)</code> or <code>.reduce { |a, b| a + b }</code></td></tr>
+</table>
+<p>Watch the argument order flip: <code>reduce</code> yields
+<code>|acc, x|</code> (accumulator first, like TS), but
+<code>each_with_object</code> yields <code>|x, acc|</code> — element first.
+The trade-off between them: <code>reduce</code> uses the block's <em>return
+value</em> as the next accumulator (forget it and everything breaks), while
+<code>each_with_object</code> mutates one object and hands it back at the end
+— which is exactly the shape of the reducers you were writing in TS anyway.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null & Undefined</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null & Undefined",
+
+  intro: `
+<p>PHP has one "nothing" value: <code>null</code> (an unset variable also reads
+as null, with a notice). TypeScript has two: <code>null</code>, an intentional
+"no value" you assign on purpose, and <code>undefined</code>, what you get when
+something was never set — a missing property, an omitted optional parameter, a
+variable before assignment. Roughly: <code>undefined</code> is PHP's
+"<code>isset()</code> would return false", while <code>null</code> is an
+explicit assignment. The good news is that the operators you learned in PHP 7/8
+carry over almost character for character.</p>
+<table>
+  <tr><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td><code>$x ?? 'default'</code></td><td><code>x ?? "default"</code></td></tr>
+  <tr><td><code>$user?->address?->city</code></td><td><code>user.address?.city</code></td></tr>
+  <tr><td><code>isset($a['k'])</code></td><td><code>a.k !== undefined</code></td></tr>
+  <tr><td>Fatal: "Call to a member function on null"</td><td>Compile error before you even run</td></tr>
+</table>
+<p>The nullsafe operator <code>?-></code> becomes <em>optional chaining</em>
+<code>?.</code>, and null coalescing <code>??</code> is spelled the same and
+treats exactly <code>null</code> and <code>undefined</code> as missing — never
+<code>""</code> or <code>0</code>, unlike PHP's <code>empty()</code> or JS's
+<code>||</code>. The real upgrade is <code>strictNullChecks</code>: once on,
+<code>string</code> means <em>never null</em>, and a maybe-missing value must
+say so in its type (<code>string | null | undefined</code>). The compiler then
+refuses to let you touch it until you handle the missing case — PHP's
+"trying to get property of null" ceases to exist as a runtime error.</p>`,
+
+  php: `<?php
+function getCity(?array $user): string {
+    // Nullsafe would be $user?->address?->city on objects;
+    // on arrays we fall back to isset() + null coalescing.
+    return $user['address']['city'] ?? 'Unknown';
+}
+
+function displayName(?string $name): string {
+    return $name ?? 'Anonymous';
+}
+
+function countItems(?array $items): int {
+    return $items === null ? 0 : count($items);
+}
+
+echo getCity(['address' => ['city' => 'London']]) . "\\n"; // London
+echo getCity([]) . "\\n";                                  // Unknown
+echo displayName(null) . "\\n";                            // Anonymous
+echo countItems(null);                                     // 0`,
+
+  task: `
+<p>Rewrite the PHP as TypeScript. Every function must stay safe
+under <code>strictNullChecks</code> — use <code>?.</code> and <code>??</code>
+instead of if-pyramids:</p>
+<ol>
+  <li>Write <code>getCity(user: { address?: { city: string } }): string</code>
+      that returns the nested city, or <code>"Unknown"</code> when
+      <code>address</code> is absent. Chain with <code>?.</code> (PHP's
+      <code>?-></code>) and default with <code>??</code>.</li>
+  <li>Write <code>displayName(name: string | null | undefined): string</code>
+      that returns the name, or <code>"Anonymous"</code> when it is null or
+      undefined. The empty string <code>""</code> is a real name and must come
+      back unchanged — <code>??</code> guarantees that.</li>
+  <li>Write <code>countItems(items: string[] | null | undefined): number</code>
+      that returns the number of items, or <code>0</code> when the list itself
+      is missing. One expression: <code>?.</code> plus <code>??</code>.</li>
+</ol>`,
+
+  starter: `// 1. user.address may be absent — use optional chaining, then a nullish default.
+function getCity(user: { address?: { city: string } }): string {
+  // TODO: return the city, or "Unknown" when there is no address
+  return "Unknown";
+}
+
+// 2. PHP's null coalescing operator translates almost verbatim.
+function displayName(name: string | null | undefined): string {
+  // TODO: nullish-coalesce to "Anonymous" ("" must be returned as-is, so || is wrong here)
+  return "";
+}
+
+// 3. Combine optional chaining and nullish coalescing in a single expression.
+function countItems(items: string[] | null | undefined): number {
+  // TODO: length of the list, or 0 when items is null/undefined
+  return 0;
+}
+`,
+
+  exportNames: ["getCity", "displayName", "countItems"],
+
+  requirements: [
+    { pattern: /\?\./, message: "Use optional chaining ?. (TypeScript's nullsafe ?->)" },
+    { pattern: /\?\?/, message: "Use nullish coalescing ?? for the fallback values" },
+    { pattern: /address\s*\?\s*:/, message: "Mark address as an optional property (address?: …) in getCity's parameter type" },
+    { pattern: /string\s*\|\s*null\s*\|\s*undefined/, message: "Type displayName's parameter as string | null | undefined" },
+  ],
+
+  tests: [
+    { name: 'getCity({ address: { city: "London" } }) returns "London"', run: (x) => expectEqual(x.getCity({ address: { city: "London" } }), "London") },
+    { name: 'getCity({}) returns "Unknown"', run: (x) => expectEqual(x.getCity({}), "Unknown") },
+    { name: 'displayName("Ada") returns "Ada"', run: (x) => expectEqual(x.displayName("Ada"), "Ada") },
+    { name: "displayName(null) and displayName(undefined) return \"Anonymous\"", run: (x) => { expectEqual(x.displayName(null), "Anonymous"); expectEqual(x.displayName(undefined), "Anonymous"); } },
+    { name: 'displayName("") returns "" — ?? keeps falsy-but-present values', run: (x) => expectEqual(x.displayName(""), "") },
+    { name: 'countItems(["a", "b"]) returns 2, countItems(null) returns 0', run: (x) => { expectEqual(x.countItems(["a", "b"]), 2); expectEqual(x.countItems(null), 0); expectEqual(x.countItems(undefined), 0); } },
+  ],
+
+  solution: `function getCity(user: { address?: { city: string } }): string {
+  return user.address?.city ?? "Unknown";
+}
+
+function displayName(name: string | null | undefined): string {
+  return name ?? "Anonymous";
+}
+
+function countItems(items: string[] | null | undefined): number {
+  return items?.length ?? 0;
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>TypeScript</th></tr>
+  <tr><td>"Nothing" values</td><td><code>null</code></td><td><code>null</code> (assigned) and <code>undefined</code> (never set)</td></tr>
+  <tr><td>Null coalescing</td><td><code>$x ?? $default</code></td><td><code>x ?? fallback</code> (same spelling, same semantics)</td></tr>
+  <tr><td>Nullsafe access</td><td><code>$user?->address?->city</code></td><td><code>user.address?.city</code></td></tr>
+  <tr><td>Nullsafe call</td><td><code>$obj?->method()</code></td><td><code>obj?.method()</code></td></tr>
+  <tr><td>Was it ever set?</td><td><code>isset($x)</code></td><td><code>x !== undefined</code></td></tr>
+  <tr><td>Declaring "maybe"</td><td><code>?string</code></td><td><code>string | null</code>, <code>string | undefined</code>, or a <code>?</code> property/param</td></tr>
+  <tr><td>Forgetting the check</td><td>Runtime fatal / warning</td><td>Compile error (with <code>strictNullChecks</code>)</td></tr>
+</table>
+<p>The mental model shift: in PHP, null-safety is a runtime discipline you
+enforce with <code>isset()</code> and <code>??</code> at each use site. With
+<code>strictNullChecks</code>, nullability moves into the <em>type</em> —
+<code>string</code> and <code>string | null</code> are different types, and the
+compiler makes every caller deal with the difference exactly once, exactly
+where it belongs.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

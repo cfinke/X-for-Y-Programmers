@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 10: Inheritance &amp; Abstract Classes</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 10,
+  title: "Inheritance & Abstract Classes",
+
+  intro: `
+<p>Rust has no class inheritance at all: a <code>struct</code> just holds data,
+and shared behavior comes from <code>trait</code>s. A trait method with no body
+is the rough equivalent of a Java <code>abstract</code> method, and a trait
+method with a default body is the equivalent of a concrete method a subclass
+can reuse or override. Java demands a real <code>abstract</code> keyword for
+classes and methods, a <code>@Override</code> annotation the compiler
+actually enforces, and a <code>final</code> keyword that blocks further
+subclassing or reassignment. There is no structural typing — a subtype
+relationship exists only if you wrote <code>extends</code>, the way a Rust
+type only satisfies a trait if it has an explicit <code>impl</code> block for
+it.</p>
+<table>
+  <tr><th>Rust</th><th>Java</th></tr>
+  <tr><td><code>impl Speak for Dog</code></td><td><code>class Dog extends Animal</code></td></tr>
+  <tr><td>(no <code>super</code>; call the field directly)</td><td><code>super(name);</code></td></tr>
+  <tr><td><code>self.animal.speak()</code></td><td><code>super.speak();</code></td></tr>
+  <tr><td><code>fn m(&amp;self) -> T;</code> / default <code>fn m(&amp;self) -> T { … }</code></td><td><code>abstract class</code> / <code>abstract T m();</code></td></tr>
+  <tr><td><code>any.downcast_ref::&lt;Dog&gt;()</code></td><td><code>x instanceof Dog</code></td></tr>
+</table>
+<p>Two things trip up newcomers coming from Rust. First, <code>@Override</code>
+is optional but you should always write it — if the signature does not
+actually match a superclass method, the compiler errors instead of silently
+creating a new method; a Rust <code>impl</code> block gets this checking for
+free, since the compiler already refuses to compile if a trait method's
+signature does not match. Second, <code>final</code> does double duty: on a
+field or local it means "assign once" (Rust bindings are already immutable
+unless you write <code>mut</code>), and on a class or method it forbids
+subclassing or overriding — something Rust structs get for free simply by not
+supporting inheritance at all.</p>`,
+
+  rust: `trait Employee {
+    fn name(&self) -> &str;
+    fn base_pay(&self) -> f64;
+    fn total_pay(&self) -> f64 { self.base_pay() }
+    fn describe(&self) -> String {
+        format!("{}: {}", self.name(), self.total_pay())
+    }
+}
+
+struct Manager {
+    name: String,
+    bonus: f64,
+}
+
+impl Employee for Manager {
+    fn name(&self) -> &str { &self.name }
+    fn base_pay(&self) -> f64 { 8000.0 }
+    fn total_pay(&self) -> f64 { self.base_pay() + self.bonus }
+}`,
+
+  task: `
+<p>Build a small employee hierarchy that exercises every inheritance feature.</p>
+<ol>
+  <li>An <code>abstract class Employee</code> with a <code>final</code> field
+      <code>name</code>, a constructor that sets it, an
+      <code>abstract double basePay()</code>, a concrete
+      <code>double totalPay()</code> that returns <code>basePay()</code>, and a
+      <code>String describe()</code> returning <code>name + ": " + totalPay()</code>
+      (e.g. <code>"Ada: 5000.0"</code>).</li>
+  <li>A <code>Developer extends Employee</code> whose constructor calls
+      <code>super(name)</code> and whose <code>basePay()</code> (marked
+      <code>@Override</code>) returns <code>5000</code>.</li>
+  <li>A <code>Manager extends Employee</code> with an extra <code>double bonus</code>.
+      Its <code>basePay()</code> returns <code>8000</code>, and its
+      <code>totalPay()</code> returns <code>super.totalPay() + bonus</code>.</li>
+  <li>A class <code>Payroll</code> with static <code>double totalPayroll(Employee[] emps)</code>
+      (sum of every <code>totalPay()</code>) and
+      <code>int countManagers(Employee[] emps)</code> using
+      <code>instanceof</code>.</li>
+</ol>`,
+
+  starter: `abstract class Employee {
+  protected final String name;
+
+  protected Employee(String name) {
+    this.name = name;
+  }
+
+  abstract double basePay();
+
+  double totalPay() {
+    return 0; // TODO
+  }
+
+  String describe() {
+    return ""; // TODO
+  }
+}
+
+class Developer extends Employee {
+  Developer(String name) {
+    super(name);
+  }
+
+  @Override
+  double basePay() {
+    return 0; // TODO
+  }
+}
+
+class Manager extends Employee {
+  private final double bonus;
+
+  Manager(String name, double bonus) {
+    super(name);
+    this.bonus = bonus;
+  }
+
+  @Override
+  double basePay() {
+    return 0; // TODO
+  }
+
+  @Override
+  double totalPay() {
+    return 0; // TODO: add bonus to super.totalPay()
+  }
+}
+
+class Payroll {
+  static double totalPayroll(Employee[] emps) {
+    return 0; // TODO
+  }
+
+  static int countManagers(Employee[] emps) {
+    return 0; // TODO: use instanceof
+  }
+}
+`,
+
+  requirements: [
+    { pattern: /abstract\s+class\s+Employee/, message: "Make Employee an abstract class" },
+    { pattern: /extends\s+Employee/, message: "Have Developer and Manager extend Employee" },
+    { pattern: /instanceof/, message: "Use instanceof to count managers" },
+  ],
+
+  tests: [
+    { name: "Developer.totalPay() is 5000.0", code: "      expect_eq(new Developer(\"Ada\").totalPay(), 5000.0);" },
+    { name: "Manager.totalPay() adds bonus via super", code: "      expect_eq(new Manager(\"Rob\", 2000).totalPay(), 10000.0);" },
+    { name: "describe() uses name and totalPay", code: "      expect_eq(new Manager(\"Rob\", 2000).describe(), \"Rob: 10000.0\");" },
+    { name: "polymorphism: Employee ref calls override", code: "      Employee e = new Manager(\"Sue\", 500);\n      expect_eq(e.totalPay(), 8500.0);" },
+    { name: "Payroll.totalPayroll sums the team", code: "      Employee[] team = { new Developer(\"A\"), new Manager(\"B\", 1000) };\n      expect_eq(Payroll.totalPayroll(team), 14000.0);" },
+    { name: "Payroll.countManagers uses instanceof", code: "      Employee[] team = { new Developer(\"A\"), new Manager(\"B\", 1000), new Manager(\"C\", 0) };\n      expect_eq(Payroll.countManagers(team), 2);" },
+    { name: "a Manager is an Employee", code: "      expect_true(new Manager(\"X\", 0) instanceof Employee);" },
+  ],
+
+  solution: `abstract class Employee {
+  protected final String name;
+
+  protected Employee(String name) {
+    this.name = name;
+  }
+
+  abstract double basePay();
+
+  double totalPay() {
+    return basePay();
+  }
+
+  String describe() {
+    return name + ": " + totalPay();
+  }
+}
+
+class Developer extends Employee {
+  Developer(String name) {
+    super(name);
+  }
+
+  @Override
+  double basePay() {
+    return 5000;
+  }
+}
+
+class Manager extends Employee {
+  private final double bonus;
+
+  Manager(String name, double bonus) {
+    super(name);
+    this.bonus = bonus;
+  }
+
+  @Override
+  double basePay() {
+    return 8000;
+  }
+
+  @Override
+  double totalPay() {
+    return super.totalPay() + bonus;
+  }
+}
+
+class Payroll {
+  static double totalPayroll(Employee[] emps) {
+    double sum = 0;
+    for (Employee e : emps) {
+      sum += e.totalPay();
+    }
+    return sum;
+  }
+
+  static int countManagers(Employee[] emps) {
+    int count = 0;
+    for (Employee e : emps) {
+      if (e instanceof Manager) {
+        count++;
+      }
+    }
+    return count;
+  }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Rust</th><th>Java</th></tr>
+  <tr><td>Subclass</td><td><code>impl Trait for T</code> (no true subtyping)</td><td><code>class B extends A</code></td></tr>
+  <tr><td>Super constructor</td><td>(none; build the struct's fields directly)</td><td><code>super(x);</code></td></tr>
+  <tr><td>Super method</td><td>(none; call a field's method by name)</td><td><code>super.m()</code></td></tr>
+  <tr><td>Mark an override</td><td>(none needed — signature must match the trait or it won't compile)</td><td><code>@Override</code> (compiler-checked)</td></tr>
+  <tr><td>Abstract member</td><td><code>fn m(&amp;self) -> T;</code> (no body)</td><td><code>abstract T m();</code></td></tr>
+  <tr><td>No subclassing</td><td>(structs can't be subclassed at all)</td><td><code>final class</code> / <code>final</code> method</td></tr>
+  <tr><td>Runtime type check</td><td><code>any.downcast_ref::&lt;B&gt;()</code></td><td><code>x instanceof B</code></td></tr>
+</table>
+<p>Polymorphism serves the same purpose Rust gets from a <code>&dyn Employee</code>
+or <code>Box&lt;dyn Employee&gt;</code> trait object: an <code>Employee</code>
+reference holding a <code>Manager</code> runs <code>Manager.totalPay()</code>,
+just as a <code>dyn Employee</code> holding a <code>Manager</code> dispatches
+to its <code>impl</code>. The big win over Rust is <code>final</code>, which
+lets you lock a class or method against further extension — Rust has no
+built-in equivalent, since a plain <code>struct</code> already cannot be
+subclassed and a trait cannot be "sealed" without a workaround. Note that a
+class with even one <code>abstract</code> method must itself be
+<code>abstract</code> and cannot be instantiated with <code>new</code>, the
+way Rust simply won't let you construct a bare <code>dyn Trait</code> without
+a concrete type behind it.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

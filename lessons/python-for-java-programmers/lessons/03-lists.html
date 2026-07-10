@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Lists</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 3,
+  title: "Lists",
+
+  intro: `
+<p>Python's <code>list</code> is the everyday sequence — the counterpart to
+Java's <code>ArrayList</code> (or the <code>List</code> interface it
+implements). It is ordered, mutable, and freely mixes types, unlike a Java
+<code>List&lt;T&gt;</code>, which is pinned to one type parameter. The literal
+syntax is much lighter than Java's: square brackets and commas, no
+<code>new ArrayList&lt;&gt;(List.of(...))</code> boilerplate. What is new is
+<em>negative indexing</em> and <em>slicing</em>, two of the most Pythonic
+things you will learn this week.</p>
+<table>
+  <tr><th>Java</th><th>Python</th></tr>
+  <tr><td><code>List&lt;Integer&gt; xs = new ArrayList&lt;&gt;(List.of(1, 2, 3));</code></td><td><code>xs = [1, 2, 3]</code></td></tr>
+  <tr><td><code>xs.size()</code></td><td><code>len(xs)</code></td></tr>
+  <tr><td><code>xs.get(xs.size() - 1)</code></td><td><code>xs[-1]</code></td></tr>
+  <tr><td><code>xs.add(4)</code></td><td><code>xs.append(4)</code></td></tr>
+  <tr><td><code>xs.subList(1, 3)</code></td><td><code>xs[1:3]</code></td></tr>
+  <tr><td><code>xs.contains(2)</code></td><td><code>2 in xs</code></td></tr>
+</table>
+<p>Indexing from the end is built in: <code>xs[-1]</code> is the last element,
+<code>xs[-2]</code> the second-to-last — no more reaching for
+<code>xs.get(xs.size() - 1)</code>. A <em>slice</em> <code>xs[a:b]</code>
+returns a new list from index <code>a</code> up to (but not including)
+<code>b</code>; either bound may be omitted (<code>xs[:2]</code>,
+<code>xs[2:]</code>) and a third value is a step (<code>xs[::-1]</code> reverses).
+Membership is the <code>in</code> operator, and the length is the free function
+<code>len(xs)</code> rather than the <code>xs.size()</code> method call.</p>
+<p>Two ways to sort: <code>sorted(xs)</code> returns a new sorted list and leaves
+<code>xs</code> alone, while <code>xs.sort()</code> reorders in place and returns
+<code>None</code>. And when you want to transform a list into another list, reach
+for a <em>comprehension</em> — <code>[n * 2 for n in xs]</code> — the Pythonic
+replacement for <code>xs.stream().map(...).collect(Collectors.toList())</code>.</p>`,
+
+  java: `List<Integer> nums = new ArrayList<>(List.of(3, 1, 2));
+nums.add(4);
+int last = nums.get(nums.size() - 1);
+List<Integer> firstTwo = nums.subList(0, 2);
+List<Integer> doubled = nums.stream().map(n -> n * 2).collect(Collectors.toList());
+List<Integer> asc = new ArrayList<>(nums);
+Collections.sort(asc);
+boolean hasThree = nums.contains(3);`,
+
+  task: `
+<p>Write these list helpers in idiomatic Python:</p>
+<ol>
+  <li><code>make_range(n)</code> — return the list
+      <code>[0, 1, ..., n - 1]</code>. (A comprehension over
+      <code>range(n)</code> works well.)</li>
+  <li><code>last(xs)</code> — return the last element using a negative index.</li>
+  <li><code>middle(xs)</code> — return a new list with the first and last
+      elements removed, using a slice (<code>xs[1:-1]</code>).</li>
+  <li><code>with_added(xs, value)</code> — return a new list equal to
+      <code>xs</code> with <code>value</code> appended, without mutating
+      <code>xs</code>.</li>
+  <li><code>doubled(xs)</code> — return a list comprehension of each number
+      times two.</li>
+  <li><code>sorted_desc(xs)</code> — return a new list sorted high-to-low,
+      leaving <code>xs</code> untouched (use <code>sorted</code>).</li>
+  <li><code>contains(xs, value)</code> — return whether <code>value</code> is in
+      <code>xs</code> using the <code>in</code> operator.</li>
+</ol>`,
+
+  starter: `# 1. make_range(n) -> [0, 1, ..., n - 1]
+def make_range(n):
+    return None  # TODO
+
+
+# 2. last(xs) -> the last element (use a negative index)
+def last(xs):
+    return None  # TODO
+
+
+# 3. middle(xs) -> xs without its first and last elements (use a slice)
+def middle(xs):
+    return None  # TODO
+
+
+# 4. with_added(xs, value) -> a new list with value appended (do not mutate xs)
+def with_added(xs, value):
+    return None  # TODO
+
+
+# 5. doubled(xs) -> each number doubled (use a list comprehension)
+def doubled(xs):
+    return None  # TODO
+
+
+# 6. sorted_desc(xs) -> a new list sorted high-to-low (do not mutate xs)
+def sorted_desc(xs):
+    return None  # TODO
+
+
+# 7. contains(xs, value) -> True if value is in xs (use the in operator)
+def contains(xs, value):
+    return None  # TODO
+`,
+
+  requirements: [
+    { pattern: /\[\s*\w+.*\bfor\b.*\bin\b/, message: "Use a list comprehension in doubled (or make_range)" },
+    { pattern: /\[\s*1\s*:\s*-\s*1\s*\]/, message: "Use the slice xs[1:-1] in middle" },
+    { pattern: /\bin\b/, message: "Use the in operator in contains" },
+    { pattern: /sorted\s*\(/, message: "Use sorted() in sorted_desc" },
+  ],
+
+  tests: [
+    { name: "make_range(4) is [0, 1, 2, 3]", code: "    expect_eq(make_range(4), [0, 1, 2, 3])" },
+    { name: "make_range(0) is []", code: "    expect_eq(make_range(0), [])" },
+    { name: "last([10, 20, 30]) is 30", code: "    expect_eq(last([10, 20, 30]), 30)" },
+    { name: "middle([1, 2, 3, 4, 5]) is [2, 3, 4]", code: "    expect_eq(middle([1, 2, 3, 4, 5]), [2, 3, 4])" },
+    { name: "with_added does not mutate its input", code: "    xs = [1, 2]\n    result = with_added(xs, 3)\n    expect_eq(result, [1, 2, 3])\n    expect_eq(xs, [1, 2])" },
+    { name: "doubled([1, 2, 3]) is [2, 4, 6]", code: "    expect_eq(doubled([1, 2, 3]), [2, 4, 6])" },
+    { name: "sorted_desc leaves input alone", code: "    xs = [3, 1, 2]\n    expect_eq(sorted_desc(xs), [3, 2, 1])\n    expect_eq(xs, [3, 1, 2])" },
+    { name: "contains finds and misses correctly", code: "    expect_true(contains([1, 2, 3], 2))\n    expect_true(not contains([1, 2, 3], 9))" },
+  ],
+
+  solution: `def make_range(n):
+    return [i for i in range(n)]
+
+
+def last(xs):
+    return xs[-1]
+
+
+def middle(xs):
+    return xs[1:-1]
+
+
+def with_added(xs, value):
+    return xs + [value]
+
+
+def doubled(xs):
+    return [n * 2 for n in xs]
+
+
+def sorted_desc(xs):
+    return sorted(xs, reverse=True)
+
+
+def contains(xs, value):
+    return value in xs
+`,
+
+  notes: `
+<table>
+  <tr><th>Operation</th><th>Java</th><th>Python</th></tr>
+  <tr><td>Length</td><td><code>xs.size()</code></td><td><code>len(xs)</code></td></tr>
+  <tr><td>Last element</td><td><code>xs.get(xs.size() - 1)</code></td><td><code>xs[-1]</code></td></tr>
+  <tr><td>Slice</td><td><code>xs.subList(1, 3)</code></td><td><code>xs[1:3]</code></td></tr>
+  <tr><td>Reverse copy</td><td><code>var r = new ArrayList&lt;&gt;(xs); Collections.reverse(r);</code></td><td><code>xs[::-1]</code></td></tr>
+  <tr><td>Append</td><td><code>xs.add(v)</code></td><td><code>xs.append(v)</code></td></tr>
+  <tr><td>Concat many</td><td><code>xs.addAll(ys)</code></td><td><code>xs.extend(ys)</code></td></tr>
+  <tr><td>Insert at i</td><td><code>xs.add(i, v)</code></td><td><code>xs.insert(i, v)</code></td></tr>
+  <tr><td>Remove &amp; return</td><td><code>xs.remove(xs.size() - 1)</code></td><td><code>xs.pop()</code> / <code>xs.pop(i)</code></td></tr>
+  <tr><td>Map</td><td><code>xs.stream().map(f).collect(Collectors.toList())</code></td><td><code>[f(x) for x in xs]</code></td></tr>
+  <tr><td>Sort (copy)</td><td><code>var s = new ArrayList&lt;&gt;(xs); Collections.sort(s);</code></td><td><code>sorted(xs)</code></td></tr>
+  <tr><td>Sort (in place)</td><td><code>Collections.sort(xs)</code></td><td><code>xs.sort()</code></td></tr>
+  <tr><td>Contains</td><td><code>xs.contains(v)</code></td><td><code>v in xs</code></td></tr>
+</table>
+<p>The key mental split is <strong>copy vs. mutate</strong>. <code>sorted(xs)</code>,
+a slice, and a comprehension all build a <em>new</em> list; <code>xs.sort()</code>,
+<code>xs.append(v)</code>, <code>xs.insert(i, v)</code>, and <code>xs.pop()</code>
+change <code>xs</code> in place. The in-place methods return <code>None</code>, so
+<code>ys = xs.sort()</code> is a classic beginner bug — it binds <code>ys</code>
+to <code>None</code>. Also note <code>xs + [value]</code> makes a fresh list,
+while <code>xs.append(value)</code> does not, which is why <code>with_added</code>
+above uses <code>+</code> to avoid mutating its argument — the same discipline
+Java's immutable-friendly APIs (like <code>Stream.toList()</code>) encourage.</p>
+<p>List comprehensions read left-to-right as "collect <em>expression</em> for each
+<em>item</em>," and can filter with a trailing <code>if</code>:
+<code>[n for n in xs if n &gt; 0]</code>. They are the first Pythonic idiom worth
+building a reflex for — most <code>.stream().map(...)</code>/<code>.filter(...)</code>
+chains you would write in Java collapse into a single comprehension here.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

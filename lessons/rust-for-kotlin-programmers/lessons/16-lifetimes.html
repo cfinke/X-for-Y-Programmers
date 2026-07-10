@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 16: Lifetimes: An Introduction</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 16,
+  title: "Lifetimes: An Introduction",
+
+  intro: `
+<p>Here's a question the garbage collector has always answered for you: when a
+Kotlin function returns a reference, whose data does it point into, and how long
+is it valid? In Kotlin the answer is "as long as anyone holds it" — the GC
+watches every reference and keeps the target alive. Rust has no GC, so the
+compiler must answer that question <em>at compile time</em>. Usually it figures
+it out by itself. When it can't, you write the answer down, and the notation for
+that answer is a lifetime: <code>&lt;'a&gt;</code>.</p>
+<table>
+  <tr><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td><code>fun longest(a: String, b: String): String</code></td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>"How long is the result valid?" — GC decides at runtime</td><td>"The result borrows from the inputs" — declared, checked at compile time</td></tr>
+  <tr><td>Every reference kept alive automatically</td><td>References must never outlive the data they point into</td></tr>
+  <tr><td>Nothing to annotate, ever</td><td>Usually inferred (<em>elision</em>); written only when ambiguous</td></tr>
+</table>
+<p>Read <code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+as a promise: "the returned <code>&amp;str</code> borrows from <code>a</code> or
+<code>b</code>, so it is valid only while <em>both</em> of them are" — in other
+words, the result lives at most as long as the shorter-lived input. That's all
+a lifetime is: a name that ties an output reference to the inputs it borrows
+from. You need to write it here only because the compiler can't tell whether
+the result comes from <code>a</code> or <code>b</code>.</p>
+<p>Don't panic about the syntax: most functions never write a lifetime at all.
+With a single reference parameter, like <code>fn first_word(s: &amp;str) -&gt; &amp;str</code>,
+there's only one place the result could borrow from, so the compiler fills in
+the lifetime silently. These <em>elision</em> rules cover the overwhelming
+majority of everyday code — you read lifetimes far more often than you write
+them.</p>`,
+
+  kotlin: `// Kotlin: any function may return any reference. Whose data is it?
+// For how long is it valid? You never had to say — the GC
+// answers those questions at runtime by keeping targets alive.
+
+fun longest(a: String, b: String): String =
+    if (a.length >= b.length) a else b
+
+fun firstWord(s: String): String =
+    s.split(Regex("\\\\s+")).firstOrNull { it.isNotEmpty() } ?: ""
+
+// longest("hi", "hello") returns a reference into the caller's
+// data — Kotlin never asks which argument it came from.`,
+
+  task: `
+<p>Rewrite both functions in Rust:</p>
+<ol>
+  <li>Write <code>longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code>
+      that returns whichever input is longer by <code>.len()</code> (return
+      <code>a</code> on a tie). The <code>&lt;'a&gt;</code> is required: the
+      result could borrow from either input, and the compiler can't guess.</li>
+  <li>Write <code>first_word(s: &amp;str) -&gt; &amp;str</code> that returns the
+      first whitespace-separated word, or <code>""</code> for an empty or
+      all-whitespace string. Use
+      <code>s.split_whitespace().next().unwrap_or("")</code>. No lifetime
+      annotation needed — with one reference in, elision fills it in.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. longest: return the longer input (by .len(); return a on a tie).
+//    The lifetime says: "the result borrows from one of these inputs,
+//    so it's valid only while both of them are."
+fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    todo!()
+}
+
+// 2. first_word: first whitespace-separated word, or "" if there is none.
+//    One reference in, one out: elision infers the lifetime for you.
+//    Hint: s.split_whitespace().next() gives you an Option<&str>.
+fn first_word(s: &str) -> &str {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /<'a>/, message: "Declare a lifetime parameter <'a> on longest" },
+    { pattern: /&'a\s+str/, message: "Tie the references together with &'a str in longest's signature" },
+    { pattern: /split_whitespace/, message: "Use split_whitespace() in first_word" },
+  ],
+
+  tests: [
+    { name: 'longest("hello", "hi") returns "hello"',
+      code: 'assert_eq!(longest("hello", "hi"), "hello");' },
+    { name: 'longest("a", "abcde") returns "abcde"',
+      code: 'assert_eq!(longest("a", "abcde"), "abcde");' },
+    { name: "the returned reference stays usable while both inputs live",
+      code: `let city = String::from("Copenhagen");
+let result = longest(city.as_str(), "Oslo");
+assert_eq!(result, "Copenhagen");` },
+    { name: 'first_word("hello world") returns "hello"',
+      code: 'assert_eq!(first_word("hello world"), "hello");' },
+    { name: 'first_word("  spaced   out  ") returns "spaced"',
+      code: 'assert_eq!(first_word("  spaced   out  "), "spaced");' },
+    { name: 'first_word("") returns ""',
+      code: 'assert_eq!(first_word(""), "");' },
+  ],
+
+  solution: `fn longest<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() >= b.len() { a } else { b }
+}
+
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+  <tr><td>"How long is this reference valid?"</td><td>GC decides at runtime</td><td>Compiler checks at compile time</td></tr>
+  <tr><td>Returning a reference</td><td><code>fun longest(a: String, b: String): String</code></td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+  <tr><td>Reading <code>&lt;'a&gt;</code></td><td>—</td><td>"the result borrows from these inputs; valid while they are"</td></tr>
+  <tr><td>One reference in, one out</td><td>—</td><td>Elision: no annotation needed (<code>fn first_word(s: &amp;str) -&gt; &amp;str</code>)</td></tr>
+  <tr><td>Reference outliving its data</td><td>Impossible — GC keeps data alive</td><td>Compile error: "borrowed value does not live long enough"</td></tr>
+</table>
+<p>A lifetime never changes how long anything lives — it only <em>describes</em>
+a relationship so the compiler can verify it. If you ever try to keep the
+result of <code>longest</code> around after one of its inputs is dropped, the
+compiler stops you with exactly the error a GC silently prevents: a reference
+to freed data. And note how rarely you write these: <code>first_word</code>
+needed nothing, and most real signatures don't either.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

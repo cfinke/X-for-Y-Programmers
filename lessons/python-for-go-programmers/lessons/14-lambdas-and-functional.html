@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 14: Lambdas & Functional Tools</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 14,
+  title: "Lambdas & Functional Tools",
+
+  intro: `
+<p>Go doesn't have a dedicated lambda syntax, but it does have function literals —
+anonymous functions you can assign to a variable or pass around:
+<code>func(x int) int { return x * 2 }</code>. Unlike Python's <code>lambda</code>,
+Go has no shorthand; you always write out <code>func</code>, parameter types, and an
+explicit <code>return</code>. And unlike Python's standard library, Go's has no
+generic <code>map</code>, <code>filter</code>, or <code>reduce</code> — idiomatic Go
+just writes a <code>for</code> loop that builds up a result slice.</p>
+<p>Python's function-literal equivalent is the <code>lambda</code>: a single
+expression, no braces, no <code>return</code>. <code>lambda x: x * 2</code> is close
+to Go's <code>func(x int) int { return x * 2 }</code>, just terser — a lambda's body
+must be one expression whose value is returned automatically.</p>
+<table>
+  <tr><th>Go</th><th>Python</th></tr>
+  <tr><td><code>func(x int) int { return x * 2 }</code></td><td><code>lambda x: x * 2</code></td></tr>
+  <tr><td>for loop building a new slice</td><td><code>map(f, xs)</code> &rarr; wrap in <code>list(...)</code></td></tr>
+  <tr><td>for loop with an <code>if</code></td><td><code>filter(f, xs)</code> &rarr; wrap in <code>list(...)</code></td></tr>
+  <tr><td><code>sort.Slice(xs, less)</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+  <tr><td>for loop accumulating <code>acc</code></td><td><code>reduce(f, xs, init)</code></td></tr>
+</table>
+<p>Two key differences. First, Python's <code>map</code> and <code>filter</code>
+return lazy iterators, not lists — you usually wrap them in <code>list(...)</code>
+to see the results; Go has no laziness here since you write the loop yourself.
+Second, Go's <code>sort.Slice</code> doesn't take a <code>key=</code> function like
+Python's <code>sorted</code>; it takes a <code>less(i, j int) bool</code> function
+that compares two indexes directly. Often a comprehension reads better than
+<code>map</code>/<code>filter</code> — prefer <code>[x * 2 for x in xs]</code> over
+<code>list(map(lambda x: x * 2, xs))</code>. Reserve the functional tools for when
+you already have a named function to pass, or for <code>sorted(key=...)</code> and
+<code>reduce</code>, where they shine.</p>`,
+
+  go: `nums := []int{1, 2, 3, 4, 5}
+
+var doubled []int
+for _, x := range nums {
+	doubled = append(doubled, x*2)
+}
+
+var evens []int
+for _, x := range nums {
+	if x%2 == 0 {
+		evens = append(evens, x)
+	}
+}
+
+words := []string{"bb", "a", "ccc"}
+sort.Slice(words, func(i, j int) bool {
+	return len(words[i]) < len(words[j])
+})
+
+total := 0
+for _, x := range nums {
+	total += x
+}
+
+func applyTwice(f func(int) int, x int) int {
+	return f(f(x))
+}`,
+
+  task: `
+<p>Rewrite the Go above using Python's functional tools:</p>
+<ol>
+  <li><code>double_all(nums)</code> — return a <em>list</em> of each number doubled,
+      using <code>map</code> with a <code>lambda</code>.</li>
+  <li><code>keep_evens(nums)</code> — return a <em>list</em> of the even numbers,
+      using <code>filter</code> with a <code>lambda</code>.</li>
+  <li><code>by_length(words)</code> — return the words sorted shortest-first, using
+      <code>sorted</code> with <code>key=len</code> (do not mutate the input).</li>
+  <li><code>total(nums)</code> — sum the numbers using
+      <code>functools.reduce</code> (import it) with a starting value of
+      <code>0</code>.</li>
+  <li><code>apply_twice(f, x)</code> — take a callable <code>f</code> and return
+      <code>f(f(x))</code>.</li>
+</ol>`,
+
+  starter: `from functools import reduce
+
+
+# 1. map + lambda -> list of doubled numbers
+def double_all(nums):
+    return []  # TODO
+
+
+# 2. filter + lambda -> list of even numbers
+def keep_evens(nums):
+    return []  # TODO
+
+
+# 3. sorted(key=...) -> words shortest-first
+def by_length(words):
+    return []  # TODO
+
+
+# 4. functools.reduce -> sum with start 0
+def total(nums):
+    return 0  # TODO
+
+
+# 5. apply a callable twice: f(f(x))
+def apply_twice(f, x):
+    return None  # TODO
+`,
+
+  requirements: [
+    { pattern: /lambda/, message: "Use a lambda in at least one function" },
+    { pattern: /reduce\s*\(/, message: "Use functools.reduce in total" },
+    { pattern: /key\s*=/, message: "Sort with sorted(..., key=...)" },
+  ],
+
+  tests: [
+    { name: "double_all doubles each number", code: "    expect_eq(double_all([1, 2, 3, 4, 5]), [2, 4, 6, 8, 10])" },
+    { name: "double_all returns a list (not an iterator)", code: "    expect_eq(type(double_all([1])).__name__, \"list\")" },
+    { name: "keep_evens keeps only evens", code: "    expect_eq(keep_evens([1, 2, 3, 4, 5, 6]), [2, 4, 6])" },
+    { name: "by_length sorts shortest first", code: "    expect_eq(by_length([\"bb\", \"a\", \"ccc\"]), [\"a\", \"bb\", \"ccc\"])" },
+    { name: "by_length does not mutate its input", code: "    words = [\"bb\", \"a\", \"ccc\"]\n    by_length(words)\n    expect_eq(words, [\"bb\", \"a\", \"ccc\"])" },
+    { name: "total sums via reduce", code: "    expect_eq(total([1, 2, 3, 4, 5]), 15)" },
+    { name: "total of empty list is 0", code: "    expect_eq(total([]), 0)" },
+    { name: "apply_twice applies f twice", code: "    expect_eq(apply_twice(lambda n: n + 3, 10), 16)" },
+  ],
+
+  solution: `from functools import reduce
+
+
+def double_all(nums):
+    return list(map(lambda x: x * 2, nums))
+
+
+def keep_evens(nums):
+    return list(filter(lambda x: x % 2 == 0, nums))
+
+
+def by_length(words):
+    return sorted(words, key=len)
+
+
+def total(nums):
+    return reduce(lambda acc, x: acc + x, nums, 0)
+
+
+def apply_twice(f, x):
+    return f(f(x))
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Python</th></tr>
+  <tr><td>Anonymous function / lambda</td><td><code>func(x int) int { return x + 1 }</code></td><td><code>lambda x: x + 1</code></td></tr>
+  <tr><td>Map</td><td>for loop building a slice</td><td><code>list(map(f, xs))</code></td></tr>
+  <tr><td>Filter</td><td>for loop with an <code>if</code></td><td><code>list(filter(f, xs))</code></td></tr>
+  <tr><td>Sort by key</td><td><code>sort.Slice(xs, less)</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+  <tr><td>Reduce</td><td>for loop accumulating a value</td><td><code>reduce(f, xs, 0)</code></td></tr>
+  <tr><td>Reverse sort</td><td>negate the <code>less</code> comparison</td><td><code>sorted(xs, key=..., reverse=True)</code></td></tr>
+</table>
+<p>A <code>lambda</code> is limited to a single expression — no statements, no
+multi-line bodies. If you need branches or locals, use <code>def</code> and pass
+the function by name; Python functions are first-class objects just like Go's
+function values. For summing specifically, prefer the built-in <code>sum(nums)</code>
+over <code>reduce</code> — <code>reduce</code> earns its keep for folds that
+aren't already built in (running products, flattening, custom accumulation).</p>
+<p>When choosing between <code>map</code>/<code>filter</code> and a comprehension,
+lean Pythonic: <code>[x * 2 for x in xs if x &gt; 0]</code> replaces a nested
+<code>map</code>+<code>filter</code> and reads top-to-bottom. Reach for
+<code>map</code>/<code>filter</code> when you already have a named callable to pass
+(e.g. <code>map(str, xs)</code>), and remember that both return lazy iterators —
+they compute nothing until you iterate or wrap them in <code>list(...)</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

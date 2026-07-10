@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Classes &amp; Objects</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Classes & Objects",
+
+  intro: `
+<p>PHP's object model will feel like home. <code>class</code>,
+<code>new</code>, <code>public</code>/<code>private</code>/<code>protected</code>
+— all as you know them. The constructor is always named
+<code>__construct</code>, member access uses <code>-&gt;</code> instead of
+<code>.</code>, and — the one that trips up C# muscle memory —
+<code>$this</code> is <em>mandatory</em>: a bare <code>$balance</code> inside
+a method is a brand-new local variable, not the property. Every property
+access is <code>$this-&gt;balance</code> (note: no <code>$</code> after the
+arrow).</p>
+<table>
+  <tr><th>C#</th><th>PHP</th></tr>
+  <tr><td><code>public BankAccount(...)</code></td><td><code>public function __construct(...)</code></td></tr>
+  <tr><td><code>account.Deposit(5)</code></td><td><code>$account-&gt;deposit(5)</code></td></tr>
+  <tr><td><code>balance</code> (implicit this)</td><td><code>$this-&gt;balance</code> (always explicit)</td></tr>
+  <tr><td><code>class C(int balance)</code> — C# 12 primary ctor</td><td><code>function __construct(private int $balance)</code></td></tr>
+  <tr><td><code>public int X { get; set; }</code></td><td>no auto-properties — public property or accessor methods</td></tr>
+</table>
+<p>PHP 8's <em>constructor property promotion</em> is the standout feature:
+put a visibility keyword on a constructor parameter and PHP declares the
+property, accepts the argument, and assigns it — one line for what used to
+be three. It's C# 12 primary constructors, except each parameter carries its
+own visibility, so <code>private int $balance = 0</code> gives you a real
+private field with a default. What PHP lacks are auto-properties: there is
+no <code>{ get; set; }</code>. You either expose a plain public property or
+write explicit accessor methods — which is what we'll do here for anything
+with invariants, like an account balance.</p>`,
+
+  csharp: `public class BankAccount(string owner, int balance = 0) // C# 12
+{
+    private int _balance = balance;
+
+    public string Owner { get; } = owner;
+
+    public void Deposit(int amount) => _balance += amount;
+
+    public bool Withdraw(int amount)
+    {
+        if (amount > _balance) return false;
+        _balance -= amount;
+        return true;
+    }
+
+    public int Balance() => _balance;
+}
+
+var acct = new BankAccount("Ada");
+acct.Deposit(100);
+Console.WriteLine(acct.Withdraw(500)); // False — balance still 100`,
+
+  task: `
+<p>Port <code>BankAccount</code>. The starter gives you the promoted
+constructor — <code>private string $owner</code> and
+<code>private int $balance = 0</code> are already real private properties.
+Implement the methods (snake_case, and every property access via
+<code>$this-&gt;</code>):</p>
+<ol>
+  <li><code>owner(): string</code> — return the owner's name.</li>
+  <li><code>deposit(int $amount): void</code> — add to the balance.</li>
+  <li><code>withdraw(int $amount): bool</code> — if the balance is
+      insufficient, return <code>false</code> and leave the balance
+      untouched; otherwise subtract and return <code>true</code>.</li>
+  <li><code>balance(): int</code> — return the current balance.</li>
+</ol>
+<p>The tests construct accounts with <code>new BankAccount("Ada")</code>
+(no <code>var</code> keyword needed — just <code>$a = new ...</code>) and
+verify a failed withdrawal really is a no-op.</p>`,
+
+  starter: `<?php
+
+class BankAccount {
+    // Promoted properties: visibility on the parameter declares,
+    // accepts, and assigns the property in one line (C# 12 primary
+    // constructor, per-parameter visibility).
+    public function __construct(
+        private string $owner,
+        private int $balance = 0,
+    ) {}
+
+    public function owner(): string {
+        throw new Exception("TODO: implement owner");
+    }
+
+    public function deposit(int $amount): void {
+        throw new Exception("TODO: implement deposit");
+    }
+
+    public function withdraw(int $amount): bool {
+        throw new Exception("TODO: implement withdraw");
+    }
+
+    public function balance(): int {
+        throw new Exception("TODO: implement balance");
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /__construct\s*\(\s*(private|public)/, message: "Keep the promoted-property constructor (visibility keyword on the parameter)" },
+    { pattern: /private/, message: "The owner and balance stay private — expose them through methods" },
+    { pattern: /->/, message: "Access properties with $this-> (bare $balance would be a new local)" },
+  ],
+
+  tests: [
+    { name: 'new BankAccount("Ada") starts with the default balance 0',
+      code: '$a = new BankAccount("Ada");\nexpect_eq($a->owner(), "Ada");\nexpect_eq($a->balance(), 0);' },
+    { name: "deposit(100) then deposit(50) leaves a balance of 150",
+      code: '$a = new BankAccount("Ada");\n$a->deposit(100);\n$a->deposit(50);\nexpect_eq($a->balance(), 150);' },
+    { name: "withdraw(40) from 100 returns true and leaves 60",
+      code: '$a = new BankAccount("Ada", 100);\nexpect_true($a->withdraw(40));\nexpect_eq($a->balance(), 60);' },
+    { name: "withdraw(500) from 100 returns false and the balance is unchanged",
+      code: '$a = new BankAccount("Ada", 100);\nexpect_true(!$a->withdraw(500));\nexpect_eq($a->balance(), 100);' },
+    { name: "two accounts do not share state",
+      code: '$a = new BankAccount("Ada");\n$b = new BankAccount("Grace", 10);\n$a->deposit(5);\nexpect_eq($a->balance(), 5);\nexpect_eq($b->balance(), 10);' },
+  ],
+
+  solution: `<?php
+
+class BankAccount {
+    public function __construct(
+        private string $owner,
+        private int $balance = 0,
+    ) {}
+
+    public function owner(): string {
+        return $this->owner;
+    }
+
+    public function deposit(int $amount): void {
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): bool {
+        if ($amount > $this->balance) {
+            return false;
+        }
+        $this->balance -= $amount;
+        return true;
+    }
+
+    public function balance(): int {
+        return $this->balance;
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>C#</th><th>PHP</th></tr>
+  <tr><td>Constructor</td><td>class-named / primary ctor</td><td><code>__construct</code>, always</td></tr>
+  <tr><td>Member access</td><td><code>obj.Member</code></td><td><code>$obj-&gt;member</code></td></tr>
+  <tr><td>Own property</td><td><code>balance</code> or <code>this.balance</code></td><td><code>$this-&gt;balance</code> — mandatory</td></tr>
+  <tr><td>Promoted / primary ctor</td><td><code>class C(int x)</code> (C# 12, no visibility)</td><td><code>__construct(private int $x = 0)</code></td></tr>
+  <tr><td>Auto-property</td><td><code>{ get; set; }</code></td><td>— (public property or accessor methods)</td></tr>
+  <tr><td>Instantiation</td><td><code>new BankAccount("Ada")</code></td><td><code>new BankAccount("Ada")</code> (same!)</td></tr>
+</table>
+<p>The habit to build: <code>$this-&gt;</code> everywhere. In C#, forgetting
+<code>this.</code> is harmless because the compiler resolves the field; in
+PHP, a bare <code>$balance</code> silently creates a local, your method
+"works" on garbage, and nothing warns you. Promotion, meanwhile, is not just
+sugar you may use — it is the dominant constructor style in modern PHP
+codebases, so expect nearly every constructor you read to look like the one
+in this lesson.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

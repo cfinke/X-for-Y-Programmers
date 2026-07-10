@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 9: Result &amp; the ? Operator</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 9,
+  title: "Result & the ? Operator",
+
+  intro: `
+<p>In JavaScript, any function can <code>throw</code> anything, at any
+time, and nothing in its signature warns you. Whether a given call needs
+a <code>try/catch</code> is tribal knowledge — you find out from the
+docs, the source, or the incident report. Rust does away with invisible
+errors entirely: a function that can fail <em>returns</em> its failure,
+as an ordinary value of type <code>Result&lt;T, E&gt;</code> — either
+<code>Ok(value)</code> or <code>Err(error)</code>. Fallibility is right
+there in the signature, and the compiler won't let you use the
+<code>Ok</code> value without acknowledging the <code>Err</code> case.</p>
+<table>
+  <tr><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td><code>function parseAge(s) { ... }</code> — throws? who knows</td><td><code>fn parse_age(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code> — it can fail, says so</td></tr>
+  <tr><td><code>return n;</code></td><td><code>Ok(n)</code></td></tr>
+  <tr><td><code>throw new Error("bad age");</code></td><td><code>Err("bad age".to_string())</code></td></tr>
+  <tr><td><code>try { ... } catch (e) { throw e; }</code></td><td><code>parse_age(s)?</code></td></tr>
+</table>
+<p>That last row is the <code>?</code> operator, and it's the whole
+ergonomic story. Slapped on a <code>Result</code>, it means "if this is
+<code>Ok</code>, unwrap it and continue; if it's <code>Err</code>, return
+that error from the current function right now." It's the propagation you
+used to do with a try/catch whose catch block just re-threw — collapsed
+into one character, and only usable in functions that themselves return a
+<code>Result</code>, so the error's escape route stays visible in every
+signature it passes through.</p>`,
+
+  javascript: `function parseAge(s) {
+  const n = Number(s.trim());
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error(\`"\${s}" is not a valid age\`);
+  }
+  return n;
+}
+
+// Nothing in parseAge's signature says it can throw.
+// Callers who forget try/catch find out in production.
+
+function ageNextYear(s) {
+  try {
+    return parseAge(s) + 1;
+  } catch (e) {
+    throw e;    // manual re-throw, just to pass the error up
+  }
+}
+
+console.log(ageNextYear("41"));   // 42
+console.log(ageNextYear("old"));  // 💥 uncaught, three frames up`,
+
+  task: `
+<p>Make the failure visible in the types:</p>
+<ol>
+  <li>Write <code>parse_age(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code>.
+      Trim the input and parse it: <code>s.trim().parse::&lt;u32&gt;()</code>
+      already returns a <code>Result</code>, but its error type isn't
+      <code>String</code> — convert it with
+      <code>.map_err(|_| format!(...))</code> so failures become a message
+      like <code>"boo is not a valid age"</code> (any message is fine).</li>
+  <li>Write <code>age_next_year(s: &amp;str) -&gt; Result&lt;u32, String&gt;</code>
+      that returns the parsed age plus one. Use the <code>?</code>
+      operator: <code>Ok(parse_age(s)? + 1)</code> — the entire
+      try/re-throw dance from the JavaScript version.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. parse_age: trim, parse as u32, and translate the error to a String.
+//    s.trim().parse::<u32>() gives Result<u32, ParseIntError>;
+//    .map_err(|_| format!("{} is not a valid age", s.trim())) fixes the error type.
+fn parse_age(s: &str) -> Result<u32, String> {
+    todo!()
+}
+
+// 2. age_next_year: parse_age(s)? unwraps the Ok — or returns the Err early.
+fn age_next_year(s: &str) -> Result<u32, String> {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /Result</, message: "Return Result<u32, String> from both functions" },
+    { pattern: /map_err|Err\(/, message: "Produce the error case (map_err or Err(...))" },
+    { pattern: /\)\?/, message: "Propagate the error with the ? operator in age_next_year" },
+  ],
+
+  tests: [
+    { name: 'parse_age("42") returns Ok(42)',
+      code: 'assert_eq!(parse_age("42"), Ok(42));' },
+    { name: 'parse_age("  30  ") trims whitespace and returns Ok(30)',
+      code: 'assert_eq!(parse_age("  30  "), Ok(30));' },
+    { name: 'parse_age("boo") returns an Err',
+      code: 'assert!(parse_age("boo").is_err());' },
+    { name: 'age_next_year("41") returns Ok(42)',
+      code: 'assert_eq!(age_next_year("41"), Ok(42));' },
+    { name: 'age_next_year("old") propagates the Err',
+      code: 'assert!(age_next_year("old").is_err());' },
+  ],
+
+  solution: `fn parse_age(s: &str) -> Result<u32, String> {
+    s.trim()
+        .parse::<u32>()
+        .map_err(|_| format!("{} is not a valid age", s.trim()))
+}
+
+fn age_next_year(s: &str) -> Result<u32, String> {
+    Ok(parse_age(s)? + 1)
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Rust</th></tr>
+  <tr><td>Can this fail?</td><td>invisible — read the docs, hope</td><td>visible — the return type is <code>Result&lt;T, E&gt;</code></td></tr>
+  <tr><td>Success</td><td><code>return value;</code></td><td><code>Ok(value)</code></td></tr>
+  <tr><td>Failure</td><td><code>throw anything;</code></td><td><code>Err(error)</code> — a typed, ordinary value</td></tr>
+  <tr><td>Propagate up</td><td><code>catch (e) { throw e; }</code> (or no catch at all)</td><td><code>expr?</code></td></tr>
+  <tr><td>Convert error types</td><td>catch, wrap, re-throw</td><td><code>.map_err(|e| ...)</code></td></tr>
+</table>
+<p>Notice what <code>?</code> requires: <code>age_next_year</code> can only
+use it because it also returns <code>Result&lt;u32, String&gt;</code>.
+Errors can't silently tunnel through a function the way an uncaught
+exception sails through every JS frame between the <code>throw</code> and
+the <code>catch</code> — each hop is declared. And since a
+<code>Result</code> is just a value, "handling" one is nothing special:
+<code>match</code> on it, <code>unwrap_or</code> it, or pass it along
+with <code>?</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

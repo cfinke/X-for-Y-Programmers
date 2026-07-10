@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Scope & Closures</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Scope & Closures",
+
+  intro: `
+<p>Closures are something both PHP and JavaScript support, but the mechanics
+differ in a way that trips people up. In PHP, a closure only captures the
+variables you list in a <code>use (...)</code> clause, and it captures them
+<em>by value</em> unless you write <code>use (&amp;$var)</code> — by reference.
+In JavaScript, a closure automatically captures every outer variable it
+references, with no capture list to write, and it always captures the
+<em>binding</em>, never a copy of the value.</p>
+<table>
+  <tr><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td><code>function make(): callable</code></td><td><code>function make()</code></td></tr>
+  <tr><td><code>function () use (&amp;$count) { return ++$count; }</code></td><td><code>() =&gt; ++count</code></td></tr>
+  <tr><td>captured var must be named in <code>use (...)</code></td><td>captured var is just a live binding, listed nowhere</td></tr>
+</table>
+<p>The important runtime fact for JavaScript: the inner function captures the
+<em>binding</em> automatically — no <code>use (&amp;$var)</code> needed, it is
+the only mode there is. If the outer variable changes, the closure sees the
+change. That is exactly how a counter can keep incrementing, and how you get
+truly private state — no <code>private</code> property, no <code>class</code>,
+just a variable that nothing outside the closure can reach.</p>`,
+
+  php: `function makeCounter(): callable {
+  $count = 0;
+  return function () use (&$count) {
+    return ++$count;
+  };
+}
+
+$add = fn($a) => fn($b) => $a + $b;
+
+function once(callable $fn): callable {
+  $called = false;
+  $result = null;
+  return function (...$args) use (&$called, &$result, $fn) {
+    if (!$called) {
+      $called = true;
+      $result = $fn(...$args);
+    }
+    return $result;
+  };
+}`,
+
+  task: `
+<p>Write the plain-JavaScript versions. Each relies on a variable captured by a
+returned function:</p>
+<ol>
+  <li><code>makeCounter()</code> returns a function; each call returns the next
+      integer starting at <code>1</code>. Two counters must be independent.</li>
+  <li><code>add(a)</code> returns a function so that <code>add(2)(3)</code> is
+      <code>5</code> — a curried adder factory.</li>
+  <li><code>once(fn)</code> returns a wrapped function that runs <code>fn</code>
+      only the first time; later calls return the first result and never call
+      <code>fn</code> again.</li>
+  <li><code>makeAccount(balance)</code> returns an object with
+      <code>deposit(n)</code> and <code>getBalance()</code> methods sharing one
+      private <code>balance</code> variable — no property on the object holds it.</li>
+</ol>`,
+
+  starter: `// 1. makeCounter() -> function returning 1, 2, 3, ...
+function makeCounter() {
+  // TODO
+}
+
+// 2. add(a)(b) -> a + b
+function add(a) {
+  // TODO
+}
+
+// 3. once(fn) -> wrapper that runs fn only the first time
+function once(fn) {
+  // TODO
+}
+
+// 4. makeAccount(balance) -> { deposit, getBalance } over a private balance
+function makeAccount(balance) {
+  // TODO
+}
+`,
+
+  exportNames: ["makeCounter", "add", "once", "makeAccount"],
+
+  requirements: [
+    { pattern: /return\s+function|=>\s*{|=>[^;]*;?\s*}|return\s*\(/, message: "Return a function (or object of functions) that closes over a variable" },
+    { pattern: /let\s+\w+\s*=\s*0|\+\+|count/, message: "Use a captured, mutable variable inside makeCounter" },
+  ],
+
+  tests: [
+    { name: "makeCounter counts 1, 2, 3", run: (x) => {
+      const c = x.makeCounter();
+      expectEqual(c(), 1);
+      expectEqual(c(), 2);
+      expectEqual(c(), 3);
+    } },
+    { name: "counters are independent", run: (x) => {
+      const a = x.makeCounter();
+      const b = x.makeCounter();
+      expectEqual(a(), 1);
+      expectEqual(a(), 2);
+      expectEqual(b(), 1);
+    } },
+    { name: "add(2)(3) is 5", run: (x) => expectEqual(x.add(2)(3), 5) },
+    { name: "add is curried and reusable", run: (x) => {
+      const add10 = x.add(10);
+      expectEqual(add10(5), 15);
+      expectEqual(add10(-10), 0);
+    } },
+    { name: "once runs fn only the first time", run: (x) => {
+      let calls = 0;
+      const f = x.once(() => { calls++; return 42; });
+      expectEqual(f(), 42);
+      expectEqual(f(), 42);
+      expectEqual(calls, 1);
+    } },
+    { name: "once returns the first result on later calls", run: (x) => {
+      let n = 0;
+      const f = x.once(() => ++n);
+      expectEqual(f(), 1);
+      expectEqual(f(), 1);
+    } },
+    { name: "makeAccount keeps balance private", run: (x) => {
+      const acc = x.makeAccount(100);
+      expectEqual(acc.getBalance(), 100);
+      acc.deposit(50);
+      expectEqual(acc.getBalance(), 150);
+      expectEqual(acc.balance, undefined);
+    } },
+  ],
+
+  solution: `function makeCounter() {
+  let count = 0;
+  return function () {
+    return ++count;
+  };
+}
+
+function add(a) {
+  return function (b) {
+    return a + b;
+  };
+}
+
+function once(fn) {
+  let called = false;
+  let result;
+  return function (...args) {
+    if (!called) {
+      called = true;
+      result = fn(...args);
+    }
+    return result;
+  };
+}
+
+function makeAccount(balance) {
+  return {
+    deposit(n) {
+      balance += n;
+    },
+    getBalance() {
+      return balance;
+    },
+  };
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td>Returned closure type</td><td><code>: callable</code> (no shape info)</td><td>inferred at runtime</td></tr>
+  <tr><td>Capturing outer vars</td><td>must list in <code>use (...)</code>, by value by default</td><td>automatic, always a live binding</td></tr>
+  <tr><td>Mutating a captured var</td><td>requires <code>use (&amp;$var)</code> by reference</td><td>just reassign it — the closure always sees it</td></tr>
+  <tr><td>Private state</td><td><code>private $balance</code> property on a class</td><td>captured variable, no class needed</td></tr>
+</table>
+<p>The classic gotcha lives here, and it runs the opposite direction from PHP's
+habits: a JavaScript closure captures the <em>variable</em>, not its value at
+capture time — always by reference, with no <code>use (&amp;$var)</code> to
+remember. With <code>var</code> in a loop, every closure shares the one
+function-scoped binding and ends up seeing the final value; with
+<code>let</code>, each iteration gets a fresh binding — which is what you
+almost always want, and unlike PHP, you get it by default, not by opting in
+with <code>&amp;</code>. When you reach for a class with a <code>private</code>
+property just to hide one value, remember a closure does the same job with a
+plain variable that nothing outside can name.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

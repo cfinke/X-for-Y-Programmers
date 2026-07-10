@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Strings</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Strings",
+
+  intro: `
+<p>PHP strings and JavaScript strings do the same job, but the toolkits look
+different. PHP leans on a library of global functions —
+<code>strtoupper()</code>, <code>trim()</code>, <code>substr()</code> — that
+take the string as their first argument. JavaScript instead hangs everything
+off the value itself as methods on the built-in
+<code>String.prototype</code>, so the string comes first and the call reads
+left to right.</p>
+<table>
+  <tr><th>PHP</th><th>JavaScript</th></tr>
+  <tr><td><code>$s = "Ada";</code></td><td><code>const s = "Ada";</code></td></tr>
+  <tr><td><code>strlen($s)</code></td><td><code>s.length</code></td></tr>
+  <tr><td><code>substr($s, 0, 3)</code></td><td><code>s.slice(0, 3)</code></td></tr>
+  <tr><td><code>$s . $rest</code> (concatenation)</td><td><code>s + rest</code></td></tr>
+</table>
+<p>Two runtime facts worth keeping in mind. First, strings are immutable in
+both languages: <code>toUpperCase()</code>, <code>trim()</code>,
+<code>replace()</code> and friends never mutate — they return a brand-new
+string, so you must use the return value, exactly like PHP's
+<code>strtoupper()</code> or <code>trim()</code> returning a new string rather
+than editing in place. Second, a template literal
+(<code>\`hello \${name}\`</code>) calls <code>String()</code> on every
+interpolated value, which is why <code>\`\${null}\`</code> quietly becomes
+<code>"null"</code> — the rough JavaScript analog of PHP's double-quoted
+string interpolation (<code>"hello {$name}"</code>), except PHP would warn
+about interpolating <code>null</code> rather than silently stringifying it.</p>`,
+
+  php: `function initials(string $fullName): string {
+  $parts = explode(" ", trim($fullName));
+  return implode("", array_map(
+    fn($part) => strtoupper($part[0]),
+    $parts
+  ));
+}
+
+function slug(string $title): string {
+  return preg_replace("/\\s+/", "-", strtolower(trim($title)));
+}`,
+
+  task: `
+<p>Build a few small, pure string helpers — plain JavaScript, no annotations.
+Each returns a new string (or number) and mutates nothing.</p>
+<ol>
+  <li><code>shout(text)</code> — trim the surrounding whitespace and return the
+      result in UPPERCASE.</li>
+  <li><code>initials(fullName)</code> — split the name on spaces and return the
+      first letter of each part, uppercased and joined (e.g.
+      <code>"ada lovelace"</code> &rarr; <code>"AL"</code>).</li>
+  <li><code>slug(title)</code> — trim, lowercase, and replace every run of
+      whitespace with a single hyphen (e.g. <code>"  Hello  World "</code>
+      &rarr; <code>"hello-world"</code>).</li>
+  <li><code>lastName(fullName)</code> — return everything after the last space
+      using <code>indexOf</code>/<code>lastIndexOf</code> and <code>slice</code>.</li>
+  <li><code>zeroPad(value, width)</code> — turn <code>value</code> into a string
+      and left-pad it with <code>"0"</code> to at least <code>width</code>
+      characters using <code>padStart</code>.</li>
+  <li><code>mentions(text, needle)</code> — return <code>true</code> if
+      <code>text</code> contains <code>needle</code>, case-insensitively.</li>
+</ol>`,
+
+  starter: `// 1. shout(text) -> trimmed, UPPERCASE
+function shout(text) {
+  // TODO
+  return "";
+}
+
+// 2. initials(fullName) -> first letter of each space-separated part, uppercased
+function initials(fullName) {
+  // TODO
+  return "";
+}
+
+// 3. slug(title) -> trimmed, lowercase, whitespace runs -> single "-"
+function slug(title) {
+  // TODO
+  return "";
+}
+
+// 4. lastName(fullName) -> everything after the last space
+function lastName(fullName) {
+  // TODO
+  return "";
+}
+
+// 5. zeroPad(value, width) -> String(value) left-padded with "0" to width
+function zeroPad(value, width) {
+  // TODO
+  return "";
+}
+
+// 6. mentions(text, needle) -> true if text includes needle, case-insensitive
+function mentions(text, needle) {
+  // TODO
+  return false;
+}
+`,
+
+  exportNames: ["shout", "initials", "slug", "lastName", "zeroPad", "mentions"],
+
+  requirements: [
+    { pattern: /toUpperCase\s*\(/, message: "Use toUpperCase() to uppercase text" },
+    { pattern: /toLowerCase\s*\(/, message: "Use toLowerCase() for case-insensitive work" },
+    { pattern: /\.trim\s*\(/, message: "Use trim() to strip surrounding whitespace" },
+    { pattern: /\.split\s*\(/, message: "Use split() to break a string into parts" },
+    { pattern: /\.replace\s*\(/, message: "Use replace() to build the slug" },
+    { pattern: /padStart\s*\(/, message: "Use padStart() in zeroPad" },
+    { pattern: /\.includes\s*\(/, message: "Use includes() in mentions" },
+  ],
+
+  tests: [
+    { name: 'shout("  hi  ") is "HI"', run: (x) => expectEqual(x.shout("  hi  "), "HI") },
+    { name: 'shout("Hello, World") is "HELLO, WORLD"', run: (x) => expectEqual(x.shout("Hello, World"), "HELLO, WORLD") },
+    { name: 'initials("ada lovelace") is "AL"', run: (x) => expectEqual(x.initials("ada lovelace"), "AL") },
+    { name: 'initials("Grace Brewster Hopper") is "GBH"', run: (x) => expectEqual(x.initials("Grace Brewster Hopper"), "GBH") },
+    { name: 'slug("  Hello  World ") is "hello-world"', run: (x) => expectEqual(x.slug("  Hello  World "), "hello-world") },
+    { name: 'lastName("Ada Lovelace") is "Lovelace"', run: (x) => expectEqual(x.lastName("Ada Lovelace"), "Lovelace") },
+    { name: 'lastName("Grace Brewster Hopper") is "Hopper"', run: (x) => expectEqual(x.lastName("Grace Brewster Hopper"), "Hopper") },
+    { name: 'zeroPad(7, 3) is "007"', run: (x) => expectEqual(x.zeroPad(7, 3), "007") },
+    { name: 'zeroPad(1234, 3) is "1234" (already wide enough)', run: (x) => expectEqual(x.zeroPad(1234, 3), "1234") },
+    { name: 'mentions("Hello World", "world") is true', run: (x) => expectTruthy(x.mentions("Hello World", "world")) },
+    { name: 'mentions("Hello World", "xyz") is false', run: (x) => expectEqual(x.mentions("Hello World", "xyz"), false) },
+  ],
+
+  solution: `function shout(text) {
+  return text.trim().toUpperCase();
+}
+
+function initials(fullName) {
+  return fullName
+    .trim()
+    .split(" ")
+    .map((part) => part[0].toUpperCase())
+    .join("");
+}
+
+function slug(title) {
+  return title.trim().toLowerCase().replace(/\\s+/g, "-");
+}
+
+function lastName(fullName) {
+  const trimmed = fullName.trim();
+  const at = trimmed.lastIndexOf(" ");
+  return at === -1 ? trimmed : trimmed.slice(at + 1);
+}
+
+function zeroPad(value, width) {
+  return String(value).padStart(width, "0");
+}
+
+function mentions(text, needle) {
+  return text.toLowerCase().includes(needle.toLowerCase());
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Task</th><th>PHP instinct</th><th>JavaScript runtime</th></tr>
+  <tr><td>Uppercase</td><td><code>strtoupper($s)</code></td><td><code>s.toUpperCase()</code> — new string</td></tr>
+  <tr><td>Contains?</td><td><code>str_contains($s, $x)</code></td><td><code>s.includes(x)</code> — case-sensitive</td></tr>
+  <tr><td>Substring</td><td><code>substr($s, $a, $b)</code></td><td><code>s.slice(a, b)</code>, negatives count from end</td></tr>
+  <tr><td>Split</td><td><code>explode($sep, $s)</code></td><td><code>s.split(sep)</code> — array of strings</td></tr>
+  <tr><td>Pad</td><td><code>str_pad($s, $n, $pad, STR_PAD_LEFT)</code></td><td><code>s.padStart(n, pad)</code> — no-op if already &ge; <code>n</code></td></tr>
+</table>
+<p>A few habits carry over almost unchanged. Just as PHP's
+<code>strpos()</code> returns <code>false</code> when the substring is
+missing (not <code>0</code> — a classic PHP gotcha that trips people up with
+loose comparisons), JavaScript's <code>indexOf</code> returns <code>-1</code>,
+so guard for it before slicing. <code>replace(str, ...)</code> only replaces
+the <em>first</em> match, the same as PHP's single-needle
+<code>str_replace()</code> called once — use a regex with the <code>/g</code>
+flag (or <code>replaceAll</code>) for every match, similar to reaching for
+<code>preg_replace()</code> when one substitution isn't enough. And because
+strings are immutable, forgetting to assign the return value of
+<code>trim()</code> or <code>replace()</code> is a classic bug — just like
+forgetting <code>$s = trim($s);</code> in PHP — the original string is simply
+unchanged.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

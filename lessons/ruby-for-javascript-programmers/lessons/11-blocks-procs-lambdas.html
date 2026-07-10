@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 11: Blocks, Procs &amp; Lambdas</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 11,
+  title: "Blocks, Procs & Lambdas",
+
+  intro: `
+<p>Half the JavaScript you write is passing functions to other functions.
+Ruby took that pattern — the callback — and promoted it to syntax: a
+<strong>block</strong> is the <code>(x) =&gt; ...</code> you used to pass as an
+argument, except it rides <em>outside</em> the parentheses. Where you wrote
+<code>arr.forEach((x) =&gt; ...)</code>, Ruby writes
+<code>arr.each { |x| ... }</code>. The block isn't in the argument list at
+all; every method call may carry exactly one, and the pipes <code>|x|</code>
+are its parameter list.</p>
+<table>
+  <tr><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td><code>arr.forEach((x) =&gt; { ... })</code></td><td><code>arr.each { |x| ... }</code></td></tr>
+  <tr><td><code>fn(x)</code> — call the callback parameter</td><td><code>yield(x)</code> — no parameter declared!</td></tr>
+  <tr><td><code>typeof fn === "function"</code></td><td><code>block_given?</code></td></tr>
+  <tr><td><code>const double = (x) =&gt; x * 2;</code></td><td><code>double = -&gt;(x) { x * 2 }</code></td></tr>
+  <tr><td><code>double(4)</code></td><td><code>double.call(4)</code></td></tr>
+  <tr><td><code>.map((x) =&gt; x.toUpperCase())</code></td><td><code>.map(&amp;:upcase)</code></td></tr>
+</table>
+<p>Inside the method, the block is invoked with <code>yield</code> — and here
+is the part that startles JavaScript developers: <strong>the method never
+declares a parameter for it</strong>. <code>yield(x)</code> calls whatever
+block the caller attached, and <code>block_given?</code> is your
+<code>typeof fn === "function"</code> guard. When you <em>do</em> need a
+first-class function value — to store it, return it, pass several — Ruby has
+lambdas: <code>-&gt;(x) { x * 2 }</code> is the arrow function, but you invoke
+it with <code>.call(4)</code>, not <code>(4)</code>. And for the one-liner
+callback that just calls a method — <code>x =&gt; x.toUpperCase()</code> —
+Ruby has a shorthand shorter than the arrow: <code>map(&amp;:upcase)</code>.</p>`,
+
+  javascript: `function applyTwice(x, fn) {
+  return fn(fn(x));
+}
+
+function maybeApply(x, fn) {
+  return typeof fn === "function" ? fn(x) : x;
+}
+
+function makeMultiplier(n) {
+  return (x) => x * n;   // closure over n
+}
+
+function shoutAll(words) {
+  return words.map((w) => w.toUpperCase());
+}
+
+applyTwice(3, (v) => v * 2);   // 12
+makeMultiplier(3)(4);          // 12
+shoutAll(["hi", "yo"]);        // ["HI", "YO"]`,
+
+  task: `
+<p>Rebuild the callback toolkit, Ruby-style:</p>
+<ol>
+  <li><code>apply_twice(x)</code> — takes a <em>block</em> (note: no
+      <code>fn</code> parameter anywhere) and applies it twice:
+      <code>yield(yield(x))</code>. Callers will write
+      <code>apply_twice(3) { |v| v * 2 }</code>.</li>
+  <li><code>maybe_yield(x)</code> — return <code>yield(x)</code> if a block
+      was given (<code>block_given?</code>), otherwise return <code>x</code>
+      unchanged.</li>
+  <li><code>make_multiplier(n)</code> — return a lambda,
+      <code>-&gt;(x) { x * n }</code>, that closes over <code>n</code>. The
+      tests invoke it with <code>.call</code>.</li>
+  <li><code>shout_all(words)</code> — upcase every word using the
+      <code>&amp;:symbol</code> shorthand: <code>words.map(&amp;:upcase)</code>.</li>
+</ol>`,
+
+  starter: `# 1. No callback parameter! The block arrives invisibly; call it with yield.
+def apply_twice(x)
+  raise NotImplementedError, "TODO: yield(yield(x))"
+end
+
+# 2. block_given? is the "typeof fn === 'function'" check.
+def maybe_yield(x)
+  raise NotImplementedError, "TODO: yield(x) if a block was given, else x"
+end
+
+# 3. Return a lambda: ->(x) { x * n }. Lambdas are called with .call, not ().
+def make_multiplier(n)
+  raise NotImplementedError, "TODO: return a lambda that multiplies by n"
+end
+
+# 4. The one-liner callback, shorter: map(&:upcase).
+def shout_all(words)
+  raise NotImplementedError, "TODO: implement shout_all"
+end
+`,
+
+  requirements: [
+    { pattern: /yield/, message: "Invoke the block with yield (no callback parameter declared)" },
+    { pattern: /block_given\?/, message: "Guard maybe_yield with block_given?" },
+    { pattern: /->\s*\(/, message: "Build the multiplier with a ->(x) { } lambda literal" },
+    { pattern: /&:/, message: "Use the &:symbol shorthand in shout_all" },
+  ],
+
+  tests: [
+    { name: "apply_twice(3) { |v| v * 2 } returns 12",
+      code: "  expect_eq(apply_twice(3) { |v| v * 2 }, 12)" },
+    { name: 'apply_twice("a") { |s| s + "!" } returns "a!!"',
+      code: '  expect_eq(apply_twice("a") { |s| s + "!" }, "a!!")' },
+    { name: "maybe_yield(5) { |v| v + 1 } returns 6",
+      code: "  expect_eq(maybe_yield(5) { |v| v + 1 }, 6)" },
+    { name: "maybe_yield(5) with no block returns 5",
+      code: "  expect_eq(maybe_yield(5), 5)" },
+    { name: "make_multiplier(3).call(4) returns 12",
+      code: "  triple = make_multiplier(3)\n  expect_eq(triple.call(4), 12)\n  expect_eq(triple.call(10), 30)" },
+    { name: 'shout_all(["hi", "there"]) returns ["HI", "THERE"]',
+      code: '  expect_eq(shout_all(["hi", "there"]), ["HI", "THERE"])\n  expect_eq(shout_all([]), [])' },
+  ],
+
+  solution: `def apply_twice(x)
+  yield(yield(x))
+end
+
+def maybe_yield(x)
+  block_given? ? yield(x) : x
+end
+
+def make_multiplier(n)
+  ->(x) { x * n }
+end
+
+def shout_all(words)
+  words.map(&:upcase)
+end
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+  <tr><td>Pass a callback</td><td><code>each(arr, (x) =&gt; ...)</code></td><td><code>arr.each { |x| ... }</code> — block, outside the parens</td></tr>
+  <tr><td>Multiline callback</td><td><code>(x) =&gt; { ... }</code></td><td><code>do |x| ... end</code></td></tr>
+  <tr><td>Invoke it inside</td><td><code>fn(x)</code></td><td><code>yield(x)</code> — no parameter declared</td></tr>
+  <tr><td>Was one passed?</td><td><code>typeof fn === "function"</code></td><td><code>block_given?</code></td></tr>
+  <tr><td>Function value</td><td><code>const f = (x) =&gt; x * 2;</code></td><td><code>f = -&gt;(x) { x * 2 }</code></td></tr>
+  <tr><td>Call it</td><td><code>f(4)</code></td><td><code>f.call(4)</code> (also <code>f.(4)</code>, <code>f[4]</code>)</td></tr>
+  <tr><td>Method-call one-liner</td><td><code>.map((x) =&gt; x.toUpperCase())</code></td><td><code>.map(&amp;:upcase)</code></td></tr>
+</table>
+<p>The mental model: a block is a callback that lost its name and its spot in
+the argument list, because it was the only callback 95% of methods ever
+needed. <code>yield</code> reaches for it implicitly; <code>&amp;:upcase</code>
+converts the symbol <code>:upcase</code> into a block that sends that message.
+When one anonymous block isn't enough — storing behavior, returning it, as in
+<code>make_multiplier</code> — lambdas give you the real first-class function,
+at the price of an explicit <code>.call</code>.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

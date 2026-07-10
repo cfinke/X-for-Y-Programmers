@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Interfaces</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Interfaces",
+
+  intro: `
+<p>An <code>interface</code> is the other way to name an object shape:
+<code>interface Product { name: string; price: number }</code>. Like a type
+alias, it is erased at compile time and produces no JavaScript — it exists
+purely so the compiler can hold every object claiming to be a
+<code>Product</code> to the same contract. Properties that are genuinely
+sometimes-absent get a <code>?</code>: <code>description?: string</code>
+means callers may omit it, and the compiler makes you check before using
+it.</p>
+<table>
+  <tr><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>shape by convention</td><td><code>interface Product { name: string; price: number; }</code></td></tr>
+  <tr><td>property that's sometimes there</td><td><code>description?: string</code></td></tr>
+  <tr><td>copy the base object's fields around</td><td><code>interface DiscountedProduct extends Product { ... }</code></td></tr>
+  <tr><td><code>p.title</code> → <code>undefined</code>, keep going</td><td>unknown property → compile error</td></tr>
+</table>
+<p>Interfaces also compose: <code>interface DiscountedProduct extends
+Product</code> starts from every <code>Product</code> property and adds more.
+A <code>DiscountedProduct</code> <em>is</em> a <code>Product</code>, so any
+function that accepts a <code>Product</code> accepts one — the "same fields
+plus a couple extra" pattern you currently maintain by hand, enforced by the
+compiler.</p>
+<p>So <code>interface</code> or <code>type</code>? For object shapes they are
+nearly interchangeable: both name a shape, both vanish at compile time, and
+<code>type</code> can express intersections (<code>A &amp; B</code>) that do
+what <code>extends</code> does. The differences are at the margins —
+interfaces can be reopened and merged across declarations and read slightly
+better in error messages, while aliases can also name unions, tuples, and
+primitives, which interfaces cannot. A good default: <code>interface</code>
+for object shapes, <code>type</code> for everything else.</p>`,
+
+  javascript: `function describeProduct(product) {
+  // What's on product? Grep the codebase and hope.
+  let text = product.name + ": $" + product.price;
+  if (product.description) text += " - " + product.description;
+  return text;
+}
+
+describeProduct({ name: "Keyboard", price: 89 });
+// "Keyboard: $89"
+
+describeProduct({ title: "Mouse", price: 39 });
+// "undefined: $39" — wrong key, no warning
+
+function finalPrice(product) {
+  return product.price * (1 - product.discountPercent / 100);
+}
+
+finalPrice({ name: "Keyboard", price: 89 });
+// NaN — forgot discountPercent, found out in the cart total`,
+
+  task: `
+<p>Put the shapes on the record:</p>
+<ol>
+  <li>Define <code>interface Product</code> with <code>name: string</code>,
+      <code>price: number</code>, and an <em>optional</em>
+      <code>description?: string</code>.</li>
+  <li>Define <code>interface DiscountedProduct</code> that
+      <code>extends Product</code> and adds
+      <code>discountPercent: number</code>.</li>
+  <li>Type <code>describeProduct(product: Product): string</code>. It returns
+      <code>"Keyboard: $89"</code>, appending <code>" - "</code> and the
+      description only when one is present.</li>
+  <li>Type <code>finalPrice(product: DiscountedProduct): number</code>,
+      returning the price after the discount:
+      <code>price * (1 - discountPercent / 100)</code>. With the interface in
+      place, the <code>NaN</code> call no longer compiles.</li>
+</ol>`,
+
+  starter: `// 1. Define interface Product with name: string, price: number,
+//    and an optional description?: string.
+
+
+// 2. Define interface DiscountedProduct extends Product,
+//    adding discountPercent: number.
+
+
+// 3. Type both functions with the interfaces above.
+function describeProduct(product) {
+  let text = product.name + ": $" + product.price;
+  if (product.description) {
+    text += " - " + product.description;
+  }
+  return text;
+}
+
+function finalPrice(product) {
+  return product.price * (1 - product.discountPercent / 100);
+}
+`,
+
+  exportNames: ["describeProduct", "finalPrice"],
+
+  requirements: [
+    { pattern: /interface\s+Product\s*\{/, message: "Define interface Product { ... }" },
+    { pattern: /description\?\s*:\s*string/, message: "Make description an optional property: description?: string" },
+    { pattern: /interface\s+DiscountedProduct\s+extends\s+Product/, message: "Define interface DiscountedProduct extends Product" },
+    { pattern: /product\s*:\s*Product\s*\)\s*:\s*string/, message: "Type describeProduct as (product: Product): string" },
+  ],
+
+  tests: [
+    { name: "describeProduct without a description", run: (x) => expectEqual(x.describeProduct({ name: "Keyboard", price: 89 }), "Keyboard: $89") },
+    { name: "describeProduct with a description", run: (x) => expectEqual(x.describeProduct({ name: "Mouse", price: 39, description: "Wireless" }), "Mouse: $39 - Wireless") },
+    { name: "finalPrice: 25% off 100 is 75", run: (x) => expectEqual(x.finalPrice({ name: "Keyboard", price: 100, discountPercent: 25 }), 75) },
+    { name: "finalPrice: 50% off 40 is 20", run: (x) => expectEqual(x.finalPrice({ name: "Mouse", price: 40, discountPercent: 50 }), 20) },
+    { name: "finalPrice: 0% off leaves the price alone", run: (x) => expectEqual(x.finalPrice({ name: "Desk", price: 250, discountPercent: 0 }), 250) },
+  ],
+
+  solution: `interface Product {
+  name: string;
+  price: number;
+  description?: string;
+}
+
+interface DiscountedProduct extends Product {
+  discountPercent: number;
+}
+
+function describeProduct(product: Product): string {
+  let text = product.name + ": $" + product.price;
+  if (product.description) {
+    text += " - " + product.description;
+  }
+  return text;
+}
+
+function finalPrice(product: DiscountedProduct): number {
+  return product.price * (1 - product.discountPercent / 100);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+  <tr><td>Named shape</td><td>convention + comments</td><td><code>interface Product { ... }</code></td></tr>
+  <tr><td>Optional property</td><td>just leave it off</td><td><code>description?: string</code> — compiler makes you check</td></tr>
+  <tr><td>Shape reuse</td><td>duplicate the fields</td><td><code>interface B extends A { ... }</code></td></tr>
+  <tr><td>Substitutability</td><td>hope for the best</td><td>a <code>DiscountedProduct</code> works anywhere a <code>Product</code> does</td></tr>
+  <tr><td>interface vs type</td><td>—</td><td><code>interface</code> for object shapes; <code>type</code> for unions, tuples, the rest</td></tr>
+  <tr><td>Runtime cost</td><td>—</td><td>none — interfaces are fully erased</td></tr>
+</table>
+<p>Notice what the optional <code>?</code> really buys you: it splits the
+world into properties that are always there (safe to use directly) and
+properties that might not be (the compiler forces a check before use). In
+plain JavaScript every property is effectively optional and none of them get
+checked — the <code>?</code> doesn't add uncertainty, it fences it in.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 12: Traits</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 12,
+  title: "Traits",
+
+  intro: `
+<p>Go interfaces are satisfied implicitly: give <code>Dog</code> a
+<code>Name() string</code> method and it's a <code>Describer</code>, no
+declaration anywhere. Rust traits are the same idea — a named set of
+methods, no inheritance — with the implicitness traded away: you write
+<code>impl Describe for Dog</code>, explicitly, or <code>Dog</code> doesn't
+implement it. That line of ceremony buys real things Go can't do.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>type Describer interface { Name() string }</code></td><td><code>trait Describe { fn name(&amp;self) -&gt; String; }</code></td></tr>
+  <tr><td>satisfied implicitly — just have the methods</td><td>declared explicitly: <code>impl Describe for Dog { ... }</code></td></tr>
+  <tr><td>no method bodies in interfaces</td><td>default methods: write the body once on the trait</td></tr>
+  <tr><td>can't make someone else's type satisfy your naming</td><td>implement <em>your</em> trait for types you didn't write</td></tr>
+</table>
+<p>The biggest win is <strong>default methods</strong>. A Go interface is
+pure signatures; shared behavior gets duplicated into every implementer or
+exiled to a free function. A Rust trait can ship a method <em>body</em>
+that's written in terms of the required methods — implementers get it for
+free and can override it if they want. And because implementing is explicit,
+you can implement your own trait for <code>i32</code>, or for a type from
+someone else's crate — something Go's "methods must be defined in the
+type's package" rule forbids.</p>`,
+
+  go: `type Describer interface {
+	Name() string
+	// No method bodies allowed here — shared behavior
+	// must be duplicated or moved to a free function.
+}
+
+type Dog struct{ name string }
+type Robot struct{ model string }
+
+// Satisfied implicitly: nothing anywhere says
+// "Dog implements Describer".
+func (d Dog) Name() string   { return d.name }
+func (r Robot) Name() string { return "Robot " + r.model }
+
+// The shared behavior lives outside the interface:
+func describe(d Describer) string {
+	return "This is " + d.Name() + "."
+}`,
+
+  task: `
+<p>Port this to a trait with a default method:</p>
+<ol>
+  <li>Complete the trait <code>Describe</code>: it requires
+      <code>name(&amp;self) -&gt; String</code>, and provides a default
+      <code>describe(&amp;self) -&gt; String</code>. Write the default body
+      so it returns <code>"This is {name}."</code> — use
+      <code>format!("This is {}.", self.name())</code>. Note the trait can
+      call <code>self.name()</code> before knowing what type
+      <code>self</code> is.</li>
+  <li>Fill in <code>impl Describe for Dog</code>: <code>name</code> returns
+      a clone of the dog's <code>name</code> field
+      (<code>self.name.clone()</code>).</li>
+  <li>Fill in <code>impl Describe for Robot</code>: <code>name</code>
+      returns <code>"Robot {model}"</code> via <code>format!</code>.</li>
+  <li>Implement <code>describe</code> in <em>neither</em> impl block — both
+      types inherit the default.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `struct Dog {
+    name: String,
+}
+
+struct Robot {
+    model: String,
+}
+
+trait Describe {
+    // Required: every implementer writes this one.
+    fn name(&self) -> String;
+
+    // Default method — a body on the trait itself. Go interfaces
+    // can't do this. Return "This is {name}." using self.name().
+    fn describe(&self) -> String {
+        todo!()
+    }
+}
+
+// Explicit, unlike Go: this line is what makes Dog a Describe.
+impl Describe for Dog {
+    fn name(&self) -> String {
+        todo!()
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        todo!() // "Robot {model}"
+    }
+}
+`,
+
+  requirements: [
+    { pattern: /trait\s+Describe/, message: "Define the Describe trait" },
+    { pattern: /impl\s+Describe\s+for\s+/, message: "Implement Describe explicitly with impl Describe for ..." },
+    { pattern: /self\s*\.\s*name\s*\(\s*\)/, message: "The default describe body should call self.name()" },
+  ],
+
+  tests: [
+    { name: 'Dog { name: "Rex" }.name() returns "Rex"',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.name(), "Rex");' },
+    { name: 'Dog { name: "Rex" }.describe() returns "This is Rex." (default method)',
+      code: 'let d = Dog { name: String::from("Rex") };\nassert_eq!(d.describe(), "This is Rex.");' },
+    { name: 'Robot { model: "R2" }.name() returns "Robot R2"',
+      code: 'let r = Robot { model: String::from("R2") };\nassert_eq!(r.name(), "Robot R2");' },
+    { name: 'Robot { model: "R2" }.describe() returns "This is Robot R2."',
+      code: 'let r = Robot { model: String::from("R2") };\nassert_eq!(r.describe(), "This is Robot R2.");' },
+  ],
+
+  solution: `struct Dog {
+    name: String,
+}
+
+struct Robot {
+    model: String,
+}
+
+trait Describe {
+    fn name(&self) -> String;
+
+    fn describe(&self) -> String {
+        format!("This is {}.", self.name())
+    }
+}
+
+impl Describe for Dog {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl Describe for Robot {
+    fn name(&self) -> String {
+        format!("Robot {}", self.model)
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Declare the contract</td><td><code>type Describer interface { ... }</code></td><td><code>trait Describe { ... }</code></td></tr>
+  <tr><td>Satisfy it</td><td>implicit — have the methods</td><td>explicit — <code>impl Describe for Dog</code></td></tr>
+  <tr><td>Shared method bodies</td><td>impossible; duplicate or use a free function</td><td>default methods, overridable per type</td></tr>
+  <tr><td>Foreign types</td><td>can't add methods outside the type's package</td><td>implement <em>your</em> trait for any type</td></tr>
+  <tr><td>Accepting "anything that implements"</td><td><code>func f(d Describer)</code></td><td><code>fn f(d: &amp;impl Describe)</code> — next lesson's territory</td></tr>
+</table>
+<p>The explicitness you gave up also closes a Go footgun: in Go, a type can
+satisfy an interface <em>by accident</em> — right method names, wrong
+semantics — and nothing flags it. In Rust the <code>impl</code> block is a
+statement of intent, and it's also where the compiler pins down exactly
+which trait's <code>name</code> you meant when two traits share a method
+name. Next lesson, traits become the vocabulary for generic constraints —
+Rust's <code>constraints.Ordered</code>, but for any capability you can
+name.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

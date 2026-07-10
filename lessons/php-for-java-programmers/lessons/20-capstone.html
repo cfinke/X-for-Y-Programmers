@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 20: Capstone</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 20,
+  title: "Capstone",
+
+  intro: `
+<p>The capstone: a small inventory module that pulls together classes with
+promoted constructors, the <code>array_map</code>/<code>array_filter</code>
+toolkit, nullable return types — and the one semantic seam this course has
+been circling. In PHP, <strong>arrays have value semantics</strong>: assigning
+or passing an array copies it (Java hands out references to one
+<code>ArrayList</code>). But <strong>objects have reference semantics</strong>,
+exactly like Java: copying an array of objects copies the <em>array</em>,
+while the objects inside are still shared handles.</p>
+<table>
+  <tr><th>Java</th><th>PHP</th></tr>
+  <tr><td><code>List&lt;Item&gt;</code> passed by reference</td><td><code>array</code> copied on assign/pass (value semantics)</td></tr>
+  <tr><td>objects are references</td><td>objects are references (same!)</td></tr>
+  <tr><td><code>Optional&lt;Item&gt;</code> / <code>null</code></td><td><code>?Item</code> return type</td></tr>
+  <tr><td>copy constructor / <code>new Item(...)</code> by hand</td><td><code>clone $item</code> (free shallow copy)</td></tr>
+  <tr><td><code>stream().map(...).toList()</code></td><td><code>array_map(fn(...) =&gt; ..., $items)</code></td></tr>
+  <tr><td><code>filter(...).toList()</code> reindexes</td><td><code>array_filter</code> keeps keys — wrap in <code>array_values</code></td></tr>
+</table>
+<p>So a "pure" transformation of an array of objects takes one extra step: the
+new array comes free, but any object you intend to modify must be copied
+first. That's what <code>clone</code> is for — a shallow copy constructor
+every object has for free. <code>restock</code> below is the exercise:
+return a new array where the matched <code>Item</code> is a modified
+<em>clone</em>, leaving every original object untouched.</p>`,
+
+  java: `record Item(String name, int priceCents, int count) {}
+
+static int totalValue(List<Item> items) {
+    return items.stream().mapToInt(i -> i.priceCents() * i.count()).sum();
+}
+
+static Optional<Item> findItem(List<Item> items, String name) {
+    return items.stream().filter(i -> i.name().equals(name)).findFirst();
+}
+
+static List<Item> restock(List<Item> items, String name, int amount) {
+    return items.stream()
+        .map(i -> i.name().equals(name)
+            ? new Item(i.name(), i.priceCents(), i.count() + amount)
+            : i)
+        .toList();
+}
+
+static List<String> namesInStock(List<Item> items) {
+    return items.stream().filter(i -> i.count() > 0).map(Item::name).toList();
+}`,
+
+  task: `
+<p>The <code>Item</code> class is written for you in the starter — port the
+four functions:</p>
+<ol>
+  <li><code>total_value(array $items): int</code> — sum of
+      <code>price_cents * count</code> over all items. Use
+      <code>array_reduce</code> (or <code>array_map</code> +
+      <code>array_sum</code>).</li>
+  <li><code>find_item(array $items, string $name): ?Item</code> — first item
+      whose <code>name</code> matches, or <code>null</code>. The
+      <code>?Item</code> return type is <code>Optional&lt;Item&gt;</code>
+      flattened into the signature.</li>
+  <li><code>restock(array $items, string $name, int $amount): array</code> —
+      a new array where the matched item has <code>count</code> increased by
+      <code>$amount</code>. Use <code>array_map</code>: return non-matches
+      unchanged, and for the match return a modified <code>clone</code> —
+      mutating <code>$item-&gt;count</code> directly would change the caller's
+      object, because objects are shared references even inside a copied
+      array.</li>
+  <li><code>names_in_stock(array $items): array</code> — the names of items
+      with <code>count &gt; 0</code>. Remember the lesson-13 gotcha:
+      <code>array_filter</code> keeps original keys, so wrap the result in
+      <code>array_values</code> to reindex.</li>
+</ol>
+<p>The tests verify <code>restock</code> both ways: the returned array has the
+new count, <em>and</em> the original <code>Item</code> objects are unchanged.</p>`,
+
+  starter: `<?php
+
+// Item is complete -- promoted public properties, no getters needed.
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+// 1. total_value: sum of price_cents * count (array_reduce).
+function total_value(array $items): int {
+    throw new Exception('TODO: implement total_value');
+}
+
+// 2. find_item: first Item whose ->name matches, or null.
+function find_item(array $items, string $name): ?Item {
+    throw new Exception('TODO: implement find_item');
+}
+
+// 3. restock: array_map over $items; for the match, return a modified
+//    clone -- never mutate the original object.
+function restock(array $items, string $name, int $amount): array {
+    throw new Exception('TODO: implement restock');
+}
+
+// 4. names_in_stock: array_filter (count > 0), map to names,
+//    array_values to reindex.
+function names_in_stock(array $items): array {
+    throw new Exception('TODO: implement names_in_stock');
+}
+`,
+
+  requirements: [
+    { pattern: /\?Item/, message: "Give find_item the nullable ?Item return type" },
+    { pattern: /array_(map|filter|reduce|values)/, message: "Use the array_* function toolkit instead of only hand-rolled loops" },
+    { pattern: /clone/, message: "clone the matched Item in restock instead of mutating it" },
+  ],
+
+  tests: [
+    { name: "total_value sums price_cents * count (2*150 + 1*300 = 600)",
+      code: '$items = [new Item("apple", 150, 2), new Item("pear", 300, 1)];\nexpect_eq(total_value($items), 600);\nexpect_eq(total_value([]), 0);' },
+    { name: 'find_item returns the matching Item object',
+      code: '$items = [new Item("apple", 150, 2), new Item("pear", 300, 1)];\n$found = find_item($items, "pear");\nexpect_true($found instanceof Item);\nexpect_eq($found->price_cents, 300);\nexpect_true($found === $items[1]);' },
+    { name: 'find_item returns null when nothing matches',
+      code: '$items = [new Item("apple", 150, 2)];\nexpect_true(find_item($items, "kiwi") === null);' },
+    { name: 'restock("apple", 5) returns an array where apple has count 7',
+      code: '$items = [new Item("apple", 150, 2), new Item("pear", 300, 1)];\n$out = restock($items, "apple", 5);\nexpect_eq($out[0]->count, 7);\nexpect_eq($out[0]->name, "apple");\nexpect_eq($out[1]->count, 1);' },
+    { name: "restock does NOT mutate the original Item objects (clone!)",
+      code: '$items = [new Item("apple", 150, 2), new Item("pear", 300, 0)];\n$orig = $items[0];\n$out = restock($items, "apple", 3);\nexpect_eq($orig->count, 2);\nexpect_eq($items[0]->count, 2);\nexpect_true($out[0] !== $orig);\n$none = restock($items, "kiwi", 9);\nexpect_eq($none[0]->count, 2);\nexpect_eq($none[1]->count, 0);' },
+    { name: 'names_in_stock filters count > 0 and reindexes: ["apple", "fig"]',
+      code: '$items = [new Item("apple", 150, 2), new Item("pear", 300, 0), new Item("fig", 80, 1)];\nexpect_eq(names_in_stock($items), ["apple", "fig"]);' },
+  ],
+
+  solution: `<?php
+
+class Item {
+    public function __construct(
+        public string $name,
+        public int $price_cents,
+        public int $count,
+    ) {}
+}
+
+function total_value(array $items): int {
+    return array_reduce(
+        $items,
+        fn($sum, $item) => $sum + $item->price_cents * $item->count,
+        0
+    );
+}
+
+function find_item(array $items, string $name): ?Item {
+    foreach ($items as $item) {
+        if ($item->name === $name) {
+            return $item;
+        }
+    }
+    return null;
+}
+
+function restock(array $items, string $name, int $amount): array {
+    return array_map(function ($item) use ($name, $amount) {
+        if ($item->name !== $name) {
+            return $item;
+        }
+        $copy = clone $item;
+        $copy->count += $amount;
+        return $copy;
+    }, $items);
+}
+
+function names_in_stock(array $items): array {
+    $in_stock = array_filter($items, fn($item) => $item->count > 0);
+    return array_values(array_map(fn($item) => $item->name, $in_stock));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>PHP</th></tr>
+  <tr><td>Collection passed to a function</td><td>reference to the one list</td><td>copied array (value semantics)</td></tr>
+  <tr><td>Objects inside</td><td>shared references</td><td>shared references (identical to Java)</td></tr>
+  <tr><td>Maybe-absent return</td><td><code>Optional&lt;Item&gt;</code></td><td><code>?Item</code> (return <code>null</code>)</td></tr>
+  <tr><td>Defensive copy</td><td>copy constructor / record <code>new</code></td><td><code>clone $item</code> (shallow)</td></tr>
+  <tr><td>map</td><td><code>stream().map(f).toList()</code></td><td><code>array_map($f, $items)</code></td></tr>
+  <tr><td>filter + reindex</td><td><code>filter(f).toList()</code></td><td><code>array_values(array_filter($items, $f))</code></td></tr>
+  <tr><td>reduce</td><td><code>stream().reduce(0, op)</code></td><td><code>array_reduce($items, $op, 0)</code></td></tr>
+</table>
+<p>The insight — and the seam this capstone exists to expose: PHP's copy
+semantics stop at the object boundary. <code>restock</code> receives its own
+copy of the <em>array</em> for free, and <code>array_map</code> builds another
+new array, so the list structure is safely yours; but every element of those
+arrays is still a handle to the caller's <code>Item</code> objects, so
+<code>$item-&gt;count += $amount</code> would leak the mutation straight back
+out — the classic Java aliasing bug wearing a value-semantics disguise.
+<code>clone</code> is the one-keyword fix: a free shallow copy constructor
+that turns a shared handle into a private object you may mutate. New array
+from <code>array_map</code>, new object from <code>clone</code> — change
+either one without both, and someone else sees your edits.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Functions & Control Flow</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 2,
+  title: "Functions & Control Flow",
+
+  intro: `
+<p>Good news first: Go and Rust agree on function syntax more than almost
+any other pair of languages. Types come <em>after</em> names —
+<code>func f(x int) string</code> becomes
+<code>fn f(x: i32) -> String</code>. Add a colon, add an arrow, and you're
+done. No header files, no "return type goes first" archaeology.</p>
+<table>
+  <tr><th>Go</th><th>Rust</th></tr>
+  <tr><td><code>func f(x int) string</code></td><td><code>fn f(x: i32) -> String</code></td></tr>
+  <tr><td><code>if a &gt; b { ... } else { ... }</code></td><td>same shape — and no parens needed either</td></tr>
+  <tr><td>no ternary; write the full if statement</td><td>no ternary; the full <code>if</code> <em>is a value</em></td></tr>
+  <tr><td><code>return x</code></td><td><code>return x;</code> — or just end the block with <code>x</code></td></tr>
+</table>
+<p>The one real difference: in Rust, control flow produces values.
+Go famously refused the ternary operator because it invites cryptic
+one-liners; Rust agrees, and instead lets the full, readable
+<code>if/else</code> be an expression:
+<code>let bigger = if a &gt; b { a } else { b };</code>. It's the ternary
+done Go's way — complete branches, no <code>?:</code> line noise.
+Relatedly, a block's <em>last expression</em> (written without a
+semicolon) is its value, which is why idiomatic Rust functions often end
+with a bare <code>x</code> instead of <code>return x;</code>. A semicolon
+turns an expression into a statement, so leaving it off is what says
+"this is the result".</p>`,
+
+  go: `func maxOf(a, b int) int {
+	// No ternary in Go — you write it out:
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func grade(score int) string {
+	if score >= 60 {
+		return "pass"
+	}
+	return "fail"
+}
+
+func sign(n int) int {
+	if n > 0 {
+		return 1
+	} else if n < 0 {
+		return -1
+	}
+	return 0
+}`,
+
+  task: `
+<p>Port these three Go functions, using if-expressions instead of early
+returns:</p>
+<ol>
+  <li><code>max_of</code> takes <code>a: i32</code> and <code>b: i32</code>
+      and returns <code>i32</code> — the larger of the two. Bind the result
+      of an <code>if</code> expression (<code>let bigger = if ...</code>)
+      and end the function with it. No <code>return</code> keyword
+      anywhere.</li>
+  <li><code>grade</code> takes <code>score: u32</code> and returns
+      <code>String</code>: <code>"pass"</code> for 60 and above,
+      <code>"fail"</code> below. (Tip: <code>.to_string()</code> turns a
+      string literal into a <code>String</code>.)</li>
+  <li><code>sign</code> takes <code>n: i32</code> and returns
+      <code>i32</code>: 1 for positive, -1 for negative, 0 for zero.
+      <code>if / else if / else</code> works as one big expression.</li>
+</ol>
+<p>Don't write <code>fn main</code> — the lesson's tests call your functions
+directly.</p>`,
+
+  starter: `// 1. max_of: use an if-expression, not early returns:
+//    let bigger = if a > b { a } else { b };
+fn max_of(a: i32, b: i32) -> i32 {
+    todo!()
+}
+
+// 2. grade: "pass" for score >= 60, else "fail" (as a String).
+fn grade(score: u32) -> String {
+    todo!()
+}
+
+// 3. sign: 1, -1, or 0. An if / else if / else chain is one expression.
+fn sign(n: i32) -> i32 {
+    todo!()
+}
+`,
+
+  requirements: [
+    { pattern: /->/, message: "Give your functions return types with ->" },
+    { pattern: /=\s*if\b/, message: "Bind the result of an if-expression (let x = if ...)" },
+  ],
+
+  tests: [
+    { name: "max_of(3, 7) returns 7",
+      code: "assert_eq!(max_of(3, 7), 7);" },
+    { name: "max_of(10, -2) returns 10",
+      code: "assert_eq!(max_of(10, -2), 10);" },
+    { name: 'grade(75) returns "pass"',
+      code: 'assert_eq!(grade(75), "pass");' },
+    { name: 'grade(59) returns "fail" and grade(60) returns "pass"',
+      code: 'assert_eq!(grade(59), "fail");\nassert_eq!(grade(60), "pass");' },
+    { name: "sign(-42) returns -1, sign(0) returns 0, sign(9) returns 1",
+      code: "assert_eq!(sign(-42), -1);\nassert_eq!(sign(0), 0);\nassert_eq!(sign(9), 1);" },
+  ],
+
+  solution: `fn max_of(a: i32, b: i32) -> i32 {
+    let bigger = if a > b { a } else { b };
+    bigger
+}
+
+fn grade(score: u32) -> String {
+    let result = if score >= 60 { "pass" } else { "fail" };
+    result.to_string()
+}
+
+fn sign(n: i32) -> i32 {
+    if n > 0 {
+        1
+    } else if n < 0 {
+        -1
+    } else {
+        0
+    }
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+  <tr><td>Function signature</td><td><code>func f(x int) string</code></td><td><code>fn f(x: i32) -> String</code></td></tr>
+  <tr><td>Conditional value</td><td><code>if</code> statement + early <code>return</code></td><td><code>let m = if a &gt; b { a } else { b };</code></td></tr>
+  <tr><td>Returning</td><td><code>return x</code> required</td><td>last expression, no semicolon (or <code>return x;</code>)</td></tr>
+  <tr><td>Braces</td><td>required, no parens on condition</td><td>same — you'll feel at home</td></tr>
+  <tr><td>Ternary <code>?:</code></td><td>rejected on principle</td><td>rejected too — <code>if</code> is the expression</td></tr>
+</table>
+<p>The semicolon rule is the only real trap: <code>x</code> as the last line
+returns <code>x</code>; <code>x;</code> returns nothing (the unit type
+<code>()</code>), and the compiler will immediately tell you the types
+don't match. One caveat for expression-<code>if</code>: both branches must
+produce the same type — the compiler checks that the value you're binding
+actually exists on every path, the same way Go checks that every path
+returns.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

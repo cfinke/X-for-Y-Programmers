@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 19: Working with JSON</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 19,
+  title: "Working with JSON",
+
+  intro: `
+<p><code>json.dumps</code> is <code>json_encode($data)</code>;
+<code>json.loads</code> is <code>json_decode($json, true)</code>. That
+<code>true</code> is load-bearing: it makes JSON objects come back as
+associative arrays — the dict-shaped things you've been using all course.
+<em>Without</em> it, PHP returns <code>stdClass</code> objects instead, and
+suddenly it's <code>$data-&gt;name</code> instead of
+<code>$data["name"]</code> — a fork in the road <code>json.loads</code>
+simply doesn't have. Get in the habit of always passing <code>true</code>.</p>
+<table>
+  <tr><th>Python</th><th>PHP</th></tr>
+  <tr><td><code>json.dumps(data)</code></td><td><code>json_encode($data)</code></td></tr>
+  <tr><td><code>json.loads(raw)</code></td><td><code>json_decode($raw, true)</code> — don't forget the <code>true</code></td></tr>
+  <tr><td>(no equivalent)</td><td><code>json_decode($raw)</code> → <code>stdClass</code> objects</td></tr>
+  <tr><td>bad JSON raises <code>JSONDecodeError</code></td><td>bad JSON returns <code>null</code> (!) — or throws with <code>JSON_THROW_ON_ERROR</code></td></tr>
+  <tr><td><code>data.get("k", default)</code></td><td><code>$data["k"] ?? $default</code></td></tr>
+</table>
+<p>Error handling is the other inversion. Python's <code>json.loads</code>
+raises by default; PHP's <code>json_decode</code> silently returns
+<code>null</code> on garbage input, which then flows through your code as a
+plausible value. Pass the <code>JSON_THROW_ON_ERROR</code> flag to opt back
+into the sanity you're used to — it makes bad input throw
+<code>JsonException</code>, exactly the behavior Python gives you for free.
+And for keys that may be absent, <code>??</code> is your
+<code>.get(key, default)</code>.</p>`,
+
+  python: `import json
+
+def to_json(data: dict) -> str:
+    return json.dumps(data)
+
+def parse_user(raw: str) -> dict:
+    data = json.loads(raw)   # raises JSONDecodeError on bad input
+    return {
+        "name": data.get("name", "unknown"),
+        "age": data.get("age", 0),
+    }
+
+def pluck_names(raw: str) -> list[str]:
+    users = json.loads(raw)
+    return [u["name"] for u in users]
+
+print(to_json({"name": "Ada", "age": 36}))    # {"name": "Ada", "age": 36}
+print(parse_user('{"age": 50}'))              # {'name': 'unknown', 'age': 50}
+print(pluck_names('[{"name": "Ada"}]'))       # ['Ada']`,
+
+  task: `
+<p>Port the three JSON helpers:</p>
+<ol>
+  <li><code>to_json(array $data): string</code> — one call to
+      <code>json_encode</code>. (Note: PHP emits no spaces —
+      <code>{"name":"Ada"}</code>, not <code>{"name": "Ada"}</code>.)</li>
+  <li><code>parse_user(string $json): array</code> — decode with
+      <code>json_decode($json, true)</code> (associative arrays!), then build
+      <code>["name" =&gt; ..., "age" =&gt; ...]</code> using <code>??</code>
+      for the defaults <code>"unknown"</code> and <code>0</code> — that's
+      <code>.get(k, default)</code>.</li>
+  <li><code>pluck_names(string $json): array</code> — decode a JSON array of
+      user objects and pull out each <code>"name"</code> with
+      <code>array_map</code> (the list comprehension from Lesson 13).</li>
+</ol>`,
+
+  starter: `<?php
+
+// 1. json.dumps(data)  ->  json_encode($data)
+function to_json(array $data): string {
+    throw new Exception("TODO: implement to_json");
+}
+
+// 2. json.loads(raw)  ->  json_decode($json, true)   <- the true matters!
+//    data.get("name", "unknown")  ->  $data["name"] ?? "unknown"
+function parse_user(string $json): array {
+    throw new Exception("TODO: implement parse_user");
+}
+
+// 3. [u["name"] for u in users]  ->  array_map(fn($u) => ..., $users)
+function pluck_names(string $json): array {
+    throw new Exception("TODO: implement pluck_names");
+}
+`,
+
+  requirements: [
+    { pattern: /json_encode/, message: "Use json_encode in to_json" },
+    { pattern: /json_decode\s*\(\s*\$\w+\s*,\s*true\s*\)/, message: "Decode with json_decode($json, true) — associative arrays, not stdClass" },
+    { pattern: /\?\?/, message: "Use ?? for the missing-key defaults, like .get(k, default)" },
+  ],
+
+  tests: [
+    { name: 'to_json(["name" => "Ada", "age" => 36]) returns compact JSON',
+      code: `expect_eq(to_json(["name" => "Ada", "age" => 36]), '{"name":"Ada","age":36}');` },
+    { name: "parse_user with both keys present",
+      code: `expect_eq(parse_user('{"name":"Ada","age":36}'), ["name" => "Ada", "age" => 36]);` },
+    { name: 'parse_user with name missing defaults to "unknown"',
+      code: `expect_eq(parse_user('{"age":50}'), ["name" => "unknown", "age" => 50]);` },
+    { name: "parse_user on an empty object uses both defaults",
+      code: `expect_eq(parse_user('{}'), ["name" => "unknown", "age" => 0]);` },
+    { name: "pluck_names extracts every name in order",
+      code: `expect_eq(pluck_names('[{"name":"Ada","age":36},{"name":"Grace","age":52}]'), ["Ada", "Grace"]);` },
+  ],
+
+  solution: `<?php
+
+function to_json(array $data): string {
+    return json_encode($data);
+}
+
+function parse_user(string $json): array {
+    $data = json_decode($json, true);
+    return [
+        "name" => $data["name"] ?? "unknown",
+        "age" => $data["age"] ?? 0,
+    ];
+}
+
+function pluck_names(string $json): array {
+    $users = json_decode($json, true);
+    return array_map(fn($u) => $u["name"], $users);
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Python</th><th>PHP</th></tr>
+  <tr><td>Serialize</td><td><code>json.dumps(data)</code></td><td><code>json_encode($data)</code></td></tr>
+  <tr><td>Parse to dicts</td><td><code>json.loads(raw)</code></td><td><code>json_decode($raw, true)</code></td></tr>
+  <tr><td>Parse to objects</td><td>—</td><td><code>json_decode($raw)</code> → <code>stdClass</code>, read with <code>-&gt;</code></td></tr>
+  <tr><td>Bad input</td><td>raises <code>JSONDecodeError</code></td><td>returns <code>null</code>; add <code>JSON_THROW_ON_ERROR</code> to throw <code>JsonException</code></td></tr>
+  <tr><td>Missing key</td><td><code>data.get("k", d)</code></td><td><code>$data["k"] ?? $d</code></td></tr>
+  <tr><td>Pretty print</td><td><code>json.dumps(d, indent=2)</code></td><td><code>json_encode($d, JSON_PRETTY_PRINT)</code></td></tr>
+  <tr><td>Output spacing</td><td><code>{"a": 1}</code></td><td><code>{"a":1}</code> (compact)</td></tr>
+</table>
+<p>The one habit to burn in: <code>json_decode($raw, true)</code>, always
+with the <code>true</code>, unless you have a deliberate reason to want
+<code>stdClass</code>. Mixed codebases where half the functions expect
+<code>$user["name"]</code> and half expect <code>$user-&gt;name</code> are a
+classic PHP failure mode with no Python analogue. And remember the silent
+<code>null</code>: in production code reach for
+<code>json_decode($raw, true, 512, JSON_THROW_ON_ERROR)</code> so malformed
+input fails loudly, the way <code>json.loads</code> taught you to expect.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

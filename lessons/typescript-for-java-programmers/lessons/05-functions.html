@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 5: Functions</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 5,
+  title: "Functions",
+
+  intro: `
+<p>Java has no free functions: every piece of behavior must live inside a
+class, which is why utility code ends up in <code>final</code> classes with
+private constructors and a pile of <code>static</code> methods —
+<code>Math</code>, <code>Collections</code>, <code>Objects</code>. TypeScript
+drops the ceremony entirely. A function can sit at the top level of a file,
+fully typed, no wrapper class required. What Java calls
+<code>TextUtils.greet(name)</code> is simply <code>greet(name)</code>.</p>
+<table>
+  <tr><th>Java</th><th>TypeScript</th></tr>
+  <tr><td><code>public static int f(int x) { ... }</code> inside a class</td><td><code>function f(x: number): number { ... }</code> at top level</td></tr>
+  <tr><td>Overload pair: <code>greet(name)</code> + <code>greet(name, greeting)</code></td><td><code>greet(name: string, greeting: string = "Hello")</code></td></tr>
+  <tr><td>Overload for "arg may be absent"</td><td><code>last?: string</code> (optional parameter)</td></tr>
+  <tr><td><code>x -&gt; x * 2</code></td><td><code>x =&gt; x * 2</code></td></tr>
+  <tr><td><code>Function&lt;Integer, Integer&gt;</code></td><td><code>(n: number) =&gt; number</code></td></tr>
+  <tr><td><code>f.apply(x)</code></td><td><code>f(x)</code></td></tr>
+</table>
+<p>Method overloading gets replaced, not translated. Where Java writes two
+<code>greet</code> methods so callers can omit the greeting, TypeScript
+writes one function with a <em>default parameter</em>
+(<code>greeting: string = "Hello"</code>) or an <em>optional parameter</em>
+(<code>last?: string</code>, whose type inside the body is
+<code>string | undefined</code>). And your lambda instincts transfer almost
+character for character: <code>x -&gt; x * 2</code> becomes
+<code>x =&gt; x * 2</code>. The big upgrade is that functions are ordinary
+values with ordinary types — no hunting through
+<code>Function</code>/<code>BiFunction</code>/<code>Supplier</code> for the
+right functional interface, and no <code>.apply(...)</code>: the type is
+written inline as <code>(n: number) =&gt; number</code> and you just call
+it.</p>`,
+
+  java: `public final class TextUtils {
+    private TextUtils() {}                    // no free functions — a class is required
+
+    public static String greet(String name) { // overload #1 delegates...
+        return greet(name, "Hello");
+    }
+    public static String greet(String name, String greeting) {
+        return greeting + ", " + name + "!";
+    }
+}
+
+// Lambdas need a functional interface to have a type:
+Function<Integer, Integer> doubler = x -> x * 2;
+doubler.apply(21);                            // 42
+
+BiFunction<Function<Integer, Integer>, Integer, Integer> applyTwice =
+    (f, v) -> f.apply(f.apply(v));
+applyTwice.apply(doubler, 5);                 // 20`,
+
+  task: `
+<p>Rewrite the utility class as four top-level functions:</p>
+<ol>
+  <li><code>greet(name: string, greeting: string = "Hello"): string</code> —
+      the two Java overloads collapsed into one function with a
+      <em>default parameter</em>. Return
+      <code>greeting + ", " + name + "!"</code>.</li>
+  <li><code>formatName(first: string, last?: string): string</code> — an
+      <em>optional parameter</em> instead of an overload. Return
+      <code>"first last"</code> when <code>last</code> is provided,
+      otherwise just <code>first</code>. Inside the body,
+      <code>last</code> has type <code>string | undefined</code>, so check
+      it before using it.</li>
+  <li><code>double</code> — a <code>const</code> with the explicit function
+      type <code>(n: number) =&gt; number</code>, assigned an
+      <em>arrow function</em> that doubles its argument. This is
+      <code>Function&lt;Integer, Integer&gt; doubler = x -&gt; x * 2;</code>
+      without the interface hunt.</li>
+  <li><code>applyTwice(fn: (n: number) =&gt; number, value: number): number</code>
+      — takes a function value and applies it twice:
+      <code>fn(fn(value))</code>. No <code>.apply</code>; just call it.</li>
+</ol>`,
+
+  starter: `// 1. Two Java overloads collapse into one function with a default value.
+function greet(name: string, greeting: string = "Hello"): string {
+  // TODO: greeting + ", " + name + "!"
+  return "";
+}
+
+// 2. The "maybe there is a last name" overload becomes an optional param.
+//    Inside the body, last is string | undefined — check before using.
+function formatName(first: string, last?: string): string {
+  // TODO
+  return "";
+}
+
+// 3. Java: Function<Integer, Integer> doubler = x -> x * 2;
+//    TS:   a typed const holding an arrow function.
+const double: (n: number) => number = (n) => n; // TODO: actually double it
+
+// 4. Java: BiFunction taking a Function, called with .apply(...).
+//    TS:   the function type is written inline, and you just call fn(...).
+function applyTwice(fn: (n: number) => number, value: number): number {
+  // TODO: apply fn twice
+  return value;
+}
+`,
+
+  exportNames: ["greet", "formatName", "double", "applyTwice"],
+
+  requirements: [
+    { pattern: /greeting\s*:\s*string\s*=\s*"Hello"/, message: 'Give greeting the default value "Hello" — this replaces the Java overload pair' },
+    { pattern: /\w+\?\s*:\s*string/, message: "Declare the optional parameter with ?: — the overload for an absent argument" },
+    { pattern: /=>/, message: "Use an arrow function — the => spelling of Java's ->" },
+    { pattern: /\(\s*\w+\s*:\s*number\s*\)\s*=>\s*number/, message: "Write the function type (n: number) => number — TypeScript's Function<Integer, Integer>" },
+  ],
+
+  tests: [
+    { name: 'greet("Ada") uses the default: "Hello, Ada!"', run: (x) => expectEqual(x.greet("Ada"), "Hello, Ada!") },
+    { name: 'greet("Ada", "Hi") overrides it: "Hi, Ada!"', run: (x) => expectEqual(x.greet("Ada", "Hi"), "Hi, Ada!") },
+    { name: "formatName handles both one and two arguments", run: (x) => { expectEqual(x.formatName("Grace", "Hopper"), "Grace Hopper"); expectEqual(x.formatName("Grace"), "Grace"); } },
+    { name: "double(21) is 42", run: (x) => expectEqual(x.double(21), 42) },
+    { name: "applyTwice(double, 5) is 20", run: (x) => expectEqual(x.applyTwice(x.double, 5), 20) },
+    { name: "applyTwice works with any (n: number) => number", run: (x) => expectEqual(x.applyTwice((n) => n + 1, 0), 2) },
+  ],
+
+  solution: `function greet(name: string, greeting: string = "Hello"): string {
+  return greeting + ", " + name + "!";
+}
+
+function formatName(first: string, last?: string): string {
+  if (last === undefined) {
+    return first;
+  }
+  return first + " " + last;
+}
+
+const double: (n: number) => number = (n) => n * 2;
+
+function applyTwice(fn: (n: number) => number, value: number): number {
+  return fn(fn(value));
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+  <tr><td>Where functions live</td><td>static methods inside a class</td><td>top level of any file</td></tr>
+  <tr><td>Optional trailing arg</td><td>write another overload</td><td><code>greeting: string = "Hello"</code></td></tr>
+  <tr><td>Arg that may be absent</td><td>write another overload</td><td><code>last?: string</code> → <code>string | undefined</code> inside</td></tr>
+  <tr><td>Lambda</td><td><code>x -&gt; x * 2</code></td><td><code>x =&gt; x * 2</code></td></tr>
+  <tr><td>Function type</td><td><code>Function&lt;T, R&gt;</code> / <code>BiFunction&lt;A, B, R&gt;</code> / ...</td><td><code>(a: A, b: B) =&gt; R</code>, written inline</td></tr>
+  <tr><td>Invoking a function value</td><td><code>f.apply(x)</code></td><td><code>f(x)</code></td></tr>
+</table>
+<p>The mental shift: in Java a lambda is only usable once it is poured into
+some functional interface, and each shape (<code>Supplier</code>,
+<code>Consumer</code>, <code>BiFunction</code>...) is a different nominal
+type you must name. In TypeScript the arrow function <em>is</em> the value
+and its type is structural — any function whose parameters and return type
+line up is assignable, no interface required. That is why
+<code>applyTwice</code> happily accepts <code>double</code>, an inline
+arrow, or a plain named function: they all have the shape
+<code>(n: number) =&gt; number</code>. TypeScript does have declaration-based
+overloads for advanced cases, but idiomatic code reaches for default and
+optional parameters first — one body, no delegation chains.</p>`,
+};
+</script>
+<script src="../../../shared/js/vendor/typescript.min.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>

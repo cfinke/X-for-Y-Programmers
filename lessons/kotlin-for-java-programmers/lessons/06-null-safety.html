@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 6: Null Safety</title>
+<link rel="stylesheet" href="../../../shared/css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSON = {
+  number: 6,
+  title: "Null Safety",
+
+  intro: `
+<p>Kotlin bakes nullability into the type system, something Java's own type
+system has never done. In Java, any reference type — <code>String</code>,
+<code>List</code>, whatever — can silently hold <code>null</code>, and the
+compiler won't stop you from calling a method on it and blowing up with a
+<code>NullPointerException</code> at runtime. Kotlin closes that gap: a plain
+<code>String</code> can <em>never</em> hold <code>null</code>; if a value might
+be absent you must say so with a trailing <code>?</code> — <code>String?</code>
+is Kotlin's way of marking "this may be null," something Java only approximates
+with conventions, <code>@Nullable</code> annotations, or <code>Optional</code>.
+The compiler then forces you to deal with the null before you can call anything
+on it.</p>
+<table>
+  <tr><th>Java</th><th>Kotlin</th></tr>
+  <tr><td><code>String</code> (may be null, unchecked)</td><td><code>String?</code></td></tr>
+  <tr><td><code>user != null ? user.getName() : null</code></td><td><code>user?.name</code></td></tr>
+  <tr><td><code>name != null ? name : "guest"</code></td><td><code>name ?: "guest"</code></td></tr>
+  <tr><td><code>Objects.requireNonNull(name)</code></td><td><code>name!!</code></td></tr>
+  <tr><td><code>if (x != null) { x.f(); }</code></td><td><code>x?.let { it.f() }</code></td></tr>
+</table>
+<p>The tools take some getting used to. Safe call <code>?.</code> returns
+<code>null</code> instead of throwing when the receiver is null (the equivalent
+of a manual <code>x != null ? x.f() : null</code> check in Java, but built into
+the language). The Elvis operator <code>?:</code> supplies a fallback in one
+step. The non-null assertion <code>!!</code> is the loud Kotlin cousin of
+<code>Objects.requireNonNull</code> — it throws a
+<code>NullPointerException</code> if you are wrong, so reach for it rarely. And
+<code>value?.let { ... }</code> runs a block only when the value is non-null,
+binding it to <code>it</code>.</p>`,
+
+  java: `String lookupName(int id) {
+  if (id == 1) return "Ada";
+  if (id == 2) return "Rob";
+  return null;
+}
+
+String name = lookupName(id);
+String greeting = "Hello, " + (name != null ? name : "stranger");
+Character firstChar = name != null ? name.charAt(0) : null;`,
+
+  task: `
+<p>Build a tiny name directory and handle the missing cases idiomatically. All
+declarations are top-level (no class or <code>main</code> needed):</p>
+<ol>
+  <li>Write <code>lookupName(id: Int): String?</code> that returns
+      <code>"Ada"</code> for <code>1</code>, <code>"Rob"</code> for <code>2</code>,
+      and <code>null</code> otherwise.</li>
+  <li>Write <code>greet(id: Int): String</code> that returns
+      <code>"Hello, &lt;name&gt;"</code>, falling back to <code>"stranger"</code>
+      with the Elvis operator <code>?:</code> when the name is null.</li>
+  <li>Write <code>initial(id: Int): Char?</code> that returns the first character
+      of the name using a safe call <code>?.</code> (so a missing name yields
+      <code>null</code>).</li>
+  <li>Write <code>shout(name: String?): String</code> that returns the uppercased
+      name plus <code>"!"</code> using <code>name?.let { ... }</code>, or
+      <code>"(silence)"</code> when <code>name</code> is null.</li>
+</ol>`,
+
+  starter: `// 1. lookupName(id) -> a name, or null if unknown
+fun lookupName(id: Int): String? {
+    return null // TODO
+}
+
+// 2. greet(id) -> "Hello, <name>", or "Hello, stranger" (use ?:)
+fun greet(id: Int): String {
+    return "" // TODO
+}
+
+// 3. initial(id) -> first char of the name, or null (use ?.)
+fun initial(id: Int): Char? {
+    return null // TODO
+}
+
+// 4. shout(name) -> "<NAME>!", or "(silence)" if null (use ?.let)
+fun shout(name: String?): String {
+    return "" // TODO
+}
+`,
+
+  requirements: [
+    { pattern: /\?:/, message: "Use the Elvis operator ?: to supply a fallback" },
+    { pattern: /\?\./, message: "Use a safe call ?. on a nullable value" },
+    { pattern: /\.let\s*\{/, message: "Use ?.let { ... } to handle the nullable name" },
+  ],
+
+  tests: [
+    { name: 'lookupName(1) is "Ada"', code: "        expect_eq(lookupName(1), \"Ada\")" },
+    { name: 'lookupName(2) is "Rob"', code: "        expect_eq(lookupName(2), \"Rob\")" },
+    { name: "lookupName(9) is null", code: "        expect_eq(lookupName(9), null)" },
+    { name: 'greet(1) is "Hello, Ada"', code: "        expect_eq(greet(1), \"Hello, Ada\")" },
+    { name: 'greet(9) falls back to "stranger"', code: "        expect_eq(greet(9), \"Hello, stranger\")" },
+    { name: "initial(2) is 'R'", code: "        expect_eq(initial(2), 'R')" },
+    { name: "initial(9) is null", code: "        expect_eq(initial(9), null)" },
+    { name: 'shout("hi") is "HI!"', code: "        expect_eq(shout(\"hi\"), \"HI!\")" },
+    { name: 'shout(null) is "(silence)"', code: "        expect_eq(shout(null), \"(silence)\")" },
+  ],
+
+  solution: `fun lookupName(id: Int): String? {
+    return when (id) {
+        1 -> "Ada"
+        2 -> "Rob"
+        else -> null
+    }
+}
+
+fun greet(id: Int): String {
+    return "Hello, " + (lookupName(id) ?: "stranger")
+}
+
+fun initial(id: Int): Char? {
+    return lookupName(id)?.first()
+}
+
+fun shout(name: String?): String {
+    return name?.let { "\${it.uppercase()}!" } ?: "(silence)"
+}
+`,
+
+  notes: `
+<table>
+  <tr><th>Concept</th><th>Java</th><th>Kotlin</th></tr>
+  <tr><td>Nullable type</td><td><code>String</code> (no compile-time enforcement)</td><td><code>String?</code></td></tr>
+  <tr><td>Safe call</td><td><code>x != null ? x.f() : null</code></td><td><code>x?.f()</code></td></tr>
+  <tr><td>Fallback</td><td><code>x != null ? x : y</code></td><td><code>x ?: y</code></td></tr>
+  <tr><td>Assert non-null</td><td><code>Objects.requireNonNull(x)</code> (throws at runtime)</td><td><code>x!!</code> (throws at runtime)</td></tr>
+  <tr><td>Run if non-null</td><td><code>if (x != null) f(x);</code></td><td><code>x?.let { f(it) }</code></td></tr>
+</table>
+<p>The key mental shift from Java: nullability stops being a convention you
+have to remember (or a runtime surprise) and becomes part of the type itself.
+A <code>String</code> parameter in Kotlin genuinely cannot be null — the
+compiler guarantees it — so you don't need defensive <code>if (x != null)</code>
+checks "just in case," the way you often do in Java even when a method's
+contract promises a non-null result. <code>!!</code> is the one place that
+guarantee gets waived deliberately: if the value is null, it throws
+immediately, so an "impossible" null fails loudly at the source instead of
+leaking downstream like an unguarded Java NPE. Prefer <code>?.</code>,
+<code>?:</code>, and <code>?.let { }</code> for everyday handling and save
+<code>!!</code> for the rare spot where you can prove non-null. Chaining
+<code>?.</code> short-circuits the whole chain to <code>null</code> the moment
+any link is null, replacing a whole ladder of Java <code>!= null</code>
+checks with one line.</p>`,
+};
+</script>
+<script src="../js/course.js"></script>
+<script src="../js/manifest.js"></script>
+<script src="../../../shared/js/harness.js"></script>
+</body>
+</html>
+</content>
