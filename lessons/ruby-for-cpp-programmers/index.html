@@ -19,6 +19,273 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C++ ⇄ Ruby cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Declare a variable</td><td><code>int x = 1;</code> / <code>auto x = 1;</code></td><td><code>x = 1</code> (assignment is declaration)</td></tr>
+          <tr><td>Constant</td><td><code>const int X = 1;</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+          <tr><td>Integers</td><td><code>int</code>, <code>long</code>, <code>int64_t</code>, overflow UB</td><td><code>Integer</code> — arbitrary precision, <code>2 ** 100</code> just works</td></tr>
+          <tr><td>Floating point</td><td><code>double</code></td><td><code>Float</code> (a 64-bit double underneath)</td></tr>
+          <tr><td>Format a string</td><td><code>std::format("{}!", name)</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+          <tr><td>Check a type</td><td><code>typeid(x)</code>, <code>std::is_same_v</code></td><td><code>x.class</code>, <code>x.is_a?(String)</code></td></tr>
+          <tr><td>Give back a value</td><td><code>return</code> required</td><td>last expression; the keyword exists only for early exit</td></tr>
+          <tr><td>Memory</td><td>stack / heap / RAII, your problem</td><td>everything heap-allocated, GC's problem</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Build a string</td><td><code>+</code> chains, <code>ostringstream</code>, <code>std::format</code></td><td><code>"#{expr}"</code> interpolation</td></tr>
+          <tr><td>Uppercase</td><td><code>std::transform</code> + <code>::toupper</code></td><td><code>s.upcase</code> (also <code>.downcase</code>, <code>.capitalize</code>)</td></tr>
+          <tr><td>Substring test</td><td><code>s.find(w) != npos</code></td><td><code>s.include?(w)</code></td></tr>
+          <tr><td>Length</td><td><code>s.size()</code></td><td><code>s.length</code> / <code>s.size</code></td></tr>
+          <tr><td>Join a collection</td><td>manual loop with separator logic</td><td><code>words.join(", ")</code></td></tr>
+          <tr><td>Trim / split</td><td>hand-rolled or boost</td><td><code>s.strip</code>, <code>s.split(",")</code></td></tr>
+          <tr><td>Mutate in place</td><td>default</td><td><code>s.upcase!</code> — the <code>!</code> flags the mutating variant</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays.html">3. Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Literal</td><td><code>std::vector&lt;int&gt; v{1, 2};</code></td><td><code>v = [1, 2]</code> (heterogeneous allowed)</td></tr>
+          <tr><td>Append</td><td><code>v.push_back(x);</code></td><td><code>v &lt;&lt; x</code> (chains: <code>v &lt;&lt; 1 &lt;&lt; 2</code>)</td></tr>
+          <tr><td>Length</td><td><code>v.size()</code></td><td><code>v.size</code> / <code>v.length</code></td></tr>
+          <tr><td>Membership</td><td><code>std::find(...) != v.end()</code></td><td><code>v.include?(x)</code></td></tr>
+          <tr><td>Last element</td><td><code>v.back()</code>, <code>*v.rbegin()</code></td><td><code>v.last</code>, <code>v[-1]</code></td></tr>
+          <tr><td>Slice</td><td><code>std::span</code>, iterator pairs</td><td><code>v[1..2]</code>, <code>v[1..]</code>, <code>v.first(2)</code></td></tr>
+          <tr><td>Sum</td><td><code>std::accumulate(b, e, 0)</code></td><td><code>v.sum</code></td></tr>
+          <tr><td>Out-of-range read</td><td>UB (<code>[]</code>) or throw (<code>.at</code>)</td><td><code>nil</code> — always, quietly</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-hashes-and-symbols.html">4. Hashes &amp; Symbols</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Literal</td><td><code>{ {"a", 1}, {"b", 2} }</code></td><td><code>{ a: 1, b: 2 }</code> (symbol keys)</td></tr>
+          <tr><td>Key type of choice</td><td><code>std::string</code> / enum trick</td><td><code>:symbol</code> — interned, identity-compared</td></tr>
+          <tr><td>Write</td><td><code>m[k] = v;</code></td><td><code>m[k] = v</code></td></tr>
+          <tr><td>Read, maybe absent</td><td><code>operator[]</code> <em>inserts!</em>; else find/end</td><td><code>m[k]</code> → <code>nil</code>, never inserts</td></tr>
+          <tr><td>Read with default</td><td><code>it != m.end() ? it-&gt;second : 0</code></td><td><code>m.fetch(k, 0)</code></td></tr>
+          <tr><td>Missing key should be an error</td><td><code>m.at(k)</code> throws</td><td><code>m.fetch(k)</code> raises <code>KeyError</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>m.each { |k, v| ... }</code> — structured bindings built in</td></tr>
+          <tr><td>Order</td><td>unspecified (<code>unordered_map</code>)</td><td>insertion order, guaranteed</td></tr>
+          <tr><td>Non-mutating update</td><td>copy, then mutate the copy</td><td><code>m.merge(k =&gt; v)</code> returns a new hash</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods &amp; Implicit Return</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Define a function</td><td>declare (header) + define</td><td><code>def name(args) ... end</code>, callable from then on</td></tr>
+          <tr><td>Give back a value</td><td><code>return x;</code></td><td>last expression; keyword only for early exit</td></tr>
+          <tr><td>Default argument</td><td><code>f(int x, int y = 0)</code></td><td><code>def f(x, y = 0)</code></td></tr>
+          <tr><td>Named/optional params</td><td>overload set, builder, or aggregate + designated init</td><td><code>def f(a:, b: 0)</code>; call as <code>f(a: 1, b: 2)</code></td></tr>
+          <tr><td>Required keyword</td><td>—</td><td><code>a:</code> with no default raises <code>ArgumentError</code> if omitted</td></tr>
+          <tr><td>Predicate naming</td><td><code>is_adult</code>, <code>has_value</code></td><td><code>adult?</code>, <code>value?</code></td></tr>
+          <tr><td>Mutating variant</td><td>documentation, <code>&amp;</code> vs <code>const&amp;</code></td><td><code>sort</code> vs <code>sort!</code></td></tr>
+          <tr><td>Conditional as a value</td><td><code>cond ? a : b</code></td><td><code>if</code>/<code>else</code> is already an expression</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nil-and-safe-navigation.html">6. Nil &amp; Safe Navigation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>The absent value</td><td><code>nullptr</code>, <code>std::nullopt</code>, <code>NULL</code>…</td><td><code>nil</code> — one value, class <code>NilClass</code></td></tr>
+          <tr><td>Use after null</td><td>undefined behavior</td><td><code>NoMethodError</code>, always, with a message</td></tr>
+          <tr><td>Chained access</td><td><code>if (a &amp;&amp; a-&gt;b &amp;&amp; a-&gt;b-&gt;c)</code></td><td><code>a&amp;.b&amp;.c</code> (nil short-circuits)</td></tr>
+          <tr><td>Default value</td><td><code>opt.value_or(def)</code></td><td><code>x || def</code></td></tr>
+          <tr><td>Lazy init</td><td><code>if (!x) x = make();</code></td><td><code>x ||= make</code></td></tr>
+          <tr><td>Null test</td><td><code>p == nullptr</code></td><td><code>x.nil?</code> (or just <code>unless x</code>)</td></tr>
+          <tr><td>Falsy values</td><td><code>0</code>, <code>nullptr</code>, <code>false</code>, <code>0.0</code>…</td><td><em>only</em> <code>nil</code> and <code>false</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-everything-is-an-object.html">7. Everything Is an Object</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Absolute value</td><td><code>std::abs(x)</code></td><td><code>x.abs</code></td></tr>
+          <tr><td>Parity</td><td><code>x % 2 == 0</code></td><td><code>x.even?</code> / <code>x.odd?</code></td></tr>
+          <tr><td>Rounding</td><td><code>std::round(f * p) / p</code></td><td><code>f.round(digits)</code></td></tr>
+          <tr><td>Counted loop</td><td><code>for (int i = 0; i &lt; 5; ++i)</code></td><td><code>5.times { |i| ... }</code></td></tr>
+          <tr><td>String to chars</td><td><code>{ s.begin(), s.end() }</code></td><td><code>s.chars</code></td></tr>
+          <tr><td>Compose</td><td><code>g(f(x))</code>, inside-out</td><td><code>x.f.g</code>, left to right</td></tr>
+          <tr><td>What's an object?</td><td>class types only</td><td>everything — <code>1</code>, <code>nil</code>, classes themselves</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-case.html">8. Control Flow &amp; case</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Basic if</td><td><code>if (cond) { ... }</code></td><td><code>if cond ... end</code> (no parens, no braces)</td></tr>
+          <tr><td>Guard clause</td><td><code>if (bad) return x;</code></td><td><code>return x if bad</code> (modifier form)</td></tr>
+          <tr><td>Negated if</td><td><code>if (!ok)</code></td><td><code>unless ok</code></td></tr>
+          <tr><td>Multi-way branch</td><td><code>switch</code> (integral, fallthrough, <code>break</code>)</td><td><code>case/when</code> (any values, no fallthrough)</td></tr>
+          <tr><td>Range arm</td><td><code>case 9: case 10:</code> tricks</td><td><code>when 90..</code>, <code>when 80..89</code></td></tr>
+          <tr><td>Several values, one arm</td><td>stacked <code>case</code> labels</td><td><code>when "saturday", "sunday"</code></td></tr>
+          <tr><td>Branch as a value</td><td><code>?:</code> only</td><td><code>if</code> and <code>case</code> are expressions</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Definition</td><td>header + implementation file</td><td><code>class ... end</code>, one place</td></tr>
+          <tr><td>Constructor</td><td><code>Foo(args)</code>, plus copy/move overloads</td><td><code>def initialize(args)</code> — the only one</td></tr>
+          <tr><td>Instantiate</td><td><code>Foo obj(args);</code> / <code>make_shared&lt;Foo&gt;(args)</code></td><td><code>Foo.new(args)</code></td></tr>
+          <tr><td>Member data</td><td><code>owner_</code> declared in the class</td><td><code>@owner</code>, created on first assignment</td></tr>
+          <tr><td>Getter / setter</td><td>hand-written methods</td><td><code>attr_reader</code> / <code>attr_writer</code> / <code>attr_accessor</code></td></tr>
+          <tr><td>Visibility</td><td><code>public:</code> fields possible</td><td>@ivars always private; methods public by default</td></tr>
+          <tr><td>Destruction</td><td><code>~Foo()</code>, <code>delete</code>, RAII</td><td>garbage collected</td></tr>
+          <tr><td>Assignment</td><td>copies (or moves) the value</td><td>shares the reference — like <code>shared_ptr</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-modules.html">10. Inheritance &amp; Modules</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Inherit</td><td><code>struct Circle : public Shape</code></td><td><code>class Circle &lt; Shape</code></td></tr>
+          <tr><td>Virtual dispatch</td><td>opt-in: <code>virtual</code> + <code>override</code></td><td>always — every call is dynamic</td></tr>
+          <tr><td>Abstract method</td><td><code>= 0</code>, compile-time enforced</td><td><code>raise NotImplementedError</code>, runtime convention</td></tr>
+          <tr><td>Call the parent</td><td><code>Shape::describe()</code></td><td><code>super</code> — bare form forwards all args</td></tr>
+          <tr><td>Virtual destructor</td><td>required for delete-via-base</td><td>not a thing (GC)</td></tr>
+          <tr><td>Code reuse across hierarchies</td><td>multiple inheritance, CRTP</td><td><code>module</code> + <code>include</code></td></tr>
+          <tr><td>Diamond problem</td><td>virtual bases, ambiguity rules</td><td>can't happen — single inheritance + linearized modules</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-blocks-procs-lambdas.html">11. Blocks, Procs &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Anonymous function at a call site</td><td><code>[](int x) { ... }</code> inside the parens</td><td><code>{ |x| ... }</code> block, after the parens</td></tr>
+          <tr><td>Capture</td><td><code>[=]</code>, <code>[&amp;]</code>, <code>[n]</code> — chosen by hand, can dangle</td><td>everything in scope, automatically; GC means no dangling</td></tr>
+          <tr><td>Accept a callable</td><td><code>const std::function&lt;int(int)&gt;&amp; f</code> parameter</td><td>invisible — any method may receive a block</td></tr>
+          <tr><td>Invoke it</td><td><code>f(x)</code></td><td><code>yield(x)</code></td></tr>
+          <tr><td>Was one passed?</td><td>overloads / <code>std::optional</code> juggling</td><td><code>block_given?</code></td></tr>
+          <tr><td>First-class closure</td><td><code>auto f = [n](int x) { ... };</code></td><td><code>f = ->(x) { ... }</code></td></tr>
+          <tr><td>Call the value</td><td><code>f(x)</code> via <code>operator()</code></td><td><code>f.call(x)</code> (also <code>f.(x)</code>, <code>f[x]</code>)</td></tr>
+          <tr><td>Method name as callable</td><td><code>std::mem_fn(&amp;T::upcase)</code></td><td><code>&amp;:upcase</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-enumerable.html">12. Enumerable: map, select &amp; Friends</a></h3>
+        <table>
+          <tr><th>Goal</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Transform</td><td><code>std::transform</code> + <code>back_inserter</code></td><td><code>.map { |x| ... }</code> → new array</td></tr>
+          <tr><td>Keep matches</td><td><code>std::copy_if</code> + <code>back_inserter</code></td><td><code>.select { |x| ... }</code></td></tr>
+          <tr><td>Drop matches</td><td><code>std::remove_if</code> + erase idiom</td><td><code>.reject { |x| ... }</code></td></tr>
+          <tr><td>Total</td><td><code>std::accumulate(b, e, 0, f)</code></td><td><code>.sum { |x| ... }</code></td></tr>
+          <tr><td>Smallest by key</td><td><code>std::min_element(b, e, cmp)</code> → iterator</td><td><code>.min_by { |x| key }</code> → element</td></tr>
+          <tr><td>Sort by key</td><td><code>std::sort(b, e, cmp)</code>, in place</td><td><code>.sort_by { |x| key }</code> → new array</td></tr>
+          <tr><td>Any / all match?</td><td><code>std::any_of</code> / <code>std::all_of</code></td><td><code>.any? { }</code> / <code>.all? { }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enumerable-power-tools.html">13. Enumerable Power Tools</a></h3>
+        <table>
+          <tr><th>Hand-written C++ pattern</th><th>Ruby one-liner</th><th>Returns</th></tr>
+          <tr><td>grouping loop into <code>map&lt;K, vector&lt;T&gt;&gt;</code></td><td><code>.group_by { |x| key }</code></td><td><code>{ key => [elements] }</code></td></tr>
+          <tr><td><code>++counts[x]</code> frequency loop</td><td><code>.tally</code></td><td><code>{ element => count }</code></td></tr>
+          <tr><td>accumulate into a map declared above the loop</td><td><code>.each_with_object(Hash.new(0)) { |x, h| ... }</code></td><td>the object you seeded</td></tr>
+          <tr><td>two <code>copy_if</code> passes</td><td><code>.partition { |x| pred }</code></td><td><code>[matches, rest]</code></td></tr>
+          <tr><td><code>std::accumulate(b, e, init, op)</code></td><td><code>.reduce(:+)</code> / <code>.reduce(init) { |acc, x| ... }</code></td><td>the fold result</td></tr>
+          <tr><td>default-constructing <code>map::operator[]</code></td><td><code>Hash.new(0)</code> — a chosen default, opt-in</td><td>—</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-splat.html">14. Destructuring &amp; Splat</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Unpack a pair</td><td><code>auto [a, b] = pair;</code></td><td><code>a, b = pair</code></td></tr>
+          <tr><td>Swap</td><td><code>std::swap(a, b)</code></td><td><code>a, b = b, a</code></td></tr>
+          <tr><td>Head + rest</td><td>no direct equivalent</td><td><code>first, *rest = list</code></td></tr>
+          <tr><td>Init + last</td><td>no direct equivalent</td><td><code>*init, last = list</code> (leading splat!)</td></tr>
+          <tr><td>Variadic function</td><td><code>template &lt;typename... A&gt;</code> + fold/recursion</td><td><code>def sum(*nums)</code> — an Array at runtime</td></tr>
+          <tr><td>Spread into a call</td><td><code>std::apply(f, tuple)</code></td><td><code>f(*args)</code></td></tr>
+          <tr><td>Concatenate</td><td><code>insert(end, b.begin(), b.end())</code></td><td><code>[*a, *b]</code></td></tr>
+          <tr><td>Merge hashes</td><td>loop over <code>insert_or_assign</code></td><td><code>defaults.merge(overrides)</code> — new hash, overrides win</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-duck-typing.html">15. Duck Typing &amp; respond_to?</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Structural "if it quacks"</td><td>template instantiation</td><td>every method call, always</td></tr>
+          <tr><td>Probe for a capability</td><td>SFINAE / <code>std::void_t</code> / <code>requires { t.speak(); }</code></td><td><code>thing.respond_to?(:speak)</code></td></tr>
+          <tr><td>Quack check fails</td><td>pages of instantiation errors, compile time</td><td>one-line <code>NoMethodError</code>, run time</td></tr>
+          <tr><td>Nominal type check</td><td><code>dynamic_cast&lt;Dog*&gt;(p)</code></td><td><code>thing.is_a?(Dog)</code> — use sparingly</td></tr>
+          <tr><td>Heterogeneous collection</td><td><code>std::variant</code> + visitor, or <code>vector&lt;unique_ptr&lt;Base&gt;&gt;</code></td><td>a plain Array of anything</td></tr>
+          <tr><td>Polymorphic dispatch</td><td>virtual functions + vtable, or template</td><td>every call dispatches by method name</td></tr>
+          <tr><td>Declared interface</td><td>abstract base class / concept</td><td>none — the method set <em>is</em> the interface</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Try / catch</td><td><code>try { } catch (const E&amp; e) { }</code></td><td><code>begin ... rescue E =&gt; e ... end</code></td></tr>
+          <tr><td>Throw</td><td><code>throw std::invalid_argument("msg");</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+          <tr><td>Custom exception</td><td>subclass + constructor forwarding</td><td><code>class MyError &lt; StandardError; end</code></td></tr>
+          <tr><td>Cleanup on unwind</td><td>RAII destructors</td><td><code>ensure</code> (runs raise or no raise)</td></tr>
+          <tr><td>Catch-all</td><td><code>catch (...)</code></td><td>bare <code>rescue</code> — StandardError only</td></tr>
+          <tr><td>Whole method as try</td><td>function-try-block (rare)</td><td>def-level <code>rescue</code> (idiomatic)</td></tr>
+          <tr><td>Re-throw</td><td><code>throw;</code></td><td>bare <code>raise</code> inside a rescue</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-structs-and-comparable.html">17. Structs &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Value type</td><td><code>struct</code> + <code>operator==</code> boilerplate</td><td><code>Struct.new(:x, :y)</code> — equality, hash, inspect included</td></tr>
+          <tr><td>Extra methods</td><td>member functions in the struct</td><td>the <code>Struct.new do ... end</code> block</td></tr>
+          <tr><td>Three-way compare</td><td><code>operator&lt;=&gt;</code> (C++20)</td><td><code>&lt;=&gt;</code> returning -1 / 0 / 1 (since forever)</td></tr>
+          <tr><td>Member-wise compare</td><td><code>std::tie(a, b) &lt; std::tie(...)</code></td><td><code>[a, b] &lt;=&gt; [...]</code> — arrays compare element-wise</td></tr>
+          <tr><td>Operator synthesis</td><td>compiler rewrite rules</td><td><code>include Comparable</code> (a plain mixin)</td></tr>
+          <tr><td>What you unlock</td><td><code>&lt; &gt; &lt;= &gt;= == !=</code></td><td>those plus <code>between?</code>, <code>clamp</code>, <code>sort</code>, <code>min</code>, <code>max</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-enumerators-and-lazy.html">18. Enumerators &amp; Lazy</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Infinite source</td><td><code>views::iota(1)</code></td><td><code>(1..Float::INFINITY)</code>, or <code>1.step</code></td></tr>
+          <tr><td>Lazy filter</td><td><code>| views::filter(f)</code></td><td><code>.lazy.select { }</code> (also lazy map/reject/take_while)</td></tr>
+          <tr><td>Stop after n</td><td><code>| views::take(n)</code></td><td><code>.first(n)</code> — terminal, returns an Array</td></tr>
+          <tr><td>Generator</td><td>coroutine + promise_type ceremony</td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+          <tr><td>Chunking</td><td><code>views::chunk(2)</code> (C++23)</td><td><code>each_slice(2)</code>; sliding window: <code>each_cons(2)</code></td></tr>
+          <tr><td>Pull one element</td><td><code>++it; *it</code></td><td><code>enum.next</code> (external iteration)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++ (nlohmann/json)</th><th>Ruby</th></tr>
+          <tr><td>Get the library</td><td>vendor the header, update it by hand</td><td><code>require "json"</code></td></tr>
+          <tr><td>Serialize</td><td><code>j.dump()</code> / <code>j.dump(2)</code></td><td><code>data.to_json</code> / <code>JSON.pretty_generate(data)</code></td></tr>
+          <tr><td>Parse</td><td><code>json::parse(s)</code></td><td><code>JSON.parse(s)</code> — string keys!</td></tr>
+          <tr><td>Symbol keys</td><td>n/a</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+          <tr><td>Deep access</td><td><code>j["a"]["b"]</code> (inserts/throws on miss)</td><td><code>data.dig(:a, :b)</code> — nil on miss</td></tr>
+          <tr><td>Missing key default</td><td><code>j.value("k", fallback)</code></td><td><code>h.fetch(:k, fallback)</code></td></tr>
+          <tr><td>Bad input</td><td><code>json::parse_error</code></td><td><code>JSON::ParserError</code> (a StandardError)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Ruby</th></tr>
+          <tr><td>Reduce</td><td><code>std::accumulate</code> + lambda</td><td><code>sum { }</code> (or <code>reduce</code>)</td></tr>
+          <tr><td>First match</td><td><code>std::find_if</code>, compare to <code>end()</code></td><td><code>.find { }</code>, get <code>nil</code></td></tr>
+          <tr><td>Filter + transform</td><td>two loops or <code>views::filter | views::transform</code></td><td><code>.select { }.map { }</code></td></tr>
+          <tr><td>Update immutably</td><td>copy the vector, mutate the copy's element</td><td><code>map</code> + a fresh <code>Item.new</code> for the change</td></tr>
+          <tr><td>Aliasing model</td><td>values by default; sharing is opt-in</td><td>everything is a shared reference; copying is opt-in</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

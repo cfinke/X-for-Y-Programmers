@@ -20,6 +20,254 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Rust ⇄ Kotlin cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Read-only binding</td><td><code>let x = 1;</code></td><td><code>val x = 1</code></td></tr>
+          <tr><td>Reassignable</td><td><code>let mut x = 1;</code></td><td><code>var x = 1</code></td></tr>
+          <tr><td>Explicit type</td><td><code>let x: i32 = 1;</code></td><td><code>val x: Int = 1</code></td></tr>
+          <tr><td>Template</td><td><code>format!("{x}")</code></td><td><code>"$x"</code> / <code>"${x.foo}"</code></td></tr>
+          <tr><td>Runtime type</td><td><code>std::any::type_name::&lt;T&gt;()</code></td><td><code>x::class.simpleName</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Task</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Interpolate</td><td><code>format!("{x}")</code></td><td><code>"$x"</code> / <code>"${x.y}"</code></td></tr>
+          <tr><td>Case</td><td><code>to_uppercase()</code></td><td><code>uppercase()</code></td></tr>
+          <tr><td>Split &amp; join</td><td><code>s.split(",").collect::&lt;Vec&lt;_&gt;&gt;().join("-")</code></td><td><code>s.split(",").joinToString("-")</code></td></tr>
+          <tr><td>Substring</td><td><code>&amp;s[0..5]</code></td><td><code>s.substring(0, 5)</code></td></tr>
+          <tr><td>Contains</td><td><code>s.contains(x)</code></td><td><code>s.contains(x)</code></td></tr>
+          <tr><td>Parse int</td><td><code>s.parse::&lt;i32&gt;()</code></td><td><code>s.toInt()</code></td></tr>
+          <tr><td>Raw / multi-line</td><td><code>r"line1
+        line2"</code></td><td><code>"""line1
+        line2"""</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-lists-and-collections.html">3. Lists &amp; Collections</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Read-only list</td><td><code>&[i32]</code></td><td><code>List&lt;Int&gt;</code></td></tr>
+          <tr><td>Mutable list</td><td><code>Vec&lt;i32&gt;</code></td><td><code>MutableList&lt;Int&gt;</code></td></tr>
+          <tr><td>Build</td><td><code>vec![1, 2, 3]</code></td><td><code>listOf(1, 2, 3)</code></td></tr>
+          <tr><td>Append</td><td><code>xs.push(4);</code></td><td><code>xs.add(4)</code></td></tr>
+          <tr><td>Remove value</td><td><code>xs.retain(|&v| v != 4);</code></td><td><code>xs.remove(4)</code></td></tr>
+          <tr><td>Length</td><td><code>xs.len()</code></td><td><code>xs.size</code></td></tr>
+          <tr><td>Membership</td><td><code>xs.contains(&2)</code></td><td><code>2 in xs</code></td></tr>
+          <tr><td>Ends</td><td><code>xs.first()</code> / <code>xs.last()</code></td><td><code>xs.first()</code> / <code>xs.last()</code></td></tr>
+          <tr><td>Transform</td><td><code>xs.iter().map(|x| x * 2)</code></td><td><code>xs.map { it * 2 }</code></td></tr>
+          <tr><td>Keep some</td><td><code>xs.iter().filter(|x| ...)</code></td><td><code>xs.filter { ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Read-only map</td><td><code>let m = ...</code> (binding, not type)</td><td><code>mapOf(...)</code> → <code>Map</code></td></tr>
+          <tr><td>Mutable map</td><td><code>let mut m = HashMap::new()</code></td><td><code>mutableMapOf(...)</code> → <code>MutableMap</code></td></tr>
+          <tr><td>Lookup</td><td><code>m.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td><td><code>m[k]</code> → <code>V?</code></td></tr>
+          <tr><td>With default</td><td><code>m.get(k).unwrap_or(&amp;d)</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+          <tr><td>Insert / update</td><td><code>m.insert(k, v)</code></td><td><code>m[k] = v</code></td></tr>
+          <tr><td>Views</td><td><code>m.keys()</code> / <code>m.values()</code></td><td><code>m.keys</code> / <code>m.values</code> / <code>m.entries</code></td></tr>
+          <tr><td>Iterate pairs</td><td><code>for (k, v) in &amp;m</code></td><td><code>for ((k, v) in m)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Single expression</td><td><code>fn f(n: i32) -&gt; i32 { n * n }</code> (tail expr)</td><td><code>fun f(n: Int) = n * n</code></td></tr>
+          <tr><td>Default argument</td><td>— (no built-in defaults)</td><td><code>fun f(x: Int = 1)</code></td></tr>
+          <tr><td>Named argument</td><td>— (no built-in named args)</td><td><code>f(x = 1)</code></td></tr>
+          <tr><td>Rest / vararg</td><td><code>fn f(xs: &amp;[i32])</code></td><td><code>fun f(vararg xs: Int)</code></td></tr>
+          <tr><td>Spread a collection</td><td><code>f(&amp;arr)</code> (slices need no spreading)</td><td><code>f(*arr)</code></td></tr>
+          <tr><td>No return value</td><td><code>-&gt; ()</code> (usually omitted)</td><td><code>: Unit</code> (omit it)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-safety.html">6. Null Safety</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Nullable type</td><td><code>Option&lt;String&gt;</code></td><td><code>String?</code></td></tr>
+          <tr><td>Safe call</td><td><code>x.map(|v| v.f())</code></td><td><code>x?.f()</code></td></tr>
+          <tr><td>Fallback</td><td><code>x.unwrap_or(y)</code></td><td><code>x ?: y</code></td></tr>
+          <tr><td>Assert non-null</td><td><code>x.unwrap()</code> (panics at runtime)</td><td><code>x!!</code> (throws at runtime)</td></tr>
+          <tr><td>Run if non-null</td><td><code>if let Some(x) = x { f(x); }</code></td><td><code>x?.let { f(it) }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-classes-and-properties.html">7. Classes &amp; Properties</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Property in constructor</td><td><code>struct C { name: String }</code> (no constructor sugar)</td><td><code>class C(val name: String)</code></td></tr>
+          <tr><td>Read-only property</td><td>field with no setter method</td><td><code>val</code></td></tr>
+          <tr><td>Mutable property</td><td>field mutated via <code>&amp;mut self</code></td><td><code>var</code></td></tr>
+          <tr><td>Construction-time setup</td><td>validation inside <code>fn new() -> Self { … }</code></td><td><code>init { }</code></td></tr>
+          <tr><td>Computed property</td><td><code>fn x(&amp;self) -> T { … }</code></td><td><code>val x get() = …</code></td></tr>
+          <tr><td>Write interceptor</td><td><code>fn set_x(&amp;mut self, v: T)</code></td><td><code>set(value) { field = … }</code></td></tr>
+          <tr><td>Read-only from outside</td><td>private field + public getter method</td><td><code>var x = 0; private set</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-data-classes.html">8. Data Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Value bundle</td><td><code>struct P { x: i32 }</code></td><td><code>data class P(val x: Int)</code></td></tr>
+          <tr><td>Value equality</td><td><code>#[derive(PartialEq)]</code> then <code>a == b</code></td><td><code>a == b</code> (generated)</td></tr>
+          <tr><td>Reference identity</td><td><code>std::ptr::eq(&a, &b)</code></td><td><code>a === b</code></td></tr>
+          <tr><td>Immutable update</td><td><code>Point { y: 9, ..p }</code></td><td><code>p.copy(y = 9)</code></td></tr>
+          <tr><td>Destructure</td><td><code>let Point { x, y } = p;</code></td><td><code>val (x, y) = p</code></td></tr>
+          <tr><td>Debug string</td><td><code>#[derive(Debug)]</code> then <code>{:?}</code></td><td><code>p.toString()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-when-and-control-flow.html">9. when &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Multi-way branch</td><td><code>match</code> (exhaustive, no fall-through)</td><td><code>when</code> (no fall-through)</td></tr>
+          <tr><td>Branch as a value</td><td><code>let g = match ... { ... };</code></td><td><code>val g = when (...) { ... }</code></td></tr>
+          <tr><td>Grouped cases</td><td><code>1 | 2 =&gt;</code></td><td><code>1, 2 -&gt;</code></td></tr>
+          <tr><td>Range test</td><td><code>(1..=10).contains(&amp;x)</code></td><td><code>x in 1..10</code></td></tr>
+          <tr><td>Ternary</td><td><code>if a &gt; b { a } else { b }</code></td><td><code>if (a &gt; b) a else b</code></td></tr>
+          <tr><td>Count down</td><td><code>for i in (1..=n).rev()</code></td><td><code>for (i in n downTo 1)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance.html">10. Inheritance</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Subclassable</td><td>never — structs can't be extended</td><td><code>open class</code> (opt in)</td></tr>
+          <tr><td>Overridable method</td><td>N/A — traits are implemented, not overridden</td><td><code>open fun</code> (opt in)</td></tr>
+          <tr><td>Override keyword</td><td>none needed — each <code>impl</code> block is independent</td><td><code>override</code> (required)</td></tr>
+          <tr><td>Abstract member</td><td><code>fn sound(&self) -> String;</code> (trait method, no body)</td><td><code>abstract fun sound(): String</code></td></tr>
+          <tr><td>Base constructor</td><td>no equivalent — initialize a field or embedded struct directly</td><td><code>: Animal(name)</code> in header</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-interfaces.html">11. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Declare interface/trait</td><td><code>trait E { … }</code></td><td><code>interface E { … }</code></td></tr>
+          <tr><td>Implement</td><td><code>impl E for C { … }</code></td><td><code>class C : E</code></td></tr>
+          <tr><td>Multiple traits/interfaces</td><td><code>impl A for C {} impl B for C {}</code></td><td><code>: A, B</code></td></tr>
+          <tr><td>Abstract property</td><td><code>fn name(&self) -> &str;</code></td><td><code>val name: String</code></td></tr>
+          <tr><td>Property with logic</td><td><code>fn p(&self) -> T { … }</code> (default method)</td><td><code>val p: T get() = …</code></td></tr>
+          <tr><td>Default method body</td><td><code>fn f(&self) -> T { … }</code> (already supported)</td><td><code>fun f() = …</code> in the interface</td></tr>
+          <tr><td>Override</td><td>re-declare in the <code>impl</code> block</td><td><code>override</code> keyword required</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-sealed-classes.html">12. Sealed Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Closed set of types</td><td><code>enum</code> with variants</td><td><code>sealed class</code> / <code>sealed interface</code></td></tr>
+          <tr><td>Variant</td><td><code>Circle { radius: f64 }</code></td><td><code>class Circle(...) : Shape()</code></td></tr>
+          <tr><td>Match</td><td><code>match s { ... }</code></td><td><code>when (s) { is Circle -&gt; }</code></td></tr>
+          <tr><td>Narrowing</td><td>destructuring in the match arm</td><td>smart cast after <code>is</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>built in — compiler requires all arms</td><td>built in — no <code>else</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enums.html">13. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Declare</td><td><code>enum Status { Ok }</code></td><td><code>enum class Status { OK }</code></td></tr>
+          <tr><td>Attach data</td><td><code>Ok(200)</code> tuple variant, or a separate <code>match</code></td><td><code>OK(200)</code> + <code>val code</code></td></tr>
+          <tr><td>Constant name</td><td><code>format!("{:?}", Status::Ok)</code></td><td><code>Status.OK.name</code></td></tr>
+          <tr><td>Position</td><td><code>Status::Ok as i32</code></td><td><code>Status.OK.ordinal</code></td></tr>
+          <tr><td>By name</td><td>manual <code>match</code> on a <code>&str</code></td><td><code>Status.valueOf("OK")</code></td></tr>
+          <tr><td>All members</td><td><code>Status::iter()</code> (needs <code>strum</code>)</td><td><code>Status.values()</code></td></tr>
+          <tr><td>Switch</td><td>exhaustive <code>match</code></td><td>exhaustive <code>when</code> — no <code>else</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-lambdas-and-higher-order.html">14. Lambdas &amp; Higher-Order Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Lambda</td><td><code>|x| x + 1</code></td><td><code>{ x -> x + 1 }</code></td></tr>
+          <tr><td>Implicit single param</td><td>— (always named)</td><td><code>{ it + 1 }</code></td></tr>
+          <tr><td>Function type</td><td><code>impl Fn(i32) -> i32</code></td><td><code>(Int) -> Int</code></td></tr>
+          <tr><td>Trailing lambda</td><td><code>iter.map(|x| …)</code> (no shorthand)</td><td><code>list.map { … }</code></td></tr>
+          <tr><td>Returning a function</td><td><code>fn m() -> impl Fn(i32) -> i32 { move |n| … }</code></td><td><code>fun m(): (Int) -> Int = { … }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-collection-operations.html">15. Collection Operations</a></h3>
+        <table>
+          <tr><th>Goal</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Transform</td><td><code>xs.iter().map(f)</code></td><td><code>xs.map { }</code></td></tr>
+          <tr><td>Keep some</td><td><code>xs.iter().filter(p)</code></td><td><code>xs.filter { }</code></td></tr>
+          <tr><td>Sum a field</td><td><code>xs.iter().fold(0,|a,x|a+x.n)</code></td><td><code>xs.sumOf { it.n }</code></td></tr>
+          <tr><td>Custom aggregate</td><td><code>xs.iter().fold(seed, |a,x| ...)</code></td><td><code>xs.fold(seed) { a, x -&gt; }</code></td></tr>
+          <tr><td>Group</td><td>manual <code>HashMap</code> loop</td><td><code>xs.groupBy { }</code></td></tr>
+          <tr><td>Index by key</td><td><code>xs.iter().map(...).collect::&lt;HashMap&lt;_,_&gt;&gt;()</code></td><td><code>xs.associateBy { }</code></td></tr>
+          <tr><td>Sort by key</td><td><code>xs.sort_by_key(|x| ...)</code></td><td><code>xs.sortedBy { }</code></td></tr>
+          <tr><td>Any / all / count</td><td><code>iter().any</code>/<code>iter().all</code>/<code>iter().filter().count()</code></td><td><code>any</code>/<code>all</code>/<code>count</code></td></tr>
+          <tr><td>Find one</td><td><code>xs.iter().find(p)</code></td><td><code>xs.find { }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-extension-functions.html">16. Extension Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Add a "method"</td><td><code>trait T { fn f(&self); }</code> then <code>impl T for Type</code></td><td><code>fun Type.f() {...}</code> then <code>x.f()</code></td></tr>
+          <tr><td>The receiver</td><td><code>&self</code> / <code>self</code> parameter</td><td><code>this</code> (implicit)</td></tr>
+          <tr><td>Add a "property"</td><td>a trait method returning the value (no real field)</td><td><code>val T.p: R get() = ...</code></td></tr>
+          <tr><td>Bringing it into scope</td><td><code>use</code> the trait at each call site</td><td>nothing extra — a top-level declaration is enough</td></tr>
+          <tr><td>Dispatch</td><td>static, unless boxed as <code>dyn Trait</code></td><td>static (resolved by declared type)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-generics.html">17. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Generic function</td><td><code>fn f&lt;T&gt;(x: T)</code></td><td><code>fun &lt;T&gt; f(x: T)</code></td></tr>
+          <tr><td>Generic struct/class</td><td><code>struct Box&lt;T&gt; { value: T }</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+          <tr><td>Trait bound</td><td><code>&lt;T: X&gt;</code></td><td><code>&lt;T : X&gt;</code></td></tr>
+          <tr><td>Producer (covariant)</td><td><code>&amp;'a T</code> is covariant in <code>T</code> (implicit)</td><td><code>class Src&lt;out T&gt;</code> / <code>Box&lt;out T&gt;</code></td></tr>
+          <tr><td>Consumer (contravariant)</td><td><code>Fn(T)</code> is contravariant in <code>T</code> (implicit)</td><td><code>class Sink&lt;in T&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-scope-functions.html">18. Scope Functions</a></h3>
+        <table>
+          <tr><th>Function</th><th>Receiver is</th><th>Returns</th><th>Reach for it when…</th></tr>
+          <tr><td><code>apply</code></td><td><code>this</code></td><td>the receiver</td><td>configuring an object (builders)</td></tr>
+          <tr><td><code>also</code></td><td><code>it</code></td><td>the receiver</td><td>a side effect in a chain (log, validate)</td></tr>
+          <tr><td><code>let</code></td><td><code>it</code></td><td>block result</td><td>null-guarded transforms: <code>x?.let { … }</code></td></tr>
+          <tr><td><code>run</code></td><td><code>this</code></td><td>block result</td><td>computing a value from a receiver</td></tr>
+          <tr><td><code>with</code></td><td><code>this</code> (arg)</td><td>block result</td><td>many calls on one object, no chaining</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-objects-and-companions.html">19. Objects &amp; Companions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Singleton</td><td><code>static TALLY: Mutex&lt;Vec&lt;String&gt;&gt; = …</code></td><td><code>object Tally { … }</code></td></tr>
+          <tr><td>Type-level member</td><td><code>impl User { fn parse(…) }</code></td><td><code>companion object { fun parse(…) }</code></td></tr>
+          <tr><td>Type-level constant</td><td><code>impl User { const X: … }</code></td><td><code>const val X</code> (in companion)</td></tr>
+          <tr><td>Private constructor</td><td>private struct fields + public factory fn</td><td><code>class C private constructor(…)</code></td></tr>
+          <tr><td>Anonymous instance</td><td><code>struct P; impl Greeter for P { … }</code></td><td><code>object : Greeter { … }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Kotlin</th></tr>
+          <tr><td>Node hierarchy</td><td><code>enum</code> with data-carrying variants</td><td><code>sealed interface</code> + <code>data class</code></td></tr>
+          <tr><td>Recursive dispatch</td><td><code>match e { ... }</code></td><td>exhaustive <code>when (e)</code></td></tr>
+          <tr><td>Narrowing a variant</td><td>destructuring in the match arm</td><td>smart cast after <code>is</code></td></tr>
+          <tr><td>Missing value</td><td><code>Option&lt;f64&gt;</code></td><td><code>Double?</code></td></tr>
+          <tr><td>Map/filter out failures</td><td><code>.iter().filter_map(...)</code></td><td><code>.mapNotNull { }</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

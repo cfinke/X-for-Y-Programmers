@@ -17,6 +17,243 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>JavaScript ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-adding-types.html">1. Adding Types to Variables</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Annotated variable</td><td><code>let x = 1;</code></td><td><code>let x: number = 1;</code></td></tr>
+          <tr><td>Inference</td><td>—</td><td><code>const s = "hi";</code> is already <code>string</code></td></tr>
+          <tr><td>Reassign to another type</td><td>allowed, silent</td><td>compile error (annotation or not)</td></tr>
+          <tr><td>Basic types</td><td>typeof strings at runtime</td><td><code>string</code>, <code>number</code>, <code>boolean</code></td></tr>
+          <tr><td>Opt out of checking</td><td>the default everywhere</td><td><code>: any</code> — use sparingly and deliberately</td></tr>
+          <tr><td>When checked</td><td>never</td><td>at compile time; annotations are erased from output</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-typing-functions.html">2. Typing Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Parameter type</td><td><code>function f(x)</code></td><td><code>function f(x: number)</code></td></tr>
+          <tr><td>Return type</td><td>implicit, whatever comes back</td><td><code>function f(): string</code></td></tr>
+          <tr><td>No return value</td><td>returns <code>undefined</code></td><td><code>: void</code> — result unusable by design</td></tr>
+          <tr><td>Optional param</td><td>just call with fewer args</td><td><code>maybe?: string</code> (type includes <code>undefined</code> inside)</td></tr>
+          <tr><td>Default param</td><td><code>y = 2</code></td><td><code>y: number = 2</code> (plain <code>number</code> inside)</td></tr>
+          <tr><td>Arity checking</td><td>none — extra/missing args allowed</td><td>wrong argument count is a compile error</td></tr>
+          <tr><td>Typed arrow</td><td><code>(n) =&gt; n * 2</code></td><td><code>(n: number): number =&gt; n * 2</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-tuples.html">3. Arrays &amp; Tuples</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Array of numbers</td><td><code>[1, 2, 3]</code></td><td><code>number[]</code> (same as <code>Array&lt;number&gt;</code>)</td></tr>
+          <tr><td>Empty array</td><td><code>const a = [];</code></td><td><code>const a: string[] = [];</code> — annotate, or it's <code>any[]</code></td></tr>
+          <tr><td>Wrong-type push</td><td>silently accepted</td><td>compile error</td></tr>
+          <tr><td>Fixed-shape pair</td><td><code>["Ada", 36]</code>, meaning by folklore</td><td><code>[string, number]</code> — per-slot types, fixed length</td></tr>
+          <tr><td>Destructuring</td><td><code>const [n, a] = entry;</code></td><td>same syntax; <code>n</code> and <code>a</code> get the slot types</td></tr>
+          <tr><td>Out-of-range slot</td><td><code>entry[2]</code> is <code>undefined</code></td><td><code>entry[2]</code> is a compile error on a tuple</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-object-types-and-aliases.html">4. Object Types &amp; Type Aliases</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Object shape</td><td>implicit, in your head</td><td><code>{ name: string; age: number }</code></td></tr>
+          <tr><td>Naming a shape</td><td>a comment, maybe</td><td><code>type User = { ... };</code> (erased at compile time)</td></tr>
+          <tr><td>Nested objects</td><td>nest literals</td><td>nest shapes: <code>contact: { city: string }</code></td></tr>
+          <tr><td>Typo'd property</td><td><code>undefined</code> at runtime</td><td>compile error at the exact line</td></tr>
+          <tr><td>Object as dictionary</td><td><code>{ apples: 3 }</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+          <tr><td>Missing property on assign</td><td>silently absent</td><td>compile error — the shape is a contract</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-interfaces.html">5. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Named shape</td><td>convention + comments</td><td><code>interface Product { ... }</code></td></tr>
+          <tr><td>Optional property</td><td>just leave it off</td><td><code>description?: string</code> — compiler makes you check</td></tr>
+          <tr><td>Shape reuse</td><td>duplicate the fields</td><td><code>interface B extends A { ... }</code></td></tr>
+          <tr><td>Substitutability</td><td>hope for the best</td><td>a <code>DiscountedProduct</code> works anywhere a <code>Product</code> does</td></tr>
+          <tr><td>interface vs type</td><td>—</td><td><code>interface</code> for object shapes; <code>type</code> for unions, tuples, the rest</td></tr>
+          <tr><td>Runtime cost</td><td>—</td><td>none — interfaces are fully erased</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-strict-null-checks.html">6. Null, Undefined &amp; strictNullChecks</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript (strict)</th></tr>
+          <tr><td>A value that may be absent</td><td>Just is <code>undefined</code> sometimes; nothing warns you</td><td>Must be typed <code>T | undefined</code> or <code>T | null</code></td></tr>
+          <tr><td>Optional property</td><td>May or may not exist on the object</td><td><code>address?: { city: string }</code> — the <code>?</code> makes it official</td></tr>
+          <tr><td>Property access on a maybe-value</td><td>💥 <code>TypeError</code> at runtime</td><td>Compile error until you narrow or use <code>?.</code></td></tr>
+          <tr><td>Fallback value</td><td><code>x || fallback</code> (also catches <code>0</code>, <code>""</code>, <code>false</code>)</td><td><code>x ?? fallback</code> (only <code>null</code>/<code>undefined</code>)</td></tr>
+          <tr><td>Plain if-check</td><td><code>if (user) { ... }</code></td><td>Same code — and inside the block, the type narrows from <code>User | undefined</code> to <code>User</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>"Number or string" parameter</td><td>A comment, at best: <code>/** @param id number or string */</code></td><td><code>id: number | string</code> — enforced</td></tr>
+          <tr><td>Calling <code>.toUpperCase()</code> on it</td><td>💥 <code>TypeError</code> when a number arrives</td><td>Compile error until you narrow</td></tr>
+          <tr><td>Checking the type</td><td><code>typeof id === "number"</code> (optional)</td><td>Same expression — doubles as a <em>type guard</em></td></tr>
+          <tr><td>What you can do without narrowing</td><td>Anything (and pray)</td><td>Only what is valid for <em>every</em> member of the union</td></tr>
+          <tr><td>More than two options</td><td>—</td><td><code>string | number | boolean | null</code> — unions can be any width</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-literal-types-and-enums.html">8. Literal Types &amp; Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Fixed set of strings</td><td>Convention + code review</td><td><code>type Status = "pending" | "active" | "done"</code></td></tr>
+          <tr><td>Typo in a state value</td><td>Dead branch / bad data, found in production</td><td>Compile error at the call site</td></tr>
+          <tr><td>Named constants</td><td><code>const PRIORITY_HIGH = 3;</code></td><td><code>enum Priority { Low = 1, Medium, High }</code></td></tr>
+          <tr><td>Number back to name</td><td>Hand-written lookup table</td><td><code>Priority[3] === "High"</code> (numeric enums only)</td></tr>
+          <tr><td>Runtime footprint</td><td>—</td><td>Literal unions: zero. <code>enum</code>: compiles to a real object</td></tr>
+          <tr><td>Freeze values into literals</td><td><code>Object.freeze</code> (runtime only)</td><td><code>as const</code> (type level: <code>"pending"</code> stays <code>"pending"</code>, not <code>string</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes-with-types.html">9. Classes with Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Declare + assign a field</td><td><code>constructor(x) { this.x = x; }</code></td><td><code>constructor(private x: number) {}</code></td></tr>
+          <tr><td>Private field</td><td><code>#x</code> (runtime-enforced)</td><td><code>private x</code> (compile-time, erased) — <code>#x</code> also still works</td></tr>
+          <tr><td>Immutable field</td><td><code>Object.freeze(this)</code>, getters, discipline</td><td><code>readonly x</code> — assignable only in the constructor</td></tr>
+          <tr><td>Subclass-only access</td><td>No equivalent</td><td><code>protected x</code></td></tr>
+          <tr><td>Default visibility</td><td>Everything public</td><td>Also public — <code>public</code> keyword is optional, but counts as a modifier for parameter properties</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-abstract-and-implements.html">10. Abstract Classes &amp; implements</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>"Must override" method</td><td>Base method that throws at runtime</td><td><code>abstract area(): number;</code> — checked at compile time</td></tr>
+          <tr><td>Non-instantiable base class</td><td><code>if (new.target === Shape) throw ...</code></td><td><code>abstract class Shape</code> — <code>new Shape()</code> will not compile</td></tr>
+          <tr><td>Share real code down the hierarchy</td><td><code>extends</code></td><td><code>extends</code> — unchanged, works with abstract bases</td></tr>
+          <tr><td>Promise a shape, share no code</td><td>Duck typing + hope</td><td><code>class X implements SomeInterface</code></td></tr>
+          <tr><td>Both at once</td><td>—</td><td><code>class Circle extends Shape implements Printable, Serializable</code></td></tr>
+          <tr><td>Runtime footprint</td><td>—</td><td><code>abstract</code> and <code>implements</code> erase; the class itself (and <code>instanceof</code>) still work</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-generics.html">11. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Utility that takes anything</td><td><code>function f(x)</code></td><td><code>function f&lt;T&gt;(x: T)</code></td></tr>
+          <tr><td>Array of the same anything</td><td>just an array</td><td><code>T[]</code></td></tr>
+          <tr><td>Result keeps the input type</td><td>lost — you remember it</td><td><code>(items: T[]): T</code> — compiler remembers it</td></tr>
+          <tr><td>Naming the type at the call</td><td>n/a</td><td>usually inferred; explicit is <code>firstItem&lt;string&gt;([])</code></td></tr>
+          <tr><td>Several placeholders</td><td>n/a</td><td><code>function pair&lt;A, B&gt;(a: A, b: B): [A, B]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generic-constraints.html">12. Generic Constraints &amp; keyof</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>All keys of an object</td><td><code>Object.keys(obj)</code> at runtime</td><td><code>keyof T</code> at compile time — <code>"name" | "age"</code></td></tr>
+          <tr><td>Restrict what a type param can be</td><td>n/a</td><td><code>K extends keyof T</code> (also e.g. <code>T extends { id: number }</code>)</td></tr>
+          <tr><td>Type of one property</td><td>n/a</td><td><code>T[K]</code>, or concretely <code>User["age"]</code> → <code>number</code></td></tr>
+          <tr><td>Typo'd key</td><td><code>undefined</code>, later, somewhere</td><td>compile error at the call site</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-typing-array-methods.html">13. Typing Array Methods &amp; Callbacks</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>map / filter callbacks</td><td><code>p =&gt; p.name</code></td><td>same code — <code>p</code> inferred from <code>Product[]</code></td></tr>
+          <tr><td>reduce accumulator</td><td>whatever you return</td><td>typed by the initial value; <code>reduce&lt;Acc&gt;(fn, init)</code> to override</td></tr>
+          <tr><td>Vague initial value</td><td><code>reduce(fn, {})</code></td><td><code>reduce(fn, {} as Record&lt;string, number&gt;)</code></td></tr>
+          <tr><td>sort comparator</td><td><code>(a, b) =&gt; a.price - b.price</code></td><td>same — typed as <code>(a: Product, b: Product) =&gt; number</code></td></tr>
+          <tr><td>Non-mutating sort</td><td><code>arr.slice().sort(...)</code></td><td><code>[...arr].sort(...)</code> (or <code>toSorted</code> in ES2023 targets)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-type-narrowing.html">14. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Primitive check</td><td><code>typeof x === "string"</code></td><td>same — narrows <code>x</code> to <code>string</code> in the branch</td></tr>
+          <tr><td>Array check</td><td><code>Array.isArray(x)</code></td><td>same — narrows to an array type</td></tr>
+          <tr><td>Property check</td><td><code>"id" in obj</code></td><td>same — narrows unions by shape</td></tr>
+          <tr><td>Class check</td><td><code>x instanceof Error</code></td><td>same — narrows to <code>Error</code></td></tr>
+          <tr><td>Custom check</td><td><code>function isUser(v) { }</code> returns bool</td><td><code>(v: unknown): v is User</code> — the compiler trusts it</td></tr>
+          <tr><td>Untrusted value</td><td>anything goes</td><td><code>unknown</code>: assign anything, use nothing until narrowed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-discriminated-unions.html">15. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Tagged object</td><td><code>{ type: "ADD", ... }</code> by convention</td><td><code>{ kind: "circle"; radius: number }</code> — tag is a literal type</td></tr>
+          <tr><td>The set of variants</td><td>documentation, if you're lucky</td><td><code>type Shape = Circle | Rectangle | Triangle</code></td></tr>
+          <tr><td>Branch bodies</td><td>fields on the honor system</td><td><code>case "circle":</code> narrows to <code>Circle</code></td></tr>
+          <tr><td>Missed case</td><td><code>undefined</code>, discovered at runtime</td><td><code>const impossible: never = shape;</code> fails to compile</td></tr>
+          <tr><td>Where you've seen it</td><td>Redux actions, WS messages, DOM events</td><td>same data — now the compiler checks the dispatch</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-utility-types.html">16. Utility Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Update object</td><td>any bag of fields</td><td><code>Partial&lt;User&gt;</code> — every field optional</td></tr>
+          <tr><td>Keep only some keys</td><td>shape implied by the code</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+          <tr><td>Drop some keys</td><td>delete / destructure &amp; rest</td><td><code>Omit&lt;User, "password"&gt;</code></td></tr>
+          <tr><td>Freeze against writes</td><td><code>Object.freeze</code> (runtime)</td><td><code>Readonly&lt;User&gt;</code> (compile time)</td></tr>
+          <tr><td>Type of a function's result</td><td>n/a</td><td><code>ReturnType&lt;typeof getUser&gt;</code></td></tr>
+          <tr><td>All fields required again</td><td>n/a</td><td><code>Required&lt;User&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-type-assertions.html">17. Type Assertions &amp; unknown vs any</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>"Trust me" cast</td><td>n/a — everything is trusted</td><td><code>value as Config</code> (no runtime effect)</td></tr>
+          <tr><td>Untrusted data</td><td>use it and pray</td><td><code>unknown</code> — unusable until narrowed</td></tr>
+          <tr><td>Checker escape hatch</td><td>n/a</td><td><code>any</code> — checker off, avoid for input data</td></tr>
+          <tr><td>DOM lookup</td><td><code>document.getElementById("save")</code></td><td><code>... as HTMLButtonElement</code> when you know the tag</td></tr>
+          <tr><td>"Not null here, promise"</td><td>n/a</td><td><code>element!</code> — prefer a real null check</td></tr>
+          <tr><td>JSON pipeline</td><td>parse, then hope</td><td>parse to <code>unknown</code> → narrow → typed value</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-structural-typing.html">18. Structural Typing</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>What makes a match</td><td>has the properties at runtime</td><td>has the properties at compile time</td></tr>
+          <tr><td>Same shape, different names</td><td>indistinguishable</td><td>interchangeable — types compare by structure</td></tr>
+          <tr><td>Extra properties (via variable)</td><td>ignored</td><td>ignored — "at least this shape" is enough</td></tr>
+          <tr><td>Extra properties (fresh literal)</td><td>ignored</td><td>excess property check — flagged as a likely typo</td></tr>
+          <tr><td>Missing property</td><td>undefined at runtime</td><td>compile error at the call site</td></tr>
+          <tr><td>Declaring conformance</td><td>never</td><td>never required — <code>implements</code> is optional documentation</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-typing-async.html">19. Typing Async Code</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Promise of a value</td><td>a promise</td><td><code>Promise&lt;User&gt;</code></td></tr>
+          <tr><td>Async return type</td><td>implicit</td><td>always <code>Promise&lt;T&gt;</code>, never bare <code>T</code></td></tr>
+          <tr><td>await result</td><td>???</td><td>the <code>T</code> inside the <code>Promise&lt;T&gt;</code></td></tr>
+          <tr><td>Parallel awaits</td><td><code>Promise.all([...])</code></td><td>same — resolved tuple keeps each slot's type</td></tr>
+          <tr><td>Caught error</td><td><code>catch (err)</code></td><td><code>catch (err: unknown)</code> → <code>instanceof Error</code> to narrow</td></tr>
+          <tr><td>Promise you build yourself</td><td><code>new Promise(...)</code></td><td><code>new Promise&lt;string&gt;((resolve) =&gt; ...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>TypeScript</th></tr>
+          <tr><td>Export a function</td><td><code>export function f()</code></td><td>same — signature travels to importers</td></tr>
+          <tr><td>Export a shape</td><td>n/a (comments/README)</td><td><code>export interface CartItem { ... }</code></td></tr>
+          <tr><td>Import values</td><td><code>import { addItem } from "./cart"</code></td><td>same</td></tr>
+          <tr><td>Import only types</td><td>n/a</td><td><code>import type { CartItem } from "./cart"</code></td></tr>
+          <tr><td>What survives compilation</td><td>everything</td><td>values stay; interfaces and <code>import type</code> vanish</td></tr>
+          <tr><td>Wrong usage by importer</td><td>runtime surprise</td><td>compile error in the importer's own file</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

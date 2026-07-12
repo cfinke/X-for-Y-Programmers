@@ -19,6 +19,253 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Go ⇄ Java cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Typed local</td><td><code>var x int = 1</code></td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred local</td><td><code>x := 1</code></td><td><code>var x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>const x = 1</code></td><td><code>final int x = 1;</code></td></tr>
+          <tr><td>Numeric types</td><td><code>int</code>, <code>int64</code>, <code>float64</code>…</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>float</code>…</td></tr>
+          <tr><td>Free function</td><td><code>func f() {}</code></td><td><code>static</code> method in a class</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Substring</td><td><code>s[1:4]</code> (bytes)</td><td><code>s.substring(1, 4)</code></td></tr>
+          <tr><td>Contains</td><td><code>strings.Contains(s, "x")</code></td><td><code>s.contains("x")</code></td></tr>
+          <tr><td>Index of</td><td><code>strings.Index(s, "x")</code></td><td><code>s.indexOf("x")</code></td></tr>
+          <tr><td>Split</td><td><code>strings.Split(s, ",")</code> (literal)</td><td><code>s.split(",")</code> (regex!)</td></tr>
+          <tr><td>Trim</td><td><code>strings.TrimSpace(s)</code></td><td><code>s.strip()</code></td></tr>
+          <tr><td>Blank check</td><td><code>strings.TrimSpace(s) == ""</code></td><td><code>s.isBlank()</code></td></tr>
+          <tr><td>Interpolate</td><td><code>fmt.Sprintf("%s", a)</code></td><td><code>String.format("%s", a)</code></td></tr>
+          <tr><td>Build in loop</td><td><code>sb.WriteString(x)</code></td><td><code>StringBuilder.append</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java array</th><th>Java List</th></tr>
+          <tr><td>Create</td><td><code>[]int{1, 2, 3}</code></td><td><code>new int[]{1, 2, 3}</code></td><td><code>new ArrayList&lt;&gt;()</code></td></tr>
+          <tr><td>Length</td><td><code>len(a)</code></td><td><code>a.length</code></td><td><code>list.size()</code></td></tr>
+          <tr><td>Read</td><td><code>a[i]</code></td><td><code>a[i]</code></td><td><code>list.get(i)</code></td></tr>
+          <tr><td>Append</td><td><code>a = append(a, x)</code></td><td>— (fixed size)</td><td><code>list.add(x)</code></td></tr>
+          <tr><td>Membership</td><td>manual loop, or <code>slices.Contains(a, x)</code></td><td>—</td><td><code>list.contains(x)</code></td></tr>
+          <tr><td>Immutable</td><td>— (by convention only)</td><td>—</td><td><code>List.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Create</td><td><code>make(map[K]V)</code></td><td><code>new HashMap&lt;&gt;()</code></td></tr>
+          <tr><td>Insert / update</td><td><code>m[k] = v</code></td><td><code>m.put(k, v)</code></td></tr>
+          <tr><td>Read with default</td><td><code>m[k]</code> (zero value)</td><td><code>m.getOrDefault(k, d)</code></td></tr>
+          <tr><td>Membership</td><td><code>_, ok := m[k]</code></td><td><code>m.containsKey(k)</code></td></tr>
+          <tr><td>Delete</td><td><code>delete(m, k)</code></td><td><code>m.remove(k)</code></td></tr>
+          <tr><td>Iterate</td><td><code>for k, v := range m</code></td><td><code>for (var e : m.entrySet())</code></td></tr>
+          <tr><td>Immutable literal</td><td>none built in — just don't mutate the literal</td><td><code>Map.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Utility function</td><td><code>func f() {}</code></td><td><code>static</code> method</td></tr>
+          <tr><td>Two shapes, one name</td><td>not possible — needs a new name</td><td>two overloads: <code>f(int)</code>, <code>f(int, String)</code></td></tr>
+          <tr><td>Variadic</td><td><code>f(xs ...int)</code></td><td><code>f(int... xs)</code></td></tr>
+          <tr><td>Params inside</td><td><code>xs</code> is a <code>[]int</code></td><td><code>xs</code> is an <code>int[]</code></td></tr>
+          <tr><td>Delegation</td><td>one function calls another</td><td>one overload calls another</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-classes-and-objects.html">6. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Private field</td><td><code>x int</code> (unexported)</td><td><code>private int x;</code></td></tr>
+          <tr><td>Constructor</td><td><code>func NewC(x int) *C { … }</code></td><td><code>ClassName(int x) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>a.x</code> (via receiver)</td><td><code>this.x</code> or just <code>x</code></td></tr>
+          <tr><td>Getter</td><td><code>func (a *C) X() int { … }</code></td><td><code>int getX()</code> (a method call)</td></tr>
+          <tr><td>Stringify</td><td><code>func (a *C) String() string</code></td><td><code>@Override public String toString()</code></td></tr>
+          <tr><td>Instantiate</td><td><code>NewC(…)</code> or <code>&C{…}</code></td><td><code>new C(…)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-null-and-optional.html">7. Null &amp; Optional</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Absent-aware return</td><td><code>(T, bool)</code></td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Wrap a maybe-nil</td><td>—</td><td><code>Optional.ofNullable(x)</code></td></tr>
+          <tr><td>Wrap a known value</td><td>—</td><td><code>Optional.of(x)</code></td></tr>
+          <tr><td>The empty case</td><td><code>ok == false</code></td><td><code>Optional.empty()</code></td></tr>
+          <tr><td>Default</td><td><code>if !ok { x = d }</code></td><td><code>opt.orElse(d)</code></td></tr>
+          <tr><td>Conditional transform</td><td><code>if ok { f(x) }</code></td><td><code>opt.map(v -&gt; v.f())</code></td></tr>
+          <tr><td>Run a side effect</td><td><code>if ok { g(x) }</code></td><td><code>opt.ifPresent(g)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-switch.html">8. Control Flow &amp; Switch</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Iterate values</td><td><code>for _, x := range xs</code></td><td><code>for (T x : xs)</code></td></tr>
+          <tr><td>Multi-label branch</td><td><code>case A, B:</code></td><td><code>case A, B -> …</code></td></tr>
+          <tr><td>Fall-through</td><td>none by default (opt in with <code>fallthrough</code>)</td><td>none with <code>-></code></td></tr>
+          <tr><td>Value from a branch</td><td>assign a variable, no expression form</td><td><code>yield</code> (in a block)</td></tr>
+          <tr><td>Exhaustiveness</td><td>not checked by the compiler</td><td>required (enum switch needs no <code>default</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-interfaces.html">9. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Satisfy a contract</td><td>structural (implicit)</td><td><code>implements Shape</code> (explicit)</td></tr>
+          <tr><td>Abstract method</td><td><code>Area() float64</code> in the interface</td><td><code>double area();</code></td></tr>
+          <tr><td>Method with a body</td><td>not allowed in an interface — write a free function</td><td><code>default</code> method in the interface</td></tr>
+          <tr><td>Multiple contracts</td><td>just implement both method sets, no declaration</td><td><code>implements A, B</code></td></tr>
+          <tr><td>Implementer visibility</td><td>n/a — exported by capitalization</td><td>must be <code>public</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstract.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Subclass</td><td>no equivalent; struct embedding shares fields/methods but isn't a subtype</td><td><code>class B extends A</code></td></tr>
+          <tr><td>Super constructor</td><td>(none — embedded struct is just initialized inline)</td><td><code>super(x);</code></td></tr>
+          <tr><td>Super method</td><td><code>a.Method()</code> via the embedded field, called explicitly</td><td><code>super.m()</code></td></tr>
+          <tr><td>Mark an override</td><td>(no overriding exists)</td><td><code>@Override</code> (compiler-checked)</td></tr>
+          <tr><td>Abstract member</td><td>method required by an <code>interface</code>, with no default body</td><td><code>abstract T m();</code></td></tr>
+          <tr><td>No subclassing</td><td>(the default — nothing to opt out of)</td><td><code>final class</code> / <code>final</code> method</td></tr>
+          <tr><td>Runtime type check</td><td>type assertion <code>v.(B)</code> or a type switch</td><td><code>x instanceof B</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Declare</td><td><code>type E int; const (A E = iota; B)</code></td><td><code>enum E { A, B }</code></td></tr>
+          <tr><td>All values</td><td>hand-rolled <code>[]E{A, B}</code></td><td><code>E.values()</code></td></tr>
+          <tr><td>Parse a name</td><td>hand-rolled <code>switch</code>/map</td><td><code>E.valueOf(name)</code></td></tr>
+          <tr><td>Name of a constant</td><td><code>String()</code> method you write</td><td><code>E.A.name()</code></td></tr>
+          <tr><td>Attach data</td><td>side table / map keyed by the int</td><td>fields + constructor on the enum</td></tr>
+          <tr><td>Exhaustive branch</td><td><code>switch</code> with no compiler check</td><td><code>switch</code> (no default needed)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Generic class</td><td><code>type Box[T any]</code></td><td><code>class Box&lt;T&gt;</code></td></tr>
+          <tr><td>Generic method</td><td><code>func Id[T any](x T) T</code></td><td><code>&lt;T&gt; T id(T x)</code> (param before return type)</td></tr>
+          <tr><td>Upper bound</td><td><code>[T Constraint]</code> (constraint interface)</td><td><code>&lt;T extends X&gt;</code></td></tr>
+          <tr><td>Covariant read</td><td>invariant; no variance</td><td><code>List&lt;? extends Number&gt;</code> (explicit wildcard)</td></tr>
+          <tr><td>Element type</td><td><code>Box[int]</code></td><td><code>Box&lt;Integer&gt;</code> (no <code>int</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-collections-and-iteration.html">13. Collections &amp; Iteration</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Ordered list</td><td><code>[]T</code></td><td><code>List&lt;T&gt;</code> (<code>ArrayList</code>)</td></tr>
+          <tr><td>Unique set</td><td><code>map[T]struct{}</code> (no built-in set)</td><td><code>Set&lt;T&gt;</code> (<code>HashSet</code>)</td></tr>
+          <tr><td>Key/value map</td><td><code>map[K]V</code></td><td><code>Map&lt;K, V&gt;</code> (<code>HashMap</code>)</td></tr>
+          <tr><td>Transform</td><td><code>for _, x := range xs { out = append(out, f(x)) }</code></td><td><code>xs.stream().map(f).toList()</code> or a loop</td></tr>
+          <tr><td>Sort by key</td><td><code>sort.Slice(xs, func(i, j int) bool { return xs[i].Age &lt; xs[j].Age })</code></td><td><code>xs.sort(Comparator.comparingInt(P::age))</code></td></tr>
+          <tr><td>Tiebreak</td><td>extra <code>if</code> inside the <code>less</code> func</td><td><code>.thenComparing(P::name)</code></td></tr>
+          <tr><td>Descending</td><td>flip the <code>&lt;</code> to <code>&gt;</code></td><td><code>.reversed()</code> / <code>Comparator.reverseOrder()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-streams.html">14. Streams</a></h3>
+        <table>
+          <tr><th>Goal</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Start</td><td><code>xs</code></td><td><code>list.stream()</code></td></tr>
+          <tr><td>Keep some</td><td><code>if</code> inside a loop + <code>append</code></td><td><code>.filter(f)</code></td></tr>
+          <tr><td>Transform</td><td><code>append</code> the mapped value inside a loop</td><td><code>.map(f)</code></td></tr>
+          <tr><td>Sum numbers</td><td><code>sum += x</code> in a loop</td><td><code>.mapToInt(f).sum()</code></td></tr>
+          <tr><td>Fold</td><td><code>acc = f(acc, x)</code> in a loop</td><td><code>.reduce(init, f)</code></td></tr>
+          <tr><td>Back to a slice/list</td><td>already a slice</td><td><code>.collect(Collectors.toList())</code></td></tr>
+          <tr><td>Join to string</td><td><code>strings.Join(xs, ", ")</code></td><td><code>.collect(Collectors.joining(", "))</code></td></tr>
+          <tr><td>Group</td><td>manual <code>map[string][]T</code></td><td><code>Collectors.groupingBy(f)</code></td></tr>
+          <tr><td>Count per group</td><td>manual <code>map[string]int</code></td><td><code>groupingBy(f, counting())</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-lambdas-and-functional.html">15. Lambdas &amp; Functional Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>One-arg lambda</td><td><code>func(x int) int { return x * 2 }</code></td><td><code>x -&gt; x * 2</code></td></tr>
+          <tr><td>Function type</td><td><code>func(int) int</code></td><td><code>Function&lt;Integer,Integer&gt;</code></td></tr>
+          <tr><td>Calling it</td><td><code>f(x)</code></td><td><code>f.apply(x)</code></td></tr>
+          <tr><td>Predicate</td><td><code>func(x int) bool</code></td><td><code>Predicate&lt;T&gt;</code>, <code>p.test(x)</code></td></tr>
+          <tr><td>Supplier</td><td><code>func() T</code></td><td><code>Supplier&lt;T&gt;</code>, <code>s.get()</code></td></tr>
+          <tr><td>Static method ref</td><td>pass <code>square</code> by name</td><td><code>Functional::square</code></td></tr>
+          <tr><td>Instance method ref</td><td><code>func(s string) string { return strings.ToUpper(s) }</code></td><td><code>String::toUpperCase</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-records.html">16. Records</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java record</th></tr>
+          <tr><td>Declare shape</td><td><code>type Point struct { X, Y int }</code></td><td><code>record Point(int x, int y) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>p.X</code></td><td><code>p.x()</code> (accessor)</td></tr>
+          <tr><td>Value equality</td><td><code>a == b</code> (comparable fields)</td><td><code>a.equals(b)</code> (generated)</td></tr>
+          <tr><td>Printable form</td><td><code>fmt.Sprintf("%+v", p)</code></td><td><code>toString()</code> → <code>Point[x=3, y=4]</code></td></tr>
+          <tr><td>Validate on construction</td><td>a constructor function</td><td>compact constructor</td></tr>
+          <tr><td>Satisfy a contract</td><td>implicit (structural)</td><td><code>record X(...) implements I</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-exceptions.html">17. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Throw</td><td><code>return nil, errors.New("x")</code></td><td><code>throw new RuntimeException("x")</code></td></tr>
+          <tr><td>Typed catch</td><td><code>if err != nil { }</code> (untyped)</td><td><code>catch (IOException e) { }</code></td></tr>
+          <tr><td>Multi-catch</td><td><code>errors.As</code> / type switch</td><td><code>catch (A | B e) { }</code></td></tr>
+          <tr><td>Declared throws</td><td><code>error</code> as a return value</td><td><code>void f() throws IOException</code></td></tr>
+          <tr><td>Custom error</td><td><code>func (e *MyErr) Error() string</code></td><td><code>extends RuntimeException</code></td></tr>
+          <tr><td>Cleanup</td><td><code>defer</code></td><td><code>finally { }</code> / try-with-resources</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-equals-hashcode-comparable.html">18. equals, hashCode &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Identity check</td><td><code>a == b</code> (value equality)</td><td><code>a == b</code> (identity)</td></tr>
+          <tr><td>Value equality</td><td>built into <code>==</code> for comparable structs</td><td>override <code>equals(Object)</code></td></tr>
+          <tr><td>Hashing</td><td>map keys hashed structurally when comparable</td><td>override <code>hashCode()</code> to match equals</td></tr>
+          <tr><td>Combine fields into a hash</td><td>—</td><td><code>Objects.hash(a, b)</code></td></tr>
+          <tr><td>Natural ordering</td><td><code>sort.Interface</code>'s <code>Less</code></td><td><code>Comparable&lt;T&gt;.compareTo</code></td></tr>
+          <tr><td>One-off ordering</td><td><code>sort.Slice</code> callback</td><td><code>Comparator</code> passed to sort</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-sealed-and-pattern-matching.html">19. Sealed Types &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Closed variant set</td><td>interface with unexported marker method</td><td><code>sealed … permits A, B</code></td></tr>
+          <tr><td>One-line data class</td><td><code>type Circle struct{ R float64 }</code></td><td><code>record Circle(double r) implements Shape {}</code></td></tr>
+          <tr><td>Test + narrow</td><td><code>if c, ok := s.(Circle); ok</code></td><td><code>if (s instanceof Circle c)</code></td></tr>
+          <tr><td>Match on type</td><td><code>switch s := s.(type) { ... }</code></td><td><code>switch (s) { case Circle c -> … }</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>not checked — you write <code>default</code> yourself</td><td>automatic over a sealed type</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Java</th></tr>
+          <tr><td>Bounded generic</td><td><code>[T Entity]</code></td><td><code>&lt;T extends Entity&gt;</code></td></tr>
+          <tr><td>Absent-or-present</td><td><code>(T, bool)</code> comma-ok</td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Filter + sort</td><td>loop + <code>sort.Slice</code></td><td><code>stream().filter(p).sorted(cmp).toList()</code></td></tr>
+          <tr><td>Sort key</td><td><code>out[i].ID() &lt; out[j].ID()</code></td><td><code>Comparator.comparingInt(Entity::id)</code></td></tr>
+          <tr><td>Signal "missing"</td><td><code>fmt.Errorf(...)</code> return value</td><td>a typed <code>RuntimeException</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

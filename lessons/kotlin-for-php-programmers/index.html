@@ -20,6 +20,255 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>PHP ⇄ Kotlin cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Read-only binding</td><td><code>define('X', 1);</code> (global only)</td><td><code>val x = 1</code></td></tr>
+          <tr><td>Reassignable</td><td><code>$x = 1;</code></td><td><code>var x = 1</code></td></tr>
+          <tr><td>Explicit type</td><td><code>function f(int $x) {}</code></td><td><code>val x: Int = 1</code></td></tr>
+          <tr><td>Template</td><td><code>"$x"</code> / <code>"{$obj->foo}"</code></td><td><code>"$x"</code> / <code>"${x.foo}"</code></td></tr>
+          <tr><td>Runtime type</td><td><code>gettype($x)</code></td><td><code>x::class.simpleName</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Task</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Interpolate</td><td><code>"$x"</code> / <code>"{$x->y}"</code></td><td><code>"$x"</code> / <code>"${x.y}"</code></td></tr>
+          <tr><td>Case</td><td><code>strtoupper($s)</code></td><td><code>uppercase()</code></td></tr>
+          <tr><td>Split &amp; join</td><td><code>implode("-", explode(",", $s))</code></td><td><code>s.split(",").joinToString("-")</code></td></tr>
+          <tr><td>Substring</td><td><code>substr($s, 0, 5)</code></td><td><code>s.substring(0, 5)</code></td></tr>
+          <tr><td>Contains</td><td><code>str_contains($s, $x)</code></td><td><code>s.contains(x)</code></td></tr>
+          <tr><td>Parse int</td><td><code>(int) $s</code> / <code>intval($s)</code></td><td><code>s.toInt()</code></td></tr>
+          <tr><td>Raw / multi-line</td><td><code>&lt;&lt;&lt;EOT
+        line1
+        line2
+        EOT</code></td><td><code>"""line1
+        line2"""</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-lists-and-collections.html">3. Lists &amp; Collections</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Read-only list</td><td>(none — arrays are always mutable)</td><td><code>List&lt;Int&gt;</code></td></tr>
+          <tr><td>Mutable list</td><td><code>array</code></td><td><code>MutableList&lt;Int&gt;</code></td></tr>
+          <tr><td>Build</td><td><code>[1, 2, 3]</code></td><td><code>listOf(1, 2, 3)</code></td></tr>
+          <tr><td>Append</td><td><code>$xs[] = 4;</code></td><td><code>xs.add(4)</code></td></tr>
+          <tr><td>Remove value</td><td><code>array_splice($xs, array_search(4, $xs), 1);</code></td><td><code>xs.remove(4)</code></td></tr>
+          <tr><td>Length</td><td><code>count($xs)</code></td><td><code>xs.size</code></td></tr>
+          <tr><td>Membership</td><td><code>in_array(2, $xs)</code></td><td><code>2 in xs</code></td></tr>
+          <tr><td>Ends</td><td><code>$xs[0]</code> / <code>$xs[count($xs) - 1]</code></td><td><code>xs.first()</code> / <code>xs.last()</code></td></tr>
+          <tr><td>Transform</td><td><code>array_map(fn($x) =&gt; $x * 2, $xs)</code></td><td><code>xs.map { it * 2 }</code></td></tr>
+          <tr><td>Keep some</td><td><code>array_filter($xs, fn($x) =&gt; ...)</code></td><td><code>xs.filter { ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Read-only map</td><td>no built-in equivalent — arrays are always mutable</td><td><code>mapOf(...)</code> → <code>Map</code></td></tr>
+          <tr><td>Mutable map</td><td><code>$m = [];</code></td><td><code>mutableMapOf(...)</code> → <code>MutableMap</code></td></tr>
+          <tr><td>Lookup</td><td><code>$m["k"] ?? null</code></td><td><code>m[k]</code> → <code>V?</code></td></tr>
+          <tr><td>With default</td><td><code>$m["k"] ?? $d</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+          <tr><td>Insert / update</td><td><code>$m["k"] = $v;</code></td><td><code>m[k] = v</code></td></tr>
+          <tr><td>Views</td><td><code>array_keys($m)</code> / <code>array_values($m)</code></td><td><code>m.keys</code> / <code>m.values</code> / <code>m.entries</code></td></tr>
+          <tr><td>Iterate pairs</td><td><code>foreach ($m as $k => $v)</code></td><td><code>for ((k, v) in m)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Single expression</td><td><code>$f = fn($n) => $n * $n;</code></td><td><code>fun f(n: Int) = n * n</code></td></tr>
+          <tr><td>Default argument</td><td><code>function f($x = 1) {}</code></td><td><code>fun f(x: Int = 1)</code></td></tr>
+          <tr><td>Named argument</td><td><code>f(x: 1)</code> (PHP 8+)</td><td><code>f(x = 1)</code></td></tr>
+          <tr><td>Rest / vararg</td><td><code>function f(int ...$xs) {}</code></td><td><code>fun f(vararg xs: Int)</code></td></tr>
+          <tr><td>Spread a collection</td><td><code>f(...$arr)</code></td><td><code>f(*arr)</code></td></tr>
+          <tr><td>No return value</td><td><code>: void</code></td><td><code>: Unit</code> (omit it)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-safety.html">6. Null Safety</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Nullable type</td><td><code>?string</code></td><td><code>String?</code></td></tr>
+          <tr><td>Safe call</td><td><code>$x?->f()</code></td><td><code>x?.f()</code></td></tr>
+          <tr><td>Fallback</td><td><code>$x ?? $y</code></td><td><code>x ?: y</code></td></tr>
+          <tr><td>Assert non-null</td><td><em>(no equivalent — PHP throws a <code>TypeError</code> for you if you're wrong)</em></td><td><code>x!!</code> (throws at runtime)</td></tr>
+          <tr><td>Run if non-null</td><td><code>if ($x !== null) { f($x); }</code></td><td><code>x?.let { f(it) }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-classes-and-properties.html">7. Classes &amp; Properties</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Property in constructor</td><td><code>__construct(public string $name)</code></td><td><code>class C(val name: String)</code></td></tr>
+          <tr><td>Read-only property</td><td><code>readonly</code></td><td><code>val</code></td></tr>
+          <tr><td>Mutable property</td><td>plain property</td><td><code>var</code></td></tr>
+          <tr><td>Construction-time setup</td><td>constructor body</td><td><code>init { }</code></td></tr>
+          <tr><td>Computed property</td><td><code>getX() {}</code> method</td><td><code>val x get() = …</code></td></tr>
+          <tr><td>Write interceptor</td><td><code>setX($v) {}</code> method</td><td><code>set(value) { field = … }</code></td></tr>
+          <tr><td>Read-only from outside</td><td><code>private(set)</code>? no</td><td><code>var x = 0; private set</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-data-classes.html">8. Data Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Value bundle</td><td><code>class P { public function __construct(public readonly int $x) {} } </code></td><td><code>data class P(val x: Int)</code></td></tr>
+          <tr><td>Value equality</td><td><code>$a == $b</code> (recursive, built in)</td><td><code>a == b</code> (generated)</td></tr>
+          <tr><td>Reference identity</td><td><code>$a === $b</code></td><td><code>a === b</code></td></tr>
+          <tr><td>Immutable update</td><td><code>new P($a->x, 9)</code> (rebuild by hand)</td><td><code>p.copy(y = 9)</code></td></tr>
+          <tr><td>Destructure</td><td><code>$x = $p->x; $y = $p->y;</code></td><td><code>val (x, y) = p</code></td></tr>
+          <tr><td>Debug string</td><td><code>print_r($p, true)</code></td><td><code>p.toString()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-when-and-control-flow.html">9. when &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Multi-way branch</td><td><code>switch</code> (needs <code>break</code>)</td><td><code>when</code> (no fall-through)</td></tr>
+          <tr><td>Branch as a value</td><td><code>match</code> only (PHP 8+); <code>switch</code> can't</td><td><code>val g = when (...) { ... }</code></td></tr>
+          <tr><td>Grouped cases</td><td><code>case 1: case 2:</code></td><td><code>1, 2 -&gt;</code></td></tr>
+          <tr><td>Range test</td><td><code>$x &gt;= 1 &amp;&amp; $x &lt;= 10</code></td><td><code>x in 1..10</code></td></tr>
+          <tr><td>Ternary</td><td><code>$a &gt; $b ? $a : $b</code></td><td><code>if (a &gt; b) a else b</code></td></tr>
+          <tr><td>Count down</td><td><code>for ($i = $n; $i &gt;= 1; $i--)</code></td><td><code>for (i in n downTo 1)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance.html">10. Inheritance</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Subclassable</td><td>every class (default, unless <code>final</code>)</td><td><code>open class</code> (opt in)</td></tr>
+          <tr><td>Overridable method</td><td>every method (default, unless <code>final</code>)</td><td><code>open fun</code> (opt in)</td></tr>
+          <tr><td>Override keyword</td><td>none (implicit; PHP 8.3+ has an optional <code>#[\Override]</code> attribute)</td><td><code>override</code> (required)</td></tr>
+          <tr><td>Abstract member</td><td><code>abstract public function sound(): string;</code></td><td><code>abstract fun sound(): String</code></td></tr>
+          <tr><td>Base constructor</td><td><code>parent::__construct($name)</code> in body</td><td><code>: Animal(name)</code> in header</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-interfaces.html">11. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Declare interface</td><td><code>interface E { … }</code></td><td><code>interface E { … }</code></td></tr>
+          <tr><td>Implement</td><td><code>class C implements E</code></td><td><code>class C : E</code></td></tr>
+          <tr><td>Multiple interfaces</td><td><code>implements A, B</code></td><td><code>: A, B</code></td></tr>
+          <tr><td>Abstract property</td><td>abstract getter method, e.g. <code>getName(): string</code></td><td><code>val name: String</code></td></tr>
+          <tr><td>Property with logic</td><td>(needs a class or trait)</td><td><code>val p: T get() = …</code></td></tr>
+          <tr><td>Default method body</td><td>(needs a class or trait)</td><td><code>fun f() = …</code> in the interface</td></tr>
+          <tr><td>Override</td><td>just redeclare</td><td><code>override</code> keyword required</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-sealed-classes.html">12. Sealed Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Closed set of types</td><td>array with a <code>'kind'</code> key (or a class hierarchy)</td><td><code>sealed class</code> / <code>sealed interface</code></td></tr>
+          <tr><td>Variant</td><td><code>['kind' => 'circle', ...]</code></td><td><code>class Circle(...) : Shape()</code></td></tr>
+          <tr><td>Match</td><td><code>match ($shape['kind'])</code></td><td><code>when (s) { is Circle -&gt; }</code></td></tr>
+          <tr><td>Narrowing</td><td>none — read by array key</td><td>smart cast after <code>is</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>none at compile time (<code>UnhandledMatchError</code> at runtime)</td><td>built in — no <code>else</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enums.html">13. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Declare</td><td><code>enum Status { case Ok; }</code></td><td><code>enum class Status { OK }</code></td></tr>
+          <tr><td>Attach data</td><td><code>enum Status: int { case Ok = 200; }</code> (one scalar)</td><td><code>OK(200)</code> + <code>val code</code></td></tr>
+          <tr><td>Constant name</td><td><code>Status::Ok->name</code></td><td><code>Status.OK.name</code></td></tr>
+          <tr><td>Position</td><td>none built in</td><td><code>Status.OK.ordinal</code></td></tr>
+          <tr><td>By name</td><td><code>constant(Status::class."::".$name)</code></td><td><code>Status.valueOf("OK")</code></td></tr>
+          <tr><td>All members</td><td><code>Status::cases()</code></td><td><code>Status.values()</code></td></tr>
+          <tr><td>Switch</td><td><code>match</code> (no compile-time exhaustiveness check against cases)</td><td>exhaustive <code>when</code> — no <code>else</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-lambdas-and-higher-order.html">14. Lambdas &amp; Higher-Order Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Lambda</td><td><code>fn($x) => $x + 1</code></td><td><code>{ x -> x + 1 }</code></td></tr>
+          <tr><td>Implicit single param</td><td><code>fn($x) => $x + 1</code></td><td><code>{ it + 1 }</code></td></tr>
+          <tr><td>Function type</td><td><code>callable</code> / <code>Closure</code></td><td><code>(Int) -> Int</code></td></tr>
+          <tr><td>Trailing lambda</td><td><code>array_map(fn($x) => …, $arr)</code></td><td><code>list.map { … }</code></td></tr>
+          <tr><td>Returning a function</td><td><code>fn($f) => fn($n) => …</code></td><td><code>fun m(): (Int) -> Int = { … }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-collection-operations.html">15. Collection Operations</a></h3>
+        <table>
+          <tr><th>Goal</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Transform</td><td><code>array_map($f, $xs)</code></td><td><code>xs.map { }</code></td></tr>
+          <tr><td>Keep some</td><td><code>array_filter($xs, $p)</code></td><td><code>xs.filter { }</code></td></tr>
+          <tr><td>Sum a field</td><td><code>array_reduce($xs, fn($a,$x)=&gt;$a+$x-&gt;n, 0)</code></td><td><code>xs.sumOf { it.n }</code></td></tr>
+          <tr><td>Custom aggregate</td><td><code>array_reduce($xs, ...)</code></td><td><code>xs.fold(seed) { a, x -&gt; }</code></td></tr>
+          <tr><td>Group</td><td>manual associative-array loop</td><td><code>xs.groupBy { }</code></td></tr>
+          <tr><td>Index by key</td><td><code>array_column($xs, null, 'key')</code></td><td><code>xs.associateBy { }</code></td></tr>
+          <tr><td>Sort by key</td><td><code>usort($xs, fn($a,$b)=&gt;...)</code></td><td><code>xs.sortedBy { }</code></td></tr>
+          <tr><td>Any / all / count</td><td>loop with a flag / <code>count(array_filter(...))</code></td><td><code>any</code>/<code>all</code>/<code>count</code></td></tr>
+          <tr><td>Find one</td><td><code>current(array_filter($xs, $p))</code></td><td><code>xs.find { }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-extension-functions.html">16. Extension Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Add a "method"</td><td><code>function f($x) {...}</code> then <code>f($x)</code></td><td><code>fun T.f() {...}</code> then <code>x.f()</code></td></tr>
+          <tr><td>The receiver</td><td>first parameter</td><td><code>this</code> (implicit)</td></tr>
+          <tr><td>Add a "property"</td><td>not possible on scalars; would need a wrapper class</td><td><code>val T.p: R get() = ...</code></td></tr>
+          <tr><td>Dispatch</td><td>n/a</td><td>static (resolved by declared type)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-generics.html">17. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Generic function</td><td>no equivalent (<code>@template T</code> docblock, unchecked)</td><td><code>fun &lt;T&gt; f(x: T)</code></td></tr>
+          <tr><td>Generic class</td><td><code>class Box { public mixed $value; }</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+          <tr><td>Upper bound</td><td><code>@template T of X</code> (docblock only)</td><td><code>&lt;T : X&gt;</code></td></tr>
+          <tr><td>Producer (covariant)</td><td>no concept — everything is <code>mixed</code></td><td><code>class Src&lt;out T&gt;</code> / <code>Box&lt;out T&gt;</code></td></tr>
+          <tr><td>Consumer (contravariant)</td><td>no concept — everything is <code>mixed</code></td><td><code>class Sink&lt;in T&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-scope-functions.html">18. Scope Functions</a></h3>
+        <table>
+          <tr><th>Function</th><th>Receiver is</th><th>Returns</th><th>Reach for it when…</th></tr>
+          <tr><td><code>apply</code></td><td><code>this</code></td><td>the receiver</td><td>configuring an object (builders)</td></tr>
+          <tr><td><code>also</code></td><td><code>it</code></td><td>the receiver</td><td>a side effect in a chain (log, validate)</td></tr>
+          <tr><td><code>let</code></td><td><code>it</code></td><td>block result</td><td>null-guarded transforms: <code>x?.let { … }</code></td></tr>
+          <tr><td><code>run</code></td><td><code>this</code></td><td>block result</td><td>computing a value from a receiver</td></tr>
+          <tr><td><code>with</code></td><td><code>this</code> (arg)</td><td>block result</td><td>many calls on one object, no chaining</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-objects-and-companions.html">19. Objects &amp; Companions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Singleton</td><td>singleton pattern (<code>private static $instance</code>)</td><td><code>object Tally { … }</code></td></tr>
+          <tr><td>Class-level member</td><td><code>public static function parse(…)</code></td><td><code>companion object { fun parse(…) }</code></td></tr>
+          <tr><td>Class-level constant</td><td><code>const X = …</code> / <code>static $X</code></td><td><code>const val X</code> (in companion)</td></tr>
+          <tr><td>Private constructor</td><td><code>private function __construct(…)</code></td><td><code>class C private constructor(…)</code></td></tr>
+          <tr><td>Anonymous instance</td><td><code>new class implements Greeter { … }</code></td><td><code>object : Greeter { … }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Kotlin</th></tr>
+          <tr><td>Node hierarchy</td><td>tagged array (<code>'kind' =&gt; ...</code>)</td><td><code>sealed interface</code> + <code>data class</code></td></tr>
+          <tr><td>Recursive dispatch</td><td><code>match ($e['kind'])</code></td><td>exhaustive <code>when (e)</code></td></tr>
+          <tr><td>Narrowing a variant</td><td>no narrowing — just trust the array shape</td><td>smart cast after <code>is</code></td></tr>
+          <tr><td>Missing value</td><td><code>?float</code> / <code>null</code></td><td><code>Double?</code></td></tr>
+          <tr><td>Map/filter out nulls</td><td><code>array_filter(array_map(...))</code></td><td><code>.mapNotNull { }</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

@@ -19,6 +19,274 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C++ ⇄ PHP cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Declare a variable</td><td><code>int x = 1;</code></td><td><code>$x = 1;</code> (assignment is declaration)</td></tr>
+          <tr><td>Integer types</td><td><code>int</code>/<code>long</code>/<code>size_t</code>/…</td><td><code>int</code> — one 64-bit signed integer</td></tr>
+          <tr><td>Floating types</td><td><code>float</code>/<code>double</code></td><td><code>float</code> — always double precision</td></tr>
+          <tr><td>Typed signature</td><td><code>std::string f(int x)</code></td><td><code>function f(int $x): string</code></td></tr>
+          <tr><td>Wrong-type argument</td><td>compile error</td><td><code>TypeError</code> thrown at the call, at runtime</td></tr>
+          <tr><td>Format a string</td><td><code>std::format("{} is {}", n, a)</code></td><td><code>"$n is $a"</code> in double quotes</td></tr>
+          <tr><td>Build &amp; run</td><td>compile, link, execute</td><td><code>php file.php</code> — the script just runs</td></tr>
+          <tr><td>Memory</td><td>RAII, ownership, smart pointers</td><td>garbage-collected; not your problem</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Concatenate</td><td><code>a + b</code></td><td><code>$a . $b</code> (and <code>.=</code> for <code>+=</code>)</td></tr>
+          <tr><td>Add numbers</td><td><code>a + b</code></td><td><code>$a + $b</code> — <em>only</em> arithmetic; <code>"1" + 1 === 2</code></td></tr>
+          <tr><td>Format / interpolate</td><td><code>std::format("{}!", name)</code></td><td><code>"$name!"</code> or <code>"{$name}!"</code>; <code>sprintf</code> exists when you want printf</td></tr>
+          <tr><td>Uppercase</td><td><code>std::transform</code> + <code>::toupper</code></td><td><code>strtoupper($s)</code> / <code>strtolower($s)</code></td></tr>
+          <tr><td>Substring test</td><td><code>s.find(n) != npos</code></td><td><code>str_contains($h, $n)</code> (8.0+; also <code>str_starts_with</code>, <code>str_ends_with</code>)</td></tr>
+          <tr><td>Length</td><td><code>s.size()</code></td><td><code>strlen($s)</code> — bytes, like <code>size()</code></td></tr>
+          <tr><td>Join</td><td>hand-rolled loop</td><td><code>implode(", ", $arr)</code>; inverse is <code>explode</code></td></tr>
+          <tr><td>Raw literal</td><td><code>R"(...)"</code></td><td><code>'single quotes'</code> — no interpolation, no escapes but <code>\'</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-as-lists.html">3. Arrays as Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>List literal</td><td><code>std::vector&lt;int&gt; v = {1, 2, 3};</code></td><td><code>$v = [1, 2, 3];</code></td></tr>
+          <tr><td>Append</td><td><code>v.push_back(x);</code></td><td><code>$v[] = $x;</code></td></tr>
+          <tr><td>Length</td><td><code>v.size()</code></td><td><code>count($v)</code></td></tr>
+          <tr><td>Membership</td><td><code>std::find(...) != end</code></td><td><code>in_array($x, $v, true)</code> — always pass <code>true</code></td></tr>
+          <tr><td>Sum</td><td><code>std::accumulate(begin, end, 0)</code></td><td><code>array_sum($v)</code></td></tr>
+          <tr><td>Copying</td><td><code>auto b = a;</code> copies eagerly</td><td><code>$b = $a;</code> copies lazily (copy-on-write)</td></tr>
+          <tr><td>Capacity</td><td><code>reserve</code>/<code>capacity</code>/<code>shrink_to_fit</code></td><td>none — the engine manages storage</td></tr>
+          <tr><td>Iterators</td><td><code>begin()</code>/<code>end()</code>, invalidation rules</td><td>none — <code>foreach</code> (next lesson) walks elements</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-associative-arrays.html">4. Associative Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Map literal</td><td><code>{{"apples", 3}, {"pears", 5}}</code></td><td><code>['apples' =&gt; 3, 'pears' =&gt; 5]</code></td></tr>
+          <tr><td>Insert / overwrite</td><td><code>m[k] = v;</code></td><td><code>$m[$k] = $v;</code></td></tr>
+          <tr><td>Read a missing key</td><td><code>m[k]</code> silently inserts a default</td><td><code>$m[$k]</code> warns and yields <code>null</code> — no insert</td></tr>
+          <tr><td>Lookup with default</td><td><code>m.count(k) ? m.at(k) : 0</code></td><td><code>$m[$k] ?? 0</code></td></tr>
+          <tr><td>Has key?</td><td><code>m.contains(k)</code> (C++20) / <code>m.count(k)</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>foreach ($m as $k =&gt; $v)</code></td></tr>
+          <tr><td>All keys</td><td>manual loop</td><td><code>array_keys($m)</code>; values via <code>array_values($m)</code></td></tr>
+          <tr><td>Iteration order</td><td>unspecified (hash order)</td><td>insertion order, guaranteed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Declaration</td><td>prototype in header, define once</td><td>define anywhere, call anywhere — no forward declarations</td></tr>
+          <tr><td>Default argument</td><td><code>f(int x = 2)</code></td><td><code>function f(int $x = 2)</code></td></tr>
+          <tr><td>Maybe-a-value param</td><td><code>std::optional&lt;T&gt;</code></td><td><code>?T $x = null</code>, checked with <code>=== null</code></td></tr>
+          <tr><td>Overloading</td><td><code>f(int)</code> / <code>f(string)</code></td><td>not allowed — one name, one function</td></tr>
+          <tr><td>Either-type param</td><td><code>std::variant&lt;int, std::string&gt;</code></td><td><code>int|string $x</code></td></tr>
+          <tr><td>Which alternative?</td><td><code>std::holds_alternative&lt;int&gt;(v)</code></td><td><code>is_int($x)</code>, <code>is_string($x)</code>, …</td></tr>
+          <tr><td>Call by parameter name</td><td>designated init for aggregates only</td><td><code>f(name: "Ada")</code> on any function (8.0+)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-handling.html">6. Null, ?? &amp; ?-&gt;</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>PHP</th></tr>
+          <tr><td>Absent value</td><td><code>nullptr</code> / <code>std::nullopt</code></td><td><code>null</code> (one for everything)</td></tr>
+          <tr><td>Optional type</td><td><code>std::optional&lt;T&gt;</code></td><td><code>?T</code></td></tr>
+          <tr><td>Default fallback</td><td><code>opt.value_or(def)</code></td><td><code>$x ?? $def</code></td></tr>
+          <tr><td>Chained access</td><td><code>if (p &amp;&amp; p-&gt;q &amp;&amp; p-&gt;q-&gt;r)</code></td><td><code>$p?-&gt;q?-&gt;r</code></td></tr>
+          <tr><td>Presence test</td><td><code>opt.has_value()</code></td><td><code>isset($x)</code></td></tr>
+          <tr><td>Assign if null</td><td>—</td><td><code>$x ??= $def;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-comparisons-and-juggling.html">7. Comparisons &amp; Type Juggling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>PHP</th></tr>
+          <tr><td>Equality</td><td><code>==</code> (types settled at compile time)</td><td><code>===</code> — use it; <code>==</code> juggles</td></tr>
+          <tr><td>Inequality</td><td><code>!=</code></td><td><code>!==</code> (strict) / <code>!=</code> (loose)</td></tr>
+          <tr><td>To bool</td><td><code>static_cast&lt;bool&gt;(v)</code></td><td><code>(bool) $v</code></td></tr>
+          <tr><td>Falsy set</td><td>zero / null pointer, by conversion rule</td><td><code>""</code>, <code>0</code>, <code>0.0</code>, <code>"0"</code>, <code>null</code>, <code>[]</code></td></tr>
+          <tr><td>Three-way</td><td><code>&lt;=&gt;</code> (C++20, ordering type)</td><td><code>&lt;=&gt;</code> (PHP 7.0, int -1/0/1)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-match.html">8. Control Flow &amp; match</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>PHP</th></tr>
+          <tr><td>Chained if</td><td><code>else if</code></td><td><code>elseif</code></td></tr>
+          <tr><td>switch comparison</td><td>strict, integral/enum types</td><td>loose <code>==</code> — a juggling trap</td></tr>
+          <tr><td>Fallthrough</td><td>yes, unless <code>break</code>/<code>[[fallthrough]]</code></td><td><code>switch</code> yes; <code>match</code> never</td></tr>
+          <tr><td>Value-producing branch</td><td>ternary chains / IIFE tricks</td><td><code>$x = match (...) {...};</code></td></tr>
+          <tr><td>Shared cases</td><td>stacked <code>case</code> labels</td><td><code>"a", "b" =&gt; result</code></td></tr>
+          <tr><td>Unhandled value</td><td>silent (maybe <code>-Wswitch</code>)</td><td>throws <code>UnhandledMatchError</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>PHP</th></tr>
+          <tr><td>Constructor</td><td><code>ClassName(...)</code> + init list</td><td><code>__construct(...)</code>, promoted params</td></tr>
+          <tr><td>Member access</td><td><code>.</code> or <code>-&gt;</code> by storage</td><td><code>-&gt;</code> always (objects are handles)</td></tr>
+          <tr><td>Self reference</td><td><code>this</code> (a pointer)</td><td><code>$this</code></td></tr>
+          <tr><td>Object lifetime</td><td>RAII, destructors, rule of five</td><td>GC; <code>__destruct</code> exists but is rarely written</td></tr>
+          <tr><td>Copy semantics</td><td>value by default, deep copies</td><td>handle copy by default; <code>clone $obj</code> for a shallow copy</td></tr>
+          <tr><td>Instantiation</td><td><code>BankAccount a{"Ada"};</code> / <code>make_shared</code></td><td><code>$a = new BankAccount("Ada");</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-interfaces-and-inheritance.html">10. Interfaces, Inheritance &amp; Abstracts</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>PHP</th></tr>
+          <tr><td>Pure virtual</td><td><code>virtual T f() = 0;</code></td><td><code>abstract public function f(): T;</code></td></tr>
+          <tr><td>Abstract base</td><td>any class with a pure virtual</td><td><code>abstract class</code> (explicit keyword)</td></tr>
+          <tr><td>Interface</td><td>pure-abstract class, by convention</td><td><code>interface</code> + <code>implements A, B</code></td></tr>
+          <tr><td>Inheritance</td><td><code>: public Base</code> (can be multiple)</td><td><code>extends Base</code> (exactly one)</td></tr>
+          <tr><td>Dispatch</td><td><code>virtual</code>/<code>override</code>, vtables</td><td>always dynamic, no keywords</td></tr>
+          <tr><td>Base ctor</td><td><code>: Base(args)</code> init list</td><td><code>parent::__construct(args);</code></td></tr>
+          <tr><td>Runtime type test</td><td><code>dynamic_cast</code></td><td><code>$x instanceof Shape</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP 8.1+</th></tr>
+          <tr><td>Scoped enum</td><td><code>enum class Color { Red };</code></td><td><code>enum Color { case Red; }</code> (pure enum)</td></tr>
+          <tr><td>Underlying value</td><td><code>enum class S : int</code> + <code>static_cast</code></td><td><code>enum S: string|int</code> + <code>$s->value</code></td></tr>
+          <tr><td>Value → enum, checked</td><td>write it yourself</td><td><code>S::from($v)</code> (throws) / <code>S::tryFrom($v)</code> (null)</td></tr>
+          <tr><td>List all cases</td><td>X-macros, magic_enum, hand-kept arrays</td><td><code>S::cases()</code></td></tr>
+          <tr><td>Switch over cases</td><td><code>switch</code> + <code>break</code> discipline</td><td><code>match($s)</code> — expression, no fall-through</td></tr>
+          <tr><td>Attach behavior</td><td>free functions</td><td>methods on the enum, <code>implements</code> allowed</td></tr>
+          <tr><td>Compare</td><td><code>==</code> on values</td><td><code>===</code> — each case is a singleton object</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Mixin</td><td>CRTP or multiple inheritance</td><td><code>trait X { ... }</code> + <code>use X;</code></td></tr>
+          <tr><td>Call back into the class</td><td><code>static_cast&lt;Derived*&gt;(this)</code></td><td><code>$this</code> — it's already the real object</td></tr>
+          <tr><td>Multiple mixins</td><td>multiple bases, diamond risk</td><td><code>use A, B;</code> — flat, no hierarchy</td></tr>
+          <tr><td>Name collision</td><td>ambiguity error, qualify at call site</td><td>error until <code>use A, B { A::f insteadof B; }</code></td></tr>
+          <tr><td>Require a method</td><td>implicit (template won't instantiate)</td><td><code>abstract public function name(): string;</code> in the trait</td></tr>
+          <tr><td>Is it a type?</td><td>the base is a real type</td><td>no — pair a trait with an <code>interface</code> for the type</td></tr>
+          <tr><td><code>extends</code> budget</td><td>n/a (multiple bases)</td><td>still exactly one — traits don't spend it</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-array-functions.html">13. array_map, array_filter &amp; Friends</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Transform</td><td><code>std::transform(b, e, out, f)</code></td><td><code>array_map($f, $arr)</code> — callback <em>first</em></td></tr>
+          <tr><td>Filter</td><td><code>std::copy_if(b, e, out, pred)</code></td><td><code>array_filter($arr, $pred)</code> — array <em>first</em></td></tr>
+          <tr><td>Fold</td><td><code>std::accumulate(b, e, init, op)</code></td><td><code>array_reduce($arr, $op, $init)</code></td></tr>
+          <tr><td>Sum</td><td><code>std::accumulate(b, e, 0)</code></td><td><code>array_sum($arr)</code></td></tr>
+          <tr><td>Compact after removal</td><td>erase-remove idiom</td><td><code>array_values($arr)</code> — filter keeps keys!</td></tr>
+          <tr><td>Output container</td><td>you prepare it (<code>back_inserter</code>)</td><td>returned fresh; input never mutated</td></tr>
+          <tr><td>Sort with comparator</td><td><code>std::sort(b, e, cmp)</code></td><td><code>usort($arr, $cmp)</code> — in place, by reference</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-spread.html">14. List Assignment &amp; Spread</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Destructure</td><td><code>auto [a, b] = pair;</code> (declaration only)</td><td><code>[$a, $b] = $pair;</code> (any assignment)</td></tr>
+          <tr><td>Destructure by name</td><td>—</td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+          <tr><td>Swap</td><td><code>std::swap(a, b)</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+          <tr><td>Variadic function</td><td><code>template&lt;class... Ts&gt; f(Ts... xs)</code></td><td><code>function f(int ...$nums)</code></td></tr>
+          <tr><td>Pack size / iterate</td><td><code>sizeof...(xs)</code>, recursion, folds</td><td><code>count($nums)</code>, <code>foreach</code></td></tr>
+          <tr><td>Apply array as args</td><td><code>std::apply(f, tuple)</code></td><td><code>f(...$args)</code></td></tr>
+          <tr><td>Concatenate</td><td><code>v.insert(v.end(), w.begin(), w.end())</code></td><td><code>[...$a, ...$b]</code></td></tr>
+          <tr><td>Skip a slot</td><td>must name it (<code>[a, _]</code>)</td><td><code>[, $b] = $pair;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-closures-and-callables.html">15. Closures &amp; Callables</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Lambda, capture by value</td><td><code>[x](int a) { ... }</code></td><td><code>function (int $a) use ($x) { ... }</code></td></tr>
+          <tr><td>Capture by reference</td><td><code>[&amp;x]</code> — dangles if it outlives x</td><td><code>use (&amp;$x)</code> — GC keeps $x alive, always safe</td></tr>
+          <tr><td>Capture everything by value</td><td><code>[=]</code></td><td>only <code>fn($a) =&gt; expr</code> arrow functions</td></tr>
+          <tr><td>Mutate captured state</td><td><code>[x]() mutable</code> or <code>[&amp;x]</code></td><td><code>use (&amp;$x)</code> — no <code>mutable</code> keyword</td></tr>
+          <tr><td>Function-value type</td><td><code>std::function&lt;int(int)&gt;</code></td><td><code>callable</code> (anything invokable) / <code>Closure</code> (the class)</td></tr>
+          <tr><td>Function pointer</td><td><code>&amp;strlen</code></td><td><code>'strlen'</code> or first-class <code>strlen(...)</code></td></tr>
+          <tr><td>Member call as value</td><td><code>std::bind</code> / lambda wrapper</td><td><code>[$obj, 'method']</code> or <code>$obj-&gt;method(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Throw</td><td><code>throw std::runtime_error("boom");</code></td><td><code>throw new RuntimeException("boom");</code></td></tr>
+          <tr><td>Catch one type</td><td><code>catch (const std::invalid_argument&amp; e)</code></td><td><code>catch (InvalidArgumentException $e)</code></td></tr>
+          <tr><td>Catch several types</td><td>separate blocks (or a base class)</td><td><code>catch (A | B $e)</code> — multi-catch</td></tr>
+          <tr><td>Catch everything</td><td><code>catch (...)</code> — no object</td><td><code>catch (Throwable $e)</code> — object included</td></tr>
+          <tr><td>The message</td><td><code>e.what()</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+          <tr><td>Custom exception</td><td><code>struct E : std::runtime_error</code></td><td><code>class E extends Exception {}</code></td></tr>
+          <tr><td>Rethrow</td><td><code>throw;</code></td><td><code>throw $e;</code></td></tr>
+          <tr><td>Cleanup on unwind</td><td>RAII destructors, scope guards</td><td><code>finally { ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-static-const-readonly.html">17. Static, Constants &amp; readonly</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Class constant</td><td><code>static constexpr int MAX = 10;</code></td><td><code>const MAX = 10;</code></td></tr>
+          <tr><td>Read it</td><td><code>Config::MAX</code></td><td><code>Config::MAX</code> — same syntax</td></tr>
+          <tr><td>Static data member</td><td>declare in-class, define out-of-line</td><td><code>private static int $count = 0;</code> — in-class only</td></tr>
+          <tr><td>Static member fn</td><td><code>static int f();</code></td><td><code>public static function f(): int</code></td></tr>
+          <tr><td>Inside the class</td><td><code>count</code> (implicit)</td><td><code>self::$count</code>, <code>self::f()</code>, <code>self::MAX</code></td></tr>
+          <tr><td>Write-once field</td><td><code>const std::string name;</code> (breaks assignment)</td><td><code>public readonly string $name</code></td></tr>
+          <tr><td>Mutate it anyway</td><td><code>const_cast</code>, <code>mutable</code></td><td>impossible — write throws <code>Error</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-generators.html">18. Generators &amp; Iterables</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17 / C++20</th><th>PHP</th></tr>
+          <tr><td>Define a lazy sequence</td><td>iterator class, or <code>co_yield</code> + promise ceremony</td><td><code>function f(): Generator { yield $x; }</code></td></tr>
+          <tr><td>Yield a value</td><td><code>co_yield v;</code></td><td><code>yield $v;</code></td></tr>
+          <tr><td>Consume</td><td><code>for (auto v : range)</code></td><td><code>foreach ($gen as $v)</code></td></tr>
+          <tr><td>Materialize</td><td><code>std::vector(r.begin(), r.end())</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+          <tr><td>Accept array or generator</td><td>template / <code>std::ranges::range</code> concept</td><td><code>iterable</code> parameter type</td></tr>
+          <tr><td>Yield key and value</td><td>—</td><td><code>yield $key =&gt; $value;</code></td></tr>
+          <tr><td>Delegate to another generator</td><td>nested loop, or <code>co_yield</code> per element</td><td><code>yield from $other;</code></td></tr>
+          <tr><td>Infinite sequence</td><td><code>std::views::iota(0)</code></td><td><code>while (true) { yield $i++; }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17 (nlohmann)</th><th>PHP</th></tr>
+          <tr><td>Dependency</td><td>vendor the header</td><td>none — built in</td></tr>
+          <tr><td>Serialize</td><td><code>j.dump()</code></td><td><code>json_encode($data)</code></td></tr>
+          <tr><td>Pretty-print</td><td><code>j.dump(2)</code></td><td><code>json_encode($data, JSON_PRETTY_PRINT)</code></td></tr>
+          <tr><td>Parse to data</td><td><code>json::parse(s)</code></td><td><code>json_decode($json, true)</code></td></tr>
+          <tr><td>Forget the flag</td><td>—</td><td><code>json_decode($json)</code> → <code>stdClass</code> objects</td></tr>
+          <tr><td>Missing-key default</td><td><code>j.value("k", fallback)</code></td><td><code>$d["k"] ?? $fallback</code></td></tr>
+          <tr><td>Parse failure</td><td>throws <code>json::parse_error</code></td><td><code>null</code> silently — or <code>JSON_THROW_ON_ERROR</code> → <code>JsonException</code></td></tr>
+          <tr><td>Inspect last error</td><td>—</td><td><code>json_last_error_msg()</code> (legacy style)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++17</th><th>PHP</th></tr>
+          <tr><td>Copy a container</td><td><code>auto b = a;</code> — elements copied too</td><td><code>$b = $a;</code> — array copied, objects inside shared</td></tr>
+          <tr><td>Copy an object</td><td>copy constructor, implicit</td><td><code>clone $obj</code> — always explicit</td></tr>
+          <tr><td>Deep-copy hook</td><td>write the copy ctor</td><td><code>__clone()</code> magic method</td></tr>
+          <tr><td>Maybe-a-value return</td><td><code>const T*</code> / <code>std::optional&lt;T&gt;</code></td><td><code>?T</code> and <code>null</code></td></tr>
+          <tr><td>Fold</td><td><code>std::accumulate</code></td><td><code>array_reduce($a, $fn, $init)</code></td></tr>
+          <tr><td>Transform</td><td><code>std::transform</code></td><td><code>array_map($fn, $a)</code></td></tr>
+          <tr><td>Filter + compact</td><td>erase–remove idiom</td><td><code>array_values(array_filter($a, $fn))</code></td></tr>
+          <tr><td>Identity test</td><td>compare pointers</td><td><code>$a === $b</code> on objects — same instance?</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

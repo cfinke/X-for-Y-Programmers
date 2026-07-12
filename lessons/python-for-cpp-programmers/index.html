@@ -19,6 +19,256 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C++ ⇄ Python cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Variable</td><td><code>int x = 1;</code></td><td><code>x = 1</code></td></tr>
+          <tr><td>Runtime type</td><td><code>typeid(x).name()</code></td><td><code>type(x).__name__</code></td></tr>
+          <tr><td>Interpolation</td><td><code>x_str + std::to_string(x)</code></td><td><code>f"{x}"</code></td></tr>
+          <tr><td>Division</td><td><code>7 / 2 == 3</code> (int division)</td><td><code>7 / 2 == 3.5</code>, <code>7 // 2 == 3</code></td></tr>
+          <tr><td>Block</td><td><code>{ … }</code></td><td>indentation (a colon then an indented body)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Interpolation</td><td><code>std::format("{}", x)</code></td><td><code>f"{x}"</code></td></tr>
+          <tr><td>Substring</td><td><code>s.substr(1, 3)</code></td><td><code>s[1:4]</code></td></tr>
+          <tr><td>Last char</td><td><code>s[s.size() - 1]</code> or <code>s.back()</code></td><td><code>s[-1]</code></td></tr>
+          <tr><td>Contains</td><td><code>s.find("x") != std::string::npos</code></td><td><code>"x" in s</code></td></tr>
+          <tr><td>Index of</td><td><code>s.find("x")</code> (<code>npos</code> if absent)</td><td><code>s.find("x")</code> (-1 if absent)</td></tr>
+          <tr><td>Prefix / suffix</td><td><code>s.starts_with / ends_with</code> (C++20)</td><td><code>s.startswith / endswith</code></td></tr>
+          <tr><td>Repeat</td><td>manual loop or <code>std::string(3, ...)</code> tricks</td><td><code>"ab" * 3</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-lists.html">3. Lists</a></h3>
+        <table>
+          <tr><th>Operation</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Length</td><td><code>xs.size()</code></td><td><code>len(xs)</code></td></tr>
+          <tr><td>Last element</td><td><code>xs.back()</code></td><td><code>xs[-1]</code></td></tr>
+          <tr><td>Slice</td><td><code>std::vector&lt;int&gt;(xs.begin()+1, xs.begin()+3)</code></td><td><code>xs[1:3]</code></td></tr>
+          <tr><td>Reverse copy</td><td><code>std::vector&lt;int&gt; r(xs.rbegin(), xs.rend());</code></td><td><code>xs[::-1]</code></td></tr>
+          <tr><td>Append</td><td><code>xs.push_back(v)</code></td><td><code>xs.append(v)</code></td></tr>
+          <tr><td>Concat many</td><td><code>xs.insert(xs.end(), ys.begin(), ys.end())</code></td><td><code>xs.extend(ys)</code></td></tr>
+          <tr><td>Insert at i</td><td><code>xs.insert(xs.begin() + i, v)</code></td><td><code>xs.insert(i, v)</code></td></tr>
+          <tr><td>Remove &amp; return</td><td><code>xs.back(); xs.pop_back();</code></td><td><code>xs.pop()</code> / <code>xs.pop(i)</code></td></tr>
+          <tr><td>Map</td><td><code>std::transform(xs.begin(), xs.end(), out, f)</code></td><td><code>[f(x) for x in xs]</code></td></tr>
+          <tr><td>Sort (copy)</td><td><code>auto ys = xs; std::sort(ys.begin(), ys.end());</code></td><td><code>sorted(xs)</code></td></tr>
+          <tr><td>Sort (in place)</td><td><code>std::sort(xs.begin(), xs.end())</code></td><td><code>xs.sort()</code></td></tr>
+          <tr><td>Contains</td><td><code>std::find(xs.begin(), xs.end(), v) != xs.end()</code></td><td><code>v in xs</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-dicts.html">4. Dictionaries</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Read (may be missing)</td><td><code>m.count("x") ? m.at("x") : d</code></td><td><code>m.get("x", d)</code></td></tr>
+          <tr><td>Read (must exist)</td><td><code>m.at("x")</code> → throws <code>std::out_of_range</code></td><td><code>m["x"]</code> → <code>KeyError</code></td></tr>
+          <tr><td>Membership</td><td><code>m.count("x")</code> / <code>m.contains("x")</code></td><td><code>"x" in m</code></td></tr>
+          <tr><td>Keys / values / pairs</td><td>manual loop over <code>m</code>; pairs via structured bindings</td><td><code>m.keys()</code> / <code>m.values()</code> / <code>m.items()</code></td></tr>
+          <tr><td>Merge</td><td><code>m.insert(n.begin(), n.end());</code></td><td><code>{**m, **n}</code></td></tr>
+          <tr><td>Comprehension</td><td>build a new map with a loop</td><td><code>{k: v for k, v in ...}</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Define</td><td><code>int f(int a) { … }</code></td><td><code>def f(a):</code></td></tr>
+          <tr><td>Default</td><td><code>int f(int a = 1)</code></td><td><code>def f(a=1):</code></td></tr>
+          <tr><td>Rest / varargs</td><td><code>std::initializer_list&lt;T&gt;</code> or variadic templates</td><td><code>def f(*xs):</code> (a tuple)</td></tr>
+          <tr><td>Named extras</td><td>(no direct equivalent)</td><td><code>def f(**kw):</code> (a dict)</td></tr>
+          <tr><td>Call by name</td><td>—</td><td><code>f(a=1, b=2)</code></td></tr>
+          <tr><td>Spread a call</td><td>manual unpack, or <code>std::apply</code> for tuples</td><td><code>f(*arr)</code>, <code>f(**dct)</code></td></tr>
+          <tr><td>Multiple return</td><td><code>return std::make_pair(a, b);</code></td><td><code>return a, b</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-comprehensions.html">6. Comprehensions</a></h3>
+        <table>
+          <tr><th>Goal</th><th>C++</th><th>Python comprehension</th></tr>
+          <tr><td>Transform</td><td><code>for (auto x : xs) out.push_back(f(x));</code></td><td><code>[f(x) for x in xs]</code></td></tr>
+          <tr><td>Filter</td><td><code>std::copy_if(xs.begin(), xs.end(), std::back_inserter(out), p)</code></td><td><code>[x for x in xs if p(x)]</code></td></tr>
+          <tr><td>Map + filter</td><td><code>for (auto x : xs) if (p(x)) out.push_back(f(x));</code></td><td><code>[f(x) for x in xs if p(x)]</code></td></tr>
+          <tr><td>Build a dict</td><td><code>std::map&lt;K, V&gt;</code> filled in a loop</td><td><code>{k: v for x in xs}</code></td></tr>
+          <tr><td>Build a set</td><td><code>std::set&lt;T&gt;</code> filled in a loop</td><td><code>{expr for x in xs}</code></td></tr>
+          <tr><td>Lazy stream</td><td>a custom iterator, or C++20 <code>std::ranges::views</code></td><td><code>(expr for x in xs)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-classes.html">7. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Constructor</td><td><code>Account(…) : owner(…) {}</code></td><td><code>def __init__(self, …)</code></td></tr>
+          <tr><td>Instantiate</td><td><code>Account a("Ada", 100);</code></td><td><code>Account("Ada", 100)</code></td></tr>
+          <tr><td>Instance field</td><td><code>this->owner = …;</code></td><td><code>self.owner = …</code></td></tr>
+          <tr><td>Method receiver</td><td>implicit <code>this</code> pointer</td><td>explicit first param <code>self</code></td></tr>
+          <tr><td>Static / shared</td><td><code>static inline std::string bank = …;</code></td><td><code>bank = …</code> in class body</td></tr>
+          <tr><td>Private</td><td><code>private:</code> section (enforced)</td><td><code>_x</code> (convention only)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-dunder-methods.html">8. Dunder Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Constructor</td><td><code>ClassName(…) : …</code></td><td><code>__init__(self, …)</code></td></tr>
+          <tr><td>Debug string</td><td><code>operator&lt;&lt;(ostream&, …)</code></td><td><code>__repr__(self)</code></td></tr>
+          <tr><td>Value equality</td><td><code>bool operator==(…) const</code></td><td><code>a == b</code> (<code>__eq__</code>)</td></tr>
+          <tr><td>Length / size</td><td><code>a.size()</code></td><td><code>len(a)</code> (<code>__len__</code>)</td></tr>
+          <tr><td>Addition</td><td><code>T operator+(…) const</code></td><td><code>a + b</code> (<code>__add__</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-inheritance.html">9. Inheritance</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Subclass</td><td><code>class B : public A { ... };</code></td><td><code>class B(A):</code></td></tr>
+          <tr><td>Parent constructor</td><td><code>B(...) : A(x) {}</code></td><td><code>super().__init__(x)</code></td></tr>
+          <tr><td>Call parent method</td><td><code>A::m()</code></td><td><code>super().m()</code></td></tr>
+          <tr><td>Override</td><td><code>virtual</code> + <code>override</code></td><td>same method name</td></tr>
+          <tr><td>Type check</td><td><code>dynamic_cast&lt;A*&gt;(x) != nullptr</code></td><td><code>isinstance(x, A)</code></td></tr>
+          <tr><td>Mixin</td><td>native multiple inheritance</td><td>extra base class <code>(A, M)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-none-and-truthiness.html">10. None &amp; Truthiness</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>The empty value</td><td><code>nullptr</code>, empty <code>std::optional</code></td><td><code>None</code> (only one)</td></tr>
+          <tr><td>Null check</td><td><code>x == nullptr</code></td><td><code>x is None</code></td></tr>
+          <tr><td>Present check</td><td><code>x != nullptr</code> / <code>x.has_value()</code></td><td><code>x is not None</code></td></tr>
+          <tr><td>Empty container</td><td><code>vec.empty()</code></td><td><code>not arr</code></td></tr>
+          <tr><td>Nullish default</td><td><code>x.value_or(d)</code></td><td><code>x if x is not None else d</code></td></tr>
+          <tr><td>Falsy default</td><td><code>x ? x : d</code></td><td><code>x or d</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-exceptions.html">11. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Raise</td><td><code>throw std::runtime_error("x");</code></td><td><code>raise ValueError("x")</code></td></tr>
+          <tr><td>Catch one type</td><td><code>catch (const std::out_of_range&amp; e)</code></td><td><code>except ValueError:</code></td></tr>
+          <tr><td>Bind the error</td><td><code>catch (const std::exception&amp; e)</code></td><td><code>except ValueError as e:</code></td></tr>
+          <tr><td>No-error branch</td><td>(none)</td><td><code>else:</code></td></tr>
+          <tr><td>Always run</td><td>RAII destructor (no <code>finally</code> keyword)</td><td><code>finally:</code></td></tr>
+          <tr><td>Custom type</td><td><code>class E : public std::exception {};</code></td><td><code>class E(Exception): pass</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-iterators-and-generators.html">12. Iterators &amp; Generators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Get an iterator</td><td><code>c.begin()</code></td><td><code>iter(obj)</code></td></tr>
+          <tr><td>Pull next value</td><td><code>*it</code>, then <code>++it</code></td><td><code>next(it)</code></td></tr>
+          <tr><td>Signal "done"</td><td><code>it == c.end()</code></td><td>raise <code>StopIteration</code> (or just <code>return</code> in a generator)</td></tr>
+          <tr><td>Generator function</td><td>coroutine with <code>co_yield</code> (C++20+)</td><td><code>def g():</code> with <code>yield</code></td></tr>
+          <tr><td>Materialize</td><td><code>std::vector&lt;T&gt;(g.begin(), g.end())</code></td><td><code>list(g())</code></td></tr>
+          <tr><td>Lazy comprehension</td><td><code>std::views::transform(xs, f)</code></td><td><code>(f(x) for x in xs)</code></td></tr>
+          <tr><td>Make a class iterable</td><td><code>begin()</code> / <code>end()</code> members</td><td><code>def __iter__(self):</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-decorators.html">13. Decorators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Apply a decorator</td><td>no syntax — wrap manually: <code>auto g = make_call_counter(fn);</code></td><td><code>@dec</code> above any <code>def</code></td></tr>
+          <tr><td>Forward all args</td><td><code>template&lt;typename... Args&gt; auto operator()(Args&amp;&amp;... a) { return fn_(std::forward&lt;Args&gt;(a)...); }</code></td><td><code>def w(*args, **kwargs): fn(*args, **kwargs)</code></td></tr>
+          <tr><td>Preserve metadata</td><td>manual (and there is little to preserve — no runtime function names)</td><td><code>@functools.wraps(fn)</code></td></tr>
+          <tr><td>Parameterized</td><td>factory function returns a wrapper-generating callable</td><td><code>repeat(n)</code> returns a decorator</td></tr>
+          <tr><td>Built-in memoize</td><td>—</td><td><code>@functools.lru_cache</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-lambdas-and-functional.html">14. Lambdas &amp; Functional Tools</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Lambda</td><td><code>[](int x){ return x + 1; }</code></td><td><code>lambda x: x + 1</code></td></tr>
+          <tr><td>Map</td><td><code>std::transform(...)</code></td><td><code>list(map(f, xs))</code></td></tr>
+          <tr><td>Filter</td><td><code>std::copy_if(...)</code></td><td><code>list(filter(f, xs))</code></td></tr>
+          <tr><td>Sort by key</td><td><code>std::sort(v.begin(), v.end(), cmp)</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+          <tr><td>Reduce</td><td><code>std::accumulate(begin, end, 0, f)</code></td><td><code>reduce(f, xs, 0)</code></td></tr>
+          <tr><td>Reverse sort</td><td><code>std::sort(..., std::greater&lt;&gt;())</code></td><td><code>sorted(xs, key=..., reverse=True)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-sets-and-tuples.html">15. Sets &amp; Tuples</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Set literal</td><td><code>std::set&lt;int&gt; s = {1, 2};</code></td><td><code>{1, 2}</code> (but <code>{}</code> is an empty dict &mdash; use <code>set()</code>)</td></tr>
+          <tr><td>Membership</td><td><code>s.count(x) &gt; 0</code> or <code>s.contains(x)</code> (C++20)</td><td><code>x in s</code></td></tr>
+          <tr><td>Union / intersection / diff</td><td><code>std::set_union</code> / <code>std::set_intersection</code> / <code>std::set_difference</code> with iterators</td><td><code>a | b</code>, <code>a &amp; b</code>, <code>a - b</code></td></tr>
+          <tr><td>Tuple</td><td><code>std::tuple&lt;std::string, int&gt;</code> (fixed types, but reassignable)</td><td><code>("a", 1)</code> (truly immutable)</td></tr>
+          <tr><td>Unpack</td><td><code>auto [x, y] = t;</code></td><td><code>x, y = t</code></td></tr>
+          <tr><td>Named fields</td><td><code>struct</code> or class</td><td><code>namedtuple("P", ["x", "y"])</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-dataclasses.html">16. Dataclasses</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Data holder</td><td><code>struct</code> / plain <code>class</code></td><td><code>@dataclass</code></td></tr>
+          <tr><td>Field</td><td><code>int x;</code></td><td><code>x: int</code></td></tr>
+          <tr><td>Default</td><td><code>std::string label = "";</code></td><td><code>label: str = ""</code></td></tr>
+          <tr><td>Mutable default</td><td><code>std::vector&lt;Tag&gt; tags;</code></td><td><code>field(default_factory=list)</code></td></tr>
+          <tr><td>Immutable</td><td><code>const</code> members / <code>const Point</code></td><td><code>frozen=True</code></td></tr>
+          <tr><td>Value equality</td><td><code>operator==(...) const = default;</code></td><td><code>__eq__</code> for free</td></tr>
+          <tr><td>Ordering</td><td><code>operator&lt;=&gt;</code> (or custom comparator)</td><td><code>order=True</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-type-hints.html">17. Type Hints</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Param annotation</td><td><code>(const std::string&amp; name)</code></td><td><code>(name: str)</code></td></tr>
+          <tr><td>Return annotation</td><td><code>int f(...) {</code></td><td><code>) -&gt; int:</code></td></tr>
+          <tr><td>Array / List</td><td><code>std::vector&lt;int&gt;</code></td><td><code>list[int]</code></td></tr>
+          <tr><td>Map / Dict</td><td><code>std::map&lt;std::string, int&gt;</code></td><td><code>dict[str, int]</code></td></tr>
+          <tr><td>Nullable</td><td><code>std::optional&lt;T&gt;</code></td><td><code>T | None</code> or <code>Optional[T]</code></td></tr>
+          <tr><td>Enforcement</td><td>compiler (build fails)</td><td>none at runtime (tools only)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-context-managers.html">18. Context Managers</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Scoped cleanup</td><td>destructor runs on scope exit (RAII)</td><td><code>with cm:</code></td></tr>
+          <tr><td>Auto-dispose</td><td><code>{ Resource r; … }</code></td><td><code>with … as r:</code></td></tr>
+          <tr><td>Setup</td><td>constructor</td><td><code>__enter__</code></td></tr>
+          <tr><td>Teardown</td><td><code>~Resource()</code></td><td><code>__exit__(self, et, e, tb)</code></td></tr>
+          <tr><td>Quick manager</td><td>—</td><td><code>@contextmanager</code> + <code>yield</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-collections-module.html">19. The collections Module</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Count items</td><td><code>m[k]++;</code></td><td><code>Counter(items)</code></td></tr>
+          <tr><td>Top N</td><td>sort entries yourself</td><td><code>counter.most_common(3)</code></td></tr>
+          <tr><td>Group into lists</td><td><code>groups[k].push_back(v);</code></td><td><code>defaultdict(list)</code></td></tr>
+          <tr><td>Named record</td><td><code>struct P { int x; };</code></td><td><code>namedtuple("P", ["x"])</code></td></tr>
+          <tr><td>Field access</td><td><code>p.x</code></td><td><code>p.x</code> (also <code>p[0]</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Python</th></tr>
+          <tr><td>Record type</td><td><code>struct</code></td><td><code>@dataclass</code></td></tr>
+          <tr><td>Keyed store</td><td><code>std::map&lt;K, V&gt;</code></td><td><code>dict</code></td></tr>
+          <tr><td>Membership</td><td><code>map.count(k)</code></td><td><code>k in d</code></td></tr>
+          <tr><td>Custom error</td><td><code>class E : public std::runtime_error {}</code></td><td><code>class E(Exception): pass</code></td></tr>
+          <tr><td>Signal an error</td><td><code>throw E(...);</code></td><td><code>raise E()</code></td></tr>
+          <tr><td>Reduce/sum</td><td><code>std::accumulate(v.begin(), v.end(), 0.0, ...)</code></td><td><code>sum(x for x in arr)</code></td></tr>
+          <tr><td>Filter + map + sort</td><td><code>copy_if</code>/<code>transform</code> + <code>std::sort</code></td><td><code>sorted(f(x) for x in arr if g(x))</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

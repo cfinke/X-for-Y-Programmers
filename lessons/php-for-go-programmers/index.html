@@ -19,6 +19,271 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Go ⇄ PHP cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Declare + assign</td><td><code>x := 1</code></td><td><code>$x = 1;</code> (assignment is declaration)</td></tr>
+          <tr><td>Change type later</td><td>compile error</td><td>allowed — variables are dynamic</td></tr>
+          <tr><td>Numbers</td><td><code>int</code>, <code>int64</code>, <code>float64</code>, …</td><td><code>int</code> and <code>float</code></td></tr>
+          <tr><td>Typed signature</td><td><code>func f(x int) string</code></td><td><code>function f(int $x): string</code></td></tr>
+          <tr><td>Formatting</td><td><code>fmt.Sprintf("%s is %d", n, a)</code></td><td><code>"$n is $a"</code> in double quotes</td></tr>
+          <tr><td>Failure</td><td><code>return val, err</code></td><td><code>throw new Exception(...)</code> (lesson 16)</td></tr>
+          <tr><td>Naming</td><td><code>camelCase</code></td><td><code>snake_case</code> functions</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Format into a string</td><td><code>fmt.Sprintf("%s is %d", n, a)</code></td><td><code>"$n is $a"</code> or <code>"{$n} is {$a}"</code></td></tr>
+          <tr><td>Concatenate</td><td><code>a + b</code></td><td><code>$a . $b</code></td></tr>
+          <tr><td>Uppercase</td><td><code>strings.ToUpper(s)</code></td><td><code>strtoupper($s)</code></td></tr>
+          <tr><td>Substring test</td><td><code>strings.Contains(h, n)</code></td><td><code>str_contains($h, $n)</code></td></tr>
+          <tr><td>Length</td><td><code>len(s)</code></td><td><code>strlen($s)</code></td></tr>
+          <tr><td>Join</td><td><code>strings.Join(parts, ", ")</code></td><td><code>implode(", ", $parts)</code></td></tr>
+          <tr><td>Split</td><td><code>strings.Split(s, ",")</code></td><td><code>explode(",", $s)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-as-lists.html">3. Arrays as Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Literal</td><td><code>[]int{1, 2, 3}</code></td><td><code>[1, 2, 3]</code></td></tr>
+          <tr><td>Append</td><td><code>s = append(s, x)</code></td><td><code>$s[] = $x;</code></td></tr>
+          <tr><td>Length</td><td><code>len(s)</code></td><td><code>count($s)</code></td></tr>
+          <tr><td>Membership</td><td><code>slices.Contains(s, x)</code></td><td><code>in_array($x, $s, true)</code></td></tr>
+          <tr><td>Sum</td><td><code>for range</code> loop</td><td><code>array_sum($s)</code></td></tr>
+          <tr><td>Index</td><td><code>s[0]</code></td><td><code>$s[0]</code></td></tr>
+          <tr><td>Semantics</td><td>slice header, shared backing array</td><td>value: copies on assign/pass (copy-on-write)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-associative-arrays.html">4. Associative Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Literal</td><td><code>map[string]int{"a": 1}</code></td><td><code>['a' =&gt; 1]</code></td></tr>
+          <tr><td>Read with default</td><td><code>v, ok := m[k]</code> + <code>if</code></td><td><code>$m[$k] ?? $default</code></td></tr>
+          <tr><td>Key exists?</td><td><code>_, ok := m[k]</code></td><td><code>array_key_exists($k, $m)</code></td></tr>
+          <tr><td>Set</td><td><code>m[k] = v</code></td><td><code>$m[$k] = $v;</code></td></tr>
+          <tr><td>Delete</td><td><code>delete(m, k)</code></td><td><code>unset($m[$k]);</code></td></tr>
+          <tr><td>Iterate</td><td><code>for k, v := range m</code></td><td><code>foreach ($m as $k =&gt; $v)</code></td></tr>
+          <tr><td>Iteration order</td><td>randomized on purpose</td><td><strong>insertion order, guaranteed</strong></td></tr>
+          <tr><td>All keys / values</td><td>manual loop</td><td><code>array_keys($m)</code> / <code>array_values($m)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Signature</td><td><code>func f(x int) string</code></td><td><code>function f(int $x): string</code></td></tr>
+          <tr><td>Default value</td><td>— (write a wrapper)</td><td><code>string $g = "Hello"</code></td></tr>
+          <tr><td>Optional / nullable</td><td><code>*string</code> + nil check</td><td><code>?string $x = null</code></td></tr>
+          <tr><td>Either-or type</td><td><code>any</code> + type switch</td><td><code>int|string</code> + <code>is_int()</code></td></tr>
+          <tr><td>Readable call sites</td><td>functional-options pattern</td><td><code>f(name: "Ada")</code></td></tr>
+          <tr><td>No return value</td><td>omit the type</td><td><code>: void</code></td></tr>
+          <tr><td>Multiple returns</td><td><code>(int, error)</code></td><td>return an array, or throw (Lesson 16)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-handling.html">6. Null, ?? &amp; ?-&gt;</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>The absent value</td><td><code>nil</code> (behavior varies by kind) + zero values</td><td><code>null</code>, one value for everything</td></tr>
+          <tr><td>Nilable type</td><td><code>*Address</code></td><td><code>?Address</code></td></tr>
+          <tr><td>Map lookup with default</td><td><code>v, ok := m[k]</code> + <code>if</code></td><td><code>$m[$k] ?? $def</code></td></tr>
+          <tr><td>Deep access</td><td>nil check per hop, or panic</td><td><code>$u?->address?->city</code> — null anywhere → null</td></tr>
+          <tr><td>Null check</td><td><code>u == nil</code></td><td><code>$u === null</code>; <code>isset($x)</code> = declared and not null</td></tr>
+          <tr><td>Assign-if-absent</td><td><code>if _, ok := m[k]; !ok { m[k] = d }</code></td><td><code>$m[$k] ??= $d;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-comparisons-and-juggling.html">7. Comparisons &amp; Type Juggling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Equality</td><td><code>==</code> (compile-time type-checked)</td><td><code>===</code> — use it always; <code>==</code> juggles</td></tr>
+          <tr><td>Inequality</td><td><code>!=</code></td><td><code>!==</code></td></tr>
+          <tr><td>Mixed-type compare</td><td>won't compile</td><td><code>"1" == 1</code> is true; <code>"1" === 1</code> is false</td></tr>
+          <tr><td>Condition type</td><td>must be <code>bool</code></td><td>anything — coerced via truthiness</td></tr>
+          <tr><td>Falsy values</td><td>only <code>false</code></td><td><code>false, 0, 0.0, "", "0", [], null</code></td></tr>
+          <tr><td>Three-way compare</td><td><code>cmp.Compare(a, b)</code></td><td><code>$a &lt;=&gt; $b</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-match.html">8. Control Flow &amp; match</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>if</td><td><code>if x &gt; 0 { }</code></td><td><code>if ($x &gt; 0) { }</code> — parens required</td></tr>
+          <tr><td>Value switch</td><td><code>switch day { case ...: }</code></td><td><code>match ($day) { ... =&gt; ... }</code> (skip legacy <code>switch</code>)</td></tr>
+          <tr><td>Condition chain</td><td><code>switch { case a &gt; b: }</code></td><td><code>match (true) { $a &gt; $b =&gt; ... }</code></td></tr>
+          <tr><td>Grouped cases</td><td><code>case "sat", "sun":</code></td><td><code>"sat", "sun" =&gt;</code></td></tr>
+          <tr><td>Comparison</td><td>strict (typed)</td><td><code>match</code>: strict <code>===</code>; <code>switch</code>: loose <code>==</code></td></tr>
+          <tr><td>Statement or expression?</td><td>statement</td><td><code>match</code> is an expression — assign it, return it</td></tr>
+          <tr><td>Unhandled value</td><td>runs nothing</td><td>throws <code>UnhandledMatchError</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Define a type</td><td><code>type T struct {...}</code> + external methods</td><td><code>class T { ... }</code> — everything inside</td></tr>
+          <tr><td>Construct</td><td><code>NewT(...)</code> (convention)</td><td><code>new T(...)</code> → <code>__construct</code> (language feature)</td></tr>
+          <tr><td>Fields + constructor</td><td>struct block + assignment in <code>NewT</code></td><td>promoted: <code>__construct(private int $x = 0)</code></td></tr>
+          <tr><td>Receiver</td><td><code>func (a *T) M()</code> — named, explicit</td><td><code>$this</code>, implicit in signature, mandatory in body</td></tr>
+          <tr><td>Member access</td><td><code>a.field</code> (auto-deref)</td><td><code>$a->field</code> (also auto-deref)</td></tr>
+          <tr><td>Visibility</td><td><code>Exported</code> / <code>unexported</code> case</td><td><code>public</code> / <code>private</code> / <code>protected</code></td></tr>
+          <tr><td>Copy semantics</td><td>value receivers copy; pointers don't</td><td>objects are handles — never copied on assignment or call</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-interfaces-and-inheritance.html">10. Interfaces, Inheritance &amp; Abstracts</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Interface</td><td>implicit satisfaction</td><td><code>interface Shape {}</code> + explicit <code>implements Shape</code></td></tr>
+          <tr><td>Inheritance</td><td>none — embed instead</td><td><code>extends</code> (single parent only)</td></tr>
+          <tr><td>Contract + shared code</td><td>interface + embedded helper type</td><td><code>abstract class</code> — both in one</td></tr>
+          <tr><td>Required method</td><td>interface method</td><td><code>abstract public function area(): float;</code></td></tr>
+          <tr><td>Constructor chaining</td><td>—</td><td><code>parent::__construct(...)</code></td></tr>
+          <tr><td>Type test</td><td>type switch / assertion</td><td><code>$x instanceof Shape</code></td></tr>
+          <tr><td>Multiple contracts</td><td>satisfy many interfaces freely</td><td><code>implements A, B</code> — many interfaces, one <code>extends</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Declare</td><td><code>type S int</code> + <code>iota</code> const block</td><td><code>enum S: string { case A = 'a'; }</code></td></tr>
+          <tr><td>To raw value</td><td>hand-written <code>String()</code></td><td><code>$s-&gt;value</code></td></tr>
+          <tr><td>Case name</td><td>—</td><td><code>$s-&gt;name</code> (e.g. <code>"Pending"</code>)</td></tr>
+          <tr><td>From raw value</td><td>hand-written map/switch</td><td><code>S::from($raw)</code> (throws) / <code>S::tryFrom($raw)</code> (null)</td></tr>
+          <tr><td>All values</td><td>manual slice</td><td><code>S::cases()</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>linters, maybe</td><td><code>match</code> throws on an unhandled case</td></tr>
+          <tr><td>Invalid values</td><td><code>OrderStatus(42)</code> — legal</td><td>cannot be constructed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Share method code</td><td>embed a struct</td><td><code>trait T { ... }</code> + <code>use T;</code></td></tr>
+          <tr><td>How methods arrive</td><td>promoted, still the inner type's</td><td>flattened in, as if written in the class</td></tr>
+          <tr><td>Call back into host</td><td>not possible via embedding</td><td><code>$this-&gt;method()</code> — dynamic dispatch</td></tr>
+          <tr><td>Multiple sources</td><td>embed several structs</td><td><code>use A, B;</code></td></tr>
+          <tr><td>Name clash</td><td>ambiguous selector error</td><td><code>use A, B { A::f insteadof B; }</code></td></tr>
+          <tr><td>Require host methods</td><td>—</td><td><code>abstract public function name(): string;</code> in the trait</td></tr>
+          <tr><td>State</td><td>embedded struct's fields</td><td>traits can declare properties too</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-array-functions.html">13. array_map, array_filter &amp; Friends</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Transform</td><td><code>for range</code> + <code>append</code></td><td><code>array_map($fn, $arr)</code></td></tr>
+          <tr><td>Select</td><td><code>for range</code> + <code>if</code> + <code>append</code></td><td><code>array_filter($arr, $fn)</code></td></tr>
+          <tr><td>Fold</td><td>accumulator loop</td><td><code>array_reduce($arr, $fn, $init)</code></td></tr>
+          <tr><td>Sum</td><td>accumulator loop</td><td><code>array_sum($arr)</code></td></tr>
+          <tr><td>Inline callback</td><td><code>func(p Product) string { … }</code></td><td><code>fn($p) =&gt; $p['name']</code></td></tr>
+          <tr><td>Argument order</td><td>n/a</td><td>map: callback first; filter: array first</td></tr>
+          <tr><td>Keys after filter</td><td>slices reindex by nature</td><td>preserved — call <code>array_values()</code></td></tr>
+          <tr><td>Sort with comparator</td><td><code>slices.SortFunc</code></td><td><code>usort($arr, $fn)</code> (in place, by reference)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-spread.html">14. List Assignment &amp; Spread</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Multiple assignment</td><td><code>a, b := f()</code></td><td><code>[$a, $b] = f();</code></td></tr>
+          <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+          <tr><td>Skip a value</td><td><code>_, b := f()</code></td><td><code>[, $b] = f();</code></td></tr>
+          <tr><td>Pick named fields</td><td>—</td><td><code>['name' =&gt; $n] = $user;</code></td></tr>
+          <tr><td>Variadic parameter</td><td><code>func f(nums ...int)</code></td><td><code>function f(int ...$nums)</code></td></tr>
+          <tr><td>Spread at call site</td><td><code>f(nums...)</code> (dots after)</td><td><code>f(...$nums)</code> (dots before)</td></tr>
+          <tr><td>Concatenate</td><td><code>append(a, b...)</code></td><td><code>[...$a, ...$b]</code></td></tr>
+          <tr><td>Destructure in a loop</td><td><code>for _, p := range pairs</code></td><td><code>foreach ($pairs as [$x, $y])</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-closures-and-callables.html">15. Closures &amp; Callables</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Anonymous function</td><td><code>func(x int) int { ... }</code></td><td><code>function (int $x) { ... }</code></td></tr>
+          <tr><td>Capture a variable</td><td>implicit, by reference</td><td><code>use ($n)</code> — explicit, by value (snapshot)</td></tr>
+          <tr><td>Capture by reference</td><td><em>the only mode</em></td><td><code>use (&amp;$n)</code> — opt-in per variable</td></tr>
+          <tr><td>Short single expression</td><td>—</td><td><code>fn($x) =&gt; $x * $n</code> (auto-captures by value)</td></tr>
+          <tr><td>Function-typed parameter</td><td><code>f func(int) int</code></td><td><code>callable $f</code> / <code>Closure $f</code></td></tr>
+          <tr><td>Function-typed return</td><td><code>func() int</code></td><td><code>Closure</code></td></tr>
+          <tr><td>Named function as a value</td><td><code>strings.ToUpper</code></td><td><code>strtoupper(...)</code> (first-class callable) or <code>'strtoupper'</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Signal failure</td><td><code>return 0, err</code></td><td><code>throw new SomeException("msg");</code></td></tr>
+          <tr><td>Propagate upward</td><td><code>if err != nil { return 0, err }</code> everywhere</td><td>automatic — do nothing</td></tr>
+          <tr><td>Handle by type</td><td><code>errors.As(err, &amp;target)</code></td><td><code>catch (SomeException $e)</code> — subclasses match too</td></tr>
+          <tr><td>Custom error</td><td>type with <code>Error() string</code></td><td><code>class MyError extends Exception {}</code></td></tr>
+          <tr><td>Guaranteed cleanup</td><td><code>defer</code></td><td><code>finally { ... }</code></td></tr>
+          <tr><td>The message</td><td><code>err.Error()</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+          <tr><td>Catch anything</td><td><code>recover()</code></td><td><code>catch (Throwable $e)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-static-const-readonly.html">17. Static, Constants &amp; readonly</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Constant</td><td><code>const DefaultName = "guest"</code></td><td><code>const DEFAULT_NAME = "guest";</code> in a class</td></tr>
+          <tr><td>Access it</td><td><code>pkg.DefaultName</code></td><td><code>Config::DEFAULT_NAME</code></td></tr>
+          <tr><td>Shared state</td><td><code>var count int</code></td><td><code>private static int $count = 0;</code></td></tr>
+          <tr><td>Call without instance</td><td><code>pkg.Increment()</code></td><td><code>Counter::increment()</code></td></tr>
+          <tr><td>Self-reference</td><td>unqualified name in package</td><td><code>self::$count</code>, <code>self::CONST</code></td></tr>
+          <tr><td>Write-once field</td><td>— (convention only)</td><td><code>public readonly string $name</code></td></tr>
+          <tr><td>Violation caught</td><td>never</td><td><code>Error</code> thrown at runtime</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-generators.html">18. Generators &amp; Iterables</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go 1.23</th><th>PHP</th></tr>
+          <tr><td>Define an iterator</td><td><code>func(yield func(int) bool)</code></td><td>any function containing <code>yield</code></td></tr>
+          <tr><td>Produce a value</td><td><code>if !yield(v) { return }</code></td><td><code>yield $v;</code></td></tr>
+          <tr><td>Return type</td><td><code>iter.Seq[int]</code></td><td><code>Generator</code></td></tr>
+          <tr><td>Consume</td><td><code>for v := range seq</code></td><td><code>foreach ($gen as $v)</code></td></tr>
+          <tr><td>Early stop</td><td><code>break</code> → yield returns false</td><td><code>break</code> — generator stays suspended</td></tr>
+          <tr><td>Collect all</td><td><code>slices.Collect(seq)</code></td><td><code>iterator_to_array($gen)</code></td></tr>
+          <tr><td>Array-or-sequence param</td><td>two signatures (or convert)</td><td><code>iterable</code> accepts both</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Serialize</td><td><code>json.Marshal(v)</code></td><td><code>json_encode($v)</code></td></tr>
+          <tr><td>Parse</td><td><code>json.Unmarshal(raw, &amp;v)</code></td><td><code>json_decode($raw, true)</code></td></tr>
+          <tr><td>Field naming</td><td><code>json:"snake_name"</code> tags</td><td>array keys are used verbatim</td></tr>
+          <tr><td>Missing field</td><td>zero value</td><td>key absent — read with <code>?? $default</code></td></tr>
+          <tr><td>Bad input</td><td><code>err != nil</code></td><td><code>null</code> silently, or <code>JSON_THROW_ON_ERROR</code> → <code>JsonException</code></td></tr>
+          <tr><td>Pretty output</td><td><code>json.MarshalIndent</code></td><td><code>json_encode($v, JSON_PRETTY_PRINT)</code></td></tr>
+          <tr><td>Objects instead of arrays</td><td>—</td><td>omit the <code>true</code> → <code>stdClass</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>PHP</th></tr>
+          <tr><td>Copying a collection of objects</td><td><code>[]*Item</code> copy shares the pointees</td><td>array copy shares the objects</td></tr>
+          <tr><td>Shallow copy of one object</td><td><code>copied := *it</code></td><td><code>$copy = clone $it;</code></td></tr>
+          <tr><td>Maybe-absent result</td><td><code>*Item</code>, check <code>nil</code></td><td><code>?Item</code>, check <code>null</code> (or chain with <code>?-&gt;</code>)</td></tr>
+          <tr><td>Sum a field</td><td><code>for</code> loop + accumulator</td><td><code>array_reduce($items, fn(...), 0)</code></td></tr>
+          <tr><td>Transform</td><td><code>for</code> loop building a new slice</td><td><code>array_map(fn($it) =&gt; ..., $items)</code></td></tr>
+          <tr><td>Select + reindex</td><td><code>for</code> loop with <code>append</code></td><td><code>array_values(array_filter(...))</code></td></tr>
+          <tr><td>Deep-copy hook</td><td>write it by hand</td><td><code>__clone()</code> method, called on <code>clone</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

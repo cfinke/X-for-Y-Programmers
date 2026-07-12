@@ -1,11 +1,8 @@
 // Lesson manifest — used by index.html for the lesson list and by
 // harness.js for prev/next navigation. Keep in sync with lessons/*.html.
-//
-// NOTE: lessons/02-*.html does not exist in this course yet — numbering
-// jumps from 01 to 03 in the source lesson files themselves, so this
-// manifest reflects that gap rather than inventing a lesson 2.
 const MANIFEST = [
   { n: 1,  file: "01-variables-and-types.html",           title: "Variables & Types",                  blurb: "let/mut and inference → explicit types, mutable unless final." },
+  { n: 2,  file: "02-strings.html",                        title: "Strings",                            blurb: "&str/String and format! → one String, String.format, StringBuilder." },
   { n: 3,  file: "03-arrays-and-lists.html",               title: "Arrays & Lists",                     blurb: "[T; N] and Vec<T> → T[] and ArrayList<T>, minus the const N." },
   { n: 4,  file: "04-maps.html",                           title: "Maps",                               blurb: "HashMap stays HashMap, now behind the Map<K, V> interface." },
   { n: 5,  file: "05-methods.html",                        title: "Methods",                             blurb: "Free fns and impl blocks → every method lives inside a class." },

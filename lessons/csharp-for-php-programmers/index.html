@@ -19,6 +19,246 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>PHP ⇄ C# cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Typed variable</td><td><code>int $x = 1;</code> (rare, function params/props only)</td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred variable</td><td><code>$x = 1;</code></td><td><code>var x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>const X = 1;</code> / <code>define('X', 1);</code></td><td><code>const int x = 1;</code></td></tr>
+          <tr><td>Interpolation</td><td><code>"{$x}"</code></td><td><code>$"{x}"</code></td></tr>
+          <tr><td>Free function</td><td><code>function f() {}</code></td><td><code>static</code> method in a class</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Uppercase</td><td><code>strtoupper($s)</code></td><td><code>s.ToUpper()</code></td></tr>
+          <tr><td>Contains</td><td><code>str_contains($s, $x)</code></td><td><code>s.Contains(x)</code></td></tr>
+          <tr><td>Substring</td><td><code>substr($s, 1, 3)</code></td><td><code>s.Substring(1, 3)</code> (start, <em>length</em>)</td></tr>
+          <tr><td>Replace</td><td><code>str_replace("a", "b", $s)</code></td><td><code>s.Replace("a", "b")</code> (replaces all)</td></tr>
+          <tr><td>Join</td><td><code>implode($sep, $arr)</code></td><td><code>string.Join(sep, arr)</code> (static)</td></tr>
+          <tr><td>Build in loop</td><td><code>$s .= $piece</code></td><td><code>sb.Append(piece)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Fixed-size block</td><td>—</td><td><code>new int[3]</code></td></tr>
+          <tr><td>Array literal</td><td><code>[1, 2, 3]</code></td><td><code>new int[] { 1, 2, 3 }</code></td></tr>
+          <tr><td>Growable list</td><td><code>[1, 2, 3]</code></td><td><code>new List&lt;int&gt; { 1, 2, 3 }</code></td></tr>
+          <tr><td>Length</td><td><code>count($a)</code></td><td><code>a.Length</code> / <code>list.Count</code></td></tr>
+          <tr><td>Append</td><td><code>$a[] = x;</code></td><td><code>list.Add(x)</code></td></tr>
+          <tr><td>Membership</td><td><code>in_array(x, $a)</code></td><td><code>list.Contains(x)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-dictionaries.html">4. Dictionaries</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP (array)</th><th>C#</th></tr>
+          <tr><td>Create + fill</td><td><code>["a" =&gt; 1]</code></td><td><code>new Dictionary&lt;string,int&gt; { { "a", 1 } }</code></td></tr>
+          <tr><td>Insert/overwrite</td><td><code>$m["a"] = 1;</code></td><td><code>d["a"] = 1;</code></td></tr>
+          <tr><td>Insert (fail if exists)</td><td>—</td><td><code>d.Add("a", 1)</code></td></tr>
+          <tr><td>Safe read</td><td><code>$m["a"] ?? $default</code></td><td><code>d.TryGetValue("a", out v)</code></td></tr>
+          <tr><td>Has key</td><td><code>array_key_exists("a", $m)</code></td><td><code>d.ContainsKey("a")</code></td></tr>
+          <tr><td>Iterate</td><td><code>foreach ($m as $k =&gt; $v)</code></td><td><code>foreach (var kv in d)</code> → <code>kv.Key</code>, <code>kv.Value</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Optional parameter</td><td><code>function f($x = 1) {}</code></td><td><code>F(int x = 1)</code></td></tr>
+          <tr><td>Named argument</td><td><code>f(x: 1)</code> (PHP 8+)</td><td><code>F(x: 1)</code></td></tr>
+          <tr><td>Rest / params</td><td><code>...$xs</code></td><td><code>params int[] xs</code></td></tr>
+          <tr><td>Overloading</td><td>not supported, one body</td><td>a full body per signature</td></tr>
+          <tr><td>Extra output</td><td>reference param, unchecked</td><td><code>out</code> parameter, compiler-checked</td></tr>
+          <tr><td>Mutate caller's variable</td><td><code>function f(&$x) {}</code></td><td><code>ref</code> parameter</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-classes-and-properties.html">6. Classes &amp; Properties</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Mutable property</td><td><code>public $x = 0;</code></td><td><code>int X { get; set; }</code></td></tr>
+          <tr><td>Read-only from outside</td><td>private property + getter method (no direct equiv)</td><td><code>int X { get; private set; }</code></td></tr>
+          <tr><td>Immutable after construction</td><td><code>readonly $x;</code></td><td><code>int X { get; }</code></td></tr>
+          <tr><td>Computed getter</td><td><code>function getTotal() {…}</code></td><td><code>int Total => …;</code></td></tr>
+          <tr><td>Private field</td><td><code>private $x;</code></td><td><code>private int x;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-structs-and-value-types.html">7. Structs &amp; Value Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Value type</td><td>only scalars &amp; arrays</td><td><code>struct</code> (copied on assign)</td></tr>
+          <tr><td>Reference type</td><td>every object</td><td><code>class</code> (shared on assign)</td></tr>
+          <tr><td>Immutable field</td><td><code>public readonly int $x;</code></td><td><code>public readonly int X;</code></td></tr>
+          <tr><td>Value equality</td><td>manual / <code>==</code> on objects (compares properties)</td><td>override <code>Equals</code> + <code>GetHashCode</code></td></tr>
+          <tr><td>Default value</td><td><code>null</code> (uninitialized)</td><td><code>default(Point)</code> — all fields zeroed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Declare</td><td><code>interface Shape {}</code></td><td><code>interface IShape {}</code></td></tr>
+          <tr><td>Implement</td><td><code>class Box implements Shape</code></td><td><code>class Box : IShape</code></td></tr>
+          <tr><td>Conformance</td><td>nominal (explicit)</td><td>nominal (explicit)</td></tr>
+          <tr><td>Read-only property</td><td><code>public readonly string $name;</code></td><td><code>string Name { get; }</code></td></tr>
+          <tr><td>Multiple</td><td><code>implements A, B</code></td><td><code>: A, B</code></td></tr>
+          <tr><td>Member bodies</td><td>none</td><td>none (in C# 7.3)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-inheritance-and-abstract.html">9. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Extend a class</td><td><code>class D extends B</code></td><td><code>class D : B</code></td></tr>
+          <tr><td>Call base ctor</td><td><code>parent::__construct(x)</code></td><td><code>: base(x)</code></td></tr>
+          <tr><td>Abstract method</td><td><code>abstract public function f(): T;</code></td><td><code>public abstract T F();</code></td></tr>
+          <tr><td>Overridable method</td><td>every method (unless <code>final</code>)</td><td>only <code>virtual</code>/<code>abstract</code></td></tr>
+          <tr><td>Override</td><td>implicit</td><td><code>override</code> keyword required</td></tr>
+          <tr><td>Block subclassing</td><td><code>final class</code></td><td><code>sealed class</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-enums.html">10. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Declare</td><td><code>enum P { case Low; case Medium; case High; }</code></td><td><code>enum P { Low, Medium, High }</code></td></tr>
+          <tr><td>Explicit value</td><td><code>case Low = 1;</code> (backed enum)</td><td><code>Low = 1</code></td></tr>
+          <tr><td>To number</td><td><code>$p-&gt;value</code></td><td><code>(int)p</code></td></tr>
+          <tr><td>From number</td><td><code>P::from($n)</code></td><td><code>(P)n</code></td></tr>
+          <tr><td>To name</td><td><code>$p-&gt;name</code></td><td><code>p.ToString()</code></td></tr>
+          <tr><td>From name</td><td><code>constant("P::High")</code></td><td><code>Enum.Parse(typeof(P), "High")</code></td></tr>
+          <tr><td>Bit flags</td><td>manual numbers</td><td><code>[Flags]</code>, <code>|</code>, <code>&amp;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-generics.html">11. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Generic class</td><td><code>class Box { /* untyped $item */ }</code></td><td><code>class Box&lt;T&gt; {}</code></td></tr>
+          <tr><td>Generic method</td><td><code>function identity(mixed $x): mixed</code></td><td><code>T Id&lt;T&gt;(T x)</code></td></tr>
+          <tr><td>Bound / constraint</td><td><em>none — check with instanceof</em></td><td><code>where T : C</code></td></tr>
+          <tr><td>Construct a T</td><td><em>n/a — no type parameter to construct</em></td><td><code>new T()</code> with <code>where T : new()</code></td></tr>
+          <tr><td>Reference-type only</td><td><em>n/a</em></td><td><code>where T : class</code></td></tr>
+          <tr><td>Value-type only</td><td><em>n/a</em></td><td><code>where T : struct</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-collections-and-linq.html">12. Collections &amp; LINQ</a></h3>
+        <table>
+          <tr><th>Operation</th><th>PHP</th><th>C# / LINQ</th></tr>
+          <tr><td>Filter</td><td><code>array_filter($arr, p)</code></td><td><code>Where(p)</code></td></tr>
+          <tr><td>Project</td><td><code>array_map(f, $arr)</code></td><td><code>Select(f)</code></td></tr>
+          <tr><td>Sort (primary + tie-break)</td><td>one comparator via <code>usort</code></td><td><code>OrderBy(...).ThenBy(...)</code></td></tr>
+          <tr><td>First match</td><td>manual loop, or <code>array_filter(...)[0] ?? null</code></td><td><code>First</code> / <code>FirstOrDefault</code></td></tr>
+          <tr><td>Exists / for-all</td><td>manual loop with a flag</td><td><code>Any</code> / <code>All</code></td></tr>
+          <tr><td>Count</td><td><code>count(array_filter(...))</code></td><td><code>Count(p)</code></td></tr>
+          <tr><td>Sum</td><td><code>array_sum(array_map(f, $arr))</code></td><td><code>Sum(f)</code></td></tr>
+          <tr><td>Fold</td><td><code>array_reduce($arr, f, seed)</code></td><td><code>Aggregate(seed, f)</code></td></tr>
+          <tr><td>Group</td><td>manual assoc-array loop</td><td><code>GroupBy(k)</code></td></tr>
+          <tr><td>Materialize</td><td>already an array</td><td><code>ToList()</code> / <code>ToDictionary(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-delegates-and-lambdas.html">13. Delegates &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Value-returning fn type</td><td><code>callable</code></td><td><code>Func&lt;int, int&gt;</code></td></tr>
+          <tr><td>Void fn type</td><td><code>callable</code> (return ignored)</td><td><code>Action&lt;int&gt;</code></td></tr>
+          <tr><td>Boolean test</td><td><code>callable</code> (returns bool)</td><td><code>Predicate&lt;int&gt;</code></td></tr>
+          <tr><td>Named fn type</td><td>no equivalent — just <code>callable</code></td><td><code>delegate int Op(int a, int b);</code></td></tr>
+          <tr><td>Arrow / lambda</td><td><code>fn($x) =&gt; $x + 1</code></td><td><code>x =&gt; x + 1</code></td></tr>
+          <tr><td>Closure</td><td><code>fn($n) =&gt; fn($x) =&gt; $x + $n</code></td><td><code>x =&gt; x + n</code> (captures <code>n</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-nullable-and-null.html">14. Nullable &amp; Null Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C# 7.3</th></tr>
+          <tr><td>Nullable value</td><td><code>?int</code> / <code>int|null</code></td><td><code>int?</code> / <code>Nullable&lt;int&gt;</code></td></tr>
+          <tr><td>Has a value?</td><td><code>$n !== null</code></td><td><code>n.HasValue</code></td></tr>
+          <tr><td>Unwrap</td><td><code>$n</code> (PHP won't statically stop you)</td><td><code>n.Value</code> (throws if empty)</td></tr>
+          <tr><td>Unwrap or default</td><td><code>$n ?? 0</code></td><td><code>n.GetValueOrDefault()</code> or <code>n ?? 0</code></td></tr>
+          <tr><td>Safe navigation</td><td><code>$obj?->prop</code></td><td><code>obj?.Prop</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-exceptions.html">15. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Throw</td><td><code>throw new Exception("x")</code></td><td><code>throw new Exception("x")</code></td></tr>
+          <tr><td>Catch by type</td><td><code>catch (T $e)</code></td><td><code>catch (T e)</code></td></tr>
+          <tr><td>Custom exception</td><td><code>class E extends Exception</code></td><td><code>class E : Exception</code></td></tr>
+          <tr><td>Message</td><td><code>$e->getMessage()</code></td><td><code>e.Message</code></td></tr>
+          <tr><td>Deterministic cleanup</td><td><code>try/finally + close()</code></td><td><code>using (var x = …)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-pattern-matching.html">16. Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C# 7.3</th></tr>
+          <tr><td>Type test + bind</td><td><code>is_int($x)</code> then use <code>$x</code> directly</td><td><code>o is int n</code></td></tr>
+          <tr><td>Class test + bind</td><td><code>$o instanceof Cat</code> then use <code>$o</code> directly</td><td><code>o is Cat c</code></td></tr>
+          <tr><td>Guard on a match</td><td><code>is_int($x) &amp;&amp; $x &lt; 0</code></td><td><code>o is int n &amp;&amp; n &lt; 0</code></td></tr>
+          <tr><td>Ignore the value</td><td>call the check, skip the assignment</td><td>discard <code>o is bool _</code></td></tr>
+          <tr><td>Null</td><td><code>$o === null</code></td><td><code>o == null</code> (matches no type pattern)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-tuples-and-deconstruction.html">17. Tuples &amp; Deconstruction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Tuple type</td><td><code>array</code> (untyped)</td><td><code>(int, string)</code></td></tr>
+          <tr><td>Named elements</td><td><code>["count" => ..., "name" => ...]</code></td><td><code>(int Count, string Name)</code></td></tr>
+          <tr><td>Construct</td><td><code>[1, "a"]</code></td><td><code>(1, "a")</code></td></tr>
+          <tr><td>Access</td><td><code>$t[0]</code></td><td><code>t.Item1</code> or <code>t.Count</code></td></tr>
+          <tr><td>Deconstruct</td><td><code>[$a, $b] = $t;</code></td><td><code>var (a, b) = t;</code></td></tr>
+          <tr><td>Array destructure</td><td><code>["x" => $x, "y" => $y] = $arr;</code></td><td><code>var (x, y) = p;</code> via <code>Deconstruct</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-iterators-and-yield.html">18. Iterators &amp; yield</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Generator function</td><td>any <code>function</code> containing <code>yield</code></td><td>method returning <code>IEnumerable&lt;T&gt;</code> with <code>yield</code></td></tr>
+          <tr><td>Emit a value</td><td><code>yield $x;</code></td><td><code>yield return x;</code></td></tr>
+          <tr><td>Stop early</td><td><code>return;</code></td><td><code>yield break;</code></td></tr>
+          <tr><td>Consume</td><td><code>foreach</code></td><td><code>foreach</code> / LINQ</td></tr>
+          <tr><td>Iterable class</td><td><code>IteratorAggregate::getIterator()</code></td><td><code>GetEnumerator()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-equality-and-comparable.html">19. Equality &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Value equality</td><td><code>==</code> (built-in) or hand-written <code>equals()</code></td><td><code>IEquatable&lt;T&gt;</code> + <code>Equals</code> overrides</td></tr>
+          <tr><td>Hashing a key</td><td>serialize into a string array key</td><td><code>GetHashCode()</code> override</td></tr>
+          <tr><td>Ordering</td><td><code>usort($arr, fn($a, $b) =&gt; …)</code> comparator</td><td><code>IComparable&lt;T&gt;.CompareTo</code></td></tr>
+          <tr><td>Operator</td><td>can't overload <code>==</code></td><td><code>operator ==</code> / <code>!=</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>C#</th></tr>
+          <tr><td>Constrained generic</td><td>no true generics — a docblock hint at best</td><td><code>class Repository&lt;T&gt; where T : IEntity</code></td></tr>
+          <tr><td>Keyed store</td><td><code>array $items = []</code></td><td><code>Dictionary&lt;int, T&gt;</code></td></tr>
+          <tr><td>Safe lookup</td><td><code>array_key_exists($id, $items)</code> then index</td><td><code>TryGetValue(id, out value)</code></td></tr>
+          <tr><td>Filter</td><td><code>array_filter($arr, $p)</code></td><td><code>seq.Where(p)</code> (LINQ)</td></tr>
+          <tr><td>Custom error</td><td><code>class E extends Exception</code></td><td><code>class E : Exception</code></td></tr>
+          <tr><td>Catch by type</td><td><code>catch (E $e) { }</code></td><td><code>catch (E ex) { }</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

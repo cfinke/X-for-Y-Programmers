@@ -19,6 +19,266 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Python ⇄ Ruby cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Declare a variable</td><td><code>x = 1</code></td><td><code>x = 1</code> (identical — assignment declares)</td></tr>
+          <tr><td>Integers</td><td><code>int</code>, arbitrary precision</td><td><code>Integer</code>, arbitrary precision too</td></tr>
+          <tr><td>What type is this?</td><td><code>type(x)</code></td><td><code>x.class</code></td></tr>
+          <tr><td>Is it a string?</td><td><code>isinstance(x, str)</code></td><td><code>x.is_a?(String)</code></td></tr>
+          <tr><td>Interpolation</td><td><code>f"{name}!"</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+          <tr><td>Return</td><td><code>return</code> required (else <code>None</code>)</td><td>last expression; <code>return</code> only for early exit</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Interpolation</td><td><code>f"{name}"</code></td><td><code>"#{name}"</code> — every double-quoted string</td></tr>
+          <tr><td>Literal string</td><td><code>r"raw-ish"</code> / plain</td><td><code>'no #{interpolation} here'</code> (single quotes)</td></tr>
+          <tr><td>Uppercase / lowercase</td><td><code>s.upper()</code> / <code>s.lower()</code></td><td><code>s.upcase</code> / <code>s.downcase</code></td></tr>
+          <tr><td>Substring test</td><td><code>"x" in s</code></td><td><code>s.include?("x")</code> — receiver flips</td></tr>
+          <tr><td>Length</td><td><code>len(s)</code></td><td><code>s.length</code> (or <code>s.size</code>)</td></tr>
+          <tr><td>Join</td><td><code>", ".join(words)</code></td><td><code>words.join(", ")</code> — flips back!</td></tr>
+          <tr><td>Strip whitespace</td><td><code>s.strip()</code></td><td><code>s.strip</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays.html">3. Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Append</td><td><code>nums.append(x)</code></td><td><code>nums &lt;&lt; x</code> or <code>nums.push(x)</code></td></tr>
+          <tr><td>Length</td><td><code>len(nums)</code></td><td><code>nums.size</code> / <code>nums.length</code></td></tr>
+          <tr><td>Membership</td><td><code>x in nums</code></td><td><code>nums.include?(x)</code></td></tr>
+          <tr><td>Last element</td><td><code>nums[-1]</code></td><td><code>nums[-1]</code>, or <code>nums.last</code></td></tr>
+          <tr><td>First element</td><td><code>nums[0]</code></td><td><code>nums[0]</code>, or <code>nums.first</code></td></tr>
+          <tr><td>Slice</td><td><code>nums[1:3]</code> (end exclusive)</td><td><code>nums[1..2]</code> inclusive, <code>nums[1...3]</code> exclusive</td></tr>
+          <tr><td>Sum</td><td><code>sum(nums)</code></td><td><code>nums.sum</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-hashes-and-symbols.html">4. Hashes &amp; Symbols</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Literal, fixed keys</td><td><code>{"apples": 3}</code></td><td><code>{ apples: 3 }</code> (symbol keys)</td></tr>
+          <tr><td>Literal, string keys</td><td><code>{"apples": 3}</code></td><td><code>{ "apples" =&gt; 3 }</code></td></tr>
+          <tr><td>Lookup, strict</td><td><code>d[k]</code> (raises)</td><td><code>h.fetch(k)</code> (raises)</td></tr>
+          <tr><td>Lookup, with default</td><td><code>d.get(k, 0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+          <tr><td>Lookup, forgiving</td><td>—</td><td><code>h[k]</code> → <code>nil</code> if missing</td></tr>
+          <tr><td>Iterate pairs</td><td><code>for k, v in d.items():</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+          <tr><td>Non-mutating update</td><td><code>{**d, k: v}</code></td><td><code>h.merge(k =&gt; v)</code></td></tr>
+          <tr><td>Keys</td><td><code>list(d.keys())</code></td><td><code>h.keys</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods &amp; Implicit Return</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Define a method</td><td><code>def f(x):</code> … dedent</td><td><code>def f(x)</code> … <code>end</code></td></tr>
+          <tr><td>Default value</td><td><code>def f(x, y=0):</code></td><td><code>def f(x, y = 0)</code></td></tr>
+          <tr><td>Keyword-only, required</td><td><code>def f(*, name):</code></td><td><code>def f(name:)</code></td></tr>
+          <tr><td>Keyword-only, optional</td><td><code>def f(*, age=0):</code></td><td><code>def f(age: 0)</code></td></tr>
+          <tr><td>Call with keywords</td><td><code>f(name="Ada")</code></td><td><code>f(name: "Ada")</code></td></tr>
+          <tr><td>Predicate naming</td><td><code>is_adult(x)</code></td><td><code>adult?(x)</code></td></tr>
+          <tr><td>Mutating variant</td><td>—</td><td><code>sort!</code>, <code>strip!</code> (the <code>!</code> warns you)</td></tr>
+          <tr><td>Give back a value</td><td><code>return x</code></td><td>make <code>x</code> the last expression</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nil-and-safe-navigation.html">6. Nil &amp; Safe Navigation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>The nothing value</td><td><code>None</code></td><td><code>nil</code> (an object: <code>NilClass</code>)</td></tr>
+          <tr><td>Safe attribute chain</td><td>rejected (PEP 505)</td><td><code>a&amp;.b&amp;.c</code></td></tr>
+          <tr><td>Is it nothing?</td><td><code>x is None</code></td><td><code>x.nil?</code></td></tr>
+          <tr><td>Falsy values</td><td><code>None False 0 "" [] {}</code> …</td><td><code>nil</code> and <code>false</code> — that's all</td></tr>
+          <tr><td>Default fallback</td><td><code>x or d</code> (buggy for 0/"")</td><td><code>x || d</code> (safe)</td></tr>
+          <tr><td>Assign if unset</td><td><code>x = x if x else d</code></td><td><code>x ||= d</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-everything-is-an-object.html">7. Everything Is an Object</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Absolute value</td><td><code>abs(n)</code></td><td><code>n.abs</code></td></tr>
+          <tr><td>Length</td><td><code>len(x)</code></td><td><code>x.length</code> (or <code>x.size</code>)</td></tr>
+          <tr><td>Rounding</td><td><code>round(f, 2)</code></td><td><code>f.round(2)</code></td></tr>
+          <tr><td>String to chars</td><td><code>list(s)</code></td><td><code>s.chars</code></td></tr>
+          <tr><td>Parity</td><td><code>n % 2 == 0</code></td><td><code>n.even?</code> / <code>n.odd?</code></td></tr>
+          <tr><td>Repeat N times</td><td><code>for _ in range(5):</code></td><td><code>5.times { ... }</code></td></tr>
+          <tr><td>Filter</td><td><code>[x for x in xs if p]</code></td><td><code>xs.select { |x| p }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-case.html">8. Control Flow &amp; case</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Else-if</td><td><code>elif cond:</code></td><td><code>elsif cond</code></td></tr>
+          <tr><td>Close a block</td><td>dedent</td><td><code>end</code></td></tr>
+          <tr><td>Guard clause</td><td><code>if cond: return x</code></td><td><code>return x if cond</code></td></tr>
+          <tr><td>Negated if</td><td><code>if not cond:</code></td><td><code>unless cond</code></td></tr>
+          <tr><td>Multiway branch</td><td><code>match</code>/<code>case</code> (3.10+)</td><td><code>case</code>/<code>when</code></td></tr>
+          <tr><td>Grouped arm</td><td><code>case "sat" | "sun":</code></td><td><code>when "sat", "sun"</code></td></tr>
+          <tr><td>Range arm</td><td><code>case s if s &gt;= 90:</code></td><td><code>when 90..</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Constructor</td><td><code>def __init__(self, x):</code></td><td><code>def initialize(x)</code></td></tr>
+          <tr><td>Instantiate</td><td><code>User("Ada")</code></td><td><code>User.new("Ada")</code></td></tr>
+          <tr><td>Instance variable</td><td><code>self.x</code></td><td><code>@x</code></td></tr>
+          <tr><td>Privacy</td><td><code>_x</code> by convention</td><td><code>@x</code> private for real</td></tr>
+          <tr><td>Read-only accessor</td><td><code>@property</code> method</td><td><code>attr_reader :x</code></td></tr>
+          <tr><td>Read-write accessor</td><td><code>@property</code> + setter</td><td><code>attr_accessor :x</code></td></tr>
+          <tr><td>Method receiver</td><td>explicit <code>self</code> arg</td><td>implicit</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-modules.html">10. Inheritance &amp; Modules</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Inherit</td><td><code>class Circle(Shape):</code></td><td><code>class Circle &lt; Shape</code></td></tr>
+          <tr><td>Call parent method</td><td><code>super().__init__(x)</code></td><td><code>super(x)</code></td></tr>
+          <tr><td>Forward all args up</td><td><code>super().m(*args, **kw)</code></td><td>bare <code>super</code> (no parens!)</td></tr>
+          <tr><td>Pass nothing up</td><td><code>super().m()</code></td><td><code>super()</code></td></tr>
+          <tr><td>Abstract method</td><td><code>@abstractmethod</code> + <code>abc.ABC</code></td><td><code>raise NotImplementedError</code></td></tr>
+          <tr><td>Share behavior sideways</td><td>multiple inheritance + MRO</td><td><code>module</code> + <code>include</code></td></tr>
+          <tr><td>Which method wins?</td><td>C3 linearization</td><td>last module included wins</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-blocks-procs-lambdas.html">11. Blocks, Procs &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Inline callback</td><td><code>lambda x: x * 2</code> (one expression)</td><td>block: <code>{ |x| x * 2 }</code> or <code>do ... end</code> (any length)</td></tr>
+          <tr><td>Call the callback</td><td><code>f(x)</code> — it's a parameter</td><td><code>yield(x)</code> — the block is implicit</td></tr>
+          <tr><td>Was one passed?</td><td><code>if f is not None:</code></td><td><code>block_given?</code></td></tr>
+          <tr><td>First-class function</td><td><code>f = lambda x: x * 2</code></td><td><code>f = -&gt;(x) { x * 2 }</code>, then <code>f.call(3)</code></td></tr>
+          <tr><td>Method-by-name map</td><td><code>map(str.upper, words)</code></td><td><code>words.map(&amp;:upcase)</code></td></tr>
+          <tr><td>Closure factory</td><td><code>def make(n): return lambda x: x * n</code></td><td><code>-&gt;(x) { x * n }</code> as the last expression</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-enumerable.html">12. Enumerable: map, select &amp; Friends</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Filter</td><td><code>[x for x in xs if f(x)]</code></td><td><code>xs.select { |x| f(x) }</code></td></tr>
+          <tr><td>Inverted filter</td><td><code>[x for x in xs if not f(x)]</code></td><td><code>xs.reject { |x| f(x) }</code></td></tr>
+          <tr><td>Transform</td><td><code>[g(x) for x in xs]</code></td><td><code>xs.map { |x| g(x) }</code></td></tr>
+          <tr><td>Sum with key</td><td><code>sum(g(x) for x in xs)</code></td><td><code>xs.sum { |x| g(x) }</code></td></tr>
+          <tr><td>Sort / min by key</td><td><code>sorted(xs, key=f)</code> / <code>min(xs, key=f)</code></td><td><code>xs.sort_by { ... }</code> / <code>xs.min_by { ... }</code></td></tr>
+          <tr><td>Any / all</td><td><code>any(f(x) for x in xs)</code> / <code>all(...)</code></td><td><code>xs.any? { ... }</code> / <code>xs.all? { ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enumerable-power-tools.html">13. Enumerable Power Tools</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Group by key</td><td><code>groupby(sorted(xs, key=f), key=f)</code></td><td><code>xs.group_by { |x| f(x) }</code></td></tr>
+          <tr><td>Count occurrences</td><td><code>Counter(xs)</code></td><td><code>xs.tally</code></td></tr>
+          <tr><td>Build a dict in a loop</td><td><code>d = {}</code> + <code>for</code> + <code>d.get(k, 0)</code></td><td><code>xs.each_with_object(Hash.new(0)) { |x, d| ... }</code></td></tr>
+          <tr><td>Fold / reduce</td><td><code>reduce(lambda a, b: a + b, xs)</code></td><td><code>xs.reduce(:+)</code> — pass the operator as a symbol</td></tr>
+          <tr><td>Split by predicate</td><td>two comprehensions, two passes</td><td><code>xs.partition { |x| ... }</code>, one pass</td></tr>
+          <tr><td>Flatten one level</td><td><code>chain.from_iterable(xs)</code></td><td><code>xs.flatten(1)</code> or <code>xs.flat_map { ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-splat.html">14. Destructuring &amp; Splat</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Destructure</td><td><code>a, b = pair</code></td><td><code>a, b = pair</code></td></tr>
+          <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>a, b = b, a</code></td></tr>
+          <tr><td>Rest at the end</td><td><code>first, *rest = xs</code></td><td><code>first, *rest = xs</code></td></tr>
+          <tr><td>Rest at the front</td><td><code>*init, last = xs</code></td><td><code>*init, last = xs</code></td></tr>
+          <tr><td>Variadic / options</td><td><code>*args</code>, <code>**kwargs</code></td><td><code>*args</code>, <code>**opts</code></td></tr>
+          <tr><td>Spread a list</td><td><code>[*a, *b]</code></td><td><code>[*a, *b]</code></td></tr>
+          <tr><td>Merge dicts/hashes</td><td><code>{**d1, **d2}</code></td><td><code>d1.merge(d2)</code> (also takes a block for conflicts)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-duck-typing.html">15. Duck Typing &amp; respond_to?</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Capability check</td><td><code>hasattr(x, "speak")</code></td><td><code>x.respond_to?(:speak)</code></td></tr>
+          <tr><td>Class check</td><td><code>isinstance(x, Dog)</code></td><td><code>x.is_a?(Dog)</code> (also matches subclasses)</td></tr>
+          <tr><td>Exact class</td><td><code>type(x) is Dog</code></td><td><code>x.instance_of?(Dog)</code></td></tr>
+          <tr><td>Missing method error</td><td><code>AttributeError</code></td><td><code>NoMethodError</code></td></tr>
+          <tr><td>EAFP</td><td><code>try: ... except AttributeError:</code></td><td><code>begin ... rescue NoMethodError</code></td></tr>
+          <tr><td>Formal interface</td><td><code>Protocol</code> / <code>ABC</code> (optional)</td><td>none — shared method names are the contract</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Guarded block</td><td><code>try:</code></td><td><code>begin</code></td></tr>
+          <tr><td>Catch</td><td><code>except ValueError as e:</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+          <tr><td>Always runs</td><td><code>finally:</code></td><td><code>ensure</code></td></tr>
+          <tr><td>Only if no error</td><td><code>else:</code></td><td><code>else</code></td></tr>
+          <tr><td>Raise</td><td><code>raise ValueError("bad")</code></td><td><code>raise ArgumentError, "bad"</code></td></tr>
+          <tr><td>Custom error</td><td><code>class ParseError(Exception)</code></td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+          <tr><td>Bare catch</td><td><code>except Exception</code></td><td><code>rescue</code> (StandardError only)</td></tr>
+          <tr><td>Re-raise</td><td><code>raise</code></td><td><code>raise</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-structs-and-comparable.html">17. Structs &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Value object in one line</td><td><code>@dataclass</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+          <tr><td>Add methods</td><td>body of the decorated class</td><td><code>Struct.new(:x, :y) do ... end</code></td></tr>
+          <tr><td>Field equality</td><td><code>__eq__</code> (generated)</td><td><code>==</code> (generated)</td></tr>
+          <tr><td>As tuple/array</td><td><code>astuple(p)</code></td><td><code>p.to_a</code></td></tr>
+          <tr><td>Full ordering</td><td><code>@total_ordering</code> + 2 dunders</td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td></tr>
+          <tr><td>Compare pairs</td><td><code>(a, b) &lt; (c, d)</code></td><td><code>[a, b] &lt;=&gt; [c, d]</code></td></tr>
+          <tr><td>Range check</td><td><code>lo &lt;= x &lt;= hi</code></td><td><code>x.between?(lo, hi)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-enumerators-and-lazy.html">18. Enumerators &amp; Lazy</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Generator</td><td><code>def f(): yield v</code></td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+          <tr><td>Infinite counter</td><td><code>itertools.count(1)</code></td><td><code>(1..Float::INFINITY)</code> (or <code>1.step</code>)</td></tr>
+          <tr><td>Lazy pipeline</td><td>generator expressions (lazy by default)</td><td><code>.lazy</code> then <code>map</code>/<code>select</code></td></tr>
+          <tr><td>Take n</td><td><code>list(islice(gen, n))</code></td><td><code>.first(n)</code></td></tr>
+          <tr><td>Chunk</td><td>grouper recipe / slicing loop</td><td><code>each_slice(n)</code></td></tr>
+          <tr><td>Sliding window</td><td><code>itertools.pairwise</code></td><td><code>each_cons(2)</code></td></tr>
+          <tr><td>Pull one value</td><td><code>next(gen)</code></td><td><code>enum.next</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Load the library</td><td><code>import json</code></td><td><code>require "json"</code></td></tr>
+          <tr><td>Serialize</td><td><code>json.dumps(data)</code></td><td><code>data.to_json</code></td></tr>
+          <tr><td>Pretty-print</td><td><code>json.dumps(data, indent=2)</code></td><td><code>JSON.pretty_generate(data)</code></td></tr>
+          <tr><td>Parse</td><td><code>json.loads(s)</code></td><td><code>JSON.parse(s)</code> — string keys</td></tr>
+          <tr><td>Parse to symbols</td><td>—</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+          <tr><td>Default on missing key</td><td><code>d.get("k", default)</code></td><td><code>h.fetch(:k, default)</code></td></tr>
+          <tr><td>Nested access</td><td><code>d["a"]["b"]</code></td><td><code>data.dig(:a, :b)</code> — nil, never raises</td></tr>
+          <tr><td>Bad input</td><td><code>json.JSONDecodeError</code></td><td><code>JSON::ParserError</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Ruby</th></tr>
+          <tr><td>Sum a derived value</td><td><code>sum(f(i) for i in xs)</code></td><td><code>xs.sum { |i| f(i) }</code></td></tr>
+          <tr><td>First match or nothing</td><td><code>next((i for i in xs if p), None)</code></td><td><code>xs.find { |i| p }</code> — nil built in</td></tr>
+          <tr><td>Filter + transform</td><td><code>[i.name for i in xs if p]</code></td><td><code>xs.select { |i| p }.map(&amp;:name)</code></td></tr>
+          <tr><td>Conditional rebuild</td><td>list comp with ternary</td><td><code>map</code> with <code>if/else</code> inside the block</td></tr>
+          <tr><td>Avoid aliasing</td><td>construct a new object</td><td><code>Item.new(...)</code> — same instinct</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

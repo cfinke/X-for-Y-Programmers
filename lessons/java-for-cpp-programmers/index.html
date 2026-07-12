@@ -19,6 +19,253 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C++ ⇄ Java cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Typed local</td><td><code>int x = 1;</code></td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred local</td><td><code>auto x = 1;</code></td><td><code>var x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>const int x = 1;</code></td><td><code>final int x = 1;</code></td></tr>
+          <tr><td>Numeric types</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>float</code>…</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>float</code>…</td></tr>
+          <tr><td>Free function</td><td><code>std::string f() {}</code></td><td><code>static</code> method in a class</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Substring</td><td><code>s.substr(1, 3)</code></td><td><code>s.substring(1, 4)</code></td></tr>
+          <tr><td>Contains</td><td><code>s.find("x") != std::string::npos</code></td><td><code>s.contains("x")</code></td></tr>
+          <tr><td>Index of</td><td><code>s.find("x")</code></td><td><code>s.indexOf("x")</code></td></tr>
+          <tr><td>Split</td><td><code>std::stringstream</code> + <code>std::getline</code> (or a hand-rolled loop)</td><td><code>s.split(",")</code> (regex!)</td></tr>
+          <tr><td>Trim</td><td>hand-rolled with <code>find_first_not_of</code>/<code>find_last_not_of</code></td><td><code>s.strip()</code></td></tr>
+          <tr><td>Blank check</td><td><code>s.find_first_not_of(" \t\n") == std::string::npos</code></td><td><code>s.isBlank()</code></td></tr>
+          <tr><td>Interpolate</td><td><code>std::format("{}", a)</code></td><td><code>String.format("%s", a)</code></td></tr>
+          <tr><td>Build in loop</td><td><code>out += x;</code> (already mutable)</td><td><code>StringBuilder.append</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java array</th><th>Java List</th></tr>
+          <tr><td>Create</td><td><code>std::vector&lt;int&gt; v = {1, 2, 3};</code></td><td><code>new int[]{1, 2, 3}</code></td><td><code>new ArrayList&lt;&gt;()</code></td></tr>
+          <tr><td>Length</td><td><code>v.size()</code></td><td><code>a.length</code></td><td><code>list.size()</code></td></tr>
+          <tr><td>Read</td><td><code>v[i]</code></td><td><code>a[i]</code></td><td><code>list.get(i)</code></td></tr>
+          <tr><td>Append</td><td><code>v.push_back(x)</code></td><td>— (fixed size)</td><td><code>list.add(x)</code></td></tr>
+          <tr><td>Membership</td><td><code>std::find(...) != v.end()</code></td><td>—</td><td><code>list.contains(x)</code></td></tr>
+          <tr><td>Immutable</td><td><code>const std::vector&lt;int&gt;</code></td><td>—</td><td><code>List.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Create</td><td><code>std::unordered_map&lt;std::string, int&gt; m;</code></td><td><code>new HashMap&lt;&gt;()</code></td></tr>
+          <tr><td>Insert / update</td><td><code>m[k] = v;</code></td><td><code>m.put(k, v)</code></td></tr>
+          <tr><td>Read with default</td><td><code>it = m.find(k); it != m.end() ? it-&gt;second : d</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+          <tr><td>Membership</td><td><code>m.count(k) &gt; 0</code></td><td><code>m.containsKey(k)</code></td></tr>
+          <tr><td>Delete</td><td><code>m.erase(k);</code></td><td><code>m.remove(k)</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>for (var e : m.entrySet())</code></td></tr>
+          <tr><td>Immutable literal</td><td><code>const std::unordered_map&lt;...&gt; m = {...};</code></td><td><code>Map.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Utility function</td><td>free function</td><td><code>static</code> method</td></tr>
+          <tr><td>Two shapes, one name</td><td>native overloading: <code>f(int)</code>, <code>f(int, string)</code></td><td>two overloads: <code>f(int)</code>, <code>f(int, String)</code></td></tr>
+          <tr><td>Variadic</td><td><code>f(std::initializer_list&lt;int&gt; xs)</code></td><td><code>f(int... xs)</code></td></tr>
+          <tr><td>Params inside</td><td><code>std::initializer_list&lt;int&gt;</code>, walked with a range-for</td><td><code>xs</code> is an <code>int[]</code></td></tr>
+          <tr><td>Delegation</td><td>default argument, or one overload calling another</td><td>one overload calls another</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-classes-and-objects.html">6. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Private field</td><td><code>private: int x;</code></td><td><code>private int x;</code></td></tr>
+          <tr><td>Constructor</td><td><code>ClassName(int x) : x(x) {}</code></td><td><code>ClassName(int x) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>this->x</code> or just <code>x</code></td><td><code>this.x</code> or just <code>x</code></td></tr>
+          <tr><td>Getter</td><td><code>int getX() const</code></td><td><code>int getX()</code> (a method call)</td></tr>
+          <tr><td>Stringify</td><td><code>std::string toString() const</code></td><td><code>@Override public String toString()</code></td></tr>
+          <tr><td>Instantiate</td><td><code>C obj(…);</code> or <code>new C(…)</code></td><td><code>new C(…)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-null-and-optional.html">7. Null &amp; Optional</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Absent-aware return</td><td><code>std::optional&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Wrap a maybe-null</td><td>—</td><td><code>Optional.ofNullable(x)</code></td></tr>
+          <tr><td>Wrap a known value</td><td><code>std::optional&lt;T&gt;(x)</code></td><td><code>Optional.of(x)</code></td></tr>
+          <tr><td>The empty case</td><td><code>std::nullopt</code></td><td><code>Optional.empty()</code></td></tr>
+          <tr><td>Default</td><td><code>x.value_or(d)</code></td><td><code>opt.orElse(d)</code></td></tr>
+          <tr><td>Conditional transform</td><td><code>x ? f(*x) : ...</code></td><td><code>opt.map(v -&gt; v.f())</code></td></tr>
+          <tr><td>Run a side effect</td><td><code>if (x) g(*x);</code></td><td><code>opt.ifPresent(g)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-switch.html">8. Control Flow &amp; Switch</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Iterate values</td><td><code>for (const auto& x : xs)</code></td><td><code>for (T x : xs)</code></td></tr>
+          <tr><td>Multi-label branch</td><td><code>case A:</code> <code>case B:</code></td><td><code>case A, B -> …</code></td></tr>
+          <tr><td>Fall-through</td><td>default unless you <code>break</code></td><td>none with <code>-></code></td></tr>
+          <tr><td>Value from a branch</td><td><code>return</code> / assignment</td><td><code>yield</code> (in a block)</td></tr>
+          <tr><td>Exhaustiveness</td><td>optional (compiler may warn on <code>enum class</code>)</td><td>required (enum switch needs no <code>default</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-interfaces.html">9. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Satisfy a contract</td><td>publicly inherit an abstract base</td><td><code>implements Shape</code> (explicit)</td></tr>
+          <tr><td>Abstract method</td><td><code>virtual double area() const = 0;</code></td><td><code>double area();</code></td></tr>
+          <tr><td>Method with a body</td><td>ordinary (non-pure) virtual method</td><td><code>default</code> method in the interface</td></tr>
+          <tr><td>Multiple contracts</td><td><code>class C : public A, public B</code></td><td><code>implements A, B</code></td></tr>
+          <tr><td>Implementer visibility</td><td><code>public</code> inheritance required</td><td>must be <code>public</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstract.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Subclass</td><td><code>class B : public A</code></td><td><code>class B extends A</code></td></tr>
+          <tr><td>Super constructor</td><td><code>A(x)</code> in the init list</td><td><code>super(x);</code></td></tr>
+          <tr><td>Super method</td><td><code>A::m()</code></td><td><code>super.m()</code></td></tr>
+          <tr><td>Mark an override</td><td><code>override</code> (compiler-checked)</td><td><code>@Override</code> (compiler-checked)</td></tr>
+          <tr><td>Abstract member</td><td><code>virtual T m() = 0;</code></td><td><code>abstract T m();</code></td></tr>
+          <tr><td>No subclassing</td><td><code>final</code> class/method (rarely used)</td><td><code>final class</code> / <code>final</code> method</td></tr>
+          <tr><td>Runtime type check</td><td><code>dynamic_cast&lt;B*&gt;(x)</code></td><td><code>x instanceof B</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Declare</td><td><code>enum class E { A, B };</code></td><td><code>enum E { A, B }</code></td></tr>
+          <tr><td>All values</td><td>hand-rolled array/loop</td><td><code>E.values()</code></td></tr>
+          <tr><td>Parse a name</td><td>hand-rolled string-to-enum map</td><td><code>E.valueOf(name)</code></td></tr>
+          <tr><td>Name of a constant</td><td>hand-rolled enum-to-string map</td><td><code>E.A.name()</code></td></tr>
+          <tr><td>Attach data</td><td>side table / lookup map</td><td>fields + constructor on the enum</td></tr>
+          <tr><td>Exhaustive branch</td><td><code>switch</code>, warns only with <code>-Wswitch</code></td><td><code>switch</code> (no default needed)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Generic class</td><td><code>template&lt;typename T&gt; class Box { ... };</code></td><td><code>class Box&lt;T&gt;</code></td></tr>
+          <tr><td>Generic method</td><td><code>template&lt;typename T&gt; T id(T x)</code></td><td><code>&lt;T&gt; T id(T x)</code> (param before return type)</td></tr>
+          <tr><td>Upper bound</td><td>concept / <code>requires</code> clause</td><td><code>&lt;T extends X&gt;</code></td></tr>
+          <tr><td>Codegen</td><td>monomorphized: a fresh copy compiled per type</td><td><code>List&lt;? extends Number&gt;</code> (one erased class, explicit wildcard)</td></tr>
+          <tr><td>Element type</td><td><code>Box&lt;int&gt;</code> (templates take primitives directly)</td><td><code>Box&lt;Integer&gt;</code> (no <code>int</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-collections-and-iteration.html">13. Collections &amp; Iteration</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Ordered list</td><td><code>std::vector&lt;T&gt;</code></td><td><code>List&lt;T&gt;</code> (<code>ArrayList</code>)</td></tr>
+          <tr><td>Unique set</td><td><code>std::set&lt;T&gt;</code></td><td><code>Set&lt;T&gt;</code> (<code>HashSet</code>)</td></tr>
+          <tr><td>Key/value map</td><td><code>std::map&lt;K, V&gt;</code></td><td><code>Map&lt;K, V&gt;</code> (<code>HashMap</code>)</td></tr>
+          <tr><td>Transform</td><td>hand-rolled loop pushing onto a new vector</td><td><code>xs.stream().map(f).toList()</code> or a loop</td></tr>
+          <tr><td>Sort by key</td><td><code>std::sort(xs.begin(), xs.end(), [](auto&amp; a, auto&amp; b){ return a.age &lt; b.age; })</code></td><td><code>xs.sort(Comparator.comparingInt(P::age))</code></td></tr>
+          <tr><td>Tiebreak</td><td>extra <code>if</code> inside the lambda</td><td><code>.thenComparing(P::name)</code></td></tr>
+          <tr><td>Descending</td><td>flip the <code>&lt;</code> to <code>&gt;</code> in the lambda</td><td><code>.reversed()</code> / <code>Comparator.reverseOrder()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-streams.html">14. Streams</a></h3>
+        <table>
+          <tr><th>Goal</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Start</td><td><code>v.begin(), v.end()</code></td><td><code>list.stream()</code></td></tr>
+          <tr><td>Keep some</td><td><code>std::copy_if(...)</code></td><td><code>.filter(f)</code></td></tr>
+          <tr><td>Transform</td><td><code>std::transform(...)</code></td><td><code>.map(f)</code></td></tr>
+          <tr><td>Sum numbers</td><td><code>std::accumulate(v.begin(), v.end(), 0)</code></td><td><code>.mapToInt(f).sum()</code></td></tr>
+          <tr><td>Fold</td><td><code>std::accumulate(begin, end, init, f)</code></td><td><code>.reduce(init, f)</code></td></tr>
+          <tr><td>Back to a list</td><td><code>std::back_inserter(out)</code> target</td><td><code>.collect(Collectors.toList())</code></td></tr>
+          <tr><td>Join to string</td><td>manual loop with <code>+=</code></td><td><code>.collect(Collectors.joining(", "))</code></td></tr>
+          <tr><td>Group</td><td>manual <code>std::map</code> loop</td><td><code>Collectors.groupingBy(f)</code></td></tr>
+          <tr><td>Count per group</td><td>manual</td><td><code>groupingBy(f, counting())</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-lambdas-and-functional.html">15. Lambdas &amp; Functional Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>One-arg lambda</td><td><code>[](int x) { return x * 2; }</code></td><td><code>x -&gt; x * 2</code></td></tr>
+          <tr><td>Function type</td><td><code>std::function&lt;int(int)&gt;</code></td><td><code>Function&lt;Integer,Integer&gt;</code></td></tr>
+          <tr><td>Calling it</td><td><code>f(x)</code></td><td><code>f.apply(x)</code></td></tr>
+          <tr><td>Predicate</td><td><code>std::function&lt;bool(int)&gt;</code></td><td><code>Predicate&lt;T&gt;</code>, <code>p.test(x)</code></td></tr>
+          <tr><td>Supplier</td><td><code>std::function&lt;T()&gt;</code></td><td><code>Supplier&lt;T&gt;</code>, <code>s.get()</code></td></tr>
+          <tr><td>Static function ref</td><td><code>std::transform(..., square)</code></td><td><code>Functional::square</code></td></tr>
+          <tr><td>Instance method ref</td><td><code>[](auto& s) { return s.upper(); }</code></td><td><code>String::toUpperCase</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-records.html">16. Records</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java record</th></tr>
+          <tr><td>Declare shape</td><td><code>struct Point { int x; int y; };</code></td><td><code>record Point(int x, int y) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>p.x</code></td><td><code>p.x()</code> (accessor)</td></tr>
+          <tr><td>Value equality</td><td><code>operator==</code> (hand-written or <code>= default</code>)</td><td><code>a.equals(b)</code> (generated)</td></tr>
+          <tr><td>Printable form</td><td><code>operator&lt;&lt;</code>, hand-written</td><td><code>toString()</code> → <code>Point[x=3, y=4]</code></td></tr>
+          <tr><td>Validate on construction</td><td>constructor body</td><td>compact constructor</td></tr>
+          <tr><td>Satisfy a contract</td><td>public inheritance from an abstract base</td><td><code>record X(...) implements I</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-exceptions.html">17. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Throw</td><td><code>throw std::runtime_error("x")</code></td><td><code>throw new RuntimeException("x")</code></td></tr>
+          <tr><td>Typed catch</td><td><code>catch (const std::exception& e) { }</code></td><td><code>catch (IOException e) { }</code></td></tr>
+          <tr><td>Multi-catch</td><td>separate <code>catch</code> blocks per type</td><td><code>catch (A | B e) { }</code></td></tr>
+          <tr><td>Declared throws</td><td>—</td><td><code>void f() throws IOException</code></td></tr>
+          <tr><td>Custom error</td><td><code>: public std::runtime_error</code></td><td><code>extends RuntimeException</code></td></tr>
+          <tr><td>Cleanup</td><td>RAII (destructors)</td><td><code>finally { }</code> / try-with-resources</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-equals-hashcode-comparable.html">18. equals, hashCode &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Identity check</td><td><code>&amp;a == &amp;b</code></td><td><code>a == b</code></td></tr>
+          <tr><td>Value equality</td><td>hand-written <code>operator==</code></td><td>override <code>equals(Object)</code></td></tr>
+          <tr><td>Hashing</td><td><code>std::hash&lt;T&gt;</code> specialization</td><td>override <code>hashCode()</code> to match equals</td></tr>
+          <tr><td>Combine fields into a hash</td><td>manual XOR/mix, or boost::hash_combine</td><td><code>Objects.hash(a, b)</code></td></tr>
+          <tr><td>Natural ordering</td><td>hand-written <code>operator&lt;</code></td><td><code>Comparable&lt;T&gt;.compareTo</code></td></tr>
+          <tr><td>One-off ordering</td><td>comparator lambda passed to <code>std::sort</code></td><td><code>Comparator</code> passed to sort</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-sealed-and-pattern-matching.html">19. Sealed Types &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Closed variant set</td><td><code>std::variant&lt;A, B&gt;</code></td><td><code>sealed … permits A, B</code></td></tr>
+          <tr><td>One-line data class</td><td><code>struct Circle { double r; };</code></td><td><code>record Circle(double r) implements Shape {}</code></td></tr>
+          <tr><td>Test + narrow</td><td><code>if (auto* c = std::get_if&lt;Circle&gt;(&amp;s))</code></td><td><code>if (s instanceof Circle c)</code></td></tr>
+          <tr><td>Match on type</td><td><code>std::visit(overloaded{...}, s)</code></td><td><code>switch (s) { case Circle c -> … }</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>overload-set / <code>if constexpr</code> trick</td><td>automatic over a sealed type</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>Java</th></tr>
+          <tr><td>Bounded generic</td><td><code>template&lt;typename T&gt;</code> (no compile-time bound; relies on duck typing / concepts)</td><td><code>&lt;T extends Entity&gt;</code></td></tr>
+          <tr><td>Absent-or-present</td><td><code>std::optional&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Filter + sort</td><td>manual loop, then <code>std::sort</code> with a comparator</td><td><code>stream().filter(p).sorted(cmp).toList()</code></td></tr>
+          <tr><td>Sort key</td><td><code>[](const T&amp; a, const T&amp; b){ return a.id() &lt; b.id(); }</code></td><td><code>Comparator.comparingInt(Entity::id)</code></td></tr>
+          <tr><td>Signal "missing"</td><td><code>throw std::runtime_error(...)</code></td><td>a typed <code>RuntimeException</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

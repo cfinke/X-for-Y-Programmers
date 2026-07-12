@@ -19,6 +19,245 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Kotlin ⇄ C++ cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Typed variable</td><td><code>var x: Int = 1</code></td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred variable</td><td><code>val x = 1</code></td><td><code>auto x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>val x = 1</code></td><td><code>const int x = 1;</code></td></tr>
+          <tr><td>Number to string</td><td><code>age.toString()</code></td><td><code>std::to_string(age)</code></td></tr>
+          <tr><td>Integer vs float</td><td><code>Int</code> vs <code>Double</code></td><td><code>7 / 2 == 3</code>, <code>7 / 2.0 == 3.5</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Length</td><td><code>s.length</code></td><td><code>s.size()</code></td></tr>
+          <tr><td>Substring</td><td><code>s.substring(i, j)</code></td><td><code>s.substr(i, count)</code></td></tr>
+          <tr><td>Find</td><td><code>s.indexOf(x)</code> → <code>-1</code></td><td><code>s.find(x)</code> → <code>std::string::npos</code></td></tr>
+          <tr><td>Append in place</td><td><code>s += x</code></td><td><code>s += x</code> or <code>s.append(x)</code></td></tr>
+          <tr><td>Number → string</td><td><code>n.toString()</code></td><td><code>std::to_string(n)</code></td></tr>
+          <tr><td>String → number</td><td><code>s.toInt()</code></td><td><code>std::stoi(s)</code></td></tr>
+          <tr><td>Build piecewise</td><td>string templates</td><td><code>std::ostringstream</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-vectors.html">3. Vectors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Empty list</td><td><code>val xs = mutableListOf&lt;T&gt;()</code></td><td><code>std::vector&lt;T&gt; xs;</code></td></tr>
+          <tr><td>Append</td><td><code>xs.add(v)</code></td><td><code>xs.push_back(v)</code></td></tr>
+          <tr><td>Length</td><td><code>xs.size</code></td><td><code>xs.size()</code></td></tr>
+          <tr><td>Checked index</td><td><code>xs[i]</code> (throws)</td><td><code>xs.at(i)</code> (throws)</td></tr>
+          <tr><td>Remove at index</td><td><code>xs.removeAt(0)</code></td><td><code>xs.erase(xs.begin())</code></td></tr>
+          <tr><td>Insert at index</td><td><code>xs.add(0, v)</code></td><td><code>xs.insert(xs.begin(), v)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Operation</th><th>Kotlin (Map)</th><th>C++</th></tr>
+          <tr><td>Declare</td><td><code>HashMap&lt;String, Int&gt;()</code></td><td><code>std::unordered_map&lt;std::string, int&gt; m;</code></td></tr>
+          <tr><td>Insert / overwrite</td><td><code>m[k] = v</code></td><td><code>m[k] = v;</code> or <code>m.insert({k, v})</code></td></tr>
+          <tr><td>Read (throwing)</td><td><code>m.getValue(k)</code></td><td><code>m.at(k)</code></td></tr>
+          <tr><td>Read (safe)</td><td><code>m[k] ?: d</code></td><td><code>m.find(k)</code> / <code>m.contains(k)</code></td></tr>
+          <tr><td>Membership</td><td><code>m.containsKey(k)</code></td><td><code>m.contains(k)</code> / <code>m.count(k)</code></td></tr>
+          <tr><td>Size</td><td><code>m.size</code></td><td><code>m.size()</code></td></tr>
+          <tr><td>Iterate</td><td><code>for ((k, v) in m)</code></td><td><code>for (const auto&amp; [k, v] : m)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>By value (copy)</td><td><code>Int</code>/<code>Double</code>/<code>Boolean</code> are copied</td><td><code>void f(int x)</code></td></tr>
+          <tr><td>Read-only object</td><td>object passed as shared reference</td><td><code>void f(const std::string&amp; s)</code></td></tr>
+          <tr><td>Mutate caller's object</td><td>mutate the shared object</td><td><code>void f(std::string&amp; s)</code></td></tr>
+          <tr><td>Overloading</td><td>real overloading, resolved at compile time</td><td>separate functions per signature</td></tr>
+          <tr><td>Default argument</td><td><code>fun g(x: Int = 10)</code></td><td><code>int g(int x = 10)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-references-and-pointers.html">6. References &amp; Pointers</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Mutate caller's value</td><td>wrap in a class with <code>var value</code></td><td><code>void f(int&amp; n)</code></td></tr>
+          <tr><td>Read without copying</td><td>pass the object (always by reference)</td><td><code>const std::string&amp; s</code></td></tr>
+          <tr><td>Maybe-absent</td><td><code>T?</code></td><td><code>T*</code> (can be <code>nullptr</code>)</td></tr>
+          <tr><td>Address-of</td><td>— (implicit)</td><td><code>&amp;x</code></td></tr>
+          <tr><td>Dereference</td><td>— (implicit)</td><td><code>*p</code>, <code>p-&gt;m()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-classes.html">7. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Default access</td><td><code>public</code></td><td><code>class</code> &rarr; <code>private</code>, <code>struct</code> &rarr; <code>public</code></td></tr>
+          <tr><td>Private data</td><td><code>private var x = 0</code></td><td><code>private:</code> then <code>int x_ = 0;</code></td></tr>
+          <tr><td>Member access</td><td><code>x</code> (no <code>this.</code> needed)</td><td><code>x_</code> (no <code>this.</code>)</td></tr>
+          <tr><td>Init in constructor</td><td>primary constructor param, or <code>init { x = n }</code></td><td><code>: x_(n) {}</code> (initializer list)</td></tr>
+          <tr><td>Read-only method</td><td>(none)</td><td><code>int get() const</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-constructors-and-raii.html">8. Constructors &amp; RAII</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Default constructor</td><td><code>class Widget()</code></td><td><code>Widget() {}</code></td></tr>
+          <tr><td>Init member</td><td>primary constructor <code>val id</code></td><td><code>: id_(id)</code> (init list)</td></tr>
+          <tr><td>Cleanup</td><td>GC, non-deterministic</td><td><code>~Widget()</code> at scope end</td></tr>
+          <tr><td>Static field</td><td><code>companion object { var liveCount = 0 }</code></td><td><code>inline static int liveCount_ = 0;</code></td></tr>
+          <tr><td>Move a value in</td><td>(just assign)</td><td><code>std::move(name)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-operator-overloading.html">9. Operator Overloading</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Equality</td><td><code>override fun equals(other: Any?)</code></td><td><code>bool operator==(const T&amp;) const</code></td></tr>
+          <tr><td>Ordering</td><td><code>operator fun compareTo(o: T): Int</code></td><td><code>bool operator&lt;(const T&amp;) const</code></td></tr>
+          <tr><td>Add (new value)</td><td><code>operator fun plus(o: T): T</code></td><td><code>T operator+(const T&amp;) const</code></td></tr>
+          <tr><td>Add in place</td><td><code>operator fun plusAssign(o: T)</code></td><td><code>T&amp; operator+=(const T&amp;)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-virtual.html">10. Inheritance &amp; Virtual Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Extend a class</td><td><code>class Dog(name: String) : Animal(name)</code></td><td><code>class Dog : public Animal</code></td></tr>
+          <tr><td>Enable dispatch</td><td><code>open</code>/<code>abstract</code> in the base</td><td><code>virtual</code> in the base</td></tr>
+          <tr><td>Override</td><td><code>override fun m() {}</code></td><td><code>m() const override</code></td></tr>
+          <tr><td>Abstract method</td><td><code>abstract fun m(): T</code></td><td><code>virtual T m() const = 0;</code></td></tr>
+          <tr><td>Call super ctor</td><td><code>: Animal(name)</code> (primary ctor delegation)</td><td><code>: Animal(name)</code> init list</td></tr>
+          <tr><td>Base handle</td><td><code>a: Animal</code></td><td><code>const Animal&amp;</code> / <code>Animal*</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-templates.html">11. Templates</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Function generic</td><td><code>fun &lt;T&gt; f(x: T)</code></td><td><code>template&lt;class T&gt; auto f(T x)</code></td></tr>
+          <tr><td>Class generic</td><td><code>class Box&lt;T&gt;(…)</code></td><td><code>template&lt;class T&gt; class Box</code></td></tr>
+          <tr><td>Inference / deduction</td><td><code>f(5)</code></td><td><code>f(5)</code></td></tr>
+          <tr><td>Explicit type arg</td><td><code>f&lt;String&gt;(x)</code></td><td><code>f&lt;std::string&gt;(x)</code></td></tr>
+          <tr><td>Where it lives</td><td>compiled once, erased at runtime</td><td>instantiated per type, header-only</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-smart-pointers.html">12. Smart Pointers</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Build on heap</td><td><code>Robot(...)</code></td><td><code>std::make_unique&lt;Robot&gt;(...)</code></td></tr>
+          <tr><td>Shared, counted</td><td>any reference</td><td><code>std::make_shared&lt;Robot&gt;(...)</code></td></tr>
+          <tr><td>Reach a member</td><td><code>r.name</code></td><td><code>r-&gt;name</code></td></tr>
+          <tr><td>Hand off ownership</td><td>just assign</td><td><code>std::move(ptr)</code></td></tr>
+          <tr><td>How many owners</td><td>—</td><td><code>ptr.use_count()</code></td></tr>
+          <tr><td>Freeing</td><td>garbage collector</td><td>automatic when the pointer dies</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-stl-algorithms.html">13. STL Algorithms</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Sort with comparator</td><td><code>a.sortedWith(compareByDescending { it })</code></td><td><code>std::sort(b, e, [](int x, int y){ return x &gt; y; })</code></td></tr>
+          <tr><td>Find first match</td><td><code>a.find(p)</code></td><td><code>std::find_if(b, e, p)</code> → iterator</td></tr>
+          <tr><td>Count matches</td><td><code>a.count(p)</code></td><td><code>std::count_if(b, e, p)</code></td></tr>
+          <tr><td>Map</td><td><code>a.map(f)</code></td><td><code>std::transform(b, e, out, f)</code></td></tr>
+          <tr><td>Fold / reduce</td><td><code>a.fold(0, f)</code></td><td><code>std::accumulate(b, e, 0, f)</code></td></tr>
+          <tr><td>Lambda</td><td><code>{ x -&gt; x * 2 }</code></td><td><code>[](int x){ return x * 2; }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-lambdas.html">14. Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Lambda</td><td><code>{ x -&gt; x + 1 }</code></td><td><code>[](int x){ return x + 1; }</code></td></tr>
+          <tr><td>Capture by value</td><td>implicit copy of primitives</td><td><code>[x]</code> or <code>[=]</code> (copy, const)</td></tr>
+          <tr><td>Capture by reference</td><td>implicit for objects</td><td><code>[&amp;x]</code> or <code>[&amp;]</code></td></tr>
+          <tr><td>Stateful closure</td><td><code>{ ++count }</code></td><td><code>[count]() mutable { return ++count; }</code></td></tr>
+          <tr><td>Function-typed value</td><td><code>(Int) -&gt; Int</code></td><td><code>std::function&lt;int(int)&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-enums-and-variant.html">15. Enums &amp; Variant</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Scoped enum member</td><td><code>Direction.NORTH</code></td><td><code>Direction::North</code></td></tr>
+          <tr><td>Enum to number</td><td><code>d.ordinal</code> (explicit)</td><td><code>static_cast&lt;int&gt;(d)</code> (explicit)</td></tr>
+          <tr><td>Sum type</td><td><code>sealed class Shape</code> with <code>Circle</code>/<code>Square</code> subclasses</td><td><code>std::variant&lt;Circle, Square&gt;</code></td></tr>
+          <tr><td>Type check</td><td><code>s is Circle</code></td><td><code>std::holds_alternative&lt;Circle&gt;(s)</code></td></tr>
+          <tr><td>Extract value</td><td><code>s.radius</code> (after smart-cast)</td><td><code>std::get&lt;Circle&gt;(s).radius</code></td></tr>
+          <tr><td>Exhaustive handling</td><td><code>when (s) { is Circle -&gt; …; is Square -&gt; … }</code></td><td><code>std::visit(fn, s)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-optional-and-exceptions.html">16. Optional &amp; Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Maybe-absent type</td><td><code>T?</code></td><td><code>std::optional&lt;T&gt;</code></td></tr>
+          <tr><td>Absent value</td><td><code>null</code></td><td><code>std::nullopt</code></td></tr>
+          <tr><td>Is it present?</td><td><code>x != null</code></td><td><code>opt.has_value()</code> / <code>if (opt)</code></td></tr>
+          <tr><td>Read the value</td><td><code>x</code> (after smart cast)</td><td><code>*opt</code> / <code>opt.value()</code></td></tr>
+          <tr><td>Fallback</td><td><code>x ?: d</code></td><td><code>opt.value_or(d)</code></td></tr>
+          <tr><td>Throw</td><td><code>throw Exception(m)</code></td><td><code>throw std::runtime_error(m)</code></td></tr>
+          <tr><td>Custom error</td><td><code>class E(m: String) : Exception(m)</code></td><td><code>struct E : std::runtime_error {}</code></td></tr>
+          <tr><td>Catch by type</td><td><code>catch (e: E) { … }</code></td><td><code>catch (const E&amp; e) { … }</code></td></tr>
+          <tr><td>Read the message</td><td><code>e.message</code></td><td><code>e.what()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-move-semantics.html">17. Move Semantics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Assignment</td><td>shares a reference</td><td><code>auto b = a;</code> deep-copies</td></tr>
+          <tr><td>Transfer ownership</td><td><code>x = src; src = mutableListOf()</code> by hand</td><td><code>auto b = std::move(a);</code></td></tr>
+          <tr><td>Rvalue reference</td><td>(none)</td><td><code>T&amp;&amp;</code></td></tr>
+          <tr><td>Move constructor</td><td>(none)</td><td><code>T(T&amp;&amp; o) noexcept</code></td></tr>
+          <tr><td>Cost of moving a vector</td><td>n/a</td><td>O(1) — steals the buffer pointer</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-tuples-and-structured-bindings.html">18. Tuples &amp; Structured Bindings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Two-value pack</td><td><code>Pair&lt;A, B&gt;</code></td><td><code>std::pair&lt;A, B&gt;</code></td></tr>
+          <tr><td>N-value pack</td><td><code>Triple&lt;A, B, C&gt;</code> (max 3)</td><td><code>std::tuple&lt;A, B, C&gt;</code></td></tr>
+          <tr><td>Build it</td><td><code>return Pair(x, y)</code></td><td><code>return {x, y};</code> / <code>std::make_tuple(x, y)</code></td></tr>
+          <tr><td>Index access</td><td><code>p.first</code>, <code>p.second</code></td><td><code>std::get&lt;0&gt;(t)</code> (compile-time index)</td></tr>
+          <tr><td>Destructure</td><td><code>val (a, b) = t</code></td><td><code>auto [a, b] = t;</code></td></tr>
+          <tr><td>Destructure by ref</td><td>—</td><td><code>auto&amp; [a, b] = t;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-iterators.html">19. Iterators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Idiomatic loop</td><td><code>for (x in v)</code></td><td><code>for (auto x : v)</code></td></tr>
+          <tr><td>Get a cursor</td><td><code>v.iterator()</code></td><td><code>v.begin()</code></td></tr>
+          <tr><td>Read / advance</td><td><code>it.next()</code></td><td><code>*it</code>, <code>++it</code></td></tr>
+          <tr><td>End sentinel</td><td><code>!it.hasNext()</code></td><td><code>it == v.end()</code></td></tr>
+          <tr><td>Distance / size</td><td><code>v.size</code></td><td><code>std::distance(b, e)</code></td></tr>
+          <tr><td>Jump forward</td><td><code>—</code></td><td><code>std::advance(it, n)</code></td></tr>
+          <tr><td>Read-only cursor</td><td><code>Iterator&lt;T&gt;</code> (no <code>remove</code>)</td><td><code>const_iterator</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>C++</th></tr>
+          <tr><td>Polymorphic node</td><td>sealed class + <code>when (n)</code></td><td>base class + virtual <code>eval()</code></td></tr>
+          <tr><td>Owning a child</td><td>field reference (GC)</td><td><code>std::unique_ptr&lt;Node&gt;</code></td></tr>
+          <tr><td>Hand off ownership</td><td>assign the reference</td><td><code>std::move(child)</code></td></tr>
+          <tr><td>Strict errors</td><td><code>throw</code></td><td><code>throw std::runtime_error</code></td></tr>
+          <tr><td>Soft errors</td><td><code>T?</code></td><td><code>std::optional&lt;T&gt;</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

@@ -20,6 +20,250 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C# ⇄ Rust cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-mutability.html">1. Variables, Mutability &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Inferred local</td><td><code>var x = 5;</code> (always reassignable)</td><td><code>let x = 5;</code> (immutable)</td></tr>
+          <tr><td>Mutable local</td><td><code>var x = 5;</code></td><td><code>let mut x = 5;</code></td></tr>
+          <tr><td>Integers</td><td><code>int</code>, <code>long</code>, <code>uint</code></td><td><code>i32</code>, <code>i64</code>, <code>u32</code> — never silently mixed</td></tr>
+          <tr><td>Floating point</td><td><code>double</code>, <code>float</code></td><td><code>f64</code>, <code>f32</code></td></tr>
+          <tr><td>Interpolation</td><td><code>$"{name} is {age}"</code></td><td><code>format!("{} is {}", name, age)</code></td></tr>
+          <tr><td>Naming</td><td><code>PascalCase</code> methods, <code>camelCase</code> locals</td><td><code>snake_case</code> for both</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-functions-and-control-flow.html">2. Functions &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Signature</td><td><code>string F(int x)</code></td><td><code>fn f(x: i32) -&gt; String</code></td></tr>
+          <tr><td>Where functions live</td><td>inside a class (often <code>static</code>)</td><td>free-standing at module level</td></tr>
+          <tr><td>Conditional value</td><td><code>a &gt; b ? a : b</code></td><td><code>if a &gt; b { a } else { b }</code></td></tr>
+          <tr><td>Multi-way value</td><td><code>n switch { ... }</code></td><td><code>if</code>/<code>else if</code> chain or <code>match</code></td></tr>
+          <tr><td>Returning</td><td><code>return x;</code> or <code>=&gt; x</code></td><td>final expression, no semicolon</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-strings.html">3. Strings: String &amp; &amp;str</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Borrowed text</td><td><code>string</code> (reference type)</td><td><code>&amp;str</code></td></tr>
+          <tr><td>Owned / growable</td><td><code>StringBuilder</code></td><td><code>String</code></td></tr>
+          <tr><td>Interpolation</td><td><code>$"Hello, {name}!"</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+          <tr><td>Uppercase</td><td><code>s.ToUpper()</code></td><td><code>s.to_uppercase()</code></td></tr>
+          <tr><td>Substring check</td><td><code>s.Contains(w)</code></td><td><code>s.contains(w)</code></td></tr>
+          <tr><td>Length</td><td><code>s.Length</code> — UTF-16 units</td><td><code>s.len()</code> — UTF-8 bytes</td></tr>
+          <tr><td>Equality</td><td><code>==</code> compares content</td><td><code>==</code> compares content</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-ownership.html">4. Ownership &amp; Moves</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Assignment of a heap value</td><td>copies the reference — both alive, aliased</td><td>moves ownership — source is dead (compile-checked)</td></tr>
+          <tr><td>Who frees memory</td><td>the GC, eventually</td><td>the owner's scope end, deterministically (<code>Drop</code>)</td></tr>
+          <tr><td>Deterministic cleanup</td><td><code>using</code> + <code>IDisposable</code>, opt-in</td><td>built into every value</td></tr>
+          <tr><td>Deep copy</td><td><code>new List&lt;int&gt;(a)</code></td><td><code>a.clone()</code></td></tr>
+          <tr><td>Exempt types</td><td>value types (<code>int</code>, structs)</td><td><code>Copy</code> types (<code>i32</code>, <code>f64</code>, <code>bool</code>…)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-borrowing.html">5. Borrowing &amp; References</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Read-only reference</td><td><code>in T</code></td><td><code>&amp;T</code> — shared, many allowed</td></tr>
+          <tr><td>Mutable reference</td><td><code>ref T</code></td><td><code>&amp;mut T</code> — exclusive, one at a time</td></tr>
+          <tr><td>Call-site marker</td><td><code>F(ref x)</code></td><td><code>f(&amp;x)</code> / <code>f(&amp;mut x)</code></td></tr>
+          <tr><td>Aliasing rule</td><td>none — mutation races are on you</td><td>many readers <em>or</em> one writer, compiler-enforced</td></tr>
+          <tr><td>Sequence view</td><td><code>IReadOnlyList&lt;T&gt;</code>, <code>ReadOnlySpan&lt;T&gt;</code></td><td><code>&amp;[T]</code> slice</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-vectors.html">6. Vectors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Literal</td><td><code>new List&lt;int&gt; { 1, 2, 3 }</code></td><td><code>vec![1, 2, 3]</code></td></tr>
+          <tr><td>Append</td><td><code>list.Add(x)</code></td><td><code>v.push(x)</code> — requires <code>let mut</code> or <code>&amp;mut</code></td></tr>
+          <tr><td>Length</td><td><code>list.Count</code></td><td><code>v.len()</code></td></tr>
+          <tr><td>Safe index</td><td><code>list[i]</code> throws if out of range</td><td><code>v.get(i)</code> returns <code>Option&lt;&amp;T&gt;</code></td></tr>
+          <tr><td>Iterate</td><td><code>foreach (var x in list)</code></td><td><code>for x in &amp;v</code></td></tr>
+          <tr><td>Read-only view</td><td><code>IReadOnlyList&lt;int&gt;</code></td><td><code>&amp;[i32]</code> (a slice)</td></tr>
+          <tr><td>Sum</td><td><code>list.Sum()</code> (LINQ)</td><td><code>v.iter().sum()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-hashmaps.html">7. HashMaps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Type</td><td><code>Dictionary&lt;string, int&gt;</code></td><td><code>HashMap&lt;String, u32&gt;</code> (+ <code>use std::collections::HashMap;</code>)</td></tr>
+          <tr><td>Set / overwrite</td><td><code>dict[k] = v;</code></td><td><code>map.insert(k, v)</code></td></tr>
+          <tr><td>Safe lookup</td><td><code>TryGetValue(k, out v)</code> → <code>bool</code> + <code>out</code></td><td><code>map.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+          <tr><td>Default if missing</td><td><code>GetValueOrDefault(k, 0)</code></td><td><code>map.get(k).copied().unwrap_or(0)</code></td></tr>
+          <tr><td>Upsert</td><td><code>ContainsKey</code> + two branches</td><td><code>*map.entry(k).or_insert(0) += n;</code></td></tr>
+          <tr><td>Count</td><td><code>dict.Count</code></td><td><code>map.len()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-option.html">8. Option: The End of Null</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Maybe-absent type</td><td><code>string?</code> (annotation + warnings)</td><td><code>Option&lt;String&gt;</code> (a real enum, errors)</td></tr>
+          <tr><td>Present / absent</td><td><code>"Ada"</code> / <code>null</code></td><td><code>Some("Ada".to_string())</code> / <code>None</code></td></tr>
+          <tr><td>Default if absent</td><td><code>name ?? "anonymous"</code></td><td><code>name.unwrap_or("anonymous".to_string())</code></td></tr>
+          <tr><td>Null-conditional</td><td><code>name?.Length</code></td><td><code>name.map(|n| n.len())</code></td></tr>
+          <tr><td>Both arms</td><td><code>if (name != null) ... else ...</code></td><td><code>match name { Some(n) =&gt; ..., None =&gt; ... }</code></td></tr>
+          <tr><td>"I know it's there"</td><td><code>name!</code> (suppresses the warning)</td><td><code>name.unwrap()</code> (panics loudly if wrong)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-result-and-errors.html">9. Result &amp; the ? Operator</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Fallible function</td><td><code>int Parse(string)</code> + hidden throws</td><td><code>fn parse_age(&amp;str) -&gt; Result&lt;u32, String&gt;</code></td></tr>
+          <tr><td>Success / failure</td><td>return value / thrown exception</td><td><code>Ok(v)</code> / <code>Err(e)</code> — both are returns</td></tr>
+          <tr><td>Parse safely</td><td><code>int.TryParse(s, out v)</code> — <code>bool</code> + <code>out</code></td><td><code>s.parse::&lt;u32&gt;()</code> — value and error in one <code>Result</code></td></tr>
+          <tr><td>Translate the error</td><td><code>catch (E e) { throw new F(...); }</code></td><td><code>.map_err(|e| ...)</code></td></tr>
+          <tr><td>Propagate</td><td><code>catch { throw; }</code> or just no try/catch</td><td><code>?</code></td></tr>
+          <tr><td>Handle both</td><td><code>try/catch</code></td><td><code>match { Ok(v) =&gt; ..., Err(e) =&gt; ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-structs-and-methods.html">10. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Data + behavior</td><td>one <code>class</code> body</td><td><code>struct</code> (data) + <code>impl</code> (behavior)</td></tr>
+          <tr><td>Constructor</td><td><code>new BankAccount("Ada")</code> (language feature)</td><td><code>BankAccount::new("Ada")</code> (naming convention)</td></tr>
+          <tr><td>Static vs instance call</td><td><code>Type.Method()</code> vs <code>obj.Method()</code></td><td><code>Type::function()</code> vs <code>value.method()</code></td></tr>
+          <tr><td>Receiver</td><td><code>this</code>, implicit</td><td><code>&amp;self</code> or <code>&amp;mut self</code>, explicit first parameter</td></tr>
+          <tr><td>"Does it mutate?"</td><td>read the body (or <code>readonly</code> struct members)</td><td>read the signature: <code>&amp;self</code> = no, <code>&amp;mut self</code> = yes</td></tr>
+          <tr><td>Failure in a method</td><td><code>throw new InvalidOperationException(...)</code></td><td><code>-&gt; Result&lt;(), String&gt;</code> with <code>Err(...)</code></td></tr>
+          <tr><td>Lifetime of the object</td><td>GC decides, eventually</td><td>dropped when the owner goes out of scope, deterministically</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums-and-match.html">11. Enums &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Closed type hierarchy</td><td><code>abstract record</code> + <code>sealed record</code> subtypes</td><td><code>enum</code> with data-carrying variants</td></tr>
+          <tr><td>Branch on shape</td><td><code>shape switch { Circle c =&gt; ... }</code></td><td><code>match shape { Shape::Circle { radius } =&gt; ... }</code></td></tr>
+          <tr><td>Extract the data</td><td>Pattern variable: <code>c.Radius</code></td><td>Destructuring: <code>radius</code> is bound in the arm</td></tr>
+          <tr><td>Missing case</td><td>Warning CS8509, crashes at runtime</td><td>Compile error E0004 — won't build</td></tr>
+          <tr><td>Catch-all arm</td><td><code>_ =&gt; throw ...</code> (obligatory hedge)</td><td><code>_ =&gt;</code> exists, but only when you <em>want</em> it</td></tr>
+          <tr><td>Pi</td><td><code>Math.PI</code></td><td><code>std::f64::consts::PI</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Contract</td><td><code>interface IDescribe</code> (I-prefix convention)</td><td><code>trait Describe</code> (no prefix)</td></tr>
+          <tr><td>Implementing</td><td><code>class Dog : IDescribe</code> — at declaration, owner only</td><td><code>impl Describe for Dog</code> — separate block, anywhere*</td></tr>
+          <tr><td>Default method</td><td>C# 8 default interface method (niche)</td><td>Default trait method (everywhere — see <code>Iterator</code>)</td></tr>
+          <tr><td>Retrofit onto foreign type</td><td>Extension methods only — can't satisfy the interface</td><td><code>impl Describe for String</code> — full trait membership</td></tr>
+          <tr><td>Generic constraint</td><td><code>where T : IDescribe</code></td><td><code>T: Describe</code> (next lesson)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-generics.html">13. Generics &amp; Trait Bounds</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Generic function</td><td><code>T First&lt;T&gt;(...)</code></td><td><code>fn first&lt;T&gt;(...)</code></td></tr>
+          <tr><td>Constraint</td><td><code>where T : IComparable&lt;T&gt;</code></td><td><code>&lt;T: PartialOrd&gt;</code>, or <code>where T: PartialOrd</code> after the signature</td></tr>
+          <tr><td>Multiple constraints</td><td><code>where T : IComparable&lt;T&gt;, ICloneable</code></td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+          <tr><td>Comparing</td><td><code>a.CompareTo(b) &gt; 0</code></td><td><code>a &gt; b</code> (operators are trait methods)</td></tr>
+          <tr><td>Runtime model</td><td>Reified — <code>typeof(T)</code>, shared bodies, boxing at edges</td><td>Monomorphized — per-type copies, zero boxing, no <code>typeof</code></td></tr>
+          <tr><td>"Maybe empty" return</td><td><code>T?</code> / <code>default</code></td><td><code>Option&lt;&amp;T&gt;</code> — honest in the type</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-closures-and-iterators.html">14. Closures &amp; Iterators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C# / LINQ</th><th>Rust</th></tr>
+          <tr><td>Lambda</td><td><code>p =&gt; p.InStock</code></td><td><code>|p| p.in_stock</code></td></tr>
+          <tr><td>Filter</td><td><code>.Where(...)</code></td><td><code>.filter(...)</code></td></tr>
+          <tr><td>Project</td><td><code>.Select(...)</code></td><td><code>.map(...)</code></td></tr>
+          <tr><td>Aggregate</td><td><code>.Sum()</code>, <code>.Count()</code>, <code>.Aggregate()</code></td><td><code>.sum()</code>, <code>.count()</code>, <code>.fold()</code></td></tr>
+          <tr><td>Materialize</td><td><code>.ToList()</code>, <code>.ToDictionary()</code></td><td><code>.collect()</code> — target type decides what you get</td></tr>
+          <tr><td>First match</td><td><code>.FirstOrDefault(...)</code></td><td><code>.find(...)</code> → <code>Option&lt;&amp;T&gt;</code></td></tr>
+          <tr><td>Start a chain</td><td>implicit on any <code>IEnumerable</code></td><td><code>.iter()</code> (borrow) / <code>.into_iter()</code> (consume)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-slices-tuples-destructuring.html">15. Slices, Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Tuple type</td><td><code>(double, double)</code></td><td><code>(f64, f64)</code></td></tr>
+          <tr><td>Positional access</td><td><code>t.Item1</code>, <code>t.Item2</code></td><td><code>t.0</code>, <code>t.1</code></td></tr>
+          <tr><td>Deconstruction</td><td><code>var (x, y) = point;</code> (via <code>Deconstruct</code>)</td><td><code>let (x, y) = point;</code> (built into patterns)</td></tr>
+          <tr><td>Swap</td><td><code>(a, b) = (b, a);</code></td><td><code>(a, b) = (b, a);</code></td></tr>
+          <tr><td>Borrowed view</td><td><code>ReadOnlySpan&lt;T&gt;</code> / <code>Span&lt;T&gt;</code> (ref structs)</td><td><code>&amp;[T]</code> / <code>&amp;mut [T]</code> (ordinary types)</td></tr>
+          <tr><td>Last element</td><td><code>v[^1]</code></td><td><code>v[v.len() - 1]</code>, or <code>v.last()</code> → <code>Option&lt;&amp;T&gt;</code></td></tr>
+          <tr><td>Math helpers</td><td><code>Math.Sqrt(x)</code>, <code>Math.Pow(x, 2)</code></td><td><code>x.sqrt()</code>, <code>x.powi(2)</code> — methods on the value</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-lifetimes.html">16. Lifetimes: An Introduction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Returned reference validity</td><td>GC handles it — never asked</td><td>Checked at compile time via lifetimes</td></tr>
+          <tr><td>Naming the relationship</td><td>— (ref-struct rules are all-or-nothing)</td><td><code>fn f&lt;'a&gt;(x: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+          <tr><td>When you write it</td><td>never</td><td>only when inference is ambiguous (2+ input refs, ref output)</td></tr>
+          <tr><td>When you don't</td><td>always</td><td>elision: one ref in, ref out — inferred</td></tr>
+          <tr><td>Closest C# cousin</td><td><code>Span&lt;T&gt;</code> escape rules</td><td>the general mechanism those rules approximate</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-derive-and-common-traits.html">17. Common Traits &amp; Derive</a></h3>
+        <table>
+          <tr><th>Capability</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Value equality</td><td><code>record</code>, or hand-written <code>Equals</code>/<code>GetHashCode</code></td><td><code>#[derive(PartialEq)]</code> (+ <code>Eq</code>, <code>Hash</code> for HashMap keys)</td></tr>
+          <tr><td>Debug printing</td><td><code>ToString()</code> override</td><td><code>#[derive(Debug)]</code> + <code>{:?}</code></td></tr>
+          <tr><td>User-facing text</td><td><code>ToString()</code></td><td><code>impl Display</code> — written by hand, deliberately</td></tr>
+          <tr><td>Copying</td><td><code>with { }</code>, <code>MemberwiseClone</code></td><td><code>#[derive(Clone)]</code> + explicit <code>.clone()</code></td></tr>
+          <tr><td>Default value</td><td><code>default(T)</code> / <code>new T()</code></td><td><code>#[derive(Default)]</code> + <code>Point::default()</code></td></tr>
+          <tr><td>Ordering</td><td><code>IComparable&lt;T&gt;</code></td><td><code>#[derive(PartialOrd, Ord)]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-modules.html">18. Modules &amp; Visibility</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Named scope</td><td><code>namespace Foo { }</code></td><td><code>mod foo { }</code></td></tr>
+          <tr><td>Public</td><td><code>public</code></td><td><code>pub</code></td></tr>
+          <tr><td>Private</td><td><code>private</code> (keyword)</td><td>the default (no keyword)</td></tr>
+          <tr><td>Assembly-visible</td><td><code>internal</code></td><td><code>pub(crate)</code></td></tr>
+          <tr><td>Import</td><td><code>using Foo.Bar;</code></td><td><code>use foo::bar;</code></td></tr>
+          <tr><td>Qualified call</td><td><code>Foo.Bar.Baz()</code></td><td><code>foo::bar::baz()</code></td></tr>
+          <tr><td>Boundary</td><td>assembly (namespaces are cosmetic)</td><td>module (the real privacy wall)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-threads-and-channels.html">19. Threads &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Start background work</td><td><code>Task.Run(() =&gt; ...)</code> (thread pool)</td><td><code>thread::spawn(move || ...)</code> (OS thread)</td></tr>
+          <tr><td>Wait for result</td><td><code>task.Result</code> / <code>await</code></td><td><code>handle.join().unwrap()</code></td></tr>
+          <tr><td>Capture semantics</td><td>closure shares variables (race-prone)</td><td><code>move</code> transfers ownership (race-proof)</td></tr>
+          <tr><td>Typed hand-off</td><td><code>Channel.CreateUnbounded&lt;int&gt;()</code></td><td><code>mpsc::channel()</code> → <code>(tx, rx)</code></td></tr>
+          <tr><td>Send / receive</td><td><code>Writer.WriteAsync</code> / <code>Reader.ReadAsync</code></td><td><code>tx.send(v)</code> / <code>rx.recv()</code> (blocking)</td></tr>
+          <tr><td>Shared mutable state</td><td><code>lock</code> / <code>Interlocked</code> — your job to remember</td><td><code>Arc&lt;Mutex&lt;T&gt;&gt;</code> — forgetting doesn't compile</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Habit</th><th>C#</th><th>Rust</th></tr>
+          <tr><td>Aggregate</td><td><code>items.Sum(i =&gt; ...)</code></td><td><code>items.iter().map(...).sum()</code></td></tr>
+          <tr><td>Search</td><td><code>FirstOrDefault</code> → <code>Item?</code>, hope callers null-check</td><td><code>.find(...)</code> → <code>Option&lt;&amp;Item&gt;</code>, callers must handle it</td></tr>
+          <tr><td>Mutate in place</td><td>invisible — any reference will do</td><td><code>&amp;mut</code> in the signature, <code>.iter_mut()</code> in the body</td></tr>
+          <tr><td>Filter + project</td><td><code>.Where(...).Select(...).ToList()</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+          <tr><td>Borrowed result</td><td>—</td><td><code>Option&lt;&amp;'a Item&gt;</code> — provably points into the input</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

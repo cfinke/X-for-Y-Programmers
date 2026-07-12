@@ -19,6 +19,240 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Python ⇄ Go cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Typed variable</td><td><code>x: int = 1</code></td><td><code>var x int = 1</code></td></tr>
+          <tr><td>Declare + infer</td><td><code>x = 1</code></td><td><code>x := 1</code></td></tr>
+          <tr><td>Constant</td><td><code>X = 1</code> (convention only)</td><td><code>const x = 1</code></td></tr>
+          <tr><td>Format string</td><td><code>f"{x}"</code></td><td><code>fmt.Sprintf("%v", x)</code></td></tr>
+          <tr><td>Numeric convert</td><td>implicit (<code>/</code> always floats)</td><td><code>float64(n)</code> (always explicit)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Interpolate</td><td><code>f"{x}"</code></td><td><code>fmt.Sprintf("%v", x)</code></td></tr>
+          <tr><td>Quote a value</td><td><code>repr(s)</code></td><td><code>fmt.Sprintf("%q", s)</code></td></tr>
+          <tr><td>Contains</td><td><code>x in s</code></td><td><code>strings.Contains(s, x)</code></td></tr>
+          <tr><td>Split / Join</td><td><code>s.split(",")</code> / <code>",".join(a)</code></td><td><code>strings.Split(s, ",")</code> / <code>strings.Join(a, ",")</code></td></tr>
+          <tr><td>Replace all</td><td><code>s.replace(a, b)</code></td><td><code>strings.ReplaceAll(s, a, b)</code></td></tr>
+          <tr><td>Prefix test</td><td><code>s.startswith(p)</code></td><td><code>strings.HasPrefix(s, p)</code></td></tr>
+          <tr><td>String → int</td><td><code>int(s)</code></td><td><code>strconv.Atoi(s)</code> (returns value + error)</td></tr>
+          <tr><td>Char count</td><td><code>len(s)</code></td><td><code>for range s</code> (or <code>utf8.RuneCountInString</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-slices.html">3. Slices</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Literal</td><td><code>[1, 2, 3]</code></td><td><code>[]int{1, 2, 3}</code></td></tr>
+          <tr><td>Append</td><td><code>xs.append(x)</code></td><td><code>xs = append(xs, x)</code></td></tr>
+          <tr><td>Length</td><td><code>len(xs)</code></td><td><code>len(xs)</code></td></tr>
+          <tr><td>Pre-size</td><td><code>[0] * n</code></td><td><code>make([]int, n)</code></td></tr>
+          <tr><td>Sub-slice</td><td><code>xs[a:b]</code></td><td><code>xs[a:b]</code></td></tr>
+          <tr><td>Iterate</td><td><code>for x in xs:</code></td><td><code>for _, x := range xs</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Create empty</td><td><code>{}</code> / <code>dict()</code></td><td><code>make(map[string]int)</code></td></tr>
+          <tr><td>Literal</td><td><code>{ "a": 1 }</code></td><td><code>map[string]int{"a": 1}</code></td></tr>
+          <tr><td>Read missing key</td><td><code>KeyError</code> (or default via <code>.get</code>)</td><td>zero value (<code>0</code>, <code>""</code>, …)</td></tr>
+          <tr><td>Membership</td><td><code>"a" in m</code></td><td><code>_, ok := m["a"]</code></td></tr>
+          <tr><td>Delete</td><td><code>del m["a"]</code></td><td><code>delete(m, "a")</code></td></tr>
+          <tr><td>Size</td><td><code>len(m)</code></td><td><code>len(m)</code></td></tr>
+          <tr><td>Iterate</td><td>insertion order</td><td><code>range</code> — random order</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Multiple returns</td><td><code>tuple[int, bool]</code></td><td><code>(int, bool)</code> native</td></tr>
+          <tr><td>Destructure result</td><td><code>q, ok = f()</code></td><td><code>q, ok := f()</code></td></tr>
+          <tr><td>Named returns</td><td>—</td><td><code>func f() (q int, ok bool)</code> + naked <code>return</code></td></tr>
+          <tr><td>Variadic</td><td><code>*ns: int</code></td><td><code>ns ...int</code></td></tr>
+          <tr><td>Function type</td><td><code>Callable[[int], int]</code></td><td><code>func(int) int</code></td></tr>
+          <tr><td>Absent value</td><td><code>Optional[T]</code></td><td><code>(T, bool)</code> comma-ok</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-structs-and-methods.html">6. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Define shape</td><td><code>class C:<br>&nbsp;&nbsp;def __init__(self, x): self.x = x</code></td><td><code>type C struct { X int }</code></td></tr>
+          <tr><td>Construct</td><td><code>C(1)</code></td><td><code>C{X: 1}</code></td></tr>
+          <tr><td>Read method</td><td><code>def m(self): return self.x</code></td><td><code>func (c C) M() int {…}</code></td></tr>
+          <tr><td>Mutating method</td><td><code>def m(self): self.x += 1</code></td><td><code>func (c *C) M() {…}</code></td></tr>
+          <tr><td>Receiver name</td><td><code>self</code> (convention)</td><td><code>c</code> (you choose)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-pointers.html">7. Pointers</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Take an address</td><td>(implicit for objects)</td><td><code>p := &amp;x</code></td></tr>
+          <tr><td>Read the pointee</td><td>—</td><td><code>v := *p</code></td></tr>
+          <tr><td>Write the pointee</td><td>—</td><td><code>*p = 10</code></td></tr>
+          <tr><td>Null pointer</td><td><code>None</code></td><td><code>nil</code></td></tr>
+          <tr><td>Mutate caller's value</td><td>only via object attributes</td><td><code>func f(p *int)</code></td></tr>
+          <tr><td>Mutating method</td><td><code>self.x = …</code></td><td><code>func (a *T) M()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Declare interface</td><td><code>class Shape(Protocol):<br>&nbsp;&nbsp;def area(self) -> float: ...</code></td><td><code>type Shape interface { Area() float64 }</code></td></tr>
+          <tr><td>Satisfy it</td><td>just define the method — no base class or registration needed</td><td>just define the method — no keyword</td></tr>
+          <tr><td>Interface parameter</td><td><code>def f(s: Shape)</code></td><td><code>func f(s Shape)</code></td></tr>
+          <tr><td>Any value</td><td><code>object</code> / <code>Any</code></td><td><code>interface{}</code> (or <code>any</code> in Go 1.18+)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-errors.html">9. Errors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Signal failure</td><td><code>raise ValueError(msg)</code></td><td><code>return errors.New(msg)</code></td></tr>
+          <tr><td>Formatted error</td><td><code>raise ValueError(f"x: {v}")</code></td><td><code>fmt.Errorf("x: %v", v)</code></td></tr>
+          <tr><td>Handle failure</td><td><code>try/except</code></td><td><code>if err != nil { … }</code></td></tr>
+          <tr><td>Success sentinel</td><td>no raise</td><td>error is <code>nil</code></td></tr>
+          <tr><td>Error text</td><td><code>str(e)</code></td><td><code>err.Error()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-goroutines-and-channels.html">10. Goroutines &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Start async work</td><td><code>task = asyncio.create_task(work())</code></td><td><code>go work()</code></td></tr>
+          <tr><td>Channel of T</td><td><code>asyncio.Queue()</code> (roughly)</td><td><code>make(chan T)</code></td></tr>
+          <tr><td>Send / receive</td><td><code>await q.put(v)</code> / <code>await q.get()</code></td><td><code>ch &lt;- v</code> / <code>v := &lt;-ch</code></td></tr>
+          <tr><td>Buffered channel</td><td><code>asyncio.Queue(maxsize=n)</code></td><td><code>make(chan T, n)</code></td></tr>
+          <tr><td>Signal "no more"</td><td>sentinel value / <code>StopAsyncIteration</code></td><td><code>close(ch)</code></td></tr>
+          <tr><td>Drain a stream</td><td><code>async for v in aiter</code></td><td><code>for v := range ch</code></td></tr>
+          <tr><td>Wait for a group</td><td><code>await asyncio.gather(*tasks)</code></td><td><code>wg.Wait()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-generics.html">11. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Generic function</td><td><code>def f(x: T) -> T</code></td><td><code>func F[T any](x T)</code></td></tr>
+          <tr><td>Two parameters</td><td>two <code>TypeVar</code>s</td><td><code>[T, U any]</code></td></tr>
+          <tr><td>Equality bound</td><td>unchecked (duck typing)</td><td><code>[T comparable]</code></td></tr>
+          <tr><td>Ordering bound</td><td>unchecked (duck typing)</td><td><code>[T cmp.Ordered]</code></td></tr>
+          <tr><td>Generic type</td><td><code>class Box(Generic[T])</code></td><td><code>type Box[T any] struct{ ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-closures.html">12. Closures</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Anonymous function</td><td><code>lambda n: n * 2</code></td><td><code>func(n int) int { return n * 2 }</code></td></tr>
+          <tr><td>Function type</td><td><code>Callable[[], int]</code></td><td><code>func() int</code></td></tr>
+          <tr><td>Captured, mutated var</td><td><code>nonlocal count; count += 1</code></td><td><code>count++</code></td></tr>
+          <tr><td>Closure factory</td><td><code>make_counter()</code></td><td><code>MakeCounter()</code></td></tr>
+          <tr><td>Closure as argument</td><td><code>[f(x) for x in xs]</code></td><td><code>ApplyTwice(n, f)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-type-switches.html">13. Type Switches</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Checked narrow</td><td><code>isinstance(x, int)</code></td><td><code>v, ok := x.(int)</code></td></tr>
+          <tr><td>Unchecked cast</td><td><code>cast(int, x)</code> (no runtime check)</td><td><code>x.(int)</code> (panics if wrong)</td></tr>
+          <tr><td>Multi-way narrow</td><td><code>match x: case int(): …</code></td><td><code>switch v := x.(type)</code></td></tr>
+          <tr><td>Nil interface</td><td><code>x is None</code></td><td><code>case nil:</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-defer-panic-recover.html">14. Defer, Panic &amp; Recover</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Cleanup on exit</td><td><code>finally: …</code></td><td><code>defer f()</code></td></tr>
+          <tr><td>Run order</td><td>single block</td><td>LIFO across all defers</td></tr>
+          <tr><td>Raise</td><td><code>raise</code></td><td><code>panic</code></td></tr>
+          <tr><td>Catch</td><td><code>except</code> anywhere</td><td><code>recover()</code> in a defer only</td></tr>
+          <tr><td>Idiomatic error flow</td><td>exceptions</td><td>return <code>error</code> values</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-embedding.html">15. Embedding &amp; Composition</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Reuse a type</td><td><code>class B(A): ...</code></td><td><code>type B struct { A }</code></td></tr>
+          <tr><td>Call reused method</td><td><code>b.method()</code> (inherited)</td><td><code>b.method()</code> (promoted)</td></tr>
+          <tr><td>Reach the base</td><td><code>super().method()</code></td><td><code>b.A.method()</code></td></tr>
+          <tr><td>Compose interfaces</td><td><code>class C(A, B): ...</code></td><td><code>type C interface { A; B }</code></td></tr>
+          <tr><td>Satisfy interface</td><td>implicit (duck typing)</td><td>implicit (has the methods)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-sorting.html">16. Sorting</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Sort numbers</td><td><code>a.sort()</code></td><td><code>sort.Ints(a)</code></td></tr>
+          <tr><td>Sort strings</td><td><code>a.sort()</code></td><td><code>sort.Strings(a)</code></td></tr>
+          <tr><td>Custom order</td><td><code>a.sort(key=…)</code></td><td><code>sort.Slice(a, less)</code></td></tr>
+          <tr><td>Comparator result</td><td>key value (any orderable)</td><td><code>bool</code> (i before j?)</td></tr>
+          <tr><td>Stable sort</td><td>always stable</td><td><code>sort.SliceStable(a, less)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-json.html">17. JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Encode</td><td><code>json.dumps(u)</code></td><td><code>json.Marshal(u)</code> → <code>[]byte</code></td></tr>
+          <tr><td>Decode</td><td><code>json.loads(s)</code></td><td><code>json.Unmarshal(b, &amp;u)</code></td></tr>
+          <tr><td>Rename key</td><td>dict key you choose</td><td><code>`json:"name"`</code> tag</td></tr>
+          <tr><td>Skip empty</td><td>omit from dict, or <code>None</code> check</td><td><code>,omitempty</code></td></tr>
+          <tr><td>Dynamic keys</td><td><code>dict[str, int]</code></td><td><code>map[string]int</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-custom-errors-and-wrapping.html">18. Custom Errors &amp; Wrapping</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Custom error</td><td><code>class E(Exception): ...</code></td><td><code>type E struct{}</code> + <code>Error() string</code></td></tr>
+          <tr><td>Sentinel value</td><td><code>SENTINEL = E(...)</code></td><td><code>var ErrX = errors.New(...)</code></td></tr>
+          <tr><td>Wrap a cause</td><td><code>raise E(...) from cause</code></td><td><code>fmt.Errorf("m: %w", cause)</code></td></tr>
+          <tr><td>Match a value</td><td><code>err is SENTINEL</code></td><td><code>errors.Is(err, ErrX)</code></td></tr>
+          <tr><td>Match a type</td><td><code>isinstance(e, E)</code></td><td><code>errors.As(err, &amp;e)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-stringers-and-formatting.html">19. Stringers &amp; Formatting</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Custom text</td><td><code>__str__(self)</code></td><td><code>String() string</code></td></tr>
+          <tr><td>Default print</td><td><code>f"{x}"</code></td><td><code>%v</code></td></tr>
+          <tr><td>Struct with fields</td><td><code>vars(x)</code> / dataclass <code>repr</code></td><td><code>%+v</code> (names) / <code>%v</code></td></tr>
+          <tr><td>Type name</td><td><code>type(x).__name__</code></td><td><code>%T</code></td></tr>
+          <tr><td>Quoted string</td><td><code>json.dumps(s)</code></td><td><code>%q</code></td></tr>
+          <tr><td>Integer / float</td><td><code>str(n)</code> / <code>f"{n}"</code></td><td><code>%d</code> / <code>%f</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Go</th></tr>
+          <tr><td>Record type</td><td><code>class Product: …</code></td><td><code>type Product struct { … }</code></td></tr>
+          <tr><td>Indexed store</td><td><code>dict[str, Product]</code></td><td><code>map[string]Product</code></td></tr>
+          <tr><td>Missing lookup</td><td><code>.get(sku)</code> returns <code>None</code></td><td><code>(Product, error)</code> with a wrapped sentinel</td></tr>
+          <tr><td>Recognize a cause</td><td><code>isinstance(e, NotFoundError)</code></td><td><code>errors.Is(err, ErrNotFound)</code></td></tr>
+          <tr><td>Stable key order</td><td><code>dict</code> preserves insertion order, but you still <code>sorted(...)</code> for a sorted result</td><td>copy keys to a slice, then <code>sort</code></td></tr>
+          <tr><td>Depend on behavior</td><td><code>class Reader(Protocol)</code> / plain duck typing</td><td>just have the methods (implicit)</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

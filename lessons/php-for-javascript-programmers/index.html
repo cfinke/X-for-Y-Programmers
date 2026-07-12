@@ -19,6 +19,265 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>JavaScript ⇄ PHP cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Declare a variable</td><td><code>let x = 1;</code></td><td><code>$x = 1;</code> (assignment is declaration)</td></tr>
+          <tr><td>Constant</td><td><code>const x = 1;</code></td><td><code>const X = 1;</code> (class/global scope only — no const locals)</td></tr>
+          <tr><td>Scoping</td><td>block scope (<code>let</code>/<code>const</code>), hoisting</td><td>function scope only — no hoisting drama</td></tr>
+          <tr><td>Numbers</td><td><code>number</code></td><td><code>int</code> and <code>float</code>, separate</td></tr>
+          <tr><td>Typed signature</td><td>(comments/JSDoc only)</td><td><code>function f(int $x): string</code>, enforced at runtime</td></tr>
+          <tr><td>Interpolation</td><td><code>`${name}!`</code></td><td><code>"$name!"</code> (double quotes only)</td></tr>
+          <tr><td>Naming</td><td><code>camelCase</code></td><td><code>snake_case</code> functions, <code>$variables</code> with a sigil</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Interpolation</td><td><code>`Hi, ${name}`</code></td><td><code>"Hi, $name"</code> or <code>"Hi, {$user['name']}"</code></td></tr>
+          <tr><td>Literal string</td><td><code>'no magic'</code> / <code>"no magic"</code></td><td><code>'no magic, $name stays $name'</code></td></tr>
+          <tr><td>Concatenate</td><td><code>a + b</code></td><td><code>$a . $b</code> (and <code>.=</code> to append)</td></tr>
+          <tr><td>Uppercase / lowercase</td><td><code>s.toUpperCase()</code></td><td><code>strtoupper($s)</code> / <code>strtolower($s)</code></td></tr>
+          <tr><td>Contains</td><td><code>s.includes(x)</code></td><td><code>str_contains($s, $x)</code></td></tr>
+          <tr><td>Starts / ends with</td><td><code>s.startsWith(x)</code></td><td><code>str_starts_with($s, $x)</code> / <code>str_ends_with</code></td></tr>
+          <tr><td>Length</td><td><code>s.length</code></td><td><code>strlen($s)</code> (bytes) / <code>mb_strlen</code> (characters)</td></tr>
+          <tr><td>Join an array</td><td><code>arr.join(", ")</code></td><td><code>implode(", ", $arr)</code> — glue first</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-as-lists.html">3. Arrays as Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>List literal</td><td><code>[1, 2, 3]</code></td><td><code>[1, 2, 3]</code> (identical)</td></tr>
+          <tr><td>Append</td><td><code>arr.push(x)</code></td><td><code>$arr[] = $x;</code></td></tr>
+          <tr><td>Length</td><td><code>arr.length</code></td><td><code>count($arr)</code></td></tr>
+          <tr><td>Membership</td><td><code>arr.includes(x)</code></td><td><code>in_array($x, $arr, true)</code> — pass <code>true</code> for strict comparison</td></tr>
+          <tr><td>Sum</td><td><code>arr.reduce((s, n) =&gt; s + n, 0)</code></td><td><code>array_sum($arr)</code></td></tr>
+          <tr><td>Passing to a function</td><td>by reference — callee can mutate</td><td>by value (copy-on-write) — callee gets its own copy</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-associative-arrays.html">4. Associative Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Record literal</td><td><code>{ apples: 3 }</code></td><td><code>['apples' =&gt; 3]</code></td></tr>
+          <tr><td>Read a key</td><td><code>inv.apples</code> / <code>inv["apples"]</code></td><td><code>$inv['apples']</code></td></tr>
+          <tr><td>Default for missing</td><td><code>inv[k] ?? 0</code></td><td><code>$inv[$k] ?? 0</code> — same operator</td></tr>
+          <tr><td>Set a key</td><td><code>inv[k] = v</code></td><td><code>$inv[$k] = $v;</code></td></tr>
+          <tr><td>Entries loop</td><td><code>for (const [k, v] of Object.entries(o))</code></td><td><code>foreach ($a as $k =&gt; $v)</code></td></tr>
+          <tr><td>Keys / values</td><td><code>Object.keys(o)</code> / <code>Object.values(o)</code></td><td><code>array_keys($a)</code> / <code>array_values($a)</code></td></tr>
+          <tr><td>Key exists?</td><td><code>k in o</code></td><td><code>array_key_exists($k, $a)</code> / <code>isset($a[$k])</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Default parameter</td><td><code>greeting = "Hello"</code></td><td><code>string $greeting = "Hello"</code> (same idea, plus a type)</td></tr>
+          <tr><td>Nullable parameter</td><td><code>last = null</code> (convention)</td><td><code>?string $last = null</code> (enforced)</td></tr>
+          <tr><td>"Number or string"</td><td>JSDoc comment + <code>typeof</code></td><td><code>int|string $id</code> union type</td></tr>
+          <tr><td>Narrowing</td><td><code>typeof id === "number"</code></td><td><code>is_int($id)</code>, <code>is_string($id)</code>, <code>is_array($id)</code>…</td></tr>
+          <tr><td>Labeled call</td><td><code>f({ name: "Ada" })</code> options object</td><td><code>f(name: "Ada")</code> named arguments, built in</td></tr>
+          <tr><td>Wrong-type call</td><td>silently proceeds</td><td>throws <code>TypeError</code> at the call</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-handling.html">6. Null, ?? &amp; ?-&gt;</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>The nothing value(s)</td><td><code>null</code>, <code>undefined</code></td><td><code>null</code> only</td></tr>
+          <tr><td>Null coalescing</td><td><code>a ?? b</code></td><td><code>$a ?? $b</code> (also silences missing keys/vars)</td></tr>
+          <tr><td>Coalescing assignment</td><td><code>a ??= b</code></td><td><code>$a ??= $b</code></td></tr>
+          <tr><td>Optional chaining</td><td><code>obj?.prop?.deep</code></td><td><code>$obj?-&gt;prop?-&gt;deep</code></td></tr>
+          <tr><td>Existence check</td><td><code>typeof x !== "undefined"</code></td><td><code>isset($x)</code> — but false for null!</td></tr>
+          <tr><td>Nullable type</td><td><code>string | null</code> (TS)</td><td><code>?string</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-comparisons-and-juggling.html">7. Comparisons &amp; Type Juggling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Loose equality</td><td><code>==</code> (avoid)</td><td><code>==</code> (avoid — different juggling rules)</td></tr>
+          <tr><td>Strict equality</td><td><code>===</code></td><td><code>===</code> (use always)</td></tr>
+          <tr><td><code>"0"</code></td><td>truthy</td><td>falsy — but <code>"0.0"</code> and <code>" "</code> are truthy</td></tr>
+          <tr><td><code>[]</code></td><td>truthy (object)</td><td>falsy (empty array)</td></tr>
+          <tr><td>To boolean</td><td><code>Boolean(v)</code> / <code>!!v</code></td><td><code>(bool) $v</code></td></tr>
+          <tr><td>Comparator</td><td><code>(a, b) =&gt; a - b</code></td><td><code>fn($a, $b) =&gt; $a &lt;=&gt; $b</code></td></tr>
+          <tr><td>String vs number <code>==</code></td><td>string coerced to number, always</td><td>PHP 8: only if the string is numeric</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-match.html">8. Control Flow &amp; match</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Chained conditions</td><td><code>else if</code></td><td><code>elseif</code> (one word, by convention)</td></tr>
+          <tr><td><code>switch</code> comparison</td><td>strict-ish (<code>===</code>)</td><td>loose <code>==</code> — juggling applies!</td></tr>
+          <tr><td><code>switch</code> fallthrough</td><td>yes, needs <code>break</code></td><td>yes, needs <code>break</code></td></tr>
+          <tr><td><code>match</code> comparison</td><td>—</td><td>strict <code>===</code></td></tr>
+          <tr><td><code>match</code> fallthrough</td><td>—</td><td>impossible — one expression per arm</td></tr>
+          <tr><td>Grouped cases</td><td>stacked <code>case</code> labels</td><td>comma-separated arm: <code>"a", "b" =&gt;</code></td></tr>
+          <tr><td>Nothing matches</td><td>silent no-op</td><td><code>match</code> throws <code>UnhandledMatchError</code></td></tr>
+          <tr><td>Range dispatch</td><td>if/else chain</td><td><code>match (true)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Constructor</td><td><code>constructor()</code></td><td><code>public function __construct()</code></td></tr>
+          <tr><td>Member access</td><td><code>obj.prop</code></td><td><code>$obj-&gt;prop</code></td></tr>
+          <tr><td>Self reference</td><td><code>this</code> (lexically slippery)</td><td><code>$this</code> (mandatory, always the receiver)</td></tr>
+          <tr><td>Privacy</td><td><code>#field</code></td><td><code>private</code> / <code>protected</code> / <code>public</code></td></tr>
+          <tr><td>Init a property</td><td><code>this.x = x;</code></td><td>promotion: <code>__construct(private int $x)</code></td></tr>
+          <tr><td>No return value</td><td>(nothing)</td><td><code>: void</code>, enforced</td></tr>
+          <tr><td>Method as callback</td><td><code>obj.method.bind(obj)</code></td><td><code>$obj-&gt;method(...)</code> — no binding needed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-interfaces-and-inheritance.html">10. Interfaces, Inheritance &amp; Abstracts</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Inherit</td><td><code>extends</code></td><td><code>extends</code> (single inheritance, same)</td></tr>
+          <tr><td>Call the parent</td><td><code>super.method()</code>, <code>super()</code></td><td><code>parent::method()</code>, <code>parent::__construct()</code></td></tr>
+          <tr><td>Contract</td><td>duck typing / TS interfaces</td><td><code>interface</code> + <code>implements</code>, engine-enforced</td></tr>
+          <tr><td>Must-override method</td><td>stub that throws at runtime</td><td><code>abstract public function f(): T;</code>, checked at load</td></tr>
+          <tr><td>Half-built base class</td><td>ordinary class + discipline</td><td><code>abstract class</code> — cannot be instantiated</td></tr>
+          <tr><td>Type test</td><td><code>instanceof</code> (classes only)</td><td><code>instanceof</code> (classes <em>and</em> interfaces)</td></tr>
+          <tr><td>π</td><td><code>Math.PI</code></td><td><code>M_PI</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Declare</td><td><code>Object.freeze({ Pending: "pending" })</code></td><td><code>enum OrderStatus: string { case Pending = 'pending'; }</code></td></tr>
+          <tr><td>Reference a case</td><td><code>OrderStatus.Pending</code></td><td><code>OrderStatus::Pending</code></td></tr>
+          <tr><td>Backing string</td><td>the constant itself</td><td><code>$case-&gt;value</code></td></tr>
+          <tr><td>Parse, throw on bad input</td><td>hand-rolled</td><td><code>OrderStatus::from($s)</code></td></tr>
+          <tr><td>Parse, null on bad input</td><td><code>values().includes(v) ? v : null</code></td><td><code>OrderStatus::tryFrom($s)</code></td></tr>
+          <tr><td>All cases</td><td><code>Object.values(OrderStatus)</code></td><td><code>OrderStatus::cases()</code></td></tr>
+          <tr><td>Methods on the type</td><td>separate functions</td><td><code>public function label(): string</code> inside the enum</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Define shared methods</td><td><code>const mixin = { m() {...} };</code></td><td><code>trait Name { public function m() {...} }</code></td></tr>
+          <tr><td>Apply to a class</td><td><code>Object.assign(C.prototype, mixin)</code></td><td><code>use Name;</code> inside the class body</td></tr>
+          <tr><td>Call back into the host</td><td><code>this.method()</code></td><td><code>$this-&gt;method()</code></td></tr>
+          <tr><td>Several at once</td><td>repeated <code>Object.assign</code> calls</td><td><code>use A, B;</code></td></tr>
+          <tr><td>Name collision</td><td>last assign wins, silently</td><td>fatal error — resolve with <code>insteadof</code> / <code>as</code></td></tr>
+          <tr><td>When applied</td><td>runtime</td><td>parse time — tooling sees the methods</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-array-functions.html">13. array_map, array_filter &amp; Friends</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Map</td><td><code>arr.map(fn)</code></td><td><code>array_map($fn, $arr)</code></td></tr>
+          <tr><td>Filter</td><td><code>arr.filter(fn)</code></td><td><code>array_filter($arr, $fn)</code> — note the flipped order</td></tr>
+          <tr><td>Reduce</td><td><code>arr.reduce(fn, init)</code></td><td><code>array_reduce($arr, $fn, $init)</code></td></tr>
+          <tr><td>Sum</td><td><code>arr.reduce((s, n) =&gt; s + n, 0)</code></td><td><code>array_sum($arr)</code></td></tr>
+          <tr><td>Reindex after filter</td><td>automatic</td><td><code>array_values($arr)</code></td></tr>
+          <tr><td>Sort</td><td><code>arr.toSorted(cmp)</code></td><td><code>usort($arr, $cmp)</code> — in place, by reference</td></tr>
+          <tr><td>Chaining</td><td><code>arr.filter(f).map(g)</code></td><td>nest or use intermediate variables</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-spread.html">14. List Assignment &amp; Spread</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>List destructuring</td><td><code>const [a, b] = pair;</code></td><td><code>[$a, $b] = $pair;</code></td></tr>
+          <tr><td>Keyed destructuring</td><td><code>const { name } = user;</code></td><td><code>['name' =&gt; $name] = $user;</code></td></tr>
+          <tr><td>Skip an element</td><td><code>const [, second] = arr;</code></td><td><code>[, $second] = $arr;</code></td></tr>
+          <tr><td>Swap</td><td><code>[a, b] = [b, a];</code></td><td><code>[$a, $b] = [$b, $a];</code></td></tr>
+          <tr><td>Rest parameter</td><td><code>function f(...args)</code></td><td><code>function f(int ...$args)</code> — typeable</td></tr>
+          <tr><td>Call-site spread</td><td><code>f(...args)</code></td><td><code>f(...$args)</code></td></tr>
+          <tr><td>Merge</td><td><code>{ ...a, ...b }</code></td><td><code>[...$a, ...$b]</code> or <code>array_merge($a, $b)</code></td></tr>
+          <tr><td>In a foreach</td><td><code>for (const [k, v] of pairs)</code></td><td><code>foreach ($pairs as [$k, $v])</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-closures-and-callables.html">15. Closures &amp; Callables</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Anonymous function</td><td><code>function (x) { ... }</code></td><td><code>function ($x) { ... }</code> — captures nothing</td></tr>
+          <tr><td>Capture a variable</td><td>automatic, live</td><td><code>use ($x)</code> — explicit, by-value snapshot</td></tr>
+          <tr><td>Live capture</td><td>automatic</td><td><code>use (&amp;$x)</code> — by reference</td></tr>
+          <tr><td>Arrow function</td><td><code>(x) =&gt; x * n</code></td><td><code>fn($x) =&gt; $x * $n</code> — auto-capture by value, expression only</td></tr>
+          <tr><td>Function type</td><td>none needed</td><td><code>callable</code> (anything invokable) / <code>Closure</code> (closure objects)</td></tr>
+          <tr><td>Named fn as value</td><td><code>const f = strlen;</code></td><td><code>$f = strlen(...);</code> (8.1) or <code>$f = 'strlen';</code></td></tr>
+          <tr><td>Call it</td><td><code>f(x)</code></td><td><code>$f($x)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Catch everything</td><td><code>catch (e)</code></td><td><code>catch (Throwable $e)</code> (explicit, rarely right)</td></tr>
+          <tr><td>Catch one type</td><td><code>catch</code> + <code>instanceof</code> + rethrow</td><td><code>catch (InvalidArgumentException $e)</code></td></tr>
+          <tr><td>Catch several types</td><td>more <code>instanceof</code> branches</td><td><code>catch (TypeError | ValueError $e)</code>, or stacked catches</td></tr>
+          <tr><td>Base class</td><td><code>Error</code></td><td><code>Throwable</code> → <code>Exception</code> / <code>Error</code></td></tr>
+          <tr><td>Custom type</td><td><code>class X extends Error</code></td><td><code>class X extends Exception {}</code></td></tr>
+          <tr><td>Message</td><td><code>e.message</code></td><td><code>$e-&gt;getMessage()</code></td></tr>
+          <tr><td>Throw in an expression</td><td><code>??</code> can't throw</td><td><code>$x ?? throw new ...</code> (PHP 8)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-static-const-readonly.html">17. Static, Constants &amp; readonly</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Static method</td><td><code>static f() {}</code>, <code>C.f()</code></td><td><code>public static function f()</code>, <code>C::f()</code></td></tr>
+          <tr><td>Static property</td><td><code>static x = 0</code>, <code>C.x</code></td><td><code>static int $x = 0</code>, <code>C::$x</code> / <code>self::$x</code></td></tr>
+          <tr><td>Class constant</td><td>(none — module <code>const</code>)</td><td><code>const MAX = 10;</code> → <code>C::MAX</code></td></tr>
+          <tr><td>Immutable property</td><td><code>Object.freeze(obj)</code>, whole object</td><td><code>readonly</code>, per property, enforced</td></tr>
+          <tr><td>Freeze violation</td><td>silent (or strict-mode throw)</td><td>always throws <code>Error</code></td></tr>
+          <tr><td>Self reference</td><td><code>ClassName.member</code></td><td><code>self::member</code> (or <code>static::</code> for late binding)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-generators.html">18. Generators &amp; Iterables</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Declare a generator</td><td><code>function* g() {}</code></td><td><code>function g(): Generator {}</code> — inferred from <code>yield</code></td></tr>
+          <tr><td>Produce a value</td><td><code>yield x;</code></td><td><code>yield $x;</code></td></tr>
+          <tr><td>Consume</td><td><code>for...of</code>, <code>[...g]</code></td><td><code>foreach</code>, <code>iterator_to_array($g)</code></td></tr>
+          <tr><td>Delegate</td><td><code>yield* other()</code></td><td><code>yield from other();</code></td></tr>
+          <tr><td>Accept array-or-lazy</td><td>duck typing</td><td><code>iterable</code> type declaration</td></tr>
+          <tr><td>Key/value yield</td><td>(yield pairs manually)</td><td><code>yield $key =&gt; $value;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Encode</td><td><code>JSON.stringify(x)</code></td><td><code>json_encode($x)</code></td></tr>
+          <tr><td>Decode</td><td><code>JSON.parse(s)</code></td><td><code>json_decode($s, true)</code></td></tr>
+          <tr><td>Decode (objects)</td><td>—</td><td><code>json_decode($s)</code> → <code>stdClass</code>, <code>$o-&gt;name</code></td></tr>
+          <tr><td>Bad input</td><td>throws <code>SyntaxError</code></td><td><code>null</code>, or <code>JsonException</code> with <code>JSON_THROW_ON_ERROR</code></td></tr>
+          <tr><td>Pretty print</td><td><code>JSON.stringify(x, null, 2)</code></td><td><code>json_encode($x, JSON_PRETTY_PRINT)</code></td></tr>
+          <tr><td>Optional field</td><td><code>data.name ?? d</code></td><td><code>$data["name"] ?? $d</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>PHP</th></tr>
+          <tr><td>Sum a list</td><td><code>reduce((s, x) =&gt; ..., 0)</code></td><td><code>array_reduce($a, fn($s, $x) =&gt; ..., 0)</code></td></tr>
+          <tr><td>Find or null</td><td><code>find(...) ?? null</code></td><td><code>foreach</code> + <code>return</code>, typed <code>: ?Item</code></td></tr>
+          <tr><td>Shallow-copy an object</td><td><code>{ ...item }</code></td><td><code>clone $item</code></td></tr>
+          <tr><td>Copy an array</td><td><code>[...items]</code> (explicit)</td><td>assignment / <code>array_map</code> (automatic)</td></tr>
+          <tr><td>Objects in arrays</td><td>references</td><td>handles — the one thing PHP does <em>not</em> copy</td></tr>
+          <tr><td>Filter + reindex</td><td><code>filter()</code> (fresh indexes free)</td><td><code>array_values(array_filter(...))</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

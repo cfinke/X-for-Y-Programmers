@@ -20,6 +20,246 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Go ⇄ Rust cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-mutability.html">1. Variables, Mutability &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Declare + infer</td><td><code>x := 36</code></td><td><code>let x = 36;</code></td></tr>
+          <tr><td>Mutability</td><td>always mutable</td><td><code>let</code> immutable, <code>let mut</code> opts in</td></tr>
+          <tr><td>Integers</td><td><code>int</code> (platform-sized), <code>int64</code></td><td><code>i32</code>, <code>i64</code>, <code>u32</code>… explicit everywhere</td></tr>
+          <tr><td>Floats</td><td><code>float64</code></td><td><code>f64</code></td></tr>
+          <tr><td>Uninitialized</td><td>zero values (<code>0</code>, <code>""</code>, <code>nil</code>)</td><td>not allowed — initialize explicitly</td></tr>
+          <tr><td>Formatting</td><td><code>fmt.Sprintf("%s is %d", n, a)</code></td><td><code>format!("{} is {}", n, a)</code></td></tr>
+          <tr><td>Naming</td><td><code>camelCase</code></td><td><code>snake_case</code> (the compiler will nag you)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-functions-and-control-flow.html">2. Functions &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Function signature</td><td><code>func f(x int) string</code></td><td><code>fn f(x: i32) -> String</code></td></tr>
+          <tr><td>Conditional value</td><td><code>if</code> statement + early <code>return</code></td><td><code>let m = if a &gt; b { a } else { b };</code></td></tr>
+          <tr><td>Returning</td><td><code>return x</code> required</td><td>last expression, no semicolon (or <code>return x;</code>)</td></tr>
+          <tr><td>Braces</td><td>required, no parens on condition</td><td>same — you'll feel at home</td></tr>
+          <tr><td>Ternary <code>?:</code></td><td>rejected on principle</td><td>rejected too — <code>if</code> is the expression</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-strings.html">3. Strings: String &amp; &amp;str</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Pass a string in</td><td><code>s string</code></td><td><code>s: &amp;str</code> (borrowed view)</td></tr>
+          <tr><td>Build and return</td><td><code>string</code></td><td><code>String</code> (owned)</td></tr>
+          <tr><td>Uppercase</td><td><code>strings.ToUpper(s)</code></td><td><code>s.to_uppercase()</code></td></tr>
+          <tr><td>Substring check</td><td><code>strings.Contains(h, n)</code></td><td><code>h.contains(n)</code></td></tr>
+          <tr><td>Interpolation</td><td><code>fmt.Sprintf("Hello, %s!", n)</code></td><td><code>format!("Hello, {}!", n)</code></td></tr>
+          <tr><td>Length</td><td><code>len(s)</code>, bytes, UTF-8</td><td><code>s.len()</code>, bytes, UTF-8 — identical semantics</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-ownership.html">4. Ownership &amp; Moves</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Assignment</td><td><code>b := a</code> — both alive (slices alias!)</td><td><code>let b = a;</code> — moves; <code>a</code> is dead</td></tr>
+          <tr><td>Passing to a function</td><td>copies the header, shares the data</td><td>moves ownership into the function</td></tr>
+          <tr><td>Real copy</td><td><code>make</code> + <code>copy(dst, src)</code></td><td><code>v.clone()</code> — one call, never aliases</td></tr>
+          <tr><td>Freeing memory</td><td>GC, eventually, with pauses</td><td>end of owner's scope, deterministic, zero runtime cost</td></tr>
+          <tr><td>Small numbers</td><td>copied</td><td>copied too — <code>Copy</code> types are exempt from moves</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-borrowing.html">5. Borrowing &amp; References</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Read-only access</td><td><code>T</code> or <code>*T</code> (convention only)</td><td><code>&amp;T</code> — enforced, many allowed</td></tr>
+          <tr><td>Mutating access</td><td><code>*T</code>, <code>f(&amp;x)</code></td><td><code>&amp;mut T</code>, <code>f(&amp;mut x)</code> — exactly one, no readers</td></tr>
+          <tr><td>Slice parameter</td><td><code>numbers []int</code></td><td><code>numbers: &amp;[i32]</code></td></tr>
+          <tr><td>nil</td><td><code>var p *T</code> is nil until set</td><td>impossible — references always point at a value</td></tr>
+          <tr><td>Aliased writes</td><td>race detector at runtime, if you run it</td><td>rejected at compile time, every time</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-vectors.html">6. Vectors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Literal</td><td><code>[]int{10, 20, 30}</code></td><td><code>vec![10, 20, 30]</code></td></tr>
+          <tr><td>Append</td><td><code>s = append(s, x)</code></td><td><code>v.push(x);</code> — in place</td></tr>
+          <tr><td>Length</td><td><code>len(s)</code></td><td><code>v.len()</code></td></tr>
+          <tr><td>Capacity</td><td><code>cap(s)</code>, sharing surprises</td><td>managed internally; no aliasing surprises</td></tr>
+          <tr><td>Index out of range</td><td><code>s[i]</code> panics</td><td><code>v[i]</code> panics; <code>v.get(i)</code> returns <code>Option</code></td></tr>
+          <tr><td>Read-only parameter</td><td><code>func total(s []int)</code></td><td><code>fn total(v: &amp;[i32])</code></td></tr>
+          <tr><td>Sum a list</td><td><code>for _, v := range s { sum += v }</code></td><td><code>v.iter().sum()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-hashmaps.html">7. HashMaps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Type</td><td><code>map[string]int</code></td><td><code>HashMap&lt;String, u32&gt;</code> (+ <code>use std::collections::HashMap;</code>)</td></tr>
+          <tr><td>Create</td><td><code>map[string]int{}</code> / <code>make(...)</code></td><td><code>HashMap::new()</code></td></tr>
+          <tr><td>Write</td><td><code>m[k] = v</code></td><td><code>m.insert(k, v);</code></td></tr>
+          <tr><td>Comma-ok read</td><td><code>v, ok := m[k]</code></td><td><code>m.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+          <tr><td>Zero-on-missing read</td><td><code>m[k]</code> (implicit)</td><td><code>m.get(k).copied().unwrap_or(0)</code> (explicit)</td></tr>
+          <tr><td>Upsert / increment</td><td><code>m[k] += n</code></td><td><code>*m.entry(k).or_insert(0) += n;</code></td></tr>
+          <tr><td>Length</td><td><code>len(m)</code></td><td><code>m.len()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-option.html">8. Option: The End of Null</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Maybe-absent value</td><td><code>*T</code> nil, comma-ok, zero values, nil interface…</td><td><code>Option&lt;T&gt;</code> — one concept for all of them</td></tr>
+          <tr><td>Present / absent</td><td><code>&amp;v</code> / <code>nil</code></td><td><code>Some(v)</code> / <code>None</code></td></tr>
+          <tr><td>Fallback default</td><td><code>if p == nil { return "guest" }</code></td><td><code>p.unwrap_or("guest".to_string())</code></td></tr>
+          <tr><td>Transform if present</td><td><code>if p != nil { x := f(*p) ... }</code></td><td><code>p.map(f)</code></td></tr>
+          <tr><td>Branch on both cases</td><td><code>if p != nil { ... } else { ... }</code></td><td><code>match p { Some(v) =&gt; ..., None =&gt; ... }</code></td></tr>
+          <tr><td>Forgot to check</td><td>compiles; panics at runtime</td><td>doesn't compile</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-result-and-errors.html">9. Result &amp; the ? Operator</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Fallible signature</td><td><code>func f() (T, error)</code></td><td><code>fn f() -&gt; Result&lt;T, E&gt;</code></td></tr>
+          <tr><td>Success</td><td><code>return v, nil</code></td><td><code>Ok(v)</code></td></tr>
+          <tr><td>Failure</td><td><code>return 0, err</code> (dummy T required)</td><td><code>Err(e)</code> (no dummy)</td></tr>
+          <tr><td>Check &amp; propagate</td><td><code>if err != nil { return 0, err }</code></td><td><code>let v = f()?;</code></td></tr>
+          <tr><td>Wrap with context</td><td><code>fmt.Errorf("ctx: %w", err)</code></td><td><code>.map_err(|e| format!("ctx: {}", e))</code></td></tr>
+          <tr><td>Ignore the error</td><td><code>v, _ := f()</code> compiles fine</td><td>must go through the <code>Result</code>; ignoring is loud (<code>unwrap</code>)</td></tr>
+          <tr><td>Handle both branches</td><td><code>if err != nil { ... } else { ... }</code></td><td><code>match r { Ok(v) =&gt; ..., Err(e) =&gt; ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-structs-and-methods.html">10. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Struct</td><td><code>type BankAccount struct { ... }</code></td><td><code>struct BankAccount { ... }</code></td></tr>
+          <tr><td>Methods</td><td><code>func (a *BankAccount) Deposit(...)</code>, anywhere in the package</td><td>grouped in <code>impl BankAccount { ... }</code></td></tr>
+          <tr><td>Constructor</td><td><code>NewBankAccount(...)</code> (naming convention)</td><td><code>BankAccount::new(...)</code> (associated function, no <code>self</code>)</td></tr>
+          <tr><td>Mutating receiver</td><td><code>(a *BankAccount)</code></td><td><code>&amp;mut self</code></td></tr>
+          <tr><td>Read-only receiver</td><td><code>(a BankAccount)</code> — copies the struct</td><td><code>&amp;self</code> — borrows it</td></tr>
+          <tr><td>Zero-value fields</td><td><code>&amp;BankAccount{owner: o}</code> → balance 0 implicitly</td><td>every field written out explicitly</td></tr>
+          <tr><td>Fallible method</td><td><code>func (...) Withdraw(...) error</code></td><td><code>fn withdraw(...) -&gt; Result&lt;(), String&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums-and-match.html">11. Enums &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>One-of-several types</td><td>interface + marker method, or Kind field</td><td><code>enum Shape { Circle { ... }, Rectangle { ... } }</code></td></tr>
+          <tr><td>Per-case data</td><td>separate structs (or unused fields)</td><td>fields live <em>on the variant</em></td></tr>
+          <tr><td>Branching on the case</td><td><code>switch v := s.(type)</code></td><td><code>match shape { Shape::Circle { radius } =&gt; ... }</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>not checked — <code>default</code> catches strays at runtime</td><td>checked at compile time; every variant or <code>_</code> required</td></tr>
+          <tr><td>Constructing a case</td><td><code>Circle{Radius: 1.0}</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Declare the contract</td><td><code>type Describer interface { ... }</code></td><td><code>trait Describe { ... }</code></td></tr>
+          <tr><td>Satisfy it</td><td>implicit — have the methods</td><td>explicit — <code>impl Describe for Dog</code></td></tr>
+          <tr><td>Shared method bodies</td><td>impossible; duplicate or use a free function</td><td>default methods, overridable per type</td></tr>
+          <tr><td>Foreign types</td><td>can't add methods outside the type's package</td><td>implement <em>your</em> trait for any type</td></tr>
+          <tr><td>Accepting "anything that implements"</td><td><code>func f(d Describer)</code></td><td><code>fn f(d: &amp;impl Describe)</code> — next lesson's territory</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-generics.html">13. Generics &amp; Trait Bounds</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Type parameter</td><td><code>func F[T any](s []T)</code></td><td><code>fn f&lt;T&gt;(items: &amp;[T])</code></td></tr>
+          <tr><td>Constraint / bound</td><td><code>[T cmp.Ordered]</code></td><td><code>&lt;T: PartialOrd&gt;</code></td></tr>
+          <tr><td>Multiple constraints</td><td>define a combined interface</td><td>inline: <code>&lt;T: Clone + PartialOrd&gt;</code></td></tr>
+          <tr><td>"Maybe absent" result</td><td><code>(T, bool)</code> + zero value</td><td><code>Option&lt;&amp;T&gt;</code></td></tr>
+          <tr><td>Compilation</td><td>stenciling by GC shape</td><td>full monomorphization — one copy per concrete T</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-closures-and-iterators.html">14. Closures &amp; Iterators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Anonymous function</td><td><code>func(x int) int { return x * 2 }</code></td><td><code>|x| x * 2</code> — types inferred</td></tr>
+          <tr><td>Filter</td><td>range loop + <code>if</code> + <code>append</code></td><td><code>.filter(|p| p.in_stock)</code></td></tr>
+          <tr><td>Transform</td><td>range loop + <code>append</code></td><td><code>.map(|p| p.name.clone())</code></td></tr>
+          <tr><td>Sum</td><td><code>var total ...; total += ...</code></td><td><code>.map(...).sum()</code></td></tr>
+          <tr><td>Materialize</td><td><code>make</code> + <code>append</code> as you go</td><td><code>.collect()</code> at the end, once</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-slices-tuples-destructuring.html">15. Slices, Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Pair type</td><td>only as multiple returns</td><td><code>(i32, i32)</code> — first-class, anywhere</td></tr>
+          <tr><td>Unpack</td><td><code>val, err := f()</code></td><td><code>let (val, err) = f();</code></td></tr>
+          <tr><td>Positional access</td><td>n/a</td><td><code>pair.0</code>, <code>pair.1</code></td></tr>
+          <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>(a, b) = (b, a);</code></td></tr>
+          <tr><td>Slice view</td><td><code>[]int</code> — shared backing array, <code>append</code> surprises</td><td><code>&amp;[i32]</code> — aliasing checked at compile time</td></tr>
+          <tr><td>Math helpers</td><td><code>math.Sqrt(x)</code></td><td>methods: <code>x.sqrt()</code>, <code>x.powi(2)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-lifetimes.html">16. Lifetimes: An Introduction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Returning borrowed data</td><td>escape analysis heap-allocates silently</td><td>lifetime ties the output to an input</td></tr>
+          <tr><td>Naming the connection</td><td>never (invisible)</td><td><code>fn f&lt;'a&gt;(x: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+          <tr><td>One input ref, one output ref</td><td>—</td><td>elided: write <code>fn f(s: &amp;str) -&gt; &amp;str</code></td></tr>
+          <tr><td>Two input refs, one output ref</td><td>—</td><td>ambiguous: you must write <code>&lt;'a&gt;</code></td></tr>
+          <tr><td>Dangling pointer</td><td>impossible (GC keeps it alive)</td><td>impossible (compiler rejects it)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-derive-and-common-traits.html">17. Common Traits &amp; Derive</a></h3>
+        <table>
+          <tr><th>Capability</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Print for debugging</td><td><code>%v</code> / <code>%+v</code>, free</td><td><code>#[derive(Debug)]</code> + <code>{:?}</code> (<code>{:#?}</code> pretty-prints)</td></tr>
+          <tr><td>Copy a struct</td><td><code>b := a</code>, implicit</td><td><code>#[derive(Clone)]</code> + <code>a.clone()</code>, explicit</td></tr>
+          <tr><td>Equality</td><td><code>==</code> on comparable types</td><td><code>#[derive(PartialEq)]</code> + <code>==</code></td></tr>
+          <tr><td>Zero value</td><td>always exists</td><td><code>#[derive(Default)]</code> + <code>T::default()</code> — opt-in!</td></tr>
+          <tr><td>Cheap bitwise copy</td><td>—</td><td><code>#[derive(Copy)]</code>: assignment copies instead of moving (small types only)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-modules.html">18. Modules &amp; Visibility</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Namespace unit</td><td>package = one directory</td><td><code>mod</code> — inline or per-file, your call</td></tr>
+          <tr><td>Export a function</td><td><code>func ItemCount</code> (capitalize)</td><td><code>pub fn item_count</code> (keyword)</td></tr>
+          <tr><td>Private helper</td><td><code>func joinNames</code> (lowercase)</td><td><code>fn join_names</code> (default)</td></tr>
+          <tr><td>Qualified call</td><td><code>inventory.ItemCount(x)</code></td><td><code>inventory::item_count(&amp;x)</code></td></tr>
+          <tr><td>Import / shorten</td><td><code>import "…/inventory"</code></td><td><code>use crate::inventory;</code> or <code>use inventory::item_count;</code></td></tr>
+          <tr><td>Struct fields</td><td>exported per-field by case</td><td><code>pub</code> per-field — public struct, private fields is idiomatic</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-threads-and-channels.html">19. Threads &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>Start concurrent work</td><td><code>go func() { ... }()</code> (green thread)</td><td><code>thread::spawn(move || ...)</code> (OS thread)</td></tr>
+          <tr><td>Wait for it</td><td><code>sync.WaitGroup</code></td><td><code>handle.join().unwrap()</code></td></tr>
+          <tr><td>Get a result back</td><td>write to a channel or shared var</td><td><code>join()</code> returns the closure's value directly</td></tr>
+          <tr><td>Channel</td><td><code>make(chan int)</code></td><td><code>mpsc::channel()</code> — a <code>(tx, rx)</code> pair</td></tr>
+          <tr><td>Close</td><td><code>close(ch)</code>, manually</td><td>automatic when the last <code>tx</code> is dropped</td></tr>
+          <tr><td>Data race</td><td>compiles; <code>-race</code> might catch it</td><td>does not compile</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>Rust</th></tr>
+          <tr><td>"Maybe found" return</td><td><code>*Item</code>, nil unchecked</td><td><code>Option&lt;&amp;Item&gt;</code>, checked by the compiler</td></tr>
+          <tr><td>Read-only parameter</td><td><code>[]Item</code> (but mutation still compiles)</td><td><code>&amp;[Item]</code> — writes are a compile error</td></tr>
+          <tr><td>Mutating parameter</td><td><code>[]Item</code> (looks identical!)</td><td><code>&amp;mut Vec&lt;Item&gt;</code> — declared, and exclusive</td></tr>
+          <tr><td>Search</td><td>index loop + <code>return &amp;items[i]</code></td><td><code>.iter().find(|i| ...)</code></td></tr>
+          <tr><td>Filter + transform</td><td><code>for</code> + <code>if</code> + <code>append</code></td><td><code>.iter().filter(...).map(...).collect()</code></td></tr>
+          <tr><td>Returned reference's validity</td><td>GC keeps it alive indefinitely</td><td><code>&lt;'a&gt;</code> ties it to the slice, checked statically</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

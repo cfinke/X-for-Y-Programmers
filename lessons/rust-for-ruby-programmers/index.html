@@ -20,6 +20,253 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Ruby ⇄ Rust cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-mutability.html">1. Variables, Mutability &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Variable</td><td><code>x = 1</code> (rebind to anything)</td><td><code>let x = 1;</code> (immutable, one type)</td></tr>
+          <tr><td>Mutable variable</td><td>everything, always</td><td><code>let mut x = 1;</code> (explicit opt-in)</td></tr>
+          <tr><td>Integers</td><td><code>Integer</code> (grows forever)</td><td><code>i32</code>/<code>u32</code>/<code>i64</code>… (fixed-size, you choose)</td></tr>
+          <tr><td>Floats</td><td><code>Float</code></td><td><code>f64</code> (never silently mixed with integers)</td></tr>
+          <tr><td>Interpolation</td><td><code>"#{name} is #{age}"</code></td><td><code>format!("{} is {}", name, age)</code></td></tr>
+          <tr><td>Naming</td><td><code>snake_case</code></td><td><code>snake_case</code> — same convention!</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-functions-and-control-flow.html">2. Functions &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Define a function</td><td><code>def f(x)</code></td><td><code>fn f(x: i32) -&gt; i32</code></td></tr>
+          <tr><td>Implicit return</td><td>last expression</td><td>last expression, <em>no semicolon</em></td></tr>
+          <tr><td>Explicit return</td><td><code>return x</code> (early exit)</td><td><code>return x;</code> (early exit only, by convention)</td></tr>
+          <tr><td>Conditional expression</td><td><code>x = if c then a else b end</code></td><td><code>let x = if c { a } else { b };</code></td></tr>
+          <tr><td>Chained conditions</td><td><code>elsif</code></td><td><code>else if</code></td></tr>
+          <tr><td>Parentheses on condition</td><td>optional</td><td>omitted (<code>if x &gt; 0 {</code>), braces required</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-strings.html">3. Strings: String &amp; &amp;str</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Owned, growable string</td><td><code>String.new("hi")</code></td><td><code>String::from("hi")</code> / <code>"hi".to_string()</code></td></tr>
+          <tr><td>Borrowed view / literal</td><td>(no equivalent)</td><td><code>&amp;str</code> — every <code>"literal"</code> is one</td></tr>
+          <tr><td>Interpolation</td><td><code>"Hi, #{name}!"</code></td><td><code>format!("Hi, {}!", name)</code></td></tr>
+          <tr><td>Uppercase</td><td><code>s.upcase</code></td><td><code>s.to_uppercase()</code></td></tr>
+          <tr><td>Substring test</td><td><code>s.include?("x")</code></td><td><code>s.contains("x")</code></td></tr>
+          <tr><td>Length</td><td><code>s.length</code> (chars)</td><td><code>s.len()</code> (bytes); <code>s.chars().count()</code> for chars</td></tr>
+          <tr><td>Append</td><td><code>s &lt;&lt; "more"</code></td><td><code>s.push_str("more")</code> (needs <code>let mut s: String</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-ownership.html">4. Ownership &amp; Moves</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Assignment</td><td>shares a reference</td><td>moves ownership (old name is dead)</td></tr>
+          <tr><td>Explicit copy</td><td><code>a.dup</code></td><td><code>a.clone()</code></td></tr>
+          <tr><td>Passing to a function</td><td>shares the object</td><td>moves it in (unless you borrow — next lesson)</td></tr>
+          <tr><td>Cleanup</td><td>GC, eventually</td><td>freed the instant the owner leaves scope</td></tr>
+          <tr><td>Numbers, bools</td><td>shared like everything</td><td><code>Copy</code> types: duplicated automatically, never moved</td></tr>
+          <tr><td>Use-after-move</td><td>(impossible to express)</td><td>compile error: "value borrowed here after move"</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-borrowing.html">5. Borrowing &amp; References</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Lend read-only</td><td>(everything is shared)</td><td><code>&amp;value</code> → parameter <code>x: &amp;T</code></td></tr>
+          <tr><td>Lend writably</td><td>(everything is writable)</td><td><code>&amp;mut value</code> → parameter <code>x: &amp;mut T</code></td></tr>
+          <tr><td>How many at once</td><td>unlimited readers <em>and</em> writers</td><td>many <code>&amp;T</code>, or one <code>&amp;mut T</code> — never both</td></tr>
+          <tr><td>List parameter</td><td><code>def total(numbers)</code></td><td><code>numbers: &amp;[i32]</code> (slice — like <code>&amp;str</code> for vectors)</td></tr>
+          <tr><td>Mutating a caller's array</td><td><code>items &lt;&lt; item</code>, invisibly</td><td><code>items.push(item)</code>, behind a visible <code>&amp;mut</code></td></tr>
+          <tr><td>Sum a list</td><td><code>numbers.sum</code></td><td><code>numbers.iter().sum()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-vectors.html">6. Vectors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Literal</td><td><code>[10, 20, 30]</code></td><td><code>vec![10, 20, 30]</code></td></tr>
+          <tr><td>What it holds</td><td>anything, mixed freely</td><td>one type: <code>Vec&lt;i32&gt;</code>, <code>Vec&lt;String&gt;</code>…</td></tr>
+          <tr><td>Append</td><td><code>arr &lt;&lt; x</code></td><td><code>v.push(x)</code> (requires <code>let mut</code> / <code>&amp;mut</code>)</td></tr>
+          <tr><td>Length</td><td><code>arr.size</code>, <code>arr.length</code></td><td><code>v.len()</code></td></tr>
+          <tr><td>Out-of-bounds read</td><td><code>arr[100]</code> → <code>nil</code></td><td><code>v.get(100)</code> → <code>None</code>; <code>v[100]</code> panics</td></tr>
+          <tr><td>First / last</td><td><code>arr.first</code> → maybe <code>nil</code></td><td><code>v.first()</code> → <code>Option&lt;&amp;T&gt;</code></td></tr>
+          <tr><td>Sum</td><td><code>arr.sum</code></td><td><code>v.iter().sum()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-hashmaps.html">7. HashMaps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>The type</td><td><code>Hash</code> (any keys, any values)</td><td><code>HashMap&lt;String, u32&gt;</code> (both fixed)</td></tr>
+          <tr><td>Availability</td><td>always there</td><td><code>use std::collections::HashMap;</code></td></tr>
+          <tr><td>Write</td><td><code>h[:k] = v</code></td><td><code>h.insert(k, v)</code> (needs <code>mut</code>)</td></tr>
+          <tr><td>Read, may be missing</td><td><code>h[:k]</code> → <code>nil</code></td><td><code>h.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+          <tr><td>Read with default</td><td><code>h.fetch(:k, 0)</code></td><td><code>h.get(k).copied().unwrap_or(0)</code></td></tr>
+          <tr><td>Default-and-update</td><td><code>Hash.new(0)</code>; <code>h[:k] += 1</code></td><td><code>*h.entry(k).or_insert(0) += 1</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-option.html">8. Option: The End of Null</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Maybe-absent value</td><td>anything might be <code>nil</code></td><td><code>Option&lt;T&gt;</code>: <code>Some(x)</code> or <code>None</code></td></tr>
+          <tr><td>Default if absent</td><td><code>x || default</code> (also fires on <code>false</code>!)</td><td><code>x.unwrap_or(default)</code> (only on <code>None</code>)</td></tr>
+          <tr><td>Safe navigation</td><td><code>user&amp;.name&amp;.upcase</code></td><td><code>user.map(|n| n.to_uppercase())</code></td></tr>
+          <tr><td>Handle both cases</td><td><code>if x ... else ...</code> (if you remember)</td><td><code>match</code> — compiler requires both arms</td></tr>
+          <tr><td>Check presence</td><td><code>x.nil?</code></td><td><code>x.is_none()</code> / <code>x.is_some()</code></td></tr>
+          <tr><td>"I know it's there"</td><td>just call the method (and pray)</td><td><code>x.unwrap()</code> — panics on <code>None</code>, greppable</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-result-and-errors.html">9. Result &amp; the ? Operator</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Fallible function</td><td>nothing in the signature</td><td><code>-&gt; Result&lt;T, E&gt;</code>, in the signature</td></tr>
+          <tr><td>Failing</td><td><code>raise SomeError, "msg"</code></td><td><code>Err("msg".to_string())</code> — a return value</td></tr>
+          <tr><td>Succeeding</td><td>just return the value</td><td><code>Ok(value)</code></td></tr>
+          <tr><td>String → int</td><td><code>Integer(s)</code> (raises)</td><td><code>s.parse::&lt;u32&gt;()</code> (returns <code>Result</code>)</td></tr>
+          <tr><td>Bubble the error up</td><td><code>rescue =&gt; e; raise</code></td><td><code>?</code></td></tr>
+          <tr><td>Translate the error</td><td><code>rescue =&gt; e; raise MyError</code></td><td><code>.map_err(|e| ...)</code></td></tr>
+          <tr><td>Handle it here</td><td><code>begin/rescue/end</code></td><td><code>match result { Ok(v) =&gt; ..., Err(e) =&gt; ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-structs-and-methods.html">10. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Data + behavior</td><td>one <code>class</code></td><td><code>struct</code> (data) + <code>impl</code> (methods)</td></tr>
+          <tr><td>Fields</td><td><code>@ivars</code>, appear at runtime</td><td>declared and typed in the <code>struct</code></td></tr>
+          <tr><td>Constructor</td><td><code>def initialize</code> / <code>Klass.new</code></td><td><code>fn new(...)</code> by convention / <code>Klass::new(...)</code></td></tr>
+          <tr><td>Read-only method</td><td>convention only</td><td><code>fn balance(&amp;self)</code></td></tr>
+          <tr><td>Mutating method</td><td>maybe a <code>!</code> in the name</td><td><code>fn deposit(&amp;mut self, ...)</code> — enforced</td></tr>
+          <tr><td>Field visibility</td><td>hidden until <code>attr_*</code> opts in</td><td>private outside the module until <code>pub</code> opts in</td></tr>
+          <tr><td>Failing method</td><td><code>raise</code></td><td>return <code>Result</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums-and-match.html">11. Enums &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Tagged data</td><td><code>{ type: :circle, radius: 1.0 }</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+          <tr><td>Declaring the set of tags</td><td>convention only</td><td><code>enum Shape { Circle {...}, Rectangle {...} }</code></td></tr>
+          <tr><td>Branch on the tag</td><td><code>case shape ... in ...</code></td><td><code>match shape { ... =&gt; ... }</code></td></tr>
+          <tr><td>Destructure fields</td><td><code>in { type: :circle, radius: }</code></td><td><code>Shape::Circle { radius } =&gt;</code></td></tr>
+          <tr><td>Missed case</td><td><code>NoMatchingPatternError</code> at runtime</td><td>compile error: "non-exhaustive patterns"</td></tr>
+          <tr><td>Catch-all arm</td><td><code>else</code></td><td><code>_ =&gt; ...</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Behavior contract</td><td>duck typing (implicit)</td><td><code>trait Describe { ... }</code> (explicit)</td></tr>
+          <tr><td>Adopt the behavior</td><td><code>include Describe</code></td><td><code>impl Describe for Dog { ... }</code></td></tr>
+          <tr><td>Required method</td><td>documented convention (<code>&lt;=&gt;</code> for Comparable)</td><td>signature with no body: <code>fn name(&amp;self) -&gt; String;</code></td></tr>
+          <tr><td>Free methods built on it</td><td>module methods (<code>between?</code>, <code>clamp</code>…)</td><td>default methods (<code>describe</code> here)</td></tr>
+          <tr><td>Contract violated</td><td><code>NoMethodError</code> at runtime</td><td>compile error at the <code>impl</code> block</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-generics.html">13. Generics &amp; Trait Bounds</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Works for any type</td><td>every method, implicitly</td><td><code>fn first&lt;T&gt;(...)</code>, explicitly</td></tr>
+          <tr><td>"Must support &lt;"</td><td>hope + <code>ArgumentError</code></td><td><code>&lt;T: PartialOrd&gt;</code>, checked at compile time</td></tr>
+          <tr><td>Comparable-style contract</td><td><code>include Comparable</code></td><td><code>PartialOrd</code> bound (usually derived)</td></tr>
+          <tr><td>Several requirements</td><td>—</td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+          <tr><td>Maybe-absent result</td><td><code>nil</code></td><td><code>Option&lt;&amp;T&gt;</code></td></tr>
+          <tr><td>Mixed-type list</td><td><code>[3, "seven"]</code> — allowed, risky</td><td><code>&amp;[T]</code> is homogeneous; the mix can't be built</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-closures-and-iterators.html">14. Closures &amp; Iterators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Block / closure</td><td><code>{ |p| p.price }</code></td><td><code>|p| p.price</code> (same pipes!)</td></tr>
+          <tr><td>Keep matching</td><td><code>.select { ... }</code></td><td><code>.filter(|p| ...)</code></td></tr>
+          <tr><td>Transform</td><td><code>.map { ... }</code></td><td><code>.map(|p| ...)</code></td></tr>
+          <tr><td>Sum</td><td><code>.sum(&amp;:price)</code></td><td><code>.map(|p| p.price).sum()</code></td></tr>
+          <tr><td>Start the chain</td><td>implicit</td><td><code>.iter()</code></td></tr>
+          <tr><td>Build the result</td><td>implicit new Array</td><td><code>.collect()</code></td></tr>
+          <tr><td>Laziness</td><td>opt-in with <code>.lazy</code></td><td>always — adapters do nothing until consumed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-slices-tuples-destructuring.html">15. Slices, Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Pair / tuple</td><td><code>[3.0, 4.0]</code> (just an Array)</td><td><code>(3.0, 4.0)</code> : <code>(f64, f64)</code></td></tr>
+          <tr><td>Unpack</td><td><code>x, y = point</code></td><td><code>let (x, y) = point;</code></td></tr>
+          <tr><td>Swap two variables</td><td><code>a, b = b, a</code></td><td><code>(a, b) = (b, a);</code></td></tr>
+          <tr><td>By position</td><td><code>pair[0]</code></td><td><code>pair.0</code></td></tr>
+          <tr><td>"Multiple return values"</td><td><code>return a, b</code></td><td>return a tuple: <code>-&gt; (i32, i32)</code></td></tr>
+          <tr><td>Sub-view of an array</td><td><code>arr[1..]</code> — copies</td><td><code>&amp;arr[1..]</code> — borrowed, zero-copy</td></tr>
+          <tr><td>Function taking "a list"</td><td><code>def f(arr)</code></td><td><code>fn f(v: &amp;[i32])</code> — Vec, array, or slice all fit</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-lifetimes.html">16. Lifetimes: An Introduction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>How long is a reference valid?</td><td>As long as you hold it (GC)</td><td>As long as the owner lives — compiler-checked</td></tr>
+          <tr><td>Naming that span</td><td>(no such concept)</td><td><code>&lt;'a&gt;</code> — a lifetime parameter</td></tr>
+          <tr><td>Return a borrow of an input</td><td><code>def longest(a, b)</code>, nothing to say</td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+          <tr><td>One reference in, one out</td><td>—</td><td>Elision: compiler infers it, write nothing</td></tr>
+          <tr><td>Dangling reference</td><td>Impossible at runtime</td><td>Impossible at compile time</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-derive-and-common-traits.html">17. Common Traits &amp; Derive</a></h3>
+        <table>
+          <tr><th>Capability</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Inspect / debug print</td><td><code>obj.inspect</code>, <code>p obj</code></td><td><code>Debug</code> → <code>format!("{:?}", obj)</code>, <code>println!("{:?}", ...)</code></td></tr>
+          <tr><td>Copy</td><td><code>obj.dup</code></td><td><code>Clone</code> → <code>obj.clone()</code></td></tr>
+          <tr><td>Equality by value</td><td>override <code>==</code>, or <code>Struct</code> gives it</td><td><code>PartialEq</code> → <code>a == b</code></td></tr>
+          <tr><td>Blank instance</td><td>write <code>initialize</code> defaults</td><td><code>Default</code> → <code>Point::default()</code></td></tr>
+          <tr><td>Generate the boilerplate</td><td><code>Struct.new(:x, :y)</code>, <code>Comparable</code></td><td><code>#[derive(Debug, Clone, PartialEq, Default)]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-modules.html">18. Modules &amp; Visibility</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Namespace</td><td><code>module Inventory ... end</code></td><td><code>mod inventory { ... }</code></td></tr>
+          <tr><td>Path separator</td><td><code>Inventory.item_count</code> / <code>Inventory::CONST</code></td><td><code>inventory::item_count</code> (always <code>::</code>)</td></tr>
+          <tr><td>Visibility default</td><td>public; opt out with <code>private</code></td><td>private; opt in with <code>pub</code></td></tr>
+          <tr><td>Bypass privacy</td><td><code>send(:list_names)</code></td><td>impossible — it's a compile error</td></tr>
+          <tr><td>Shorten a name</td><td>(constants resolve lexically)</td><td><code>use inventory::describe;</code></td></tr>
+          <tr><td>Mixins</td><td>also <code>module</code> + <code>include</code></td><td>not <code>mod</code>'s job — that's traits</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-threads-and-channels.html">19. Threads &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Start a thread</td><td><code>Thread.new { ... }</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+          <tr><td>Parallel CPU work</td><td>No (GVL) — Ractors as escape hatch</td><td>Yes — real OS threads</td></tr>
+          <tr><td>Wait for the result</td><td><code>t.value</code> / <code>t.join</code></td><td><code>handle.join().unwrap()</code></td></tr>
+          <tr><td>Pass values between threads</td><td><code>Queue</code> (<code>&lt;&lt;</code> / <code>pop</code>)</td><td><code>mpsc::channel()</code> (<code>tx.send</code> / <code>rx.recv</code>), typed</td></tr>
+          <tr><td>Give a thread data</td><td>closure shares everything (racy)</td><td><code>move</code> transfers ownership (checked)</td></tr>
+          <tr><td>Data race</td><td>possible, hidden by the GVL, bites in JRuby/Ractors</td><td>compile error</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Rust</th></tr>
+          <tr><td>Record type</td><td><code>Struct.new(:name, :price_cents, :count)</code></td><td><code>struct Item { ... }</code> + <code>#[derive]</code> as needed</td></tr>
+          <tr><td>Aggregate</td><td><code>items.sum { |i| ... }</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+          <tr><td>Maybe-find</td><td><code>find</code> → item or <code>nil</code></td><td><code>.iter().find(...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+          <tr><td>Filter + project</td><td><code>select { ... }.map(&amp;:name)</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+          <tr><td>Read-only vs mutating</td><td>convention (<code>!</code> methods, docs)</td><td><code>&amp;[Item]</code> vs <code>&amp;mut Vec&lt;Item&gt;</code> — enforced</td></tr>
+          <tr><td>Iterate mutably</td><td>just mutate inside <code>each</code></td><td><code>.iter_mut()</code> — an explicitly different iterator</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

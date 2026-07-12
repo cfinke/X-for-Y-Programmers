@@ -20,6 +20,250 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Kotlin ⇄ Rust cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-mutability.html">1. Variables, Mutability &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Immutable local</td><td><code>val x = 1</code></td><td><code>let x = 1;</code> (the default)</td></tr>
+          <tr><td>Mutable local</td><td><code>var x = 1</code></td><td><code>let mut x = 1;</code> (the opt-in)</td></tr>
+          <tr><td>Inference</td><td><code>val x = 1</code></td><td><code>let x = 1;</code></td></tr>
+          <tr><td>Integers</td><td><code>Int</code>, <code>Long</code></td><td><code>i32</code>, <code>i64</code> — plus unsigned <code>u32</code>, <code>u64</code></td></tr>
+          <tr><td>Floating point</td><td><code>Double</code></td><td><code>f64</code></td></tr>
+          <tr><td>Boxing</td><td><code>Int?</code> boxes to <code>Integer</code></td><td>none — <code>i32</code> is always just <code>i32</code></td></tr>
+          <tr><td>Formatting</td><td><code>"$n is $a"</code></td><td><code>format!("{} is {}", n, a)</code></td></tr>
+          <tr><td>Naming</td><td><code>camelCase</code></td><td><code>snake_case</code> (the compiler will nag you)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-functions-and-control-flow.html">2. Functions &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Function</td><td><code>fun f(x: Int): String</code></td><td><code>fn f(x: i32) -> String</code></td></tr>
+          <tr><td>Where it lives</td><td>top level or inside a class</td><td>free at file scope</td></tr>
+          <tr><td>Conditional value</td><td><code>if (a &gt; b) a else b</code></td><td><code>if a &gt; b { a } else { b }</code></td></tr>
+          <tr><td>Returning</td><td><code>return x</code> or <code>= x</code></td><td>last expression, no semicolon (<code>return</code> exists but is for early exits)</td></tr>
+          <tr><td>Multi-way</td><td><code>when</code> expression</td><td>one <code>if</code>/<code>else if</code>/<code>else</code> expression</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-strings.html">3. Strings: String &amp; &amp;str</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Read-only string parameter</td><td><code>String</code></td><td><code>&amp;str</code></td></tr>
+          <tr><td>Owned / growable text</td><td><code>String</code> + <code>StringBuilder</code></td><td><code>String</code></td></tr>
+          <tr><td>Equality</td><td><code>a == b</code> (content)</td><td><code>a == b</code> (content, always)</td></tr>
+          <tr><td>Formatting</td><td><code>"$s is $n"</code> (string template)</td><td><code>format!("{} is {}", s, n)</code> — checked at compile time</td></tr>
+          <tr><td>Case</td><td><code>s.uppercase()</code></td><td><code>s.to_uppercase()</code></td></tr>
+          <tr><td>Search</td><td><code>s.contains(t)</code></td><td><code>s.contains(t)</code></td></tr>
+          <tr><td>Literal's type</td><td><code>"hi"</code> is a <code>String</code></td><td><code>"hi"</code> is a <code>&amp;str</code>; <code>String::from("hi")</code> to own it</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-ownership.html">4. Ownership &amp; Moves</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Assignment of an object</td><td>copies the reference (aliases)</td><td>moves ownership; old variable is dead</td></tr>
+          <tr><td>Using the old variable</td><td>fine — same object</td><td>compile error: "value moved"</td></tr>
+          <tr><td>Independent copy</td><td><code>toMutableList()</code> / manual copy</td><td><code>.clone()</code> — explicit deep copy</td></tr>
+          <tr><td>Cleanup</td><td>GC, eventually</td><td>deterministic, when the owner goes out of scope</td></tr>
+          <tr><td>Primitives</td><td>copied by value</td><td>same — <code>Copy</code> types are exempt from moves</td></tr>
+          <tr><td>Passing to a function</td><td>shares the object</td><td>moves it in (unless you borrow — next lesson)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-borrowing.html">5. Borrowing &amp; References</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Shared read-only access</td><td><code>List&lt;T&gt;</code> (mutable underneath)</td><td><code>&amp;T</code> — many allowed, writes impossible</td></tr>
+          <tr><td>Mutable access</td><td><code>MutableList&lt;T&gt;</code> (aliasable)</td><td><code>&amp;mut T</code> — exactly one, no readers alongside</td></tr>
+          <tr><td>Call site</td><td><code>f(list)</code> — mutation invisible</td><td><code>f(&amp;list)</code> vs <code>f(&amp;mut list)</code> — visible</td></tr>
+          <tr><td>Sequence parameter</td><td><code>List&lt;Int&gt;</code> (over <code>MutableList</code>)</td><td><code>&amp;[i32]</code> (over <code>&amp;Vec&lt;i32&gt;</code>)</td></tr>
+          <tr><td>Defensive copies</td><td><code>items.toList()</code> in getters</td><td>unnecessary — <code>&amp;T</code> callers can't mutate</td></tr>
+          <tr><td>Lengths &amp; indexes</td><td><code>Int</code></td><td><code>usize</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-vectors.html">6. Vectors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Growable list</td><td><code>MutableList&lt;Int&gt;</code> (boxed)</td><td><code>Vec&lt;i32&gt;</code> (packed, no boxing)</td></tr>
+          <tr><td>Literal</td><td><code>listOf(10, 20, 30)</code> (read-only)</td><td><code>vec![10, 20, 30]</code></td></tr>
+          <tr><td>Append</td><td><code>v.add(x)</code></td><td><code>v.push(x)</code> (needs <code>mut</code>)</td></tr>
+          <tr><td>Length</td><td><code>v.size</code></td><td><code>v.len()</code></td></tr>
+          <tr><td>Safe index</td><td><code>v.getOrNull(i)</code> returns <code>Int?</code></td><td><code>v.get(i)</code> returns <code>Option&lt;&amp;i32&gt;</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (x in v)</code></td><td><code>for x in &amp;v</code></td></tr>
+          <tr><td>Read-only parameter</td><td><code>List&lt;Int&gt;</code> interface</td><td><code>&amp;[i32]</code> slice</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-hashmaps.html">7. HashMaps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Import</td><td><code>HashMap</code> (built-in, no import)</td><td><code>use std::collections::HashMap;</code></td></tr>
+          <tr><td>Insert</td><td><code>m[k] = v</code></td><td><code>m.insert(k, v)</code></td></tr>
+          <tr><td>Lookup</td><td><code>m[k]</code> → value or <code>null</code></td><td><code>m.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+          <tr><td>With default</td><td><code>m.getOrDefault(k, 0)</code></td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+          <tr><td>Update-or-init</td><td><code>m.merge(k, n, Int::plus)</code> / <code>getOrPut</code></td><td><code>*m.entry(k).or_insert(0) += n</code></td></tr>
+          <tr><td>Contains</td><td><code>m.containsKey(k)</code></td><td><code>m.contains_key(k)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-option.html">8. Option: The End of Null</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Present value</td><td><code>"Ada"</code> (non-null)</td><td><code>Some(v)</code></td></tr>
+          <tr><td>Absent value</td><td><code>null</code> (in a <code>T?</code>)</td><td><code>None</code></td></tr>
+          <tr><td>Default</td><td><code>opt ?: fallback</code></td><td><code>opt.unwrap_or(fallback)</code></td></tr>
+          <tr><td>Transform</td><td><code>opt?.let(f)</code></td><td><code>opt.map(f)</code></td></tr>
+          <tr><td>Check &amp; extract</td><td><code>if (opt != null)</code> (smart cast)</td><td><code>match</code> / <code>if let Some(v)</code></td></tr>
+          <tr><td>Gamble</td><td><code>opt!!</code></td><td><code>opt.unwrap()</code> (greppable, panics loudly)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-result-and-errors.html">9. Result &amp; the ? Operator</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Declare failure</td><td><code>fun f(): Int?</code> / <code>Result&lt;Int&gt;</code></td><td><code>-&gt; Result&lt;u32, String&gt;</code></td></tr>
+          <tr><td>Succeed</td><td><code>return v</code></td><td><code>Ok(v)</code></td></tr>
+          <tr><td>Fail</td><td><code>throw ...</code> / <code>return null</code></td><td><code>Err(e)</code></td></tr>
+          <tr><td>Parse</td><td><code>s.toInt()</code> / <code>s.toIntOrNull()</code></td><td><code>s.parse::&lt;u32&gt;()</code></td></tr>
+          <tr><td>Rethrow</td><td><code>try { … } catch (e: E) { throw … }</code></td><td><code>expr?</code></td></tr>
+          <tr><td>Wrap the error</td><td><code>IllegalArgumentException(msg, e)</code></td><td><code>.map_err(|e| msg)</code></td></tr>
+          <tr><td>Just crash</td><td><code>s.toInt()</code> (let it throw)</td><td><code>.unwrap()</code> / <code>.expect("msg")</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-structs-and-methods.html">10. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Data + behavior</td><td>one <code>class</code></td><td><code>struct</code> (data) + <code>impl</code> (behavior)</td></tr>
+          <tr><td>Constructor</td><td><code>BankAccount("Ada")</code></td><td><code>BankAccount::new("Ada")</code> — a plain associated fn</td></tr>
+          <tr><td>Static method</td><td><code>companion object</code> member</td><td>associated fn (no <code>self</code>), called with <code>::</code></td></tr>
+          <tr><td>Read-only method</td><td>convention (<code>getX</code> / <code>val</code>)</td><td><code>&amp;self</code> — enforced</td></tr>
+          <tr><td>Mutating method</td><td>indistinguishable from a getter</td><td><code>&amp;mut self</code> — in the signature</td></tr>
+          <tr><td>This object</td><td><code>this.balance</code> (implicit)</td><td><code>self.balance</code> (explicit parameter)</td></tr>
+          <tr><td>Failure</td><td><code>check(...) { "..." }</code> / <code>throw</code></td><td><code>-&gt; Result&lt;(), String&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums-and-match.html">11. Enums &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Closed hierarchy</td><td><code>sealed interface</code> + <code>data class</code> per case</td><td>one <code>enum</code>, variants carry data</td></tr>
+          <tr><td>Construct a case</td><td><code>Circle(2.0)</code></td><td><code>Shape::Circle { radius: 2.0 }</code></td></tr>
+          <tr><td>Branch on the case</td><td><code>when (shape) { is Circle -> ... }</code></td><td><code>match shape { Shape::Circle { radius } => ... }</code></td></tr>
+          <tr><td>Destructure fields</td><td><code>is Circle</code> smart-casts, then <code>shape.radius</code></td><td><code>Shape::Circle { radius }</code> — any pattern, anywhere</td></tr>
+          <tr><td>Missing case</td><td>compile error (when over a sealed type)</td><td>compile error, always</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Contract</td><td><code>interface Describe</code></td><td><code>trait Describe</code></td></tr>
+          <tr><td>Required method</td><td><code>fun name(): String</code></td><td><code>fn name(&amp;self) -&gt; String;</code></td></tr>
+          <tr><td>Default method</td><td><code>fun describe(): String { ... }</code></td><td><code>fn describe(&amp;self) -&gt; String { ... }</code></td></tr>
+          <tr><td>Implementing</td><td><code>class Dog : Describe</code></td><td><code>impl Describe for Dog</code> (a separate block)</td></tr>
+          <tr><td>Foreign types</td><td>extension function (can't add the interface)</td><td><code>impl Describe for String</code> — just do it</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-generics.html">13. Generics &amp; Trait Bounds</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Generic function</td><td><code>fun &lt;T&gt; pick(xs: List&lt;T&gt;): T</code></td><td><code>fn pick&lt;T&gt;(xs: &amp;[T]) -&gt; &amp;T</code></td></tr>
+          <tr><td>Constraint</td><td><code>&lt;T : Comparable&lt;T&gt;&gt;</code></td><td><code>&lt;T: PartialOrd&gt;</code></td></tr>
+          <tr><td>Several constraints</td><td><code>&lt;T&gt;</code> with <code>where T : A, T : B</code></td><td><code>&lt;T: A + B&gt;</code></td></tr>
+          <tr><td>Runtime model</td><td>erasure + boxing (one <code>Object</code> version)</td><td>monomorphization (a copy per type, zero overhead)</td></tr>
+          <tr><td>Variance</td><td><code>out T</code>, <code>in T</code></td><td>not needed — borrows cover it</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-closures-and-iterators.html">14. Closures &amp; Iterators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Start a chain</td><td><code>list.asSequence()</code></td><td><code>slice.iter()</code></td></tr>
+          <tr><td>Lambda</td><td><code>{ it.inStock }</code></td><td><code>|p| p.in_stock</code></td></tr>
+          <tr><td>Keep / transform</td><td><code>.filter { ... }</code> / <code>.map { ... }</code></td><td><code>.filter(...)</code> / <code>.map(...)</code> — same idea</td></tr>
+          <tr><td>Into a container</td><td><code>.toList()</code></td><td><code>.collect()</code>, container inferred</td></tr>
+          <tr><td>Sum</td><td><code>.sumOf { it.priceCents }</code></td><td><code>.sum()</code> (no field-selector lambda)</td></tr>
+          <tr><td>Laziness</td><td><code>List</code> ops eager; <code>Sequence</code> ops lazy</td><td>adapters always lazy, <code>collect</code>/<code>sum</code> run</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-slices-tuples-destructuring.html">15. Slices, Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Pair of values</td><td><code>Pair&lt;Int, Int&gt;</code> / <code>Triple</code></td><td><code>(i32, i32)</code> — anonymous, any arity</td></tr>
+          <tr><td>Field access</td><td><code>pair.first</code></td><td><code>pair.0</code>, <code>pair.1</code></td></tr>
+          <tr><td>Destructuring</td><td><code>val (x, y) = p</code> via <code>componentN()</code></td><td><code>let (x, y) = p;</code> — any tuple, any time</td></tr>
+          <tr><td>Swap two variables</td><td><code>a = b.also { b = a }</code></td><td><code>(a, b) = (b, a);</code></td></tr>
+          <tr><td>Read-only list view</td><td><code>List&lt;Int&gt;</code> (backing store can still change)</td><td><code>&amp;[i32]</code> — a free, checked borrow</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-lifetimes.html">16. Lifetimes: An Introduction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>"How long is this reference valid?"</td><td>GC decides at runtime</td><td>Compiler checks at compile time</td></tr>
+          <tr><td>Returning a reference</td><td><code>fun longest(a: String, b: String): String</code></td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+          <tr><td>Reading <code>&lt;'a&gt;</code></td><td>—</td><td>"the result borrows from these inputs; valid while they are"</td></tr>
+          <tr><td>One reference in, one out</td><td>—</td><td>Elision: no annotation needed (<code>fn first_word(s: &amp;str) -&gt; &amp;str</code>)</td></tr>
+          <tr><td>Reference outliving its data</td><td>Impossible — GC keeps data alive</td><td>Compile error: "borrowed value does not live long enough"</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-derive-and-common-traits.html">17. Common Traits &amp; Derive</a></h3>
+        <table>
+          <tr><th>Capability</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Readable printout</td><td>generated <code>toString()</code></td><td><code>#[derive(Debug)]</code> + <code>{:?}</code></td></tr>
+          <tr><td>Value equality</td><td><code>==</code> (calls <code>equals</code>)</td><td><code>#[derive(PartialEq)]</code> + <code>==</code></td></tr>
+          <tr><td>Hashing</td><td>generated <code>hashCode()</code></td><td><code>#[derive(Hash)]</code> (with <code>Eq</code>)</td></tr>
+          <tr><td>Copying</td><td><code>copy()</code></td><td><code>#[derive(Clone)]</code> + <code>.clone()</code></td></tr>
+          <tr><td>"Empty" instance</td><td>default parameter values</td><td><code>#[derive(Default)]</code> + <code>Point::default()</code></td></tr>
+          <tr><td>Generate it all</td><td><code>data class</code></td><td><code>#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-modules.html">18. Modules &amp; Visibility</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Namespace unit</td><td><code>package</code> (independent of directories)</td><td><code>mod</code> (logical; nestable in one file)</td></tr>
+          <tr><td>Default visibility</td><td><code>public</code> — everything, unless you restrict it</td><td>private to the module — everything, always</td></tr>
+          <tr><td>Making things visible</td><td>already <code>public</code> by default</td><td><code>pub</code> (also <code>pub(crate)</code> for crate-wide)</td></tr>
+          <tr><td>Bringing names in</td><td><code>import com.example.store.*</code></td><td><code>use store::inventory;</code></td></tr>
+          <tr><td>Path separator</td><td><code>itemCount(...)</code> (<code>.</code> for members)</td><td><code>inventory::item_count(...)</code></td></tr>
+          <tr><td>Free functions</td><td>normal — top-level <code>fun</code> (or an <code>object</code>)</td><td>normal — a mod holds <code>fn</code>s directly</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-threads-and-channels.html">19. Threads &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Start a thread</td><td><code>Thread { ... }.start()</code> / <code>executor.submit { ... }</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+          <tr><td>Wait for it</td><td><code>t.join()</code> / <code>future.get()</code></td><td><code>handle.join().unwrap()</code> — yields the return value</td></tr>
+          <tr><td>Hand data to a thread</td><td>implicit capture; shared by reference</td><td><code>move</code> closure: ownership transfers, checked</td></tr>
+          <tr><td>Queue between threads</td><td><code>BlockingQueue&lt;T&gt;</code></td><td><code>let (tx, rx) = mpsc::channel();</code></td></tr>
+          <tr><td>Send / receive</td><td><code>queue.put(v)</code> / <code>queue.take()</code></td><td><code>tx.send(v)</code> / <code>rx.recv()</code></td></tr>
+          <tr><td>Unsynchronized shared mutation</td><td>compiles; races at runtime</td><td>rejected by the borrow checker</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Rust</th></tr>
+          <tr><td>Data type</td><td><code>data class Item(...)</code></td><td><code>struct Item { ... }</code></td></tr>
+          <tr><td>Aggregate</td><td><code>.sumOf { ... }</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+          <tr><td>Maybe-a-result</td><td><code>Item?</code> (a nullable reference)</td><td><code>Option&lt;&amp;Item&gt;</code> (a checked borrow, lifetime and all)</td></tr>
+          <tr><td>In-place update</td><td>mutate and hope callers expected it</td><td><code>&amp;mut Vec&lt;Item&gt;</code> — exclusivity in the signature</td></tr>
+          <tr><td>Filtered projection</td><td><code>.filter { ... }.map { ... }</code></td><td><code>.filter(...).map(...).collect()</code></td></tr>
+          <tr><td>Find-and-mutate</td><td><code>indexOfFirst { ... }</code> or a second lookup</td><td><code>.iter_mut().find(...)</code> → <code>Option&lt;&amp;mut Item&gt;</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

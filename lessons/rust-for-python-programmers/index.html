@@ -20,6 +20,251 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Python ⇄ Rust cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-mutability.html">1. Variables, Mutability &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Binding</td><td><code>x = 1</code> (rebind anytime)</td><td><code>let x = 1;</code> (immutable, contents too)</td></tr>
+          <tr><td>Mutable binding</td><td>every binding, always</td><td><code>let mut x = 1;</code> (explicit opt-in)</td></tr>
+          <tr><td>Type annotations</td><td><code>age: int</code> (advisory)</td><td><code>age: u32</code> (enforced at compile time)</td></tr>
+          <tr><td>Integers</td><td><code>int</code>, arbitrary precision</td><td><code>i32</code>/<code>u32</code>/<code>i64</code>/<code>u64</code>… fixed-size</td></tr>
+          <tr><td>Floats</td><td><code>float</code></td><td><code>f64</code> (also <code>f32</code>)</td></tr>
+          <tr><td>String building</td><td><code>f"{name} is {age}"</code></td><td><code>format!("{} is {}", name, age)</code></td></tr>
+          <tr><td>Naming</td><td><code>snake_case</code></td><td><code>snake_case</code> — no change!</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-functions-and-control-flow.html">2. Functions &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Function definition</td><td><code>def f(x: int) -&gt; str:</code></td><td><code>fn f(x: i32) -&gt; String { }</code></td></tr>
+          <tr><td>Body delimiter</td><td>indentation</td><td>braces + semicolons</td></tr>
+          <tr><td>Ternary</td><td><code>a if cond else b</code></td><td><code>if cond { a } else { b }</code> (just an if)</td></tr>
+          <tr><td>elif</td><td><code>elif cond:</code></td><td><code>else if cond { }</code></td></tr>
+          <tr><td>Return</td><td><code>return x</code> (or implicit <code>None</code>)</td><td>last expression without a semicolon</td></tr>
+          <tr><td>Condition parens</td><td><code>if x &gt; 0:</code></td><td><code>if x &gt; 0 {</code> — also no parens!</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-strings.html">3. Strings: String &amp; &amp;str</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>String type</td><td><code>str</code></td><td><code>String</code> (owned), <code>&amp;str</code> (borrowed view)</td></tr>
+          <tr><td>Literal</td><td><code>"hi"</code> is a <code>str</code></td><td><code>"hi"</code> is a <code>&amp;str</code></td></tr>
+          <tr><td>Interpolation</td><td><code>f"Hi, {name}!"</code></td><td><code>format!("Hi, {}!", name)</code></td></tr>
+          <tr><td>Uppercase</td><td><code>s.upper()</code></td><td><code>s.to_uppercase()</code></td></tr>
+          <tr><td>Substring test</td><td><code>"x" in s</code></td><td><code>s.contains("x")</code></td></tr>
+          <tr><td>Length</td><td><code>len(s)</code> — code points</td><td><code>s.len()</code> — bytes; <code>s.chars().count()</code> for chars</td></tr>
+          <tr><td>str → String</td><td>—</td><td><code>"hi".to_string()</code> or <code>String::from("hi")</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-ownership.html">4. Ownership &amp; Moves</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Assignment</td><td><code>b = a</code> aliases</td><td><code>let b = a;</code> moves (for non-Copy types)</td></tr>
+          <tr><td>Use after handing off</td><td>fine — both names work</td><td>compile error: "value borrowed here after move"</td></tr>
+          <tr><td>Deep copy</td><td><code>copy.deepcopy(a)</code></td><td><code>a.clone()</code></td></tr>
+          <tr><td>Numbers</td><td>immutable objects, refs anyway</td><td><code>Copy</code> types — duplicated, never moved</td></tr>
+          <tr><td>Cleanup</td><td>refcount hits zero / GC cycle</td><td>owner leaves scope → freed, deterministically</td></tr>
+          <tr><td>Passing to a function</td><td>passes a reference</td><td>moves the argument in (unless you borrow — next lesson)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-borrowing.html">5. Borrowing &amp; References</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Read-only access</td><td>convention (or nothing)</td><td><code>&amp;T</code> — enforced; many at once are fine</td></tr>
+          <tr><td>Writable access</td><td>every reference, implicitly</td><td><code>&amp;mut T</code> — exactly one, no readers alongside</td></tr>
+          <tr><td>List parameter</td><td><code>nums: list[int]</code></td><td><code>nums: &amp;[i32]</code> (slice — takes Vecs and arrays)</td></tr>
+          <tr><td>Mutating a list arg</td><td><code>items.append(x)</code>, invisible at call site</td><td><code>&amp;mut Vec&lt;T&gt;</code> in the signature, <code>&amp;mut v</code> at the call</td></tr>
+          <tr><td>sum()</td><td><code>sum(nums)</code></td><td><code>nums.iter().sum()</code></td></tr>
+          <tr><td>Procedure</td><td><code>-&gt; None</code></td><td>no <code>-&gt;</code> (returns <code>()</code>, the unit type)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-vectors.html">6. Vectors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Literal</td><td><code>[10, 20, 30]</code></td><td><code>vec![10, 20, 30]</code></td></tr>
+          <tr><td>Append</td><td><code>v.append(x)</code></td><td><code>v.push(x)</code> — vector must be <code>mut</code></td></tr>
+          <tr><td>Length</td><td><code>len(v)</code></td><td><code>v.len()</code></td></tr>
+          <tr><td>Safe index</td><td><code>v[i]</code> raises <code>IndexError</code></td><td><code>v.get(i)</code> returns <code>Option&lt;&amp;T&gt;</code></td></tr>
+          <tr><td>Sum</td><td><code>sum(v)</code></td><td><code>v.iter().sum()</code></td></tr>
+          <tr><td>Iterate</td><td><code>for x in v:</code></td><td><code>for x in &amp;v {}</code></td></tr>
+          <tr><td>Mixed types</td><td><code>[1, "two", None]</code> is fine</td><td>One element type per <code>Vec</code>, checked at compile time</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-hashmaps.html">7. HashMaps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Empty map</td><td><code>d = {}</code></td><td><code>let mut d = HashMap::new();</code> (+ <code>use std::collections::HashMap;</code>)</td></tr>
+          <tr><td>Insert</td><td><code>d[k] = v</code></td><td><code>d.insert(k, v)</code></td></tr>
+          <tr><td>Lookup, may be missing</td><td><code>d.get(k)</code> → value or <code>None</code></td><td><code>d.get(k)</code> → <code>Option&lt;&amp;V&gt;</code></td></tr>
+          <tr><td>Lookup with default</td><td><code>d.get(k, 0)</code></td><td><code>d.get(k).copied().unwrap_or(0)</code></td></tr>
+          <tr><td>Insert-if-absent</td><td><code>d.setdefault(k, 0)</code> / <code>defaultdict(int)</code></td><td><code>d.entry(k).or_insert(0)</code></td></tr>
+          <tr><td>Missing key via index</td><td><code>d[k]</code> raises <code>KeyError</code></td><td><code>d[&amp;k]</code> panics (so idiomatic code uses <code>.get</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-option.html">8. Option: The End of Null</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Maybe-missing type</td><td><code>str | None</code> (hint only)</td><td><code>Option&lt;String&gt;</code> (compiler-enforced)</td></tr>
+          <tr><td>Present / absent</td><td><code>value</code> / <code>None</code></td><td><code>Some(value)</code> / <code>None</code></td></tr>
+          <tr><td>Default if missing</td><td><code>x or default</code>, <code>d.get(k, default)</code></td><td><code>x.unwrap_or(default)</code></td></tr>
+          <tr><td>Transform if present</td><td><code>f(x) if x is not None else None</code></td><td><code>x.map(f)</code></td></tr>
+          <tr><td>Handle both cases</td><td><code>if x is not None: ... else: ...</code></td><td><code>match x { Some(v) =&gt; ..., None =&gt; ... }</code></td></tr>
+          <tr><td>"I know it's there"</td><td>just use it (and maybe crash)</td><td><code>x.unwrap()</code> — an explicit, greppable gamble</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-result-and-errors.html">9. Result &amp; the ? Operator</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Fallible signature</td><td><code>-&gt; int</code> (exceptions invisible)</td><td><code>-&gt; Result&lt;u32, String&gt;</code></td></tr>
+          <tr><td>Fail</td><td><code>raise ValueError("...")</code></td><td><code>Err(String::from("..."))</code></td></tr>
+          <tr><td>Succeed</td><td><code>return value</code></td><td><code>Ok(value)</code></td></tr>
+          <tr><td>Parse a number</td><td><code>int(s)</code> — raises</td><td><code>s.parse::&lt;u32&gt;()</code> — returns <code>Result</code></td></tr>
+          <tr><td>Propagate upward</td><td><code>except ValueError: raise</code></td><td><code>expr?</code></td></tr>
+          <tr><td>Convert the error</td><td><code>raise MyError(...) from e</code></td><td><code>.map_err(|e| ...)</code></td></tr>
+          <tr><td>Handle both cases</td><td><code>try / except</code></td><td><code>match r { Ok(v) =&gt; ..., Err(e) =&gt; ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-structs-and-methods.html">10. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Data + behavior</td><td>one <code>class</code> block</td><td><code>struct</code> (data) + <code>impl</code> (behavior)</td></tr>
+          <tr><td>Constructor</td><td><code>__init__</code>, called as <code>BankAccount("Ada")</code></td><td><code>fn new(...)</code> by convention, called as <code>BankAccount::new("Ada")</code></td></tr>
+          <tr><td>Read-only method</td><td><code>def get_balance(self):</code></td><td><code>fn balance(&amp;self) -&gt; i64</code></td></tr>
+          <tr><td>Mutating method</td><td><code>def deposit(self, ...):</code> — looks identical</td><td><code>fn deposit(&amp;mut self, ...)</code> — declared</td></tr>
+          <tr><td>Failure in a method</td><td><code>raise ValueError(...)</code></td><td><code>-&gt; Result&lt;(), String&gt;</code>, return <code>Err(...)</code></td></tr>
+          <tr><td>Fields</td><td>whatever <code>__init__</code> (or anyone) assigns</td><td>declared once in the <code>struct</code>, fixed</td></tr>
+          <tr><td>Code reuse</td><td>inheritance (<code>class Savings(BankAccount)</code>)</td><td>traits &amp; composition — no subclassing</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums-and-match.html">11. Enums &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Sum type</td><td><code>Shape = Circle | Rectangle</code> + dataclasses</td><td><code>enum Shape { Circle {…}, Rectangle {…} }</code></td></tr>
+          <tr><td>Construct a variant</td><td><code>Circle(radius=1.0)</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+          <tr><td>Match &amp; destructure</td><td><code>case Circle(radius=r):</code></td><td><code>Shape::Circle { radius } =&gt; …</code></td></tr>
+          <tr><td>Catch-all arm</td><td><code>case _:</code></td><td><code>_ =&gt; …</code></td></tr>
+          <tr><td>Missing case</td><td>Silent fall-through at runtime</td><td>Compile error: "non-exhaustive patterns"</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>The contract</td><td><code>class Describe(ABC):</code></td><td><code>trait Describe { … }</code></td></tr>
+          <tr><td>Required method</td><td><code>@abstractmethod</code></td><td>Signature only, no body</td></tr>
+          <tr><td>Shared default</td><td>Concrete method on the ABC</td><td>Trait method with a body</td></tr>
+          <tr><td>Signing the contract</td><td><code>class Dog(Describe):</code></td><td><code>impl Describe for Dog { … }</code></td></tr>
+          <tr><td>Overriding a default</td><td>Redefine in the subclass</td><td>Redefine in the <code>impl</code> block</td></tr>
+          <tr><td>Unfulfilled contract</td><td><code>TypeError</code> at instantiation (runtime)</td><td>Compile error</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-generics.html">13. Generics &amp; Trait Bounds</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Type parameter</td><td><code>T = TypeVar("T")</code>, module-level</td><td><code>fn first&lt;T&gt;(…)</code>, on the function</td></tr>
+          <tr><td>Constrained parameter</td><td><code>TypeVar("C", bound=…)</code> (advisory)</td><td><code>&lt;T: PartialOrd&gt;</code> (enforced both sides)</td></tr>
+          <tr><td>Several constraints</td><td>Protocol gymnastics</td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+          <tr><td>Orderable</td><td><code>__lt__</code> et al., by convention</td><td><code>PartialOrd</code> trait</td></tr>
+          <tr><td>Misuse caught</td><td>Runtime <code>TypeError</code> (or mypy, maybe)</td><td>Compile error at the call site</td></tr>
+          <tr><td>Runtime cost</td><td>Dynamic dispatch everywhere</td><td>None — compiled per concrete type</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-closures-and-iterators.html">14. Closures &amp; Iterators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Anonymous function</td><td><code>lambda x: x * 2</code> (one expression only)</td><td><code>|x| x * 2</code> (blocks allowed: <code>|x| { … }</code>)</td></tr>
+          <tr><td>Filter + transform</td><td><code>[f(x) for x in xs if cond(x)]</code></td><td><code>xs.iter().filter(cond).map(f).collect()</code></td></tr>
+          <tr><td>Lazy pipeline</td><td>generator expression</td><td>iterator chain (also lazy)</td></tr>
+          <tr><td>Materialize</td><td><code>list(gen)</code></td><td><code>.collect()</code> (return type picks the container)</td></tr>
+          <tr><td>Reduce</td><td><code>sum(gen)</code>, <code>max(gen)</code>, <code>any(gen)</code></td><td><code>.sum()</code>, <code>.max()</code>, <code>.any(…)</code></td></tr>
+          <tr><td>Enumerate / zip</td><td><code>enumerate(xs)</code>, <code>zip(a, b)</code></td><td><code>.enumerate()</code>, <code>.zip(b)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-slices-tuples-destructuring.html">15. Slices, Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Tuple literal</td><td><code>(3, 4)</code></td><td><code>(3, 4)</code> — typed <code>(i32, i32)</code></td></tr>
+          <tr><td>Positional access</td><td><code>t[0]</code>, <code>t[1]</code></td><td><code>t.0</code>, <code>t.1</code></td></tr>
+          <tr><td>Unpacking</td><td><code>x, y = point</code></td><td><code>let (x, y) = point;</code></td></tr>
+          <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>let (a, b) = (b, a);</code></td></tr>
+          <tr><td>Sequence view</td><td><code>v[1:3]</code> (a copy)</td><td><code>&amp;v[1..3]</code> (a borrow, type <code>&amp;[i32]</code>)</td></tr>
+          <tr><td>Last element</td><td><code>v[-1]</code></td><td><code>v[v.len() - 1]</code>, or <code>v.last()</code> → <code>Option</code></td></tr>
+          <tr><td>Return two values</td><td><code>return a, b</code></td><td><code>(a, b)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-lifetimes.html">16. Lifetimes: An Introduction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Who keeps returned data alive?</td><td>the GC / refcounting</td><td>the owner it was borrowed from</td></tr>
+          <tr><td>Naming a borrow's source</td><td>never needed</td><td><code>&lt;'a&gt;</code> + <code>&amp;'a str</code></td></tr>
+          <tr><td>One ref in, one ref out</td><td>—</td><td>elision: no annotation needed</td></tr>
+          <tr><td>Two refs in, one ref out</td><td>—</td><td>ambiguous: write <code>'a</code> yourself</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-derive-and-common-traits.html">17. Common Traits &amp; Derive</a></h3>
+        <table>
+          <tr><th>Capability</th><th>Python</th><th>Rust trait</th><th>Unlocks</th></tr>
+          <tr><td>Debug printing</td><td><code>__repr__</code> / <code>repr(p)</code></td><td><code>Debug</code></td><td><code>format!("{:?}", p)</code>, <code>println!("{:?}", p)</code></td></tr>
+          <tr><td>Equality</td><td><code>__eq__</code> (identity by default)</td><td><code>PartialEq</code></td><td><code>a == b</code>, <code>assert_eq!</code></td></tr>
+          <tr><td>Copying</td><td><code>copy.deepcopy(p)</code></td><td><code>Clone</code></td><td><code>p.clone()</code></td></tr>
+          <tr><td>Zero-arg constructor</td><td>field defaults</td><td><code>Default</code></td><td><code>Point::default()</code></td></tr>
+          <tr><td>Generate them all</td><td><code>@dataclass</code></td><td><code>#[derive(Debug, Clone, PartialEq, Default)]</code></td><td>—</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-modules.html">18. Modules &amp; Visibility</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Module</td><td>a file (<code>inventory.py</code>)</td><td><code>mod inventory { ... }</code> or a file</td></tr>
+          <tr><td>Qualified call</td><td><code>inventory.describe(items)</code></td><td><code>inventory::describe(&amp;items)</code></td></tr>
+          <tr><td>Import a name</td><td><code>from inventory import describe</code></td><td><code>use inventory::describe;</code></td></tr>
+          <tr><td>Default visibility</td><td>public</td><td>private</td></tr>
+          <tr><td>Making it public</td><td>it already is</td><td><code>pub fn</code>, <code>pub struct</code>, <code>pub mod</code></td></tr>
+          <tr><td>Marking it private</td><td><code>_underscore</code> (convention)</td><td>do nothing (enforced)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-threads-and-channels.html">19. Threads &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Start a thread</td><td><code>threading.Thread(target=f).start()</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+          <tr><td>Wait for it</td><td><code>t.join()</code> (returns None)</td><td><code>h.join().unwrap()</code> (returns the closure's value)</td></tr>
+          <tr><td>Parallel CPU work</td><td><code>multiprocessing</code> + pickling</td><td>threads, directly — no GIL</td></tr>
+          <tr><td>Hand data to a thread</td><td>shared references, races possible</td><td><code>move</code> — ownership transfers, races don't compile</td></tr>
+          <tr><td>Thread-safe queue</td><td><code>q = Queue()</code>, <code>q.put</code>/<code>q.get</code></td><td><code>let (tx, rx) = mpsc::channel();</code> <code>tx.send</code>/<code>rx.recv</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Pattern</th><th>Python</th><th>Rust</th></tr>
+          <tr><td>Record type</td><td><code>@dataclass class Item:</code></td><td><code>struct Item { ... }</code></td></tr>
+          <tr><td>Aggregate</td><td><code>sum(... for i in items)</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+          <tr><td>Find-or-None</td><td><code>next((i for i in ... if ...), None)</code></td><td><code>.iter().find(...)</code> → <code>Option&lt;&amp;Item&gt;</code></td></tr>
+          <tr><td>Filtered projection</td><td><code>[i.name for i in items if ...]</code></td><td><code>.iter().filter(...).map(...).collect()</code></td></tr>
+          <tr><td>Mutation</td><td>implicit — any function might</td><td><code>&amp;mut</code> in the signature, <code>&amp;mut items</code> at the call</td></tr>
+          <tr><td>Borrowed result</td><td>every reference, GC-managed</td><td><code>Option&lt;&amp;'a Item&gt;</code> — tied to the slice's life</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

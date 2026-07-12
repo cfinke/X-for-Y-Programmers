@@ -19,6 +19,256 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Rust ⇄ Python cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Variable</td><td><code>let x = 1;</code></td><td><code>x = 1</code></td></tr>
+          <tr><td>Runtime type</td><td><code>std::any::type_name::&lt;T&gt;()</code></td><td><code>type(x).__name__</code></td></tr>
+          <tr><td>Interpolation</td><td><code>format!("{x}")</code></td><td><code>f"{x}"</code></td></tr>
+          <tr><td>Division</td><td><code>7 / 2 == 3</code> (integer division by default)</td><td><code>7 / 2 == 3.5</code>, <code>7 // 2 == 3</code></td></tr>
+          <tr><td>Block</td><td><code>{ … }</code></td><td>indentation (a colon then an indented body)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Interpolation</td><td><code>format!("{x}")</code></td><td><code>f"{x}"</code></td></tr>
+          <tr><td>Substring</td><td><code>&amp;s[1..4]</code></td><td><code>s[1:4]</code></td></tr>
+          <tr><td>Last char</td><td><code>s.chars().last()</code></td><td><code>s[-1]</code></td></tr>
+          <tr><td>Contains</td><td><code>s.contains("x")</code></td><td><code>"x" in s</code></td></tr>
+          <tr><td>Index of</td><td><code>s.find("x")</code> (<code>Option&lt;usize&gt;</code>)</td><td><code>s.find("x")</code> (-1 if absent)</td></tr>
+          <tr><td>Prefix / suffix</td><td><code>s.starts_with / ends_with</code></td><td><code>s.startswith / endswith</code></td></tr>
+          <tr><td>Repeat</td><td><code>"ab".repeat(3)</code></td><td><code>"ab" * 3</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-lists.html">3. Lists</a></h3>
+        <table>
+          <tr><th>Operation</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Length</td><td><code>xs.len()</code></td><td><code>len(xs)</code></td></tr>
+          <tr><td>Last element</td><td><code>xs.last()</code></td><td><code>xs[-1]</code></td></tr>
+          <tr><td>Slice</td><td><code>&amp;xs[1..3]</code></td><td><code>xs[1:3]</code></td></tr>
+          <tr><td>Reverse copy</td><td><code>xs.iter().rev().cloned().collect()</code></td><td><code>xs[::-1]</code></td></tr>
+          <tr><td>Append</td><td><code>xs.push(v)</code></td><td><code>xs.append(v)</code></td></tr>
+          <tr><td>Concat many</td><td><code>xs.extend(ys)</code></td><td><code>xs.extend(ys)</code></td></tr>
+          <tr><td>Insert at i</td><td><code>xs.insert(i, v)</code></td><td><code>xs.insert(i, v)</code></td></tr>
+          <tr><td>Remove &amp; return</td><td><code>xs.pop()</code></td><td><code>xs.pop()</code> / <code>xs.pop(i)</code></td></tr>
+          <tr><td>Map</td><td><code>xs.iter().map(f).collect()</code></td><td><code>[f(x) for x in xs]</code></td></tr>
+          <tr><td>Sort (copy)</td><td><code>let mut ys = xs.clone(); ys.sort();</code></td><td><code>sorted(xs)</code></td></tr>
+          <tr><td>Sort (in place)</td><td><code>xs.sort()</code></td><td><code>xs.sort()</code></td></tr>
+          <tr><td>Contains</td><td><code>xs.contains(&amp;v)</code></td><td><code>v in xs</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-dicts.html">4. Dictionaries</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Read (may be missing)</td><td><code>m.get("x").copied().unwrap_or(d)</code></td><td><code>m.get("x", d)</code></td></tr>
+          <tr><td>Read (must exist)</td><td><code>m["x"]</code> → panics</td><td><code>m["x"]</code> → <code>KeyError</code></td></tr>
+          <tr><td>Membership</td><td><code>m.contains_key("x")</code></td><td><code>"x" in m</code></td></tr>
+          <tr><td>Keys / values / pairs</td><td><code>m.keys()</code> / <code>m.values()</code> / <code>m.iter()</code></td><td><code>m.keys()</code> / <code>m.values()</code> / <code>m.items()</code></td></tr>
+          <tr><td>Merge</td><td><code>m.extend(n)</code></td><td><code>{**m, **n}</code></td></tr>
+          <tr><td>Comprehension</td><td><code>m.iter().map(...).collect()</code></td><td><code>{k: v for k, v in ...}</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Define</td><td><code>fn f(a: i32) -> i32 { … }</code></td><td><code>def f(a):</code></td></tr>
+          <tr><td>Default</td><td>no built-in default; use <code>Option&lt;T&gt;</code> + <code>unwrap_or</code>, or a builder</td><td><code>def f(a=1):</code></td></tr>
+          <tr><td>Rest / varargs</td><td><code>fn f(xs: &amp;[i32])</code> (a slice)</td><td><code>def f(*xs):</code> (a tuple)</td></tr>
+          <tr><td>Named extras</td><td>no built-in equivalent; a struct of fields, or a builder</td><td><code>def f(**kw):</code> (a dict)</td></tr>
+          <tr><td>Call by name</td><td>— (no keyword-argument syntax)</td><td><code>f(a=1, b=2)</code></td></tr>
+          <tr><td>Spread a call</td><td><code>f(&amp;arr)</code> (pass a slice)</td><td><code>f(*arr)</code>, <code>f(**dct)</code></td></tr>
+          <tr><td>Multiple return</td><td><code>return (a, b);</code></td><td><code>return a, b</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-comprehensions.html">6. Comprehensions</a></h3>
+        <table>
+          <tr><th>Goal</th><th>Rust</th><th>Python comprehension</th></tr>
+          <tr><td>Transform</td><td><code>xs.iter().map(f).collect()</code></td><td><code>[f(x) for x in xs]</code></td></tr>
+          <tr><td>Filter</td><td><code>xs.iter().filter(p).collect()</code></td><td><code>[x for x in xs if p(x)]</code></td></tr>
+          <tr><td>Map + filter</td><td><code>xs.iter().filter(p).map(f).collect()</code></td><td><code>[f(x) for x in xs if p(x)]</code></td></tr>
+          <tr><td>Build a dict</td><td><code>.collect::&lt;HashMap&lt;_,_&gt;&gt;()</code></td><td><code>{k: v for x in xs}</code></td></tr>
+          <tr><td>Build a set</td><td><code>.collect::&lt;HashSet&lt;_&gt;&gt;()</code></td><td><code>{expr for x in xs}</code></td></tr>
+          <tr><td>Lazy stream</td><td>iterator (lazy by default)</td><td><code>(expr for x in xs)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-classes.html">7. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Constructor</td><td><code>fn new(…) -> Self { … }</code></td><td><code>def __init__(self, …)</code></td></tr>
+          <tr><td>Instantiate</td><td><code>Account::new("Ada".to_string(), 100.0)</code></td><td><code>Account("Ada", 100)</code></td></tr>
+          <tr><td>Instance field</td><td><code>self.owner</code> (struct field)</td><td><code>self.owner = …</code></td></tr>
+          <tr><td>Method receiver</td><td>explicit <code>&self</code> / <code>&mut self</code></td><td>explicit first param <code>self</code> (mutability unmarked)</td></tr>
+          <tr><td>Static / shared</td><td>associated <code>const</code> or module-level <code>const</code></td><td><code>bank = …</code> in class body</td></tr>
+          <tr><td>Private</td><td>field private by default outside the module (checked)</td><td><code>_x</code> (convention only)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-dunder-methods.html">8. Dunder Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Constructor</td><td><code>Vector::new(…)</code> (associated function)</td><td><code>__init__(self, …)</code></td></tr>
+          <tr><td>Debug string</td><td><code>impl fmt::Debug</code> (or <code>#[derive(Debug)]</code>)</td><td><code>__repr__(self)</code></td></tr>
+          <tr><td>Value equality</td><td><code>impl PartialEq</code> (or <code>#[derive(PartialEq)]</code>)</td><td><code>a == b</code> (<code>__eq__</code>)</td></tr>
+          <tr><td>Length / size</td><td><code>fn len(&amp;self) -&gt; usize</code> (plain method, no trait)</td><td><code>len(a)</code> (<code>__len__</code>)</td></tr>
+          <tr><td>Addition</td><td><code>impl Add for Vector</code></td><td><code>a + b</code> (<code>__add__</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-inheritance.html">9. Inheritance</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Subclass</td><td>no direct equivalent — use composition: <code>struct B { a: A }</code></td><td><code>class B(A):</code></td></tr>
+          <tr><td>Parent constructor</td><td><code>A::new(x)</code> (called explicitly)</td><td><code>super().__init__(x)</code></td></tr>
+          <tr><td>Call parent method</td><td><code>self.a.m()</code> (via the held field)</td><td><code>super().m()</code></td></tr>
+          <tr><td>Override</td><td>separate <code>impl</code> block per type</td><td>same method name</td></tr>
+          <tr><td>Type check</td><td>no built-in "is-a"; static dispatch or <code>Any::downcast</code></td><td><code>isinstance(x, A)</code></td></tr>
+          <tr><td>Mixin</td><td><code>impl</code> multiple traits for one type</td><td>extra base class <code>(A, M)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-none-and-truthiness.html">10. None &amp; Truthiness</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>The empty value</td><td><code>Option::None</code></td><td><code>None</code> (only one)</td></tr>
+          <tr><td>Null check</td><td><code>x.is_none()</code></td><td><code>x is None</code></td></tr>
+          <tr><td>Present check</td><td><code>x.is_some()</code></td><td><code>x is not None</code></td></tr>
+          <tr><td>Empty container</td><td><code>vec.is_empty()</code></td><td><code>not arr</code></td></tr>
+          <tr><td>Nullish default</td><td><code>x.unwrap_or(d)</code></td><td><code>x if x is not None else d</code></td></tr>
+          <tr><td>Falsy default</td><td><em>(no equivalent — Rust has no falsy values)</em></td><td><code>x or d</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-exceptions.html">11. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Raise</td><td><code>return Err(MyError)</code> (<code>panic!("x")</code> for bugs)</td><td><code>raise ValueError("x")</code></td></tr>
+          <tr><td>Catch one type</td><td><code>Err(MyError::Validation(_)) => …</code></td><td><code>except ValueError:</code></td></tr>
+          <tr><td>Bind the error</td><td><code>Err(e) => …</code></td><td><code>except ValueError as e:</code></td></tr>
+          <tr><td>No-error branch</td><td><code>Ok(v) => …</code></td><td><code>else:</code></td></tr>
+          <tr><td>Always run</td><td><code>Drop</code> impl / scope guard</td><td><code>finally:</code></td></tr>
+          <tr><td>Custom type</td><td><code>struct E; impl Error for E {}</code></td><td><code>class E(Exception): pass</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-iterators-and-generators.html">12. Iterators &amp; Generators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Get an iterator</td><td><code>obj.into_iter()</code></td><td><code>iter(obj)</code></td></tr>
+          <tr><td>Pull next value</td><td><code>it.next()</code></td><td><code>next(it)</code></td></tr>
+          <tr><td>Signal "done"</td><td>returns <code>None</code></td><td>raise <code>StopIteration</code> (or just <code>return</code> in a generator)</td></tr>
+          <tr><td>Generator function</td><td>no stable equivalent — implement <code>Iterator</code> by hand</td><td><code>def g():</code> with <code>yield</code></td></tr>
+          <tr><td>Materialize</td><td><code>g().collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td><code>list(g())</code></td></tr>
+          <tr><td>Lazy comprehension</td><td><code>.iter().map(f)</code> chains</td><td><code>(f(x) for x in xs)</code></td></tr>
+          <tr><td>Make a type iterable</td><td><code>impl Iterator for T</code> / <code>IntoIterator</code></td><td><code>def __iter__(self):</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-decorators.html">13. Decorators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Apply a decorator</td><td><code>#[attr]</code> (compile-time, needs a macro crate)</td><td><code>@dec</code> above any <code>def</code></td></tr>
+          <tr><td>Forward all args</td><td>fixed-arity closure, or generic over a tuple</td><td><code>def w(*args, **kwargs): fn(*args, **kwargs)</code></td></tr>
+          <tr><td>Preserve metadata</td><td>not applicable — the original <code>fn</code> keeps its own name</td><td><code>@functools.wraps(fn)</code></td></tr>
+          <tr><td>Parameterized</td><td>proc-macro attribute with arguments, e.g. <code>#[repeat(3)]</code></td><td><code>repeat(n)</code> returns a decorator</td></tr>
+          <tr><td>Built-in memoize</td><td>none in std; crates like <code>cached</code></td><td><code>@functools.lru_cache</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-lambdas-and-functional.html">14. Lambdas &amp; Functional Tools</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Closure / lambda</td><td><code>|x| x + 1</code></td><td><code>lambda x: x + 1</code></td></tr>
+          <tr><td>Map</td><td><code>xs.iter().map(f).collect()</code></td><td><code>list(map(f, xs))</code></td></tr>
+          <tr><td>Filter</td><td><code>xs.iter().filter(f).collect()</code></td><td><code>list(filter(f, xs))</code></td></tr>
+          <tr><td>Sort by key</td><td><code>xs.sort_by_key(|x| ...)</code></td><td><code>sorted(xs, key=...)</code></td></tr>
+          <tr><td>Reduce</td><td><code>xs.iter().fold(0, f)</code></td><td><code>reduce(f, xs, 0)</code></td></tr>
+          <tr><td>Reverse sort</td><td><code>xs.sort_by_key(...); xs.reverse()</code></td><td><code>sorted(xs, key=..., reverse=True)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-sets-and-tuples.html">15. Sets &amp; Tuples</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Set literal</td><td><code>HashSet::from([1, 2])</code></td><td><code>{1, 2}</code> (but <code>{}</code> is an empty dict &mdash; use <code>set()</code>)</td></tr>
+          <tr><td>Membership</td><td><code>s.contains(&amp;x)</code></td><td><code>x in s</code></td></tr>
+          <tr><td>Union / intersection / diff</td><td><code>a.union(&amp;b)</code>, <code>a.intersection(&amp;b)</code>, <code>a.difference(&amp;b)</code> (each an iterator)</td><td><code>a | b</code>, <code>a &amp; b</code>, <code>a - b</code></td></tr>
+          <tr><td>Tuple</td><td><code>(i32, i32)</code> (immutable unless bound <code>mut</code>)</td><td><code>("a", 1)</code> (always immutable)</td></tr>
+          <tr><td>Unpack</td><td><code>let (x, y) = t;</code></td><td><code>x, y = t</code></td></tr>
+          <tr><td>Named fields</td><td><code>struct Point { x: i32, y: i32 }</code></td><td><code>namedtuple("P", ["x", "y"])</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-dataclasses.html">16. Dataclasses</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Data holder</td><td><code>struct</code></td><td><code>@dataclass</code></td></tr>
+          <tr><td>Field</td><td><code>x: i32</code></td><td><code>x: int</code></td></tr>
+          <tr><td>Default</td><td><code>new()</code> constructor / <code>#[derive(Default)]</code></td><td><code>label: str = ""</code></td></tr>
+          <tr><td>Mutable default</td><td><code>Vec::new()</code> in a constructor</td><td><code>field(default_factory=list)</code></td></tr>
+          <tr><td>Immutable</td><td>no <code>mut</code> on the binding</td><td><code>frozen=True</code></td></tr>
+          <tr><td>Value equality</td><td><code>#[derive(PartialEq)]</code></td><td><code>__eq__</code> for free</td></tr>
+          <tr><td>Ordering</td><td><code>#[derive(PartialOrd, Ord)]</code></td><td><code>order=True</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-type-hints.html">17. Type Hints</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Param annotation</td><td><code>(name: &str)</code></td><td><code>(name: str)</code></td></tr>
+          <tr><td>Return annotation</td><td><code>) -&gt; i32 {</code></td><td><code>) -&gt; int:</code></td></tr>
+          <tr><td>Vec / List</td><td><code>Vec&lt;i32&gt;</code></td><td><code>list[int]</code></td></tr>
+          <tr><td>HashMap / Dict</td><td><code>HashMap&lt;String, i32&gt;</code></td><td><code>dict[str, int]</code></td></tr>
+          <tr><td>Nullable</td><td><code>Option&lt;T&gt;</code></td><td><code>T | None</code> or <code>Optional[T]</code></td></tr>
+          <tr><td>Enforcement</td><td>compiler (build fails)</td><td>none at runtime (tools only)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-context-managers.html">18. Context Managers</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Scoped cleanup</td><td>value goes out of scope</td><td><code>with cm:</code></td></tr>
+          <tr><td>Auto-dispose</td><td><code>impl Drop for R { … }</code></td><td><code>with … as r:</code></td></tr>
+          <tr><td>Setup</td><td>constructor / <code>::new()</code></td><td><code>__enter__</code></td></tr>
+          <tr><td>Teardown</td><td><code>fn drop(&mut self) {}</code></td><td><code>__exit__(self, et, e, tb)</code></td></tr>
+          <tr><td>Quick manager</td><td>—</td><td><code>@contextmanager</code> + <code>yield</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-collections-module.html">19. The collections Module</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Count items</td><td><code>*m.entry(k).or_insert(0) += 1;</code></td><td><code>Counter(items)</code></td></tr>
+          <tr><td>Top N</td><td>sort entries yourself</td><td><code>counter.most_common(3)</code></td></tr>
+          <tr><td>Group into lists</td><td><code>g.entry(k).or_insert_with(Vec::new).push(v);</code></td><td><code>defaultdict(list)</code></td></tr>
+          <tr><td>Named record</td><td><code>struct P { x: i32 }</code></td><td><code>namedtuple("P", ["x"])</code></td></tr>
+          <tr><td>Field access</td><td><code>p.x</code></td><td><code>p.x</code> (also <code>p[0]</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Python</th></tr>
+          <tr><td>Record type</td><td><code>struct</code></td><td><code>@dataclass</code></td></tr>
+          <tr><td>Keyed store</td><td><code>HashMap&lt;K, V&gt;</code></td><td><code>dict</code></td></tr>
+          <tr><td>Membership</td><td><code>map.contains_key(&k)</code></td><td><code>k in d</code></td></tr>
+          <tr><td>Custom error</td><td><code>enum E { Variant(String) }</code></td><td><code>class E(Exception): pass</code></td></tr>
+          <tr><td>Signal an error</td><td><code>return Err(E::Variant(x))</code></td><td><code>raise E(x)</code></td></tr>
+          <tr><td>Reduce/sum</td><td><code>iter.map(f).sum::&lt;f64&gt;()</code></td><td><code>sum(x for x in arr)</code></td></tr>
+          <tr><td>Filter + map + sort</td><td><code>iter.filter(...).map(...).collect(); v.sort()</code></td><td><code>sorted(f(x) for x in arr if g(x))</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

@@ -19,6 +19,240 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C# ⇄ Go cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Typed variable</td><td><code>int x = 1;</code></td><td><code>var x int = 1</code></td></tr>
+          <tr><td>Declare + infer</td><td><code>var x = 1;</code></td><td><code>x := 1</code></td></tr>
+          <tr><td>Constant</td><td><code>const int x = 1;</code></td><td><code>const x = 1</code></td></tr>
+          <tr><td>Format string</td><td><code>$"{x}"</code></td><td><code>fmt.Sprintf("%v", x)</code></td></tr>
+          <tr><td>Numeric convert</td><td>implicit (widening) or explicit cast</td><td><code>float64(n)</code> (always explicit)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Interpolate</td><td><code>$"{x}"</code></td><td><code>fmt.Sprintf("%v", x)</code></td></tr>
+          <tr><td>Quote a value</td><td><code>JsonSerializer.Serialize(s)</code></td><td><code>fmt.Sprintf("%q", s)</code></td></tr>
+          <tr><td>Contains</td><td><code>s.Contains(x)</code></td><td><code>strings.Contains(s, x)</code></td></tr>
+          <tr><td>Split / Join</td><td><code>s.Split(',')</code> / <code>string.Join(",", a)</code></td><td><code>strings.Split(s, ",")</code> / <code>strings.Join(a, ",")</code></td></tr>
+          <tr><td>Replace all</td><td><code>s.Replace(a, b)</code></td><td><code>strings.ReplaceAll(s, a, b)</code></td></tr>
+          <tr><td>Prefix test</td><td><code>s.StartsWith(p)</code></td><td><code>strings.HasPrefix(s, p)</code></td></tr>
+          <tr><td>String → int</td><td><code>int.Parse(s)</code> / <code>int.TryParse(s, out n)</code></td><td><code>strconv.Atoi(s)</code> (returns value + error)</td></tr>
+          <tr><td>Char count</td><td><code>s.Length</code> (UTF-16 units)</td><td><code>for range s</code> (or <code>utf8.RuneCountInString</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-slices.html">3. Slices</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Literal</td><td><code>new List&lt;int&gt; { 1, 2, 3 }</code></td><td><code>[]int{1, 2, 3}</code></td></tr>
+          <tr><td>Append</td><td><code>xs.Add(x)</code></td><td><code>xs = append(xs, x)</code></td></tr>
+          <tr><td>Length</td><td><code>xs.Count</code></td><td><code>len(xs)</code></td></tr>
+          <tr><td>Pre-size</td><td><code>new List&lt;int&gt;(n)</code></td><td><code>make([]int, n)</code></td></tr>
+          <tr><td>Sub-slice</td><td><code>xs.GetRange(a, b - a)</code></td><td><code>xs[a:b]</code></td></tr>
+          <tr><td>Iterate</td><td><code>foreach (var x in xs)</code></td><td><code>for _, x := range xs</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Create empty</td><td><code>new Dictionary&lt;string, int&gt;()</code></td><td><code>make(map[string]int)</code></td></tr>
+          <tr><td>Literal</td><td><code>new() { ["a"] = 1 }</code></td><td><code>map[string]int{"a": 1}</code></td></tr>
+          <tr><td>Read missing key</td><td><code>KeyNotFoundException</code></td><td>zero value (<code>0</code>, <code>""</code>, …)</td></tr>
+          <tr><td>Membership</td><td><code>m.ContainsKey("a")</code></td><td><code>_, ok := m["a"]</code></td></tr>
+          <tr><td>Delete</td><td><code>m.Remove("a")</code></td><td><code>delete(m, "a")</code></td></tr>
+          <tr><td>Size</td><td><code>m.Count</code></td><td><code>len(m)</code></td></tr>
+          <tr><td>Iterate</td><td>insertion order (in practice)</td><td><code>range</code> — random order</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Multiple returns</td><td><code>(int, bool)</code> tuple</td><td><code>(int, bool)</code> native</td></tr>
+          <tr><td>Destructure result</td><td><code>var (q, ok) = F();</code></td><td><code>q, ok := f()</code></td></tr>
+          <tr><td>Named returns</td><td>—</td><td><code>func f() (q int, ok bool)</code> + naked <code>return</code></td></tr>
+          <tr><td>Variadic</td><td><code>params int[] ns</code></td><td><code>ns ...int</code></td></tr>
+          <tr><td>Function type</td><td><code>Func&lt;int, int&gt;</code></td><td><code>func(int) int</code></td></tr>
+          <tr><td>Absent value</td><td><code>int?</code> or <code>out</code> param</td><td><code>(T, bool)</code> comma-ok</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-structs-and-methods.html">6. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Define shape</td><td><code>class C { public int X; }</code></td><td><code>type C struct { X int }</code></td></tr>
+          <tr><td>Construct</td><td><code>new C()</code> / <code>new C { X = 1 }</code></td><td><code>C{X: 1}</code></td></tr>
+          <tr><td>Read method</td><td><code>int M() { return x; }</code></td><td><code>func (c C) M() int {…}</code></td></tr>
+          <tr><td>Mutating method</td><td><code>void M() { x++; }</code></td><td><code>func (c *C) M() {…}</code></td></tr>
+          <tr><td>Receiver name</td><td><code>this</code> (fixed)</td><td><code>c</code> (you choose)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-pointers.html">7. Pointers</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Take an address</td><td>(implicit for class refs; <code>ref x</code> for value types)</td><td><code>p := &amp;x</code></td></tr>
+          <tr><td>Read the pointee</td><td>—</td><td><code>v := *p</code></td></tr>
+          <tr><td>Write the pointee</td><td>—</td><td><code>*p = 10</code></td></tr>
+          <tr><td>Null pointer</td><td><code>null</code></td><td><code>nil</code></td></tr>
+          <tr><td>Mutate caller's value</td><td><code>void f(ref int p)</code></td><td><code>func f(p *int)</code></td></tr>
+          <tr><td>Mutating method</td><td><code>this.x = …</code> (classes only)</td><td><code>func (a *T) M()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Declare interface</td><td><code>interface IShape { double Area(); }</code></td><td><code>type Shape interface { Area() float64 }</code></td></tr>
+          <tr><td>Satisfy it</td><td><code>class C : IShape</code></td><td>just define the method — no keyword</td></tr>
+          <tr><td>Interface parameter</td><td><code>void F(IShape s)</code></td><td><code>func f(s Shape)</code></td></tr>
+          <tr><td>Any value</td><td><code>object</code></td><td><code>interface{}</code> (or <code>any</code> in Go 1.18+)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-errors.html">9. Errors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Signal failure</td><td><code>throw new Exception(msg)</code></td><td><code>return errors.New(msg)</code></td></tr>
+          <tr><td>Formatted error</td><td><code>throw new Exception($"x: {v}")</code></td><td><code>fmt.Errorf("x: %v", v)</code></td></tr>
+          <tr><td>Handle failure</td><td><code>try/catch</code></td><td><code>if err != nil { … }</code></td></tr>
+          <tr><td>Success sentinel</td><td>no throw</td><td>error is <code>nil</code></td></tr>
+          <tr><td>Error text</td><td><code>e.Message</code></td><td><code>err.Error()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-goroutines-and-channels.html">10. Goroutines &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Start async work</td><td><code>var t = WorkAsync();</code></td><td><code>go work()</code></td></tr>
+          <tr><td>Channel of T</td><td><code>Task&lt;T&gt;</code> (roughly)</td><td><code>make(chan T)</code></td></tr>
+          <tr><td>Send / receive</td><td><code>tcs.SetResult(v)</code> / <code>await t</code></td><td><code>ch &lt;- v</code> / <code>v := &lt;-ch</code></td></tr>
+          <tr><td>Buffered channel</td><td>—</td><td><code>make(chan T, n)</code></td></tr>
+          <tr><td>Signal "no more"</td><td>enumerator done</td><td><code>close(ch)</code></td></tr>
+          <tr><td>Drain a stream</td><td><code>await foreach (var v in it)</code></td><td><code>for v := range ch</code></td></tr>
+          <tr><td>Wait for a group</td><td><code>await Task.WhenAll(tasks)</code></td><td><code>wg.Wait()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-generics.html">11. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Generic function</td><td><code>T F&lt;T&gt;(T x)</code></td><td><code>func F[T any](x T)</code></td></tr>
+          <tr><td>Two parameters</td><td><code>&lt;T, U&gt;</code></td><td><code>[T, U any]</code></td></tr>
+          <tr><td>Equality bound</td><td>implicit (every type has <code>Equals</code>)</td><td><code>[T comparable]</code></td></tr>
+          <tr><td>Ordering bound</td><td><code>where T : IComparable&lt;T&gt;</code></td><td><code>[T cmp.Ordered]</code></td></tr>
+          <tr><td>Generic type</td><td><code>class Box&lt;T&gt;</code></td><td><code>type Box[T any] struct{ ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-closures.html">12. Closures</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Anonymous function</td><td><code>n =&gt; n * 2</code></td><td><code>func(n int) int { return n * 2 }</code></td></tr>
+          <tr><td>Function type</td><td><code>Func&lt;int&gt;</code></td><td><code>func() int</code></td></tr>
+          <tr><td>Captured, mutated var</td><td><code>count += 1</code></td><td><code>count++</code></td></tr>
+          <tr><td>Closure factory</td><td><code>MakeCounter()</code></td><td><code>MakeCounter()</code></td></tr>
+          <tr><td>Closure as argument</td><td><code>list.Select(f)</code></td><td><code>ApplyTwice(n, f)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-type-switches.html">13. Type Switches</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Checked narrow</td><td><code>x is int n</code></td><td><code>v, ok := x.(int)</code></td></tr>
+          <tr><td>Unchecked cast</td><td><code>(int)x</code></td><td><code>x.(int)</code> (panics if wrong)</td></tr>
+          <tr><td>Multi-way narrow</td><td><code>switch (x) { case int n: … }</code></td><td><code>switch v := x.(type)</code></td></tr>
+          <tr><td>Nil interface</td><td><code>x == null</code></td><td><code>case nil:</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-defer-panic-recover.html">14. Defer, Panic &amp; Recover</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Cleanup on exit</td><td><code>finally { … }</code></td><td><code>defer f()</code></td></tr>
+          <tr><td>Run order</td><td>single block</td><td>LIFO across all defers</td></tr>
+          <tr><td>Raise</td><td><code>throw</code></td><td><code>panic</code></td></tr>
+          <tr><td>Catch</td><td><code>catch (Exception e)</code> anywhere</td><td><code>recover()</code> in a defer only</td></tr>
+          <tr><td>Idiomatic error flow</td><td>exceptions</td><td>return <code>error</code> values</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-embedding.html">15. Embedding &amp; Composition</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Reuse a type</td><td><code>class B : A {}</code></td><td><code>type B struct { A }</code></td></tr>
+          <tr><td>Call reused method</td><td><code>b.Method()</code></td><td><code>b.method()</code> (promoted)</td></tr>
+          <tr><td>Reach the base</td><td><code>base.Method()</code></td><td><code>b.A.method()</code></td></tr>
+          <tr><td>Compose interfaces</td><td><code>interface IC : IA, IB {}</code></td><td><code>type C interface { A; B }</code></td></tr>
+          <tr><td>Satisfy interface</td><td><code>class C : IShape</code></td><td>implicit (has the methods)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-sorting.html">16. Sorting</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Sort numbers</td><td><code>a.Sort((x,y)=&gt;x-y)</code></td><td><code>sort.Ints(a)</code></td></tr>
+          <tr><td>Sort strings</td><td><code>a.Sort()</code></td><td><code>sort.Strings(a)</code></td></tr>
+          <tr><td>Custom order</td><td><code>a.Sort((x,y)=&gt;…)</code></td><td><code>sort.Slice(a, less)</code></td></tr>
+          <tr><td>Comparator result</td><td><code>int</code> (&lt;0, 0, &gt;0)</td><td><code>bool</code> (i before j?)</td></tr>
+          <tr><td>Stable sort</td><td><code>OrderBy</code> is stable; <code>List.Sort</code> is not</td><td><code>sort.SliceStable(a, less)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-json.html">17. JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Encode</td><td><code>JsonSerializer.Serialize(u)</code></td><td><code>json.Marshal(u)</code> → <code>[]byte</code></td></tr>
+          <tr><td>Decode</td><td><code>JsonSerializer.Deserialize&lt;User&gt;(s)</code></td><td><code>json.Unmarshal(b, &amp;u)</code></td></tr>
+          <tr><td>Rename key</td><td><code>[JsonPropertyName("name")]</code></td><td><code>`json:"name"`</code> tag</td></tr>
+          <tr><td>Skip empty</td><td><code>[JsonIgnore(Condition = ...)]</code></td><td><code>,omitempty</code></td></tr>
+          <tr><td>Dynamic keys</td><td><code>Dictionary&lt;string, int&gt;</code></td><td><code>map[string]int</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-custom-errors-and-wrapping.html">18. Custom Errors &amp; Wrapping</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Custom error</td><td><code>class E : Exception</code></td><td><code>type E struct{}</code> + <code>Error() string</code></td></tr>
+          <tr><td>Sentinel value</td><td><code>static readonly Exception ErrX = new(...)</code></td><td><code>var ErrX = errors.New(...)</code></td></tr>
+          <tr><td>Wrap a cause</td><td><code>new Exception(m, innerException: cause)</code></td><td><code>fmt.Errorf("m: %w", cause)</code></td></tr>
+          <tr><td>Match a value</td><td><code>err == ErrX</code></td><td><code>errors.Is(err, ErrX)</code></td></tr>
+          <tr><td>Match a type</td><td><code>e is E</code></td><td><code>errors.As(err, &amp;e)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-stringers-and-formatting.html">19. Stringers &amp; Formatting</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Custom text</td><td><code>override string ToString()</code></td><td><code>String() string</code></td></tr>
+          <tr><td>Default print</td><td><code>$"{x}"</code></td><td><code>%v</code></td></tr>
+          <tr><td>Struct with fields</td><td><code>x</code> via a custom <code>ToString</code>, or reflection</td><td><code>%+v</code> (names) / <code>%v</code></td></tr>
+          <tr><td>Type name</td><td><code>x.GetType().Name</code></td><td><code>%T</code></td></tr>
+          <tr><td>Quoted string</td><td>manual <code>"\"" + s + "\""</code></td><td><code>%q</code></td></tr>
+          <tr><td>Integer / float</td><td><code>n.ToString()</code></td><td><code>%d</code> / <code>%f</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Go</th></tr>
+          <tr><td>Record type</td><td><code>class Product { … }</code></td><td><code>type Product struct { … }</code></td></tr>
+          <tr><td>Indexed store</td><td><code>Dictionary&lt;string, Product&gt;</code></td><td><code>map[string]Product</code></td></tr>
+          <tr><td>Missing lookup</td><td><code>Get</code> throws <code>KeyNotFoundException</code></td><td><code>(Product, error)</code> with a wrapped sentinel</td></tr>
+          <tr><td>Recognize a cause</td><td><code>e is NotFoundException</code></td><td><code>errors.Is(err, ErrNotFound)</code></td></tr>
+          <tr><td>Stable key order</td><td><code>items.Keys.OrderBy(k =&gt; k)</code></td><td>copy keys to a slice, then <code>sort</code></td></tr>
+          <tr><td>Depend on behavior</td><td><code>class Store : IReader</code></td><td>just have the methods (implicit)</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

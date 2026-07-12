@@ -17,6 +17,253 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Go ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Basic Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Typed declaration</td><td><code>var x int = 1</code></td><td><code>let x: number = 1;</code></td></tr>
+          <tr><td>Declare + infer</td><td><code>x := 1</code></td><td><code>let x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>const</code> (compile-time values only)</td><td><code>const</code> (any value; your default)</td></tr>
+          <tr><td>Numeric types</td><td><code>int</code>, <code>int64</code>, <code>float64</code>, <code>float32</code>…</td><td><code>number</code></td></tr>
+          <tr><td>Return type</td><td><code>func f() string</code></td><td><code>function f(): string { }</code></td></tr>
+          <tr><td>Unassigned variable</td><td>Zero value (<code>0</code>, <code>""</code>, <code>false</code>)</td><td><code>undefined</code> — no zero values</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Interpolation</td><td><code>fmt.Sprintf("%s/%d", a, b)</code></td><td><code>`${a}/${b}`</code></td></tr>
+          <tr><td>Uppercase / lowercase</td><td><code>strings.ToUpper(s)</code> / <code>strings.ToLower(s)</code></td><td><code>s.toUpperCase()</code> / <code>s.toLowerCase()</code></td></tr>
+          <tr><td>Contains</td><td><code>strings.Contains(s, sub)</code></td><td><code>s.includes(sub)</code></td></tr>
+          <tr><td>Prefix / suffix</td><td><code>strings.HasPrefix</code> / <code>HasSuffix</code></td><td><code>s.startsWith()</code> / <code>s.endsWith()</code></td></tr>
+          <tr><td>Length</td><td><code>len(s)</code> (bytes)</td><td><code>s.length</code> (UTF-16 units, no parens)</td></tr>
+          <tr><td>Split / join</td><td><code>strings.Split</code> / <code>strings.Join</code></td><td><code>s.split(",")</code> / <code>arr.join(",")</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-slices-to-arrays.html">3. Slices → Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Literal</td><td><code>[]int{1, 2, 3}</code></td><td><code>const a: number[] = [1, 2, 3];</code></td></tr>
+          <tr><td>Append</td><td><code>s = append(s, x)</code></td><td><code>a.push(x);</code> (in place)</td></tr>
+          <tr><td>Length</td><td><code>len(s)</code></td><td><code>a.length</code></td></tr>
+          <tr><td>Capacity</td><td><code>cap(s)</code></td><td>— (not your problem)</td></tr>
+          <tr><td>Subrange</td><td><code>s[1:3]</code> (view, shared memory)</td><td><code>a.slice(1, 3)</code> (copy)</td></tr>
+          <tr><td>Contains</td><td>hand-rolled loop / <code>slices.Contains</code></td><td><code>a.includes(x)</code></td></tr>
+          <tr><td>Copy</td><td><code>copy(dst, src)</code></td><td><code>[...a]</code> or <code>a.slice()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps-to-objects.html">4. Maps → Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Type</td><td><code>map[string]int</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+          <tr><td>Literal</td><td><code>map[string]int{"a": 1}</code></td><td><code>{ a: 1 }</code></td></tr>
+          <tr><td>Missing key</td><td>zero value + <code>ok</code> flag</td><td><code>undefined</code></td></tr>
+          <tr><td>Read with fallback</td><td><code>v, ok := m[k]; if !ok {...}</code></td><td><code>m[k] ?? fallback</code></td></tr>
+          <tr><td>Delete</td><td><code>delete(m, k)</code></td><td><code>delete m[k];</code></td></tr>
+          <tr><td>Iterate</td><td><code>for k, v := range m</code> (random order)</td><td><code>Object.entries(m)</code> (insertion order)</td></tr>
+          <tr><td>Size</td><td><code>len(m)</code></td><td><code>Object.keys(m).length</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Signature</td><td><code>func f(x int) string</code></td><td><code>function f(x: number): string</code></td></tr>
+          <tr><td>Multiple returns</td><td><code>(int, int)</code></td><td><code>[number, number]</code> tuple (or an object)</td></tr>
+          <tr><td>Errors</td><td><code>(T, error)</code>, checked at every call</td><td>usually <code>throw</code> + <code>try/catch</code></td></tr>
+          <tr><td>Default param</td><td>— (wrapper function)</td><td><code>greeting: string = "Hello"</code></td></tr>
+          <tr><td>Optional param</td><td>— (wrapper or variadic hack)</td><td><code>last?: string</code> (arrives as <code>undefined</code>)</td></tr>
+          <tr><td>Function literal</td><td><code>f := func(x int) int {...}</code></td><td><code>const f = (x: number) =&gt; ...;</code></td></tr>
+          <tr><td>Integer division</td><td><code>a / b</code> on ints truncates</td><td><code>Math.trunc(a / b)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nil-and-zero-values.html">6. Nil &amp; Undefined</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Missing value</td><td><code>nil</code> pointer or zero value (<code>""</code>, <code>0</code>)</td><td><code>undefined</code> (and <code>null</code>), visible in the type</td></tr>
+          <tr><td>"Might be absent" signature</td><td><code>func F() *User</code> — nil unchecked</td><td><code>function f(): User | undefined</code> — checked</td></tr>
+          <tr><td>Guarded access</td><td><code>if u != nil { u.Name }</code></td><td><code>u?.name</code></td></tr>
+          <tr><td>Chained guards</td><td><code>if u != nil &amp;&amp; u.Addr != nil { ... }</code></td><td><code>u?.addr?.street</code></td></tr>
+          <tr><td>Default for absence</td><td><code>if v == "" { v = "x" }</code></td><td><code>v ?? "x"</code></td></tr>
+          <tr><td>Forgot the check</td><td>Panic at runtime</td><td>Error at compile time</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>"int or string" parameter</td><td><code>id interface{}</code> (anything, really)</td><td><code>id: number | string</code> (exactly those)</td></tr>
+          <tr><td>Branch on the type</td><td><code>switch v := id.(type)</code></td><td><code>if (typeof id === "number")</code> or <code>switch (typeof id)</code></td></tr>
+          <tr><td>Inside a branch</td><td><code>v</code> has the case's type</td><td><code>id</code> is narrowed — no new variable needed</td></tr>
+          <tr><td>Illegal argument</td><td>Compiles; hits <code>default:</code> at runtime</td><td>Compile error at the call site</td></tr>
+          <tr><td>Forgot a case</td><td>Silent fallthrough to <code>default:</code></td><td>Compiler knows what's left; unhandled members are type errors</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces &amp; Object Shapes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Interface describes</td><td>Method set (behavior)</td><td>Usually a data shape (structs' old job); methods allowed too</td></tr>
+          <tr><td>Satisfaction</td><td>Implicit, structural</td><td>Implicit, structural — same instinct</td></tr>
+          <tr><td>Making a value</td><td><code>Product{Name: "Book", Price: 20}</code></td><td><code>{ name: "Book", price: 20 }</code> — plain literal</td></tr>
+          <tr><td>Optional field</td><td>Zero value (ambiguous) or <code>*float64</code></td><td><code>discount?: number</code></td></tr>
+          <tr><td>Read optional field</td><td><code>if p.Discount != 0 { ... }</code></td><td><code>p.discount ?? 0</code></td></tr>
+          <tr><td>At runtime</td><td>Interface value exists (type + pointer)</td><td>Erased entirely — types vanish after compilation</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-structs-to-classes.html">9. Structs → Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Data + behavior</td><td>Struct + separate receiver funcs</td><td>One <code>class</code> body</td></tr>
+          <tr><td>Constructor</td><td><code>func NewFoo(...) *Foo</code> — convention only</td><td><code>constructor(...)</code> — guaranteed on every <code>new</code></td></tr>
+          <tr><td>Method</td><td><code>func (a *Foo) Bar()</code>, then <code>a.balance</code></td><td><code>bar()</code>, then <code>this.balance</code></td></tr>
+          <tr><td>Visibility</td><td><code>Deposit</code> exported / <code>deposit</code> package-private</td><td><code>public</code> (default) / <code>private</code>, per member</td></tr>
+          <tr><td>Set-once field</td><td>No language support</td><td><code>readonly owner: string</code></td></tr>
+          <tr><td>Field boilerplate</td><td>Struct fields + <code>NewFoo</code> assignments</td><td><code>constructor(private balance: number)</code> — all at once</td></tr>
+          <tr><td>Receiver kind</td><td>Pointer vs value, chosen per method</td><td>No choice — objects are always references</td></tr>
+          <tr><td>Failure</td><td><code>return err</code>, checked with <code>if err != nil</code></td><td><code>throw new Error(...)</code>, caught with <code>try/catch</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstracts.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Reuse mechanism</td><td>Embedding (composition)</td><td><code>extends</code> (inheritance) — and composition, still often better</td></tr>
+          <tr><td>Partial implementation + contract</td><td>Interface + embeddable helper struct</td><td><code>abstract class</code> — both halves in one, checked</td></tr>
+          <tr><td>"Subtype must implement X"</td><td><code>var _ Shape = Circle{}</code> — manual, opt-in</td><td><code>abstract area(): number</code> — automatic, at the definition</td></tr>
+          <tr><td>Base initialization</td><td>Embedded field in a composite literal</td><td><code>super("circle")</code> in the constructor</td></tr>
+          <tr><td>Uninstantiable base</td><td>Not expressible (any struct can be built)</td><td><code>new Shape(...)</code> is a compile error</td></tr>
+          <tr><td>Is-a check</td><td>Type assertion <code>v.(Shape)</code></td><td><code>c instanceof Shape</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums &amp; Literal Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Enumerated type</td><td><code>type Status int</code> + <code>iota</code> const block</td><td><code>enum OrderStatus { Pending = "pending" }</code></td></tr>
+          <tr><td>Printable name</td><td>Hand-written <code>String()</code> (or stringer codegen)</td><td>Free — the member's value is the label</td></tr>
+          <tr><td>Lightweight set</td><td>—</td><td><code>type Speed = "standard" | "express"</code></td></tr>
+          <tr><td>Out-of-range value</td><td><code>Status(42)</code> compiles</td><td>Compile error</td></tr>
+          <tr><td>Runtime cost</td><td>Constants</td><td>Enum: small object; literal union: none (erased)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Type parameter</td><td><code>func F[T any](s []T)</code></td><td><code>function f&lt;T&gt;(s: T[])</code></td></tr>
+          <tr><td>Constraint</td><td><code>[T constraints.Ordered]</code></td><td><code>&lt;T extends number | string&gt;</code></td></tr>
+          <tr><td>Constraint definition</td><td>Interface with a type set</td><td>Any type after <code>extends</code>, including unions</td></tr>
+          <tr><td>"Not found" result</td><td><code>(T, bool)</code> with a zero value</td><td><code>T | undefined</code></td></tr>
+          <tr><td>Field-name parameter</td><td>Inexpressible — fall back to <code>any</code></td><td><code>K extends keyof T</code>, result typed <code>T[K]</code></td></tr>
+          <tr><td>Generic instantiation</td><td>Inferred, or <code>F[int](s)</code></td><td>Inferred, or <code>f&lt;number&gt;(s)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-loops-to-array-methods.html">13. For Loops → Array Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Transform</td><td><code>range</code> + <code>append</code></td><td><code>items.map(fn)</code></td></tr>
+          <tr><td>Select</td><td><code>range</code> + <code>if</code> + <code>append</code></td><td><code>items.filter(fn)</code></td></tr>
+          <tr><td>Accumulate</td><td><code>total := 0; for ... { total += }</code></td><td><code>items.reduce(fn, seed)</code></td></tr>
+          <tr><td>Sort</td><td><code>sort.Slice(v, less)</code> — indices, bool</td><td><code>v.sort(cmp)</code> — elements, number</td></tr>
+          <tr><td>Sort mutates?</td><td>Yes</td><td>Yes — copy first: <code>[...v].sort(cmp)</code></td></tr>
+          <tr><td>Any / all</td><td>Loop with early <code>return</code></td><td><code>items.some(fn)</code> / <code>items.every(fn)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-tuples-and-destructuring.html">14. Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Multiple returns</td><td><code>func f() (int, string)</code></td><td><code>function f(): [number, string]</code></td></tr>
+          <tr><td>Unpack</td><td><code>val, err := f()</code></td><td><code>const [val, err] = f();</code></td></tr>
+          <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+          <tr><td>Ignore a value</td><td><code>_, err := f()</code></td><td><code>const [, err] = f();</code></td></tr>
+          <tr><td>Object fields</td><td><code>n, a := u.Name, u.Age</code></td><td><code>const { name, age } = u;</code></td></tr>
+          <tr><td>Rename / default</td><td>—</td><td><code>const { name: n, age = 0 } = u;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-variadics-and-spread.html">15. Spread &amp; Rest</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Variadic declaration</td><td><code>func Sum(nums ...int)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+          <tr><td>Spread a slice into a call</td><td><code>Sum(values...)</code></td><td><code>sum(...values)</code></td></tr>
+          <tr><td>Concatenate</td><td><code>append(a, b...)</code> (may alias <code>a</code>)</td><td><code>[...a, ...b]</code> (always fresh)</td></tr>
+          <tr><td>Copy a collection</td><td><code>copy(dst, src)</code> + <code>make</code></td><td><code>[...src]</code></td></tr>
+          <tr><td>Copy-with-changes</td><td>Value copy, then field assignments</td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+          <tr><td>Collect trailing args</td><td>Variadic param only</td><td>Rest also in destructuring: <code>const [head, ...tail] = xs;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-type-narrowing.html">16. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Assert one type</td><td><code>s, ok := v.(string)</code></td><td><code>if (typeof v === "string")</code> — narrows v itself</td></tr>
+          <tr><td>Branch over types</td><td><code>switch t := v.(type)</code></td><td>Chained <code>typeof</code> / <code>instanceof</code> / <code>Array.isArray</code></td></tr>
+          <tr><td>Failure mode</td><td>Panic (bare) or unchecked <code>ok</code></td><td>None — the check <em>is</em> the branch</td></tr>
+          <tr><td>Hold anything, safely</td><td><code>interface{}</code> (unsafe until asserted)</td><td><code>unknown</code> (unusable until narrowed)</td></tr>
+          <tr><td>Class instances</td><td><code>v.(*bytes.Buffer)</code></td><td><code>v instanceof Date</code></td></tr>
+          <tr><td>Reusable check</td><td><code>func IsUser(v interface{}) bool</code> — callers must re-assert</td><td><code>isUser(v): v is User</code> — callers get the narrowing</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-discriminated-unions.html">17. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Variant data</td><td>Fat struct with unused fields, or interface + concrete types</td><td>One exact interface per variant</td></tr>
+          <tr><td>The tag</td><td><code>Kind string</code> — any string compiles</td><td><code>kind: "circle"</code> — literal type, typo = compile error</td></tr>
+          <tr><td>Branching</td><td><code>switch s.Kind</code> or <code>switch v := s.(type)</code></td><td><code>switch (s.kind)</code> — narrows <code>s</code> in each case</td></tr>
+          <tr><td>Wrong field access</td><td>Compiles; reads a zero value</td><td>Compile error outside the right branch</td></tr>
+          <tr><td>Missing case</td><td>Silent zero / fallthrough at runtime</td><td><code>never</code> default fails to compile, names the variant</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-utility-types.html">18. Utility Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Patch shape</td><td>Struct of pointers (<code>*string</code>, nil = absent)</td><td><code>Partial&lt;T&gt;</code> — all fields optional</td></tr>
+          <tr><td>View shape</td><td>Hand-written summary struct + copy code</td><td><code>Pick&lt;T, "k1" | "k2"&gt;</code> / <code>Omit&lt;T, "k3"&gt;</code></td></tr>
+          <tr><td>Immutable shape</td><td>Discipline, or copy-on-write by hand</td><td><code>Readonly&lt;T&gt;</code> — assignment is a compile error</td></tr>
+          <tr><td>All fields required again</td><td>n/a (write another struct)</td><td><code>Required&lt;T&gt;</code></td></tr>
+          <tr><td>Typed map</td><td><code>map[string]User</code></td><td><code>Record&lt;string, User&gt;</code></td></tr>
+          <tr><td>Applying a patch</td><td>One <code>if p.X != nil</code> per field</td><td><code>{ ...user, ...changes }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-goroutines-to-promises.html">19. Async &amp; Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Start async work</td><td><code>go f(x)</code></td><td><code>const p = f(x)</code> — calling an async function starts it</td></tr>
+          <tr><td>One-shot result</td><td><code>ch := make(chan T, 1)</code></td><td><code>Promise&lt;T&gt;</code></td></tr>
+          <tr><td>Receive</td><td><code>v := &lt;-ch</code> (blocks the goroutine)</td><td><code>const v = await p</code> (parks the function only)</td></tr>
+          <tr><td>Fan out + join</td><td>WaitGroup + slice + mutex</td><td><code>await Promise.all(ps)</code></td></tr>
+          <tr><td>First of several</td><td><code>select { ... }</code></td><td><code>await Promise.race(ps)</code></td></tr>
+          <tr><td>Error path</td><td><code>v, err := f(); if err != nil</code></td><td><code>try { await f() } catch (err)</code></td></tr>
+          <tr><td>Data races</td><td>Possible; run -race and pray</td><td>Impossible between awaits — one thread</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>TypeScript</th></tr>
+          <tr><td>Make something public</td><td>Capitalize it: <code>AddItem</code></td><td><code>export function addItem</code></td></tr>
+          <tr><td>Keep something private</td><td>lowercase: <code>total</code></td><td>Just don't export it</td></tr>
+          <tr><td>Privacy boundary</td><td>The package (whole directory)</td><td>The single file</td></tr>
+          <tr><td>Consume</td><td><code>import "shop/inventory"</code>; qualified <code>inventory.AddItem</code></td><td><code>import { addItem } from "./inventory"</code>; unqualified</td></tr>
+          <tr><td>Dependencies</td><td><code>go.mod</code>, <code>go get</code></td><td><code>package.json</code>, <code>npm install</code></td></tr>
+          <tr><td>Entry point</td><td><code>package main</code>, <code>func main()</code></td><td>Whatever file you tell node/the bundler to run</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

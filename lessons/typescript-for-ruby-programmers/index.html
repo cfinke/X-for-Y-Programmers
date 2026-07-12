@@ -17,6 +17,255 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Ruby ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Basic Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Variable</td><td><code>x = 1</code> (holds anything)</td><td><code>let x: number = 1;</code> (holds numbers, forever)</td></tr>
+          <tr><td>Constant</td><td><code>MAX = 1</code> (reassignment warns)</td><td><code>const max = 1;</code> (reassignment is a compile error)</td></tr>
+          <tr><td>Integer / Float</td><td>Two classes</td><td>One <code>number</code> type</td></tr>
+          <tr><td>Booleans</td><td><code>true</code> / <code>false</code></td><td><code>true</code> / <code>false</code> (same!)</td></tr>
+          <tr><td>Naming</td><td><code>snake_case</code>, <code>SCREAMING_CONSTANTS</code></td><td><code>camelCase</code>, even for consts</td></tr>
+          <tr><td>Returning</td><td>Last expression, implicitly</td><td>Explicit <code>return</code> required</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Interpolation</td><td><code>"#{name}"</code></td><td><code>`${name}`</code> (backticks, braces gain a $)</td></tr>
+          <tr><td>Uppercase / lowercase</td><td><code>.upcase</code> / <code>.downcase</code></td><td><code>.toUpperCase()</code> / <code>.toLowerCase()</code></td></tr>
+          <tr><td>Containment</td><td><code>.include?(x)</code></td><td><code>.includes(x)</code> — no <code>?</code> in names</td></tr>
+          <tr><td>Length</td><td><code>.length</code> (method)</td><td><code>.length</code> (property — no parens)</td></tr>
+          <tr><td>Split / join</td><td><code>.split(",")</code> / <code>.join("-")</code></td><td>Identical</td></tr>
+          <tr><td>Trim whitespace</td><td><code>.strip</code></td><td><code>.trim()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays.html">3. Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Typed array</td><td><code>[1, "two", :three]</code> — anything goes</td><td><code>number[]</code>, <code>string[]</code> — one type per array</td></tr>
+          <tr><td>Append</td><td><code>arr &lt;&lt; x</code> or <code>arr.push(x)</code></td><td><code>arr.push(x)</code> only</td></tr>
+          <tr><td>Count</td><td><code>.size</code> / <code>.length</code> / <code>.count</code></td><td><code>.length</code> (a property)</td></tr>
+          <tr><td>First / last</td><td><code>arr.first</code> / <code>arr.last</code></td><td><code>arr[0]</code> / <code>arr.at(-1)</code></td></tr>
+          <tr><td>Negative index</td><td><code>arr[-1]</code> works</td><td><code>arr[-1]</code> is <code>undefined</code>! Use <code>.at(-1)</code></td></tr>
+          <tr><td>Membership</td><td><code>arr.include?(x)</code></td><td><code>arr.includes(x)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-hashes-to-objects.html">4. Hashes → Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Literal</td><td><code>{ name: "Ada", age: 36 }</code></td><td>Identical syntax</td></tr>
+          <tr><td>Read a key</td><td><code>h[:name]</code></td><td><code>obj.name</code> (or <code>obj["name"]</code>)</td></tr>
+          <tr><td>Default for missing key</td><td><code>h.fetch(:k, default)</code></td><td><code>obj.k ?? default</code></td></tr>
+          <tr><td>Iterate pairs</td><td><code>h.each { |k, v| }</code></td><td><code>for (const [k, v] of Object.entries(obj))</code></td></tr>
+          <tr><td>Keys / values</td><td><code>h.keys</code> / <code>h.values</code></td><td><code>Object.keys(obj)</code> / <code>Object.values(obj)</code></td></tr>
+          <tr><td>Uniform hash type</td><td>(implicit)</td><td><code>Record&lt;string, number&gt;</code></td></tr>
+          <tr><td>Optional key</td><td>any key may be absent</td><td><code>city?: string</code> — absence is declared</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods-to-functions.html">5. Methods → Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Definition</td><td><code>def greet(name) ... end</code></td><td><code>function greet(name: string) { ... }</code></td></tr>
+          <tr><td>Default argument</td><td><code>greeting = "Hello"</code></td><td><code>greeting: string = "Hello"</code> — same idea</td></tr>
+          <tr><td>Keyword arguments</td><td><code>def f(name:, age: 0)</code></td><td>Options object: <code>f({ name, age = 0 }: {...})</code></td></tr>
+          <tr><td>Lambda / proc / block</td><td><code>-&gt;(x) { x * 2 }</code>, <code>proc</code>, <code>{ |x| }</code></td><td>One form: <code>(x) =&gt; x * 2</code></td></tr>
+          <tr><td>Calling a lambda</td><td><code>fn.call(21)</code> / <code>fn.(21)</code></td><td><code>fn(21)</code></td></tr>
+          <tr><td>Return value</td><td>Last expression, implicitly</td><td><code>return</code> required (except one-line arrow bodies)</td></tr>
+          <tr><td>Optional parameter</td><td>default value or <code>nil</code></td><td><code>age?: number</code> or a default</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nil-null-undefined.html">6. Nil, Null &amp; Undefined</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>The nothing value</td><td><code>nil</code></td><td><code>null</code> (deliberate) / <code>undefined</code> (never set)</td></tr>
+          <tr><td>Missing key / property</td><td><code>h[:missing]</code> → <code>nil</code></td><td><code>obj.missing</code> → <code>undefined</code></td></tr>
+          <tr><td>Safe navigation</td><td><code>user&amp;.address&amp;.city</code></td><td><code>user?.address?.city</code></td></tr>
+          <tr><td>Safe call</td><td><code>callback&amp;.call</code></td><td><code>callback?.()</code></td></tr>
+          <tr><td>Default value</td><td><code>value || fallback</code></td><td><code>value ?? fallback</code> — <code>||</code> also swallows <code>""</code> and <code>0</code></td></tr>
+          <tr><td>Nil in the type</td><td>invisible (Sorbet: <code>T.nilable</code>)</td><td><code>User | null</code>, enforced by the compiler</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>"Either type" parameter</td><td><code>def f(x)</code> + a comment, if you're lucky</td><td><code>function f(x: number | string)</code></td></tr>
+          <tr><td>Runtime type check</td><td><code>x.is_a?(String)</code></td><td><code>typeof x === "string"</code></td></tr>
+          <tr><td>Duck check</td><td><code>x.respond_to?(:upcase)</code></td><td>unneeded — the union already lists every possibility</td></tr>
+          <tr><td>After the check</td><td>nothing changes; you just hope</td><td>the type <em>narrows</em> inside the branch</td></tr>
+          <tr><td>Wrong type passed</td><td><code>NoMethodError</code>, at runtime</td><td>compile error, at the call site</td></tr>
+          <tr><td>Nilable</td><td><code>nil</code> can always sneak in</td><td>only if you wrote <code>| null</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces &amp; Object Shapes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Record shape</td><td><code>Struct.new(:name, :price)</code></td><td><code>interface Product { name: string; price: number }</code></td></tr>
+          <tr><td>Make one</td><td><code>Product.new(name: "Coffee", price: 12.5)</code></td><td><code>{ name: "Coffee", price: 12.5 }</code> — a plain literal</td></tr>
+          <tr><td>Optional field</td><td>leave it <code>nil</code></td><td><code>description?: string</code> (reads as <code>undefined</code> when absent)</td></tr>
+          <tr><td>Conformance</td><td>duck typing — discovered when a message misses</td><td>structural typing — checked at compile time</td></tr>
+          <tr><td>Gradual types</td><td>Sorbet / RBS, adopted separately</td><td>built into the language</td></tr>
+          <tr><td>At runtime</td><td><code>Struct</code> is a real class</td><td>interfaces are erased — no runtime trace</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Constructor</td><td><code>def initialize(owner)</code></td><td><code>constructor(owner: string)</code></td></tr>
+          <tr><td>Instance variable</td><td><code>@balance</code>, born on assignment</td><td>declared: <code>private balance: number;</code></td></tr>
+          <tr><td>Declare + assign in one</td><td>—</td><td><code>constructor(private balance: number = 0)</code></td></tr>
+          <tr><td>Read-only accessor</td><td><code>attr_reader :owner</code></td><td><code>public readonly owner: string</code></td></tr>
+          <tr><td>Read-write accessor</td><td><code>attr_accessor :name</code></td><td><code>public name: string</code></td></tr>
+          <tr><td>Computed reader</td><td><code>def balance = @balance</code></td><td><code>get balance(): number { ... }</code> or a method</td></tr>
+          <tr><td>Access inside methods</td><td><code>@balance</code>, bare method calls</td><td><code>this.balance</code> — <code>this.</code> is mandatory</td></tr>
+          <tr><td>Privacy</td><td>soft: <code>send</code> bypasses it</td><td>compile-time enforced (and <code>#field</code> for hard runtime privacy)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstracts.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Inherit</td><td><code>class Circle &lt; Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+          <tr><td>Parent constructor</td><td><code>super("circle")</code> (bare <code>super</code> forwards args)</td><td><code>super("circle")</code> — explicit, and required before <code>this</code></td></tr>
+          <tr><td>Must-implement method</td><td><code>raise NotImplementedError</code></td><td><code>abstract area(): number;</code></td></tr>
+          <tr><td>Enforced</td><td>at runtime, if the path ever runs</td><td>at compile time, always</td></tr>
+          <tr><td>Instantiating the base</td><td><code>Shape.new</code> happily works</td><td><code>new Shape(...)</code> on an abstract class won't compile</td></tr>
+          <tr><td>Type check</td><td><code>circle.is_a?(Shape)</code></td><td><code>circle instanceof Shape</code></td></tr>
+          <tr><td>Mixins</td><td><code>module</code> + <code>include</code></td><td>none — interfaces + composition instead</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums &amp; Literal Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>One tag value</td><td><code>:pending</code></td><td><code>"pending"</code> as a literal type</td></tr>
+          <tr><td>The allowed set</td><td><code>%i[pending shipped]</code> (docs only)</td><td><code>type Status = "pending" | "shipped";</code> (enforced)</td></tr>
+          <tr><td>Constants namespace</td><td><code>module Status; PENDING = :pending; end</code></td><td><code>enum OrderStatus { Pending = "pending" }</code></td></tr>
+          <tr><td>Typo defense</td><td><code>else raise ArgumentError</code> at runtime</td><td>Compile error before the code runs</td></tr>
+          <tr><td>Runtime cost</td><td>Symbols are interned objects</td><td>Literal unions erase to plain strings; enums emit an object</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Works for any element type</td><td>Duck typing — implicit</td><td><code>function f&lt;T&gt;(items: T[])</code> — explicit parameter</td></tr>
+          <tr><td>"Same type out as in"</td><td>Known only to the reader</td><td><code>(items: T[]): T</code> — known to the compiler</td></tr>
+          <tr><td>Pluck a property</td><td><code>users.map(&amp;:name)</code> / <code>map { |u| u[:name] }</code></td><td><code>pluck&lt;T, K extends keyof T&gt;(items, key)</code></td></tr>
+          <tr><td>Constraint</td><td><code>raise unless u.respond_to?(:name)</code></td><td><code>K extends keyof T</code>, checked at compile time</td></tr>
+          <tr><td>Typo'd key</td><td><code>[nil, nil]</code> at runtime</td><td>Compile error at the call site</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enumerable-to-array-methods.html">13. Enumerable → Array Methods</a></h3>
+        <table>
+          <tr><th>Enumerable</th><th>Array method</th><th>Watch out for</th></tr>
+          <tr><td><code>map</code></td><td><code>.map(fn)</code></td><td>Same idea, arrow instead of block</td></tr>
+          <tr><td><code>select</code></td><td><code>.filter(fn)</code></td><td>The rename</td></tr>
+          <tr><td><code>reject</code></td><td><code>.filter((x) =&gt; !cond)</code></td><td>No direct method — negate</td></tr>
+          <tr><td><code>reduce</code> / <code>inject</code></td><td><code>.reduce(fn, init)</code></td><td>Initial value last, and always supply it</td></tr>
+          <tr><td><code>sort_by { |p| p.price }</code></td><td><code>[...arr].sort((a, b) =&gt; a.price - b.price)</code></td><td>Comparator, not key — and <code>.sort</code> mutates</td></tr>
+          <tr><td><code>find</code> / <code>detect</code></td><td><code>.find(fn)</code></td><td>Returns <code>undefined</code>, not <code>nil</code></td></tr>
+          <tr><td><code>any?</code> / <code>all?</code></td><td><code>.some(fn)</code> / <code>.every(fn)</code></td><td>Renames only</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring.html">14. Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Parallel assignment</td><td><code>a, b = pair</code></td><td><code>const [a, b] = pair;</code></td></tr>
+          <tr><td>Head and tail</td><td><code>first, *rest = list</code></td><td><code>const [first, ...rest] = list;</code></td></tr>
+          <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+          <tr><td>Pull from a hash/object</td><td><code>name = user[:name]</code> or <code>in { name: }</code></td><td><code>const { name } = user;</code></td></tr>
+          <tr><td>Rename while pulling</td><td><code>in { name: full_name }</code></td><td><code>const { name: fullName } = user;</code></td></tr>
+          <tr><td>Default value</td><td><code>user.fetch(:admin, false)</code></td><td><code>const { admin = false } = user;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-splat-and-spread.html">15. Splat &amp; Spread</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Variadic parameters</td><td><code>def sum(*nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+          <tr><td>Keyword-arg bag</td><td><code>def go(**opts)</code></td><td>Explicit options object parameter</td></tr>
+          <tr><td>Splat into an array</td><td><code>[*a, *b]</code></td><td><code>[...a, ...b]</code></td></tr>
+          <tr><td>Splat into a call</td><td><code>sum(*nums)</code></td><td><code>sum(...nums)</code></td></tr>
+          <tr><td>Merge hashes/objects</td><td><code>h1.merge(h2)</code></td><td><code>{ ...h1, ...h2 }</code> (later spread wins)</td></tr>
+          <tr><td>Copy-with-changes</td><td><code>user.merge(admin: true)</code></td><td><code>{ ...user, admin: true }</code></td></tr>
+          <tr><td>Mutating cousins</td><td><code>merge!</code>, <code>concat</code>, <code>&lt;&lt;</code></td><td><code>Object.assign(h1, h2)</code>, <code>.push</code> — avoid by default</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-type-narrowing.html">16. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Class check (primitive)</td><td><code>x.is_a?(String)</code></td><td><code>typeof x === "string"</code></td></tr>
+          <tr><td>Array check</td><td><code>x.is_a?(Array)</code></td><td><code>Array.isArray(x)</code></td></tr>
+          <tr><td>Instance check</td><td><code>x.is_a?(User)</code></td><td><code>x instanceof User</code> (real classes only)</td></tr>
+          <tr><td>Duck check</td><td><code>x.respond_to?(:name)</code></td><td><code>"name" in x</code></td></tr>
+          <tr><td>Reusable duck check</td><td><code>def user_like?(x)</code> — returns a bare boolean</td><td><code>isUser(x): x is User</code> — the compiler narrows on true</td></tr>
+          <tr><td>"Anything" input</td><td>Every parameter, implicitly</td><td><code>unknown</code> — locked until narrowed (<code>any</code> = unlocked, avoid)</td></tr>
+          <tr><td>Nil trap</td><td><code>nil.is_a?(Object)</code> is true</td><td><code>typeof null === "object"</code> — check null explicitly</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-discriminated-unions.html">17. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Dispatch on shape</td><td><code>case x; in { kind: "click", x:, y: }</code></td><td><code>switch (x.kind) { case "click": ...</code></td></tr>
+          <tr><td>The tag</td><td>A hash key by convention</td><td>A literal-typed property (<code>kind: "click"</code>) the compiler discriminates on</td></tr>
+          <tr><td>The union</td><td>Implicit — "this method takes event-ish hashes"</td><td><code>type Event = Click | KeyPress | Scroll</code></td></tr>
+          <tr><td>Destructuring</td><td><code>in { radius: }</code> binds <code>radius</code></td><td>Narrowing makes <code>shape.radius</code> legal in that case</td></tr>
+          <tr><td>Missed variant</td><td><code>NoMatchingPatternError</code> at runtime</td><td><code>const impossible: never = shape;</code> fails at compile time</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-utility-types.html">18. Utility Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Merge / update</td><td><code>h.merge(changes)</code></td><td><code>{ ...h, ...changes }</code> + <code>Partial&lt;T&gt;</code></td></tr>
+          <tr><td>Keep keys</td><td><code>h.slice(:id, :name)</code></td><td><code>Pick&lt;T, "id" | "name"&gt;</code> (type) + object literal (value)</td></tr>
+          <tr><td>Drop keys</td><td><code>h.except(:password)</code></td><td><code>Omit&lt;T, "password"&gt;</code></td></tr>
+          <tr><td>Immutability</td><td><code>h.freeze</code> → <code>FrozenError</code> at runtime</td><td><code>Readonly&lt;T&gt;</code> → compile error on assignment</td></tr>
+          <tr><td>All fields optional</td><td>n/a — every hash key is already optional</td><td><code>Partial&lt;T&gt;</code>; inverse is <code>Required&lt;T&gt;</code></td></tr>
+          <tr><td>Hash with typed keys/values</td><td><code>Hash.new</code> + discipline</td><td><code>Record&lt;K, V&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-async-await.html">19. Async &amp; Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Slow call</td><td>Blocks the thread</td><td>Returns <code>Promise&lt;T&gt;</code> immediately</td></tr>
+          <tr><td>"Just wait for it"</td><td>Default behavior</td><td><code>await promise</code> (only inside <code>async</code> functions)</td></tr>
+          <tr><td>Declaring it</td><td><code>def fetch_user(id)</code></td><td><code>async function fetchUser(id: number): Promise&lt;User&gt;</code></td></tr>
+          <tr><td>N calls at once</td><td><code>ids.map { Thread.new { ... } }.map(&amp;:value)</code> (exotic)</td><td><code>await Promise.all(ids.map(fetchUser))</code> (everyday)</td></tr>
+          <tr><td>Error handling</td><td><code>begin / rescue =&gt; e / end</code></td><td><code>try { await ... } catch (e) { ... }</code></td></tr>
+          <tr><td>Shared-state hazards</td><td>Mutex, GVL, race conditions</td><td>One event loop — concurrency without locks</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>TypeScript</th></tr>
+          <tr><td>Bring code in</td><td><code>require "json"</code> / <code>require_relative "cart"</code></td><td><code>import { addToCart } from "./cart";</code></td></tr>
+          <tr><td>Namespace</td><td><code>module Cart ... end</code></td><td>The file itself; <code>export</code> marks the public API</td></tr>
+          <tr><td>Public vs private</td><td>Everything loaded is global; <code>private_constant</code> to hide</td><td>Private by default; <code>export</code> to publish</td></tr>
+          <tr><td>Default export</td><td>n/a</td><td><code>export default</code> — one main thing per file, imported without braces</td></tr>
+          <tr><td>Missing dependency</td><td><code>NameError</code> / <code>LoadError</code> at runtime</td><td>Compile error naming the file and symbol</td></tr>
+          <tr><td>Load order puzzles</td><td>Real (see: every large pre-Zeitwerk app)</td><td>Nonexistent — the import graph is resolved for you</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

@@ -19,6 +19,265 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C# ⇄ Ruby cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Declare a variable</td><td><code>var x = 1;</code></td><td><code>x = 1</code> (assignment is declaration)</td></tr>
+          <tr><td>Constant</td><td><code>const int X = 1;</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+          <tr><td>Integers</td><td><code>int</code>, <code>long</code>, <code>BigInteger</code></td><td><code>Integer</code> — one class, arbitrary precision</td></tr>
+          <tr><td>Interpolation</td><td><code>$"{name}!"</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+          <tr><td>Check a type</td><td><code>x is string</code>, <code>x.GetType()</code></td><td><code>x.is_a?(String)</code>, <code>x.class</code></td></tr>
+          <tr><td>Naming</td><td><code>PascalCase</code> methods</td><td><code>snake_case</code> methods</td></tr>
+          <tr><td>Return</td><td><code>return</code> (or <code>=&gt;</code> body)</td><td>last expression; <code>return</code> only for early exit</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Interpolation</td><td><code>$"{x}"</code> (opt-in)</td><td><code>"#{x}"</code> (every double-quoted string)</td></tr>
+          <tr><td>No interpolation</td><td>plain <code>"{x}"</code></td><td>single quotes: <code>'#{x}'</code></td></tr>
+          <tr><td>Upper / lower</td><td><code>ToUpper()</code> / <code>ToLower()</code></td><td><code>upcase</code> / <code>downcase</code></td></tr>
+          <tr><td>Substring test</td><td><code>s.Contains(x)</code></td><td><code>s.include?(x)</code></td></tr>
+          <tr><td>Length</td><td><code>s.Length</code> (property)</td><td><code>s.length</code> (method, parens optional)</td></tr>
+          <tr><td>Join</td><td><code>string.Join(", ", list)</code></td><td><code>list.join(", ")</code></td></tr>
+          <tr><td>Trim / split</td><td><code>Trim()</code>, <code>Split(',')</code></td><td><code>strip</code>, <code>split(",")</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays.html">3. Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Literal</td><td><code>new List&lt;int&gt; { 1, 2 }</code></td><td><code>[1, 2]</code></td></tr>
+          <tr><td>Append</td><td><code>list.Add(x)</code></td><td><code>arr &lt;&lt; x</code> (or <code>arr.push(x)</code>)</td></tr>
+          <tr><td>Count</td><td><code>list.Count</code></td><td><code>arr.size</code> / <code>arr.length</code></td></tr>
+          <tr><td>Membership</td><td><code>list.Contains(x)</code></td><td><code>arr.include?(x)</code></td></tr>
+          <tr><td>Last element</td><td><code>list[^1]</code></td><td><code>arr[-1]</code> or <code>arr.last</code></td></tr>
+          <tr><td>First element</td><td><code>list[0]</code> / <code>.First()</code></td><td><code>arr[0]</code> or <code>arr.first</code></td></tr>
+          <tr><td>Slice</td><td><code>list.GetRange(1, 2)</code></td><td><code>arr[1..2]</code> (or <code>arr[1...3]</code>, end-exclusive)</td></tr>
+          <tr><td>Sum</td><td><code>list.Sum()</code> (LINQ)</td><td><code>arr.sum</code> (built in)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-hashes-and-symbols.html">4. Hashes &amp; Symbols</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Literal</td><td><code>new Dictionary&lt;...&gt; { ["a"] = 1 }</code></td><td><code>{ a: 1 }</code></td></tr>
+          <tr><td>Symbol key</td><td>—</td><td><code>:apples</code> (interned identifier; <code>{ apples: 3 }</code> is sugar for <code>{ :apples =&gt; 3 }</code>)</td></tr>
+          <tr><td>Variable key</td><td><code>dict[k] = v</code></td><td><code>{ k =&gt; v }</code> (hash rocket)</td></tr>
+          <tr><td>Read / write</td><td><code>dict[k]</code> / <code>dict[k] = v</code></td><td><code>h[k]</code> / <code>h[k] = v</code> (missing key reads as <code>nil</code>, no exception)</td></tr>
+          <tr><td>Default lookup</td><td><code>GetValueOrDefault(k, 0)</code></td><td><code>h.fetch(k, 0)</code> (bare <code>fetch(k)</code> raises, like <code>dict[k]</code>)</td></tr>
+          <tr><td>Iterate</td><td><code>foreach (var (k, v) in dict)</code></td><td><code>h.each { |k, v| ... }</code></td></tr>
+          <tr><td>Keys / values</td><td><code>dict.Keys</code> / <code>dict.Values</code></td><td><code>h.keys</code> / <code>h.values</code></td></tr>
+          <tr><td>Non-destructive update</td><td>copy, then mutate</td><td><code>h.merge(k =&gt; v)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods &amp; Implicit Return</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Definition</td><td><code>public static string F(...)</code> in a class</td><td><code>def f(...)</code> at the top level</td></tr>
+          <tr><td>Return value</td><td><code>return x;</code> or <code>=&gt; x</code></td><td>last expression, always; <code>return</code> only for early exit</td></tr>
+          <tr><td>Optional parameter</td><td><code>string g = "Hello"</code></td><td><code>g = "Hello"</code></td></tr>
+          <tr><td>Named / keyword args</td><td><code>F(name: "Ada")</code> — caller's choice</td><td><code>def f(name:, age: 0)</code> — definition opts in, names required</td></tr>
+          <tr><td>Required keyword</td><td>—</td><td><code>name:</code> with no default</td></tr>
+          <tr><td>Predicate</td><td><code>bool IsAdult(...)</code></td><td><code>def adult?(...)</code></td></tr>
+          <tr><td>Dangerous variant</td><td>—</td><td><code>!</code> suffix: <code>sort!</code> mutates, <code>save!</code> raises</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nil-and-safe-navigation.html">6. Nil &amp; Safe Navigation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>The null value</td><td><code>null</code></td><td><code>nil</code> (a real object: <code>NilClass</code>)</td></tr>
+          <tr><td>Safe navigation</td><td><code>a?.B?.C</code></td><td><code>a&amp;.b&amp;.c</code></td></tr>
+          <tr><td>Null-coalescing</td><td><code>x ?? fallback</code></td><td><code>x || fallback</code></td></tr>
+          <tr><td>Lazy init</td><td><code>x ??= Load();</code></td><td><code>x ||= load</code></td></tr>
+          <tr><td>Null check</td><td><code>x is null</code></td><td><code>x.nil?</code></td></tr>
+          <tr><td>Falsy values</td><td>n/a (bool only)</td><td>exactly <code>nil</code> and <code>false</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-everything-is-an-object.html">7. Everything Is an Object</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Absolute value</td><td><code>Math.Abs(x)</code></td><td><code>x.abs</code></td></tr>
+          <tr><td>Even / odd</td><td><code>x % 2 == 0</code></td><td><code>x.even?</code> / <code>x.odd?</code></td></tr>
+          <tr><td>Rounding</td><td><code>Math.Round(f, 2)</code></td><td><code>f.round(2)</code></td></tr>
+          <tr><td>Counted loop</td><td><code>for (var i = 0; i &lt; 5; i++)</code></td><td><code>5.times { |i| ... }</code></td></tr>
+          <tr><td>String to chars</td><td><code>s.ToCharArray()</code></td><td><code>s.chars</code></td></tr>
+          <tr><td>Value vs reference types</td><td><code>int</code> boxes to <code>object</code></td><td>no split — everything already is an object</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-case.html">8. Control Flow &amp; case</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Guard clause</td><td><code>if (cond) return x;</code></td><td><code>return x if cond</code></td></tr>
+          <tr><td>Negated if</td><td><code>if (!done)</code></td><td><code>unless done</code></td></tr>
+          <tr><td>Switch on ranges</td><td><code>&gt;= 90 =&gt; "A"</code></td><td><code>when 90.. then "A"</code></td></tr>
+          <tr><td>Grouped cases</td><td><code>"sat" or "sun" =&gt;</code></td><td><code>when "sat", "sun"</code></td></tr>
+          <tr><td>Fall-through</td><td><code>break</code> not needed in expressions</td><td>never happens — no <code>break</code> exists</td></tr>
+          <tr><td>Result as a value</td><td>switch <em>expression</em> only</td><td><code>case</code> and <code>if</code> are always expressions</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Constructor</td><td><code>public User(string n)</code></td><td><code>def initialize(n)</code></td></tr>
+          <tr><td>Instantiation</td><td><code>new User("Ada")</code></td><td><code>User.new("Ada")</code></td></tr>
+          <tr><td>Read-only property</td><td><code>{ get; }</code></td><td><code>attr_reader :name</code></td></tr>
+          <tr><td>Read/write property</td><td><code>{ get; set; }</code></td><td><code>attr_accessor :name</code></td></tr>
+          <tr><td>Field / backing store</td><td><code>private int _balance;</code></td><td><code>@balance</code> (always private)</td></tr>
+          <tr><td>Entry point</td><td><code>static void Main</code></td><td>none — the file just runs top to bottom</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-modules.html">10. Inheritance &amp; Modules</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Inherit</td><td><code>class Circle : Shape</code></td><td><code>class Circle &lt; Shape</code></td></tr>
+          <tr><td>Call base method</td><td><code>base.Describe()</code> / <code>base(args)</code></td><td><code>super</code> (bare forwards ALL args; <code>super()</code> forwards none)</td></tr>
+          <tr><td>Abstract member</td><td><code>abstract</code> (compile-time)</td><td><code>raise NotImplementedError</code> (runtime convention)</td></tr>
+          <tr><td>Override</td><td><code>override</code> keyword required</td><td>just define the method again</td></tr>
+          <tr><td>Interface + defaults</td><td><code>interface IGreetable { string Greet() =&gt; ...; }</code></td><td><code>module Greetable</code> + <code>include</code></td></tr>
+          <tr><td>Type check</td><td><code>c is Shape</code></td><td><code>c.is_a?(Shape)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-blocks-procs-lambdas.html">11. Blocks, Procs &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Pass behavior</td><td><code>Func&lt;int,int&gt; f</code> parameter</td><td>a block, outside the parens: <code>{ |x| ... }</code> or <code>do |x| ... end</code></td></tr>
+          <tr><td>Invoke it</td><td><code>f(x)</code></td><td><code>yield(x)</code> — no parameter declared</td></tr>
+          <tr><td>Was one passed?</td><td><code>f is null</code></td><td><code>block_given?</code></td></tr>
+          <tr><td>First-class function</td><td><code>x =&gt; x * 2</code></td><td><code>-&gt;(x) { x * 2 }</code></td></tr>
+          <tr><td>Call it</td><td><code>f(4)</code></td><td><code>f.call(4)</code> (also <code>f.(4)</code> or <code>f[4]</code>)</td></tr>
+          <tr><td>Method-name shorthand</td><td><code>Select(s =&gt; s.ToUpper())</code></td><td><code>map(&amp;:upcase)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-enumerable.html">12. Enumerable: map, select &amp; Friends</a></h3>
+        <table>
+          <tr><th>LINQ</th><th>Ruby</th><th>Note</th></tr>
+          <tr><td><code>.Select(f)</code></td><td><code>.map { }</code></td><td>transform each element</td></tr>
+          <tr><td><code>.Where(f)</code></td><td><code>.select { }</code></td><td>keep matching elements — the false friend</td></tr>
+          <tr><td><code>.Where(x =&gt; !f(x))</code></td><td><code>.reject { }</code></td><td>inverse filter, no negation needed</td></tr>
+          <tr><td><code>.Sum(f)</code> / <code>.Count(f)</code></td><td><code>.sum { }</code> / <code>.count { }</code></td><td></td></tr>
+          <tr><td><code>.OrderBy(f)</code></td><td><code>.sort_by { }</code></td><td>returns a new sorted array</td></tr>
+          <tr><td><code>.MinBy(f)</code> / <code>.MaxBy(f)</code></td><td><code>.min_by { }</code> / <code>.max_by { }</code></td><td>returns the element (or nil if empty)</td></tr>
+          <tr><td><code>.Any(f)</code> / <code>.All(f)</code></td><td><code>.any? { }</code> / <code>.all? { }</code></td><td></td></tr>
+          <tr><td><code>.ToList()</code></td><td>—</td><td>eager: every step is already an array</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enumerable-power-tools.html">13. Enumerable Power Tools</a></h3>
+        <table>
+          <tr><th>Job</th><th>C# (LINQ)</th><th>Ruby</th></tr>
+          <tr><td>Group into a dictionary</td><td><code>GroupBy(f).ToDictionary(g =&gt; g.Key, g =&gt; g.ToList())</code></td><td><code>group_by { }</code></td></tr>
+          <tr><td>Frequency count</td><td><code>GroupBy(x =&gt; x).ToDictionary(g =&gt; g.Key, g =&gt; g.Count())</code></td><td><code>tally</code></td></tr>
+          <tr><td>Fold to a value</td><td><code>Aggregate(0, (a, x) =&gt; a + x)</code></td><td><code>reduce(:+)</code> or <code>reduce(0) { |a, x| a + x }</code></td></tr>
+          <tr><td>Fold into a container</td><td><code>Aggregate</code> + <code>return acc;</code></td><td><code>each_with_object({}) { |x, acc| }</code></td></tr>
+          <tr><td>Split in two</td><td>two <code>Where</code> passes</td><td><code>partition { }</code> — one pass</td></tr>
+          <tr><td>Default-valued dictionary</td><td><code>TryGetValue</code> / <code>GetValueOrDefault</code></td><td><code>Hash.new(0)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-splat.html">14. Destructuring &amp; Splat</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Destructure</td><td><code>var (a, b) = pair;</code> (Deconstruct required)</td><td><code>a, b = pair</code> (any array)</td></tr>
+          <tr><td>Swap</td><td><code>(a, b) = (b, a);</code></td><td><code>a, b = b, a</code></td></tr>
+          <tr><td>Head + rest</td><td><code>xs[0]</code> and <code>xs[1..]</code></td><td><code>first, *rest = xs</code></td></tr>
+          <tr><td>Init + last</td><td>—</td><td><code>*init, last = xs</code></td></tr>
+          <tr><td>Variadic method</td><td><code>params int[] nums</code></td><td><code>def sum(*nums)</code></td></tr>
+          <tr><td>Keyword bag</td><td>optional/named parameters</td><td><code>def config(**opts)</code></td></tr>
+          <tr><td>Spread</td><td><code>a.Concat(b).ToArray()</code></td><td><code>[*a, *b]</code></td></tr>
+          <tr><td>Merge dictionaries</td><td>copy + loop</td><td><code>defaults.merge(overrides)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-duck-typing.html">15. Duck Typing &amp; respond_to?</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Declare a capability</td><td><code>interface ISpeaker</code> + <code>: ISpeaker</code></td><td>just define the method</td></tr>
+          <tr><td>Check a capability</td><td><code>thing is ISpeaker s</code></td><td><code>thing.respond_to?(:speak)</code></td></tr>
+          <tr><td>Nominal type check</td><td><code>thing is Dog</code></td><td><code>thing.is_a?(Dog)</code></td></tr>
+          <tr><td>Filter by capability</td><td><code>OfType&lt;ISpeaker&gt;()</code></td><td><code>select { |t| t.respond_to?(:speak) }</code></td></tr>
+          <tr><td>Wrong-type failure</td><td>compile error</td><td><code>NoMethodError</code> at call time</td></tr>
+          <tr><td>Whole-language analogue</td><td><code>dynamic</code></td><td>the default — with conventions and tests as the net</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Guarded block</td><td><code>try { ... }</code></td><td><code>begin ... end</code> (or the method body itself)</td></tr>
+          <tr><td>Typed handler</td><td><code>catch (ArgumentException e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+          <tr><td>Cleanup</td><td><code>finally</code></td><td><code>ensure</code></td></tr>
+          <tr><td>Throw</td><td><code>throw new ArgumentException("msg");</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+          <tr><td>Rethrow</td><td><code>throw;</code></td><td><code>raise</code> (bare, inside a rescue)</td></tr>
+          <tr><td>Custom exception</td><td>class + constructor forwarding to <code>base</code></td><td><code>class FooError &lt; StandardError; end</code></td></tr>
+          <tr><td>Catch-all</td><td><code>catch (Exception)</code> (catches too much)</td><td>bare <code>rescue</code> — <code>StandardError</code> only</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-structs-and-comparable.html">17. Structs &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Value object, one line</td><td><code>record Point(double X, double Y);</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+          <tr><td>Mutability</td><td>records readonly by default</td><td>Structs mutable by default</td></tr>
+          <tr><td>Extra members</td><td>record body <code>{ ... }</code></td><td>block passed to <code>Struct.new</code></td></tr>
+          <tr><td>Ordering contract</td><td><code>IComparable&lt;T&gt;.CompareTo</code></td><td><code>&lt;=&gt;</code> returning -1 / 0 / 1</td></tr>
+          <tr><td>Comparison operators</td><td>four hand-written overloads</td><td><code>include Comparable</code> — all derived from <code>&lt;=&gt;</code></td></tr>
+          <tr><td>Range check</td><td><code>v.CompareTo(lo) &gt;= 0 &amp;&amp; ...</code></td><td><code>v.between?(lo, hi)</code></td></tr>
+          <tr><td>Multi-key compare</td><td>tuples: <code>(a, b).CompareTo((c, d))</code></td><td>arrays: <code>[a, b] &lt;=&gt; [c, d]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-enumerators-and-lazy.html">18. Enumerators &amp; Lazy</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Generator method</td><td><code>IEnumerable&lt;T&gt;</code> + <code>yield return</code></td><td><code>Enumerator.new { |y| y &lt;&lt; value }</code></td></tr>
+          <tr><td>Infinite sequence</td><td><code>while (true)</code> in an iterator only</td><td><code>loop do</code> in an Enumerator, or an endless Range</td></tr>
+          <tr><td>Deferred execution</td><td>default for LINQ</td><td>opt-in per chain with <code>.lazy</code></td></tr>
+          <tr><td>Take n</td><td><code>.Take(n).ToList()</code></td><td><code>.first(n)</code> (returns a real Array)</td></tr>
+          <tr><td>Fixed-size chunks</td><td><code>.Chunk(2)</code></td><td><code>.each_slice(2)</code></td></tr>
+          <tr><td>Sliding window</td><td>hand-rolled</td><td><code>.each_cons(2)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Setup</td><td><code>using System.Text.Json;</code></td><td><code>require "json"</code></td></tr>
+          <tr><td>Serialize</td><td><code>JsonSerializer.Serialize(x)</code></td><td><code>x.to_json</code> (a method on the object)</td></tr>
+          <tr><td>Deserialize</td><td><code>Deserialize&lt;T&gt;(json)</code> into a DTO</td><td><code>JSON.parse(json)</code> into Hashes/Arrays</td></tr>
+          <tr><td>Symbol keys</td><td>n/a (property names)</td><td><code>symbolize_names: true</code></td></tr>
+          <tr><td>Nested access</td><td><code>GetProperty("a").GetProperty("b")</code></td><td><code>data.dig(:a, :b)</code> — nil if any step missing</td></tr>
+          <tr><td>Missing key + default</td><td><code>TryGetProperty</code> + fallback</td><td><code>hash.fetch(:key, default)</code></td></tr>
+          <tr><td>Bad input</td><td><code>JsonException</code></td><td><code>JSON::ParserError</code></td></tr>
+          <tr><td>Pretty print</td><td><code>WriteIndented = true</code> option</td><td><code>JSON.pretty_generate(data)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>Ruby</th></tr>
+          <tr><td>Aggregate</td><td><code>items.Sum(i =&gt; ...)</code></td><td><code>items.sum { |i| ... }</code></td></tr>
+          <tr><td>First match or default</td><td><code>FirstOrDefault</code> → <code>null</code></td><td><code>find</code> → <code>nil</code></td></tr>
+          <tr><td>Non-destructive update</td><td><code>i with { Count = c }</code></td><td><code>Item.new(...)</code> with the changed value</td></tr>
+          <tr><td>Filter + project</td><td><code>.Where(...).Select(...).ToList()</code></td><td><code>.select { ... }.map { ... }</code> (already an Array)</td></tr>
+          <tr><td>Transform each</td><td><code>.Select(...).ToList()</code></td><td><code>.map { ... }</code></td></tr>
+          <tr><td>Data holder</td><td><code>record Item(...)</code></td><td><code>class</code> + <code>attr_reader</code>, or a <code>Struct</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

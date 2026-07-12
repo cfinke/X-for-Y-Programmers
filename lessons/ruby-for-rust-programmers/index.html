@@ -19,6 +19,265 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Rust ⇄ Ruby cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Bind a variable</td><td><code>let x = 5;</code></td><td><code>x = 5</code> (assignment is declaration)</td></tr>
+          <tr><td>Mutate / rebind</td><td><code>let mut x = 5; x = 6;</code></td><td><code>x = 6</code> — mut is the default and only mode</td></tr>
+          <tr><td>Change the type</td><td>impossible</td><td><code>x = "six"</code> — a binding can hold anything</td></tr>
+          <tr><td>Integers</td><td><code>i32</code>/<code>u64</code>/… + overflow rules</td><td><code>Integer</code> — arbitrary precision, no overflow</td></tr>
+          <tr><td>Floats</td><td><code>f32</code>/<code>f64</code></td><td><code>Float</code> (a 64-bit double)</td></tr>
+          <tr><td>Interpolation</td><td><code>format!("{name}")</code></td><td><code>"#{name}"</code> (double quotes only)</td></tr>
+          <tr><td>Ask about a type</td><td>compile-time, via the checker</td><td><code>x.is_a?(Integer)</code>, <code>x.class</code> — at runtime</td></tr>
+          <tr><td>Function result</td><td>last expression (no semicolon)</td><td>last expression — same instinct, kept</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>String types</td><td><code>String</code> and <code>&amp;str</code></td><td>one <code>String</code> class</td></tr>
+          <tr><td>Interpolation</td><td><code>format!("{name}")</code></td><td><code>"#{name}"</code> — any expression inside the braces</td></tr>
+          <tr><td>Uppercase / lowercase</td><td><code>.to_uppercase()</code> / <code>.to_lowercase()</code></td><td><code>.upcase</code> / <code>.downcase</code></td></tr>
+          <tr><td>Substring test</td><td><code>.contains("x")</code></td><td><code>.include?("x")</code></td></tr>
+          <tr><td>Length</td><td><code>.len()</code></td><td><code>.length</code> (or <code>.size</code>)</td></tr>
+          <tr><td>Join a collection</td><td><code>vec.join(", ")</code></td><td><code>words.join(", ")</code></td></tr>
+          <tr><td>Yes/no naming</td><td><code>is_empty()</code></td><td><code>empty?</code> — the <code>?</code> is part of the name</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays.html">3. Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Make one</td><td><code>vec![1, 2, 3]</code></td><td><code>[1, 2, 3]</code> — heterogeneous, no type parameter</td></tr>
+          <tr><td>Push</td><td><code>v.push(x)</code> (needs <code>mut</code>)</td><td><code>arr &lt;&lt; x</code> (also <code>arr.push(x)</code>)</td></tr>
+          <tr><td>Length</td><td><code>v.len()</code></td><td><code>arr.size</code> or <code>arr.length</code></td></tr>
+          <tr><td>Membership</td><td><code>v.contains(&amp;x)</code></td><td><code>arr.include?(x)</code></td></tr>
+          <tr><td>First / last</td><td><code>v.first()</code> → <code>Option&lt;&amp;T&gt;</code></td><td><code>arr.first</code> → element or <code>nil</code></td></tr>
+          <tr><td>From the end</td><td><code>v[v.len() - 1]</code></td><td><code>arr[-1]</code>, <code>arr[-2]</code>, …</td></tr>
+          <tr><td>Slice</td><td><code>&amp;v[1..3]</code> — panics out of range</td><td><code>arr[1..2]</code> — <code>nil</code> out of range</td></tr>
+          <tr><td>Sum</td><td><code>v.iter().sum::&lt;i32&gt;()</code></td><td><code>arr.sum</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-hashes-and-symbols.html">4. Hashes &amp; Symbols</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Make one</td><td><code>HashMap::new()</code> + <code>insert</code></td><td><code>{ apples: 3, bananas: 5 }</code></td></tr>
+          <tr><td>Fixed keys</td><td><code>&amp;'static str</code> / enums</td><td>symbols: <code>:apples</code> — interned, compared by identity</td></tr>
+          <tr><td>Lookup</td><td><code>m.get(&amp;k)</code> → <code>Option&lt;&amp;V&gt;</code></td><td><code>h[:k]</code> → value or <code>nil</code></td></tr>
+          <tr><td>With default</td><td><code>.unwrap_or(0)</code></td><td><code>h.fetch(k, 0)</code></td></tr>
+          <tr><td>Strict lookup</td><td><code>.expect("missing")</code></td><td><code>h.fetch(k)</code> — raises if absent</td></tr>
+          <tr><td>Insert / update</td><td><code>m.insert(k, v)</code></td><td><code>h[k] = v</code> (mutating) or <code>h.merge(k =&gt; v)</code> (new hash)</td></tr>
+          <tr><td>Iterate</td><td><code>for (k, v) in &amp;m</code></td><td><code>h.each { |k, v| … }</code></td></tr>
+          <tr><td>Order</td><td>arbitrary (hash order)</td><td>insertion order, guaranteed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods &amp; Implicit Return</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Define</td><td><code>fn f(x: i32) -&gt; String { … }</code></td><td><code>def f(x) … end</code></td></tr>
+          <tr><td>Result</td><td>last expression (no semicolon)</td><td>last expression — <code>return</code> only for early exit</td></tr>
+          <tr><td>Default params</td><td>none — builders, wrappers, <code>Option</code> args</td><td><code>def greet(name, greeting = "Hello")</code></td></tr>
+          <tr><td>Named call syntax</td><td>struct literals only: <code>User { name, age }</code></td><td>keyword args: <code>def create(name:, age: 0)</code></td></tr>
+          <tr><td>Required keyword</td><td>—</td><td><code>name:</code> with no default — raises if missing</td></tr>
+          <tr><td>Predicate naming</td><td><code>fn is_adult(…) -&gt; bool</code></td><td><code>def adult?(…)</code></td></tr>
+          <tr><td>Danger naming</td><td><code>unsafe</code>, <code>_mut</code> suffixes</td><td><code>!</code> suffix: <code>sort!</code> mutates, <code>sort</code> copies</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nil-and-safe-navigation.html">6. Nil &amp; Safe Navigation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Absence</td><td><code>Option&lt;T&gt;</code> (a type)</td><td><code>nil</code> (a value, class <code>NilClass</code>)</td></tr>
+          <tr><td>Is it absent?</td><td><code>opt.is_none()</code></td><td><code>x.nil?</code></td></tr>
+          <tr><td>Map through absence</td><td><code>opt.map(|u| u.city)</code></td><td><code>user&amp;.city</code></td></tr>
+          <tr><td>Chain</td><td><code>.and_then(...)</code></td><td><code>a&amp;.b&amp;.c</code></td></tr>
+          <tr><td>Default</td><td><code>.unwrap_or(d)</code></td><td><code>value || d</code></td></tr>
+          <tr><td>Set if absent</td><td><code>opt.get_or_insert(v)</code></td><td><code>x ||= v</code></td></tr>
+          <tr><td>Missing hash key</td><td><code>map.get(&amp;k)</code> → <code>Option</code></td><td><code>h[key]</code> → <code>nil</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-everything-is-an-object.html">7. Everything Is an Object</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Absolute value</td><td><code>n.abs()</code></td><td><code>n.abs</code></td></tr>
+          <tr><td>Parity test</td><td><code>n % 2 == 0</code></td><td><code>n.even?</code> / <code>n.odd?</code></td></tr>
+          <tr><td>Repeat N times</td><td><code>for _ in 0..n {}</code></td><td><code>n.times { ... }</code></td></tr>
+          <tr><td>Round to places</td><td>manual scale + <code>round()</code></td><td><code>f.round(2)</code></td></tr>
+          <tr><td>String to chars</td><td><code>s.chars().collect()</code></td><td><code>s.chars</code></td></tr>
+          <tr><td>Ask the class</td><td><code>std::any</code> gymnastics</td><td><code>x.class</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-case.html">8. Control Flow &amp; case</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>if as expression</td><td><code>let x = if c { a } else { b };</code></td><td><code>x = if c then a else b end</code></td></tr>
+          <tr><td>Early return</td><td><code>if c { return v; }</code></td><td><code>return v if c</code></td></tr>
+          <tr><td>Negated guard</td><td><code>if !c { ... }</code></td><td><code>... unless c</code></td></tr>
+          <tr><td>Match / dispatch</td><td><code>match x { ... }</code></td><td><code>case x; when ...; end</code></td></tr>
+          <tr><td>Range arm</td><td><code>90..=u32::MAX =&gt;</code></td><td><code>when 90..</code></td></tr>
+          <tr><td>Grouped arm</td><td><code>"a" | "b" =&gt;</code></td><td><code>when "a", "b"</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>compiler-enforced</td><td>your <code>else</code>, by discipline</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Type + methods</td><td><code>struct</code> + <code>impl</code></td><td>one <code>class</code> block</td></tr>
+          <tr><td>Constructor</td><td><code>fn new() -&gt; Self</code></td><td><code>def initialize</code>, called by <code>.new</code></td></tr>
+          <tr><td>Field access</td><td><code>self.field</code></td><td><code>@field</code></td></tr>
+          <tr><td>Getter</td><td>hand-written <code>pub fn</code></td><td><code>attr_reader :field</code></td></tr>
+          <tr><td>Getter + setter</td><td>getter + <code>pub fn set_</code></td><td><code>attr_accessor :field</code></td></tr>
+          <tr><td>Mutation</td><td><code>&amp;mut self</code> required</td><td>any method mutates freely</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-modules.html">10. Inheritance &amp; Modules</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Reuse behavior</td><td>trait composition</td><td><code>class Sub &lt; Base</code> (inheritance)</td></tr>
+          <tr><td>Call parent</td><td>explicit path</td><td><code>super</code> (bare form forwards args)</td></tr>
+          <tr><td>Required method</td><td>trait method, compile-checked</td><td><code>raise NotImplementedError</code>, call-checked</td></tr>
+          <tr><td>Default behavior</td><td>trait default method</td><td>base method / module method</td></tr>
+          <tr><td>Mixin</td><td><code>impl Trait for T</code></td><td><code>include Module</code></td></tr>
+          <tr><td>Mixin calls host</td><td>trait method calls other required methods</td><td>module method calls <code>self.name</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-blocks-procs-lambdas.html">11. Blocks, Procs &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Accept a closure</td><td><code>fn f&lt;F: Fn(i32) -&gt; i32&gt;(g: F)</code></td><td>nothing — every method takes an invisible block</td></tr>
+          <tr><td>Call it</td><td><code>g(x)</code></td><td><code>yield(x)</code></td></tr>
+          <tr><td>Was one passed?</td><td>the signature says so</td><td><code>block_given?</code></td></tr>
+          <tr><td>Closure literal</td><td><code>|x| x * 2</code></td><td><code>-&gt;(x) { x * 2 }</code> (a lambda)</td></tr>
+          <tr><td>Invoke a stored closure</td><td><code>f(x)</code> via <code>Fn</code></td><td><code>f.call(x)</code>, or <code>f.(x)</code>, or <code>f[x]</code></td></tr>
+          <tr><td>Return a closure</td><td><code>impl Fn</code> / <code>Box&lt;dyn Fn&gt;</code> + <code>move</code></td><td>just return the lambda</td></tr>
+          <tr><td>Method reference in map</td><td><code>.map(|w| w.to_uppercase())</code></td><td><code>.map(&amp;:upcase)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-enumerable.html">12. Enumerable: map, select &amp; Friends</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Start a pipeline</td><td><code>.iter()</code> / <code>.into_iter()</code></td><td>nothing — call <code>.map</code> on the array</td></tr>
+          <tr><td>Transform</td><td><code>.map(|x| ...)</code>, lazy</td><td><code>.map { |x| ... }</code>, eager (allocates)</td></tr>
+          <tr><td>Keep matching</td><td><code>.filter(|x| ...)</code></td><td><code>.select { |x| ... }</code></td></tr>
+          <tr><td>Drop matching</td><td><code>.filter(|x| !...)</code></td><td><code>.reject { |x| ... }</code></td></tr>
+          <tr><td>Materialize</td><td><code>.collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td>already an array</td></tr>
+          <tr><td>Total</td><td><code>.map(...).sum::&lt;u32&gt;()</code></td><td><code>.sum { ... }</code></td></tr>
+          <tr><td>Smallest by key</td><td><code>.min_by_key(...)</code> → <code>Option&lt;T&gt;</code></td><td><code>.min_by { ... }</code> → item or <code>nil</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enumerable-power-tools.html">13. Enumerable Power Tools</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Group by key</td><td><code>itertools::into_group_map_by</code></td><td><code>.group_by { |x| ... }</code></td></tr>
+          <tr><td>Count occurrences</td><td><code>entry(k).or_insert(0) += 1</code> fold</td><td><code>.tally</code></td></tr>
+          <tr><td>Fold into a collection</td><td><code>.fold(HashMap::new(), |mut acc, x| { ...; acc })</code></td><td><code>.each_with_object({}) { |x, acc| ... }</code></td></tr>
+          <tr><td>Default-valued map</td><td><code>.entry(k).or_insert(0)</code></td><td><code>Hash.new(0)</code>, then plain <code>acc[k] += n</code></td></tr>
+          <tr><td>Split by predicate</td><td><code>.partition::&lt;Vec&lt;_&gt;, _&gt;(...)</code></td><td><code>.partition { |x| ... }</code> → <code>[yes, no]</code></td></tr>
+          <tr><td>Reduce</td><td><code>.fold(0, |a, b| a + b)</code></td><td><code>.reduce(:+)</code> — pass the operator as a symbol</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-splat.html">14. Destructuring &amp; Splat</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Destructure a pair</td><td><code>let (a, b) = pair;</code></td><td><code>a, b = pair</code></td></tr>
+          <tr><td>Swap</td><td><code>mem::swap</code> / tuple dance</td><td><code>a, b = b, a</code></td></tr>
+          <tr><td>Head + rest</td><td><code>[first, rest @ ..]</code> pattern</td><td><code>first, *rest = list</code></td></tr>
+          <tr><td>Variadic function</td><td>none — take a slice</td><td><code>def sum(*nums)</code></td></tr>
+          <tr><td>Spread into a literal</td><td><code>concat</code> / <code>extend</code></td><td><code>[*a, *b]</code></td></tr>
+          <tr><td>Merge with overrides</td><td><code>Struct { x: 1, ..defaults }</code></td><td><code>defaults.merge(overrides)</code></td></tr>
+          <tr><td>Keyword options</td><td>a config struct</td><td><code>def f(**opts)</code> — double splat</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-duck-typing.html">15. Duck Typing &amp; respond_to?</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Declare a capability</td><td><code>trait Speaker { ... }</code></td><td>nothing — define the method</td></tr>
+          <tr><td>Implement it</td><td><code>impl Speaker for Dog</code></td><td><code>def speak</code> inside the class</td></tr>
+          <tr><td>Constrain a function</td><td><code>&lt;T: Speaker&gt;</code></td><td>no constraint — just call the method</td></tr>
+          <tr><td>Check the capability</td><td>rustc, at compile time</td><td><code>obj.respond_to?(:speak)</code>, at runtime</td></tr>
+          <tr><td>Nominal type check</td><td><code>Any</code> + downcast (rare)</td><td><code>obj.is_a?(Dog)</code> (use sparingly)</td></tr>
+          <tr><td>Violation surfaces as</td><td>compile error</td><td><code>NoMethodError</code> at the call site</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Signal failure</td><td><code>Err(e)</code> / <code>return Err(e)</code></td><td><code>raise SomeError, "msg"</code></td></tr>
+          <tr><td>Propagate</td><td><code>?</code></td><td>do nothing — raises climb until rescued</td></tr>
+          <tr><td>Handle a variant</td><td><code>match</code> / <code>if let Err(e)</code></td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+          <tr><td>Fallback value</td><td><code>.unwrap_or(default)</code></td><td>def-level <code>rescue</code> returning the default</td></tr>
+          <tr><td>Custom error</td><td><code>enum</code>/<code>struct</code> + <code>impl Error</code></td><td><code>class FooError &lt; StandardError; end</code></td></tr>
+          <tr><td>Always-runs cleanup</td><td><code>Drop</code></td><td><code>ensure</code> block</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-structs-and-comparable.html">17. Structs &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Plain data type</td><td><code>#[derive(...)] struct</code></td><td><code>Name = Struct.new(:a, :b)</code></td></tr>
+          <tr><td>Value equality</td><td><code>#[derive(PartialEq)]</code></td><td>free with <code>Struct</code></td></tr>
+          <tr><td>Debug printing</td><td><code>#[derive(Debug)]</code> + <code>{:?}</code></td><td>free — <code>p point</code> / <code>point.inspect</code></td></tr>
+          <tr><td>Methods on the type</td><td><code>impl Point { ... }</code></td><td>the <code>Struct.new do ... end</code> block</td></tr>
+          <tr><td>Total ordering</td><td><code>impl Ord</code> (<code>cmp</code>)</td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td></tr>
+          <tr><td>Lexicographic compare</td><td>derived field order</td><td><code>[a, b] &lt;=&gt; [other.a, other.b]</code></td></tr>
+          <tr><td>Range check</td><td><code>(lo..=hi).contains(&amp;x)</code></td><td><code>x.between?(lo, hi)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-enumerators-and-lazy.html">18. Enumerators &amp; Lazy</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Evaluation model</td><td>lazy by construction</td><td>eager; <code>.lazy</code> opts in</td></tr>
+          <tr><td>Infinite source</td><td><code>(1..)</code>, <code>iter::repeat</code></td><td><code>(1..Float::INFINITY)</code>, <code>(1..)</code>, <code>Enumerator</code></td></tr>
+          <tr><td>Take n</td><td><code>.take(n).collect()</code></td><td><code>.first(n)</code></td></tr>
+          <tr><td>Custom generator</td><td><code>impl Iterator</code> / <code>from_fn</code> / gen</td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+          <tr><td>Chunking</td><td><code>.chunks(2)</code></td><td><code>.each_slice(2)</code></td></tr>
+          <tr><td>Sliding window</td><td><code>.windows(2)</code></td><td><code>.each_cons(2)</code></td></tr>
+          <tr><td>Force to Vec/Array</td><td><code>.collect()</code></td><td><code>.to_a</code> / <code>.force</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust (serde)</th><th>Ruby</th></tr>
+          <tr><td>Setup</td><td><code>serde</code> + <code>serde_json</code> crates, derives</td><td><code>require "json"</code> (stdlib)</td></tr>
+          <tr><td>Serialize</td><td><code>serde_json::to_string(&amp;v)?</code></td><td><code>v.to_json</code></td></tr>
+          <tr><td>Deserialize</td><td><code>from_str::&lt;User&gt;(s)?</code> into a typed struct</td><td><code>JSON.parse(s)</code> into hashes/arrays</td></tr>
+          <tr><td>Symbol keys</td><td>struct fields</td><td><code>symbolize_names: true</code></td></tr>
+          <tr><td>Defaults</td><td><code>#[serde(default)]</code></td><td><code>fetch(:key, default)</code></td></tr>
+          <tr><td>Nested access</td><td>field access (checked at compile time)</td><td><code>data.dig(:a, :b, :c)</code> — <code>nil</code> on any miss</td></tr>
+          <tr><td>Malformed input</td><td><code>Err(serde_json::Error)</code></td><td>raises <code>JSON::ParserError</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>Ruby</th></tr>
+          <tr><td>Sum a projection</td><td><code>.map(...).sum()</code></td><td><code>.sum { |i| ... }</code></td></tr>
+          <tr><td>First match</td><td><code>.find(...)</code> → <code>Option</code></td><td><code>.find { ... }</code> → item or <code>nil</code></td></tr>
+          <tr><td>Filter + project</td><td><code>.filter(...).map(...).collect()</code></td><td><code>.select { ... }.map { ... }</code></td></tr>
+          <tr><td>Non-mutating update</td><td><code>clone()</code>, enforced by the compiler</td><td>build <code>Item.new(...)</code>, enforced by you</td></tr>
+          <tr><td>Ownership</td><td>moves, borrows, lifetimes</td><td>everything is a shared reference, always</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

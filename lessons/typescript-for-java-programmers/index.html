@@ -17,6 +17,262 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Java ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Basic Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Typed variable</td><td><code>int x = 1;</code></td><td><code>let x: number = 1;</code> (type after name)</td></tr>
+          <tr><td>Constant</td><td><code>final int x = 1;</code></td><td><code>const x = 1;</code></td></tr>
+          <tr><td>Inference</td><td><code>var x = "hi";</code> (locals only)</td><td><code>let x = "hi";</code> (works everywhere)</td></tr>
+          <tr><td>Numeric types</td><td><code>int</code>, <code>long</code>, <code>float</code>, <code>double</code>, boxed types</td><td><code>number</code> — one type, a 64-bit double</td></tr>
+          <tr><td>Strings</td><td><code>String</code> (capital S, a class)</td><td><code>string</code> (lowercase, primitive)</td></tr>
+          <tr><td>Return type</td><td><code>static String f() { }</code></td><td><code>function f(): string { }</code></td></tr>
+          <tr><td>Free functions</td><td>No — everything lives in a class</td><td>Yes — top-level functions are normal</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Concatenation</td><td><code>a + " " + b</code></td><td><code>a + " " + b</code></td></tr>
+          <tr><td>Formatting</td><td><code>String.format("%s is %d", n, a)</code></td><td>backtick template literal with <code>${n}</code>, <code>${a}</code></td></tr>
+          <tr><td>Length</td><td><code>s.length()</code></td><td><code>s.length</code> (property)</td></tr>
+          <tr><td>Value equality</td><td><code>s.equals(t)</code></td><td><code>s === t</code></td></tr>
+          <tr><td>Case-insensitive equality</td><td><code>s.equalsIgnoreCase(t)</code></td><td><code>s.toLowerCase() === t.toLowerCase()</code></td></tr>
+          <tr><td>Substring test</td><td><code>s.contains(x)</code></td><td><code>s.includes(x)</code></td></tr>
+          <tr><td>Case / trim / search</td><td><code>toUpperCase</code>, <code>trim</code>, <code>indexOf</code>, <code>startsWith</code></td><td>Same names, all carried over</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Type</td><td><code>int[]</code> or <code>List&lt;Integer&gt;</code></td><td><code>number[]</code> (also written <code>Array&lt;number&gt;</code>)</td></tr>
+          <tr><td>Create</td><td><code>new ArrayList&lt;&gt;()</code> / <code>List.of(1, 2)</code></td><td><code>[]</code> / <code>[1, 2]</code></td></tr>
+          <tr><td>Append</td><td><code>list.add(x)</code></td><td><code>arr.push(x)</code></td></tr>
+          <tr><td>Size</td><td><code>list.size()</code> / <code>arr.length</code></td><td><code>arr.length</code></td></tr>
+          <tr><td>Membership</td><td><code>list.contains(x)</code></td><td><code>arr.includes(x)</code></td></tr>
+          <tr><td>Index access</td><td><code>list.get(i)</code> / <code>arr[i]</code></td><td><code>arr[i]</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (int s : scores)</code></td><td><code>for (const s of scores)</code></td></tr>
+          <tr><td>Boxing</td><td><code>int</code> vs <code>Integer</code>, autoboxing</td><td>None — one <code>number</code> type</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps-to-objects.html">4. Maps → Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Type</td><td><code>Map&lt;String, Integer&gt;</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+          <tr><td>Create + fill</td><td><code>new HashMap&lt;&gt;()</code> + <code>put(...)</code> calls</td><td><code>{ apple: 3, banana: 5 }</code></td></tr>
+          <tr><td>Read</td><td><code>m.get(k)</code></td><td><code>m[k]</code></td></tr>
+          <tr><td>Write</td><td><code>m.put(k, v)</code></td><td><code>m[k] = v</code></td></tr>
+          <tr><td>Default on miss</td><td><code>m.getOrDefault(k, d)</code></td><td><code>m[k] ?? d</code></td></tr>
+          <tr><td>Key check</td><td><code>m.containsKey(k)</code></td><td><code>k in m</code></td></tr>
+          <tr><td>Entries loop</td><td><code>for (var e : m.entrySet())</code> + getters</td><td><code>for (const [k, v] of Object.entries(m))</code></td></tr>
+          <tr><td>Keys / values</td><td><code>m.keySet()</code> / <code>m.values()</code></td><td><code>Object.keys(m)</code> / <code>Object.values(m)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Where functions live</td><td>static methods inside a class</td><td>top level of any file</td></tr>
+          <tr><td>Optional trailing arg</td><td>write another overload</td><td><code>greeting: string = "Hello"</code></td></tr>
+          <tr><td>Arg that may be absent</td><td>write another overload</td><td><code>last?: string</code> → <code>string | undefined</code> inside</td></tr>
+          <tr><td>Lambda</td><td><code>x -&gt; x * 2</code></td><td><code>x =&gt; x * 2</code></td></tr>
+          <tr><td>Function type</td><td><code>Function&lt;T, R&gt;</code> / <code>BiFunction&lt;A, B, R&gt;</code> / ...</td><td><code>(a: A, b: B) =&gt; R</code>, written inline</td></tr>
+          <tr><td>Invoking a function value</td><td><code>f.apply(x)</code></td><td><code>f(x)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-and-optional.html">6. Null &amp; Optional</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Maybe-absent value</td><td><code>Optional&lt;User&gt;</code> (or an undocumented null)</td><td><code>User | null</code></td></tr>
+          <tr><td>Safe navigation</td><td><code>opt.map(User::getAddress)</code></td><td><code>user?.address</code></td></tr>
+          <tr><td>Default value</td><td><code>opt.orElse("Unknown")</code></td><td><code>value ?? "Unknown"</code></td></tr>
+          <tr><td>Presence check</td><td><code>opt.isPresent()</code> + <code>opt.get()</code></td><td><code>if (x !== null)</code> — no get() needed, the type narrows</td></tr>
+          <tr><td>Kinds of absence</td><td><code>null</code></td><td><code>null</code> and <code>undefined</code> (<code>?.</code>/<code>??</code> handle both)</td></tr>
+          <tr><td>Forgot the check?</td><td>NullPointerException at runtime</td><td>Compile error before you ship</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>"A or B" parameter</td><td>Overloads / <code>Object</code> / sealed hierarchy</td><td><code>a: A | B</code></td></tr>
+          <tr><td>Runtime type test (primitive)</td><td><code>instanceof Integer</code></td><td><code>typeof x === "number"</code></td></tr>
+          <tr><td>Runtime type test (class)</td><td><code>x instanceof Circle c</code></td><td><code>x instanceof Circle</code> (also narrows)</td></tr>
+          <tr><td>After the test</td><td>Bind pattern variable or cast</td><td>Same variable, automatically narrowed</td></tr>
+          <tr><td>The else branch</td><td>Compiler knows nothing new</td><td>Handled cases are subtracted from the union</td></tr>
+          <tr><td>Nullable as a union</td><td>n/a</td><td><code>string | null</code> is just another union</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces &amp; Object Shapes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Data carrier</td><td>POJO / record + getters</td><td><code>interface</code> + object literals</td></tr>
+          <tr><td>Membership</td><td>Nominal — must declare <code>implements</code></td><td>Structural — matching shape suffices</td></tr>
+          <tr><td>Optional field</td><td>Overloaded constructors, builder, <code>Optional</code> getter</td><td><code>description?: string</code></td></tr>
+          <tr><td>Construction</td><td><code>new Product("Widget", 9.99)</code></td><td><code>{ name: "Widget", price: 9.99 }</code></td></tr>
+          <tr><td>Copy-with-changes</td><td>Builder's <code>toBuilder()</code>, or write it by hand</td><td><code>{ ...product, price: newPrice }</code></td></tr>
+          <tr><td>Runtime footprint</td><td>A .class file</td><td>Zero — erased at compile time</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Field + assignment + visibility</td><td>Three separate lines</td><td><code>constructor(private x: number) {}</code></td></tr>
+          <tr><td><code>final</code> field</td><td><code>private final String id;</code></td><td><code>readonly id: string</code></td></tr>
+          <tr><td>Default visibility</td><td>package-private</td><td><code>public</code> (so it is rarely written)</td></tr>
+          <tr><td>Getter culture</td><td>Getters for everything</td><td>Getters only for guarded <code>private</code> state</td></tr>
+          <tr><td>Field access</td><td><code>balance</code> (implicit this)</td><td><code>this.balance</code> — always explicit</td></tr>
+          <tr><td>Exceptions</td><td><code>IllegalStateException</code> etc., some checked</td><td><code>Error</code>; nothing is checked</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstracts.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Abstract class</td><td><code>public abstract class Shape</code></td><td><code>abstract class Shape</code></td></tr>
+          <tr><td>Abstract method</td><td><code>public abstract double area();</code></td><td><code>abstract area(): number;</code></td></tr>
+          <tr><td>Subclassing</td><td><code>class Circle extends Shape</code></td><td><code>class Circle extends Shape</code> — identical</td></tr>
+          <tr><td>Constructor chaining</td><td><code>super(...)</code> first statement</td><td><code>super(...)</code> before any <code>this</code> access</td></tr>
+          <tr><td>Override marker</td><td><code>@Override</code> annotation</td><td>none needed — checked by signature</td></tr>
+          <tr><td>Multiple inheritance</td><td>one <code>extends</code>, many <code>implements</code></td><td>same rule</td></tr>
+          <tr><td>Runtime type check</td><td><code>x instanceof Shape</code></td><td><code>x instanceof Shape</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums &amp; Literal Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Basic enum</td><td><code>enum Status { PENDING, SHIPPED }</code></td><td><code>enum Status { Pending = "PENDING", Shipped = "SHIPPED" }</code></td></tr>
+          <tr><td>Enum with fields/methods</td><td>constructor + <code>getLabel()</code></td><td>string enum + a plain function with <code>switch</code></td></tr>
+          <tr><td>String → enum</td><td><code>Status.valueOf("PENDING")</code></td><td>the string <em>is</em> the value; narrow with a check if needed</td></tr>
+          <tr><td>All values</td><td><code>Status.values()</code></td><td><code>Object.values(Status)</code></td></tr>
+          <tr><td>Lightweight fixed set</td><td>(still an enum)</td><td><code>type State = "unpaid" | "paid" | "refunded"</code></td></tr>
+          <tr><td>Runtime cost</td><td>a class per enum</td><td>enum: small object; literal union: <strong>zero</strong> — erased</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Generic method</td><td><code>static &lt;T&gt; T f(List&lt;T&gt; xs)</code></td><td><code>function f&lt;T&gt;(xs: T[]): T</code></td></tr>
+          <tr><td>Bounded parameter</td><td><code>&lt;T extends Number&gt;</code></td><td><code>&lt;T extends number&gt;</code> (bound can be any type, incl. shapes)</td></tr>
+          <tr><td>Key-of-object bound</td><td>not expressible (use reflection)</td><td><code>&lt;T, K extends keyof T&gt;</code>, indexed access <code>T[K]</code></td></tr>
+          <tr><td>Wildcards</td><td><code>List&lt;? extends Shape&gt;</code></td><td>rarely needed — structural typing handles it</td></tr>
+          <tr><td>Runtime type info</td><td>erased (pass a <code>Class&lt;T&gt;</code> token)</td><td>erased (pass a value or check shapes)</td></tr>
+          <tr><td>Generic classes/interfaces</td><td><code>class Box&lt;T&gt; { }</code></td><td><code>class Box&lt;T&gt; { }</code> — identical</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-streams-to-array-methods.html">13. Streams → Array Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Open / close pipeline</td><td><code>.stream()</code> … <code>.collect(toList())</code></td><td>nothing — arrays chain directly</td></tr>
+          <tr><td>Filter</td><td><code>.filter(p -&gt; p.isInStock())</code></td><td><code>.filter(p =&gt; p.inStock)</code></td></tr>
+          <tr><td>Map</td><td><code>.map(Product::getName)</code></td><td><code>.map(p =&gt; p.name)</code></td></tr>
+          <tr><td>Sum</td><td><code>.mapToDouble(...).sum()</code></td><td><code>.reduce((sum, p) =&gt; sum + ..., 0)</code></td></tr>
+          <tr><td>Sort (non-mutating)</td><td><code>.sorted(Comparator.comparing(...))</code></td><td><code>[...arr].sort((a, b) =&gt; a.x - b.x)</code> — copy first!</td></tr>
+          <tr><td>anyMatch / allMatch</td><td><code>.anyMatch(...)</code> / <code>.allMatch(...)</code></td><td><code>.some(...)</code> / <code>.every(...)</code></td></tr>
+          <tr><td>findFirst</td><td><code>.findFirst()</code> → <code>Optional</code></td><td><code>.find(...)</code> → <code>T | undefined</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring.html">14. Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Extract fields</td><td><code>user.name()</code>, <code>user.age()</code> — one per line</td><td><code>const { name, age } = user;</code></td></tr>
+          <tr><td>Extract by position</td><td><code>pair[0]</code>, <code>pair[1]</code></td><td><code>const [first, second] = pair;</code></td></tr>
+          <tr><td>Default for missing value</td><td><code>x != null ? x : fallback</code></td><td><code>const { city = "Unknown" } = user;</code></td></tr>
+          <tr><td>Rename while extracting</td><td>—</td><td><code>const { name: userName } = user;</code></td></tr>
+          <tr><td>Unpack in a signature</td><td>record patterns (Java 21, patterns only)</td><td><code>function f({ first, last }: Person)</code></td></tr>
+          <tr><td>Skip / collect the rest</td><td>—</td><td><code>const [head, ...tail] = xs;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-spread-and-varargs.html">15. Spread &amp; Varargs</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Varargs / rest parameter</td><td><code>int sum(int... nums)</code></td><td><code>function sum(...nums: number[])</code></td></tr>
+          <tr><td>Pass an array to varargs</td><td><code>sum(arr)</code> (arrays double as varargs)</td><td><code>sum(...arr)</code> (spread at the call site)</td></tr>
+          <tr><td>Concatenate lists</td><td><code>new ArrayList&lt;&gt;(a)</code> + <code>addAll(b)</code></td><td><code>[...a, ...b]</code></td></tr>
+          <tr><td>Merge maps</td><td><code>new HashMap&lt;&gt;(a)</code> + <code>putAll(b)</code></td><td><code>{ ...a, ...b }</code> — later keys win</td></tr>
+          <tr><td>Copy-with-changes</td><td>builder: <code>toBuilder().x(1).build()</code></td><td><code>{ ...obj, x: 1 }</code></td></tr>
+          <tr><td>Immutable append</td><td><code>List.copyOf</code> gymnastics</td><td><code>[...items, item]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-type-narrowing.html">16. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Top type</td><td><code>Object</code></td><td><code>unknown</code> (must narrow before use)</td></tr>
+          <tr><td>Type test + bind</td><td><code>if (o instanceof String s)</code></td><td><code>if (typeof v === "string")</code> — v itself narrows</td></tr>
+          <tr><td>Primitives</td><td><code>instanceof Integer</code>, <code>instanceof String</code></td><td><code>typeof v === "number"</code> / <code>"string"</code> / <code>"boolean"</code></td></tr>
+          <tr><td>Collections</td><td><code>o instanceof List&lt;?&gt;</code></td><td><code>Array.isArray(v)</code></td></tr>
+          <tr><td>Class instances</td><td><code>o instanceof User</code></td><td><code>v instanceof User</code> (classes only)</td></tr>
+          <tr><td>Interface shapes</td><td>n/a — interfaces are checkable</td><td><code>"name" in v</code> or a custom predicate <code>v is User</code></td></tr>
+          <tr><td>Reusable check</td><td>helper returning <code>boolean</code> (no narrowing)</td><td>predicate returning <code>v is User</code> (narrows at call site)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-discriminated-unions.html">17. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java 21</th><th>TypeScript</th></tr>
+          <tr><td>Closed hierarchy</td><td><code>sealed interface ... permits</code></td><td><code>type Shape = A | B | C;</code></td></tr>
+          <tr><td>Variant</td><td><code>record Circle(double radius) implements Shape</code></td><td><code>interface Circle { kind: "circle"; radius: number }</code></td></tr>
+          <tr><td>Which variant is it?</td><td>runtime class of the object</td><td>the literal <code>kind</code> field (survives JSON!)</td></tr>
+          <tr><td>Dispatch + narrow</td><td><code>case Circle c -&gt;</code></td><td><code>case "circle":</code> — shape narrows in the case body</td></tr>
+          <tr><td>Exhaustiveness</td><td>missing case = compile error</td><td><code>const x: never = shape;</code> in default = compile error when a case is missing</td></tr>
+          <tr><td>Bottom type</td><td>(none)</td><td><code>never</code> — the type with no values</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-utility-types.html">18. Utility Types</a></h3>
+        <table>
+          <tr><th>Need</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>All fields optional (PATCH body)</td><td>hand-written DTO with nullable fields</td><td><code>Partial&lt;User&gt;</code></td></tr>
+          <tr><td>All fields required again</td><td>the original class</td><td><code>Required&lt;T&gt;</code></td></tr>
+          <tr><td>Subset of fields (list view)</td><td>another DTO / projection interface</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+          <tr><td>Everything except some fields</td><td>another DTO again</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+          <tr><td>Immutable view</td><td><code>final</code> fields, defensive copies</td><td><code>Readonly&lt;User&gt;</code></td></tr>
+          <tr><td>String-keyed map</td><td><code>Map&lt;String, V&gt;</code></td><td><code>Record&lt;string, V&gt;</code></td></tr>
+          <tr><td>Copy-with-changes</td><td>builder / <code>toBuilder()</code></td><td><code>{ ...user, ...changes }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-async-await.html">19. Async &amp; Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Future value</td><td><code>CompletableFuture&lt;T&gt;</code></td><td><code>Promise&lt;T&gt;</code></td></tr>
+          <tr><td>Create resolved/failed</td><td><code>completedFuture(v)</code> / <code>failedFuture(e)</code></td><td><code>Promise.resolve(v)</code> / <code>Promise.reject(e)</code></td></tr>
+          <tr><td>Map result</td><td><code>thenApply(f)</code></td><td><code>.then(f)</code></td></tr>
+          <tr><td>Chain another future</td><td><code>thenCompose(f)</code></td><td><code>.then(f)</code> — promises auto-flatten</td></tr>
+          <tr><td>Recover</td><td><code>exceptionally(f)</code></td><td><code>.catch(f)</code> or <code>try</code>/<code>catch</code> around <code>await</code></td></tr>
+          <tr><td>Fan-out, join all</td><td><code>allOf(...)</code> + manual <code>join()</code> per future</td><td><code>Promise.all(array)</code> — resolves to the results</td></tr>
+          <tr><td>Straight-line style</td><td>virtual threads / structured concurrency (21+)</td><td><code>async</code> / <code>await</code></td></tr>
+          <tr><td>Thread safety</td><td><code>synchronized</code>, <code>volatile</code>, executors</td><td>not needed — single-threaded event loop</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Java</th><th>TypeScript</th></tr>
+          <tr><td>Unit of code</td><td>package (directory + dotted name)</td><td>module (one file)</td></tr>
+          <tr><td>Public API</td><td><code>public</code> class, one per file</td><td><code>export</code> per definition, many per file</td></tr>
+          <tr><td>Internal helper</td><td>package-private (no modifier)</td><td>simply not exported</td></tr>
+          <tr><td>Bringing symbols in</td><td><code>import store.Product;</code> via classpath</td><td><code>import { Product } from "./product";</code> via path</td></tr>
+          <tr><td>Whole-module import</td><td><code>import store.*;</code></td><td><code>import * as store from "./store";</code></td></tr>
+          <tr><td>Types in the API</td><td>classes and interfaces (compiled, on classpath)</td><td>exported interfaces — erased at runtime, real to importers</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

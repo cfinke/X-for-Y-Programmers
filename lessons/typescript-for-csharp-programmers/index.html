@@ -17,6 +17,266 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C# ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Basic Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Typed variable</td><td><code>int x = 1;</code></td><td><code>let x: number = 1;</code></td></tr>
+          <tr><td>Inferred variable</td><td><code>var x = 1;</code></td><td><code>let x = 1;</code></td></tr>
+          <tr><td>Never reassigned</td><td><code>const</code> (compile-time only, rare)</td><td><code>const x = 1;</code> (the default choice)</td></tr>
+          <tr><td>Numeric types</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>decimal</code></td><td><code>number</code> (just one)</td></tr>
+          <tr><td>Text / truth</td><td><code>string</code>, <code>bool</code></td><td><code>string</code>, <code>boolean</code></td></tr>
+          <tr><td>Return type</td><td><code>string F(int a)</code></td><td><code>function f(a: number): string</code></td></tr>
+          <tr><td>Naming</td><td><code>PascalCase</code> methods</td><td><code>camelCase</code> functions</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Interpolation</td><td><code>$"{name} is {age}"</code></td><td><code>`${name} is ${age}`</code></td></tr>
+          <tr><td>Multi-line string</td><td><code>@"..."</code> or raw <code>"""..."""</code></td><td>backticks span lines already</td></tr>
+          <tr><td>Length</td><td><code>s.Length</code></td><td><code>s.length</code></td></tr>
+          <tr><td>Case</td><td><code>s.ToUpper()</code> / <code>s.ToLower()</code></td><td><code>s.toUpperCase()</code> / <code>s.toLowerCase()</code></td></tr>
+          <tr><td>Search</td><td><code>s.Contains(t)</code>, <code>s.StartsWith(t)</code></td><td><code>s.includes(t)</code>, <code>s.startsWith(t)</code></td></tr>
+          <tr><td>Join</td><td><code>string.Join(", ", list)</code></td><td><code>list.join(", ")</code></td></tr>
+          <tr><td>Split / trim</td><td><code>s.Split(',')</code>, <code>s.Trim()</code></td><td><code>s.split(",")</code>, <code>s.trim()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Type</td><td><code>int[]</code> or <code>List&lt;int&gt;</code></td><td><code>number[]</code> (one type, always growable)</td></tr>
+          <tr><td>Literal</td><td><code>new List&lt;int&gt; { 1, 2 }</code></td><td><code>[1, 2]</code></td></tr>
+          <tr><td>Append</td><td><code>list.Add(x)</code></td><td><code>xs.push(x)</code></td></tr>
+          <tr><td>Size</td><td><code>list.Count</code> / <code>arr.Length</code></td><td><code>xs.length</code></td></tr>
+          <tr><td>Membership</td><td><code>list.Contains(x)</code></td><td><code>xs.includes(x)</code></td></tr>
+          <tr><td>Iterate values</td><td><code>foreach (var x in xs)</code></td><td><code>for (const x of xs)</code> (not <code>in</code>!)</td></tr>
+          <tr><td>Index lookup</td><td><code>list.IndexOf(x)</code></td><td><code>xs.indexOf(x)</code></td></tr>
+          <tr><td>Slice</td><td><code>xs[1..3]</code></td><td><code>xs.slice(1, 3)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-dictionaries-to-objects.html">4. Dictionaries → Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Type</td><td><code>Dictionary&lt;string, int&gt;</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+          <tr><td>Literal</td><td><code>new() { ["a"] = 1 }</code></td><td><code>{ a: 1 }</code></td></tr>
+          <tr><td>Insert / update</td><td><code>d["k"] = v;</code></td><td><code>d["k"] = v;</code> (or <code>d.k = v</code>)</td></tr>
+          <tr><td>Missing key</td><td><code>d["k"]</code> throws</td><td><code>d["k"]</code> is <code>undefined</code></td></tr>
+          <tr><td>Lookup with default</td><td><code>TryGetValue(k, out var v)</code></td><td><code>d[k] ?? fallback</code></td></tr>
+          <tr><td>Has key?</td><td><code>d.ContainsKey("k")</code></td><td><code>"k" in d</code></td></tr>
+          <tr><td>Remove</td><td><code>d.Remove("k")</code></td><td><code>delete d["k"]</code></td></tr>
+          <tr><td>Iterate</td><td><code>foreach (var (k, v) in d)</code></td><td><code>for (const [k, v] of Object.entries(d))</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Default parameter</td><td><code>string g = "Hello"</code></td><td><code>g: string = "Hello"</code></td></tr>
+          <tr><td>Optional parameter</td><td>overload, or default</td><td><code>middle?: string</code></td></tr>
+          <tr><td>Lambda</td><td><code>x =&gt; x * 3</code></td><td><code>x =&gt; x * 3</code> (identical)</td></tr>
+          <tr><td>Function-typed value</td><td><code>Func&lt;int, int&gt;</code> / <code>Action&lt;string&gt;</code></td><td><code>(x: number) =&gt; number</code> / <code>(s: string) =&gt; void</code></td></tr>
+          <tr><td>Named arguments</td><td><code>F(a, c: 3)</code></td><td>options object: <code>f({ a, c: 3 })</code></td></tr>
+          <tr><td>Expression body</td><td><code>int F(int x) =&gt; x * 2;</code></td><td><code>const f = (x: number) =&gt; x * 2;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nullable-types.html">6. Nullable Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Nullable type</td><td><code>string? name</code></td><td><code>name: string | null</code></td></tr>
+          <tr><td>Null-conditional</td><td><code>user?.Name</code></td><td><code>user?.name</code> (same, camelCase member)</td></tr>
+          <tr><td>Null-coalescing</td><td><code>x ?? fallback</code></td><td><code>x ?? fallback</code> (identical)</td></tr>
+          <tr><td>Coalescing assignment</td><td><code>x ??= fallback;</code></td><td><code>x ??= fallback;</code> (identical)</td></tr>
+          <tr><td>Absent values</td><td>Just <code>null</code></td><td><code>null</code> <em>and</em> <code>undefined</code></td></tr>
+          <tr><td>Optional member/param</td><td><code>string? Middle { get; set; }</code></td><td><code>middle?: string</code> (? only valid here)</td></tr>
+          <tr><td>Turning checks on</td><td><code>&lt;Nullable&gt;enable&lt;/Nullable&gt;</code> in csproj</td><td><code>strictNullChecks</code> — on by default with <code>strict</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>"int or string"</td><td>Overloads / <code>object</code> / <code>OneOf&lt;int, string&gt;</code></td><td><code>number | string</code></td></tr>
+          <tr><td>Type test</td><td><code>id is int n</code></td><td><code>typeof id === "number"</code></td></tr>
+          <tr><td>Exhaustive branch</td><td><code>switch</code> expression + <code>_</code> arm</td><td><code>if</code>/<code>else</code> — compiler tracks what is left</td></tr>
+          <tr><td>Nullable as union</td><td><code>string?</code> is compiler magic</td><td><code>string | null</code> is just another union</td></tr>
+          <tr><td>Union of many</td><td>More overloads / bigger OneOf</td><td><code>number | string | boolean | Date</code>, no ceiling</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces &amp; Object Shapes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Interface</td><td><code>interface IProduct { string Name { get; } }</code></td><td><code>interface Product { name: string; }</code></td></tr>
+          <tr><td>Membership</td><td>Nominal — must declare <code>: IProduct</code></td><td>Structural — right shape is enough</td></tr>
+          <tr><td>Simple data type</td><td><code>record</code> / POCO with <code>{ get; init; }</code></td><td>Typed object literal: <code>const p: Product = { … };</code></td></tr>
+          <tr><td>Optional property</td><td><code>decimal? Discount { get; init; }</code></td><td><code>discount?: number</code></td></tr>
+          <tr><td>Naming</td><td><code>IProduct</code>, <code>Name</code></td><td><code>Product</code>, <code>name</code> (no prefix, camelCase)</td></tr>
+          <tr><td>Runtime presence</td><td>Interface exists in the assembly; <code>is IProduct</code> works</td><td>Erased at compile time — no <code>instanceof Product</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Declare + assign field</td><td>Primary ctor param + property, or ctor boilerplate</td><td>Parameter property: <code>constructor(private balance: number) {}</code></td></tr>
+          <tr><td>Auto-property</td><td><code>public string Name { get; set; }</code></td><td>Plain public field: <code>name: string;</code></td></tr>
+          <tr><td>Immutable member</td><td><code>{ get; }</code> / <code>init</code> / <code>readonly</code></td><td><code>readonly</code></td></tr>
+          <tr><td>Default visibility</td><td><code>private</code></td><td><code>public</code></td></tr>
+          <tr><td>Member access</td><td><code>_balance</code> (implicit this)</td><td><code>this.balance</code> (always explicit)</td></tr>
+          <tr><td>Throwing</td><td><code>throw new InvalidOperationException("…")</code></td><td><code>throw new Error("…")</code></td></tr>
+          <tr><td>Naming</td><td><code>Deposit</code>, <code>GetBalance</code></td><td><code>deposit</code>, <code>getBalance</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstracts.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Inherit</td><td><code>class Circle : Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+          <tr><td>Base constructor</td><td><code>public Circle(double r) : base("circle")</code></td><td><code>super("circle");</code> first statement in the ctor body</td></tr>
+          <tr><td>Abstract class/method</td><td><code>abstract</code> / <code>public abstract double Area();</code></td><td><code>abstract</code> / <code>abstract area(): number;</code></td></tr>
+          <tr><td>Overridable method</td><td>Only if marked <code>virtual</code>/<code>abstract</code></td><td>All of them, always</td></tr>
+          <tr><td>Override</td><td><code>public override double Area()</code></td><td>Just redeclare <code>area()</code> (opt-in check: <code>noImplicitOverride</code>)</td></tr>
+          <tr><td>Call base method</td><td><code>base.Describe()</code></td><td><code>super.describe()</code></td></tr>
+          <tr><td>Forbid subclassing</td><td><code>sealed</code></td><td>No equivalent keyword</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums &amp; Literal Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Enum declaration</td><td><code>enum Status { Pending }</code></td><td><code>enum Status { Pending = "pending" }</code> (string enum)</td></tr>
+          <tr><td>Underlying value</td><td>Always integral; <code>(int)status</code></td><td>Whatever you assign — string enums carry the string</td></tr>
+          <tr><td>String → enum</td><td><code>Enum.Parse&lt;Status&gt;("Pending")</code></td><td>Unnecessary for string enums / literal unions</td></tr>
+          <tr><td>Lightweight alternative</td><td>—</td><td><code>type Status = "pending" | "shipped";</code></td></tr>
+          <tr><td>Runtime footprint</td><td>Enum type exists at runtime</td><td><code>enum</code> emits an object; a literal union emits <em>nothing</em></td></tr>
+          <tr><td>Exhaustive switch</td><td><code>switch</code> expression + compiler warning</td><td><code>switch</code> + <code>never</code> check (Lesson 17)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Generic method</td><td><code>T First&lt;T&gt;(List&lt;T&gt; xs)</code></td><td><code>function first&lt;T&gt;(xs: T[]): T</code></td></tr>
+          <tr><td>Constraint</td><td><code>where T : IShape</code></td><td><code>&lt;T extends Shape&gt;</code></td></tr>
+          <tr><td>"Maybe a T"</td><td><code>T?</code> / <code>default</code></td><td><code>T | undefined</code></td></tr>
+          <tr><td>Property-name constraint</td><td>— (use a <code>Func&lt;T, TResult&gt;</code> lambda)</td><td><code>K extends keyof T</code>, result type <code>T[K]</code></td></tr>
+          <tr><td>Runtime model</td><td>Reified — <code>typeof(T)</code>, <code>List&lt;int&gt;</code> ≠ <code>List&lt;string&gt;</code></td><td>Erased — one JS function, <code>T</code> is gone</td></tr>
+          <tr><td>Runtime type decisions</td><td><code>typeof(T)</code>, <code>is</code>, reflection</td><td>Narrow the <em>values</em>: <code>typeof x</code>, <code>instanceof</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-linq-to-array-methods.html">13. LINQ → Array Methods</a></h3>
+        <table>
+          <tr><th>LINQ</th><th>TypeScript</th><th>Watch out</th></tr>
+          <tr><td><code>Where</code></td><td><code>filter</code></td><td>—</td></tr>
+          <tr><td><code>Select</code></td><td><code>map</code></td><td>—</td></tr>
+          <tr><td><code>Aggregate(seed, fn)</code> / <code>Sum</code></td><td><code>reduce(fn, seed)</code></td><td>Seed is the <em>last</em> argument; omit it and [] throws</td></tr>
+          <tr><td><code>OrderBy(keySelector)</code></td><td><code>[...arr].sort(comparator)</code></td><td><code>sort</code> mutates; comparator returns a number, not a key</td></tr>
+          <tr><td><code>Any / All / First­OrDefault / Contains</code></td><td><code>some / every / find / includes</code></td><td><code>find</code> returns <code>undefined</code>, not <code>default</code></td></tr>
+          <tr><td><code>ToList() / ToArray()</code></td><td>Not needed</td><td>Every step already returns a real array</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-tuples-and-destructuring.html">14. Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Tuple type</td><td><code>(int, string)</code></td><td><code>[number, string]</code></td></tr>
+          <tr><td>Tuple literal</td><td><code>(1, "one")</code></td><td><code>[1, "one"]</code></td></tr>
+          <tr><td>Deconstruct a tuple</td><td><code>var (x, y) = p;</code></td><td><code>const [x, y] = p;</code></td></tr>
+          <tr><td>Deconstruct an object</td><td>Needs <code>Deconstruct</code> (records get one free)</td><td><code>const { name, role } = user;</code> — any object</td></tr>
+          <tr><td>Rename while extracting</td><td><code>var (n, r) = user;</code> (positional only)</td><td><code>const { name: userName } = user;</code> (by name)</td></tr>
+          <tr><td>Default while extracting</td><td>—</td><td><code>const { role = "user" } = user;</code></td></tr>
+          <tr><td>Discard</td><td><code>var (_, y) = p;</code></td><td><code>const [, y] = p;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-spread-and-params.html">15. Spread &amp; params</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Variadic function</td><td><code>void Log(params string[] parts)</code></td><td><code>function log(...parts: string[])</code></td></tr>
+          <tr><td>Pass an array to it</td><td><code>Log(arr)</code> (params accepts the array)</td><td><code>log(...arr)</code> (spread it explicitly)</td></tr>
+          <tr><td>Concatenate collections</td><td><code>[..a, ..b]</code> (C# 12)</td><td><code>[...a, ...b]</code></td></tr>
+          <tr><td>Copy-with-changes</td><td><code>user with { Name = "X" }</code></td><td><code>{ ...user, name: "X" }</code></td></tr>
+          <tr><td>Merge, later wins</td><td>chain <code>with</code> expressions</td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+          <tr><td>Immutable append</td><td><code>list.Add</code> mutates; use Immutable collections</td><td><code>[...items, item]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-type-narrowing.html">16. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Primitive check</td><td><code>value is string s</code> (binds <code>s</code>)</td><td><code>typeof value === "string"</code> (narrows <code>value</code>)</td></tr>
+          <tr><td>Class check</td><td><code>value is MemoryStream m</code></td><td><code>value instanceof Map</code></td></tr>
+          <tr><td>Array check</td><td><code>value is int[] a</code></td><td><code>Array.isArray(value)</code></td></tr>
+          <tr><td>Member check</td><td><code>value is { Length: &gt; 0 }</code></td><td><code>"name" in value</code></td></tr>
+          <tr><td>Reusable pattern</td><td>inline patterns only</td><td>predicate: <code>function isUser(v: unknown): v is User</code></td></tr>
+          <tr><td>Safe cast</td><td><code>value as User</code> → null on failure</td><td>none — <code>as</code> asserts and checks <em>nothing</em></td></tr>
+          <tr><td>Opaque value</td><td><code>object</code></td><td><code>unknown</code> (compiler forces narrowing)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-discriminated-unions.html">17. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Closed hierarchy</td><td><code>abstract record Shape</code> + derived records</td><td><code>type Shape = A | B | C</code> of tagged interfaces</td></tr>
+          <tr><td>Variant identity</td><td>the runtime type of the record</td><td>a literal property: <code>kind: "circle"</code></td></tr>
+          <tr><td>Dispatch</td><td><code>shape switch { Circle c =&gt; ... }</code></td><td><code>switch (shape.kind) { case "circle": ... }</code></td></tr>
+          <tr><td>Per-arm typing</td><td>fresh binding (<code>c</code>, <code>r</code>, <code>t</code>)</td><td><code>shape</code> itself narrows in each case</td></tr>
+          <tr><td>Missed case</td><td><code>_ =&gt; throw</code> — runtime exception</td><td><code>const x: never = shape;</code> — compile error</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-utility-types.html">18. Utility Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Patch shape</td><td>separate record, all properties nullable</td><td><code>Partial&lt;User&gt;</code></td></tr>
+          <tr><td>Projection</td><td><code>UserSummary</code> record or anonymous type</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+          <tr><td>Exclusion</td><td>hand-maintained DTO</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+          <tr><td>Immutable view</td><td><code>init</code> accessors / <code>IReadOnlyList</code></td><td><code>Readonly&lt;User&gt;</code>, <code>ReadonlyArray&lt;T&gt;</code></td></tr>
+          <tr><td>Required-everything</td><td>(no equivalent)</td><td><code>Required&lt;User&gt;</code></td></tr>
+          <tr><td>Copy-and-override</td><td><code>user with { Name = "Grace" }</code></td><td><code>{ ...user, name: "Grace" }</code></td></tr>
+          <tr><td>Keyed lookup type</td><td><code>Dictionary&lt;string, User&gt;</code></td><td><code>Record&lt;string, User&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-async-await.html">19. Async &amp; Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Async return type</td><td><code>Task&lt;T&gt;</code> / <code>Task</code></td><td><code>Promise&lt;T&gt;</code> / <code>Promise&lt;void&gt;</code></td></tr>
+          <tr><td>Declare</td><td><code>async Task&lt;T&gt; FooAsync()</code></td><td><code>async function foo(): Promise&lt;T&gt;</code></td></tr>
+          <tr><td>Unwrap</td><td><code>await task</code></td><td><code>await promise</code> (identical)</td></tr>
+          <tr><td>Run concurrently</td><td><code>Task.WhenAll(tasks)</code></td><td><code>Promise.all(promises)</code></td></tr>
+          <tr><td>First to finish</td><td><code>Task.WhenAny(tasks)</code></td><td><code>Promise.race(promises)</code></td></tr>
+          <tr><td>Completed value</td><td><code>Task.FromResult(x)</code></td><td><code>Promise.resolve(x)</code></td></tr>
+          <tr><td>Faulted / rejected</td><td>exception inside the task</td><td><code>throw</code> inside async fn / <code>Promise.reject(e)</code></td></tr>
+          <tr><td>Handle failure</td><td><code>try { await … } catch</code></td><td><code>try { await … } catch</code> (identical)</td></tr>
+          <tr><td>Block synchronously</td><td><code>.Result</code> / <code>.Wait()</code> (deadlock bait)</td><td>impossible — <code>await</code> is the only way</td></tr>
+          <tr><td>Context capture</td><td><code>.ConfigureAwait(false)</code></td><td>not a thing — single-threaded event loop</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C#</th><th>TypeScript</th></tr>
+          <tr><td>Namespace</td><td><code>namespace Shop.Cart;</code></td><td>the file itself — no wrapper block</td></tr>
+          <tr><td>Public</td><td><code>public</code> member</td><td><code>export</code> at the definition site</td></tr>
+          <tr><td>Internal</td><td><code>internal</code></td><td>no <code>export</code> — file-private</td></tr>
+          <tr><td>Consume</td><td><code>using Shop.Cart;</code></td><td><code>import { addItem } from "./cart";</code></td></tr>
+          <tr><td>Alias</td><td><code>using Alias = Shop.Cart.CartItem;</code></td><td><code>import { CartItem as Alias } from "./cart";</code></td></tr>
+          <tr><td>Import everything</td><td>(automatic within the namespace)</td><td><code>import * as cart from "./cart";</code> then <code>cart.addItem</code></td></tr>
+          <tr><td>Entry point</td><td><code>Program.cs</code> / <code>Main</code></td><td>whichever module the runtime is told to load first</td></tr>
+          <tr><td>Type-only import</td><td>n/a</td><td><code>import type { CartItem } from "./cart";</code> (erased)</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

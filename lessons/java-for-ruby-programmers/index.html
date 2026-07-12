@@ -19,6 +19,253 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Ruby ⇄ Java cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Local variable</td><td><code>x = 1</code> (no type)</td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred local</td><td>always inferred — Ruby has no type syntax</td><td><code>var x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>X = 1</code> (uppercase name, reassignment just warns)</td><td><code>final int x = 1;</code> (reassignment is a compile error)</td></tr>
+          <tr><td>Numeric types</td><td><code>Integer</code>, <code>Float</code></td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>float</code>…</td></tr>
+          <tr><td>Top-level method</td><td><code>def f; end</code></td><td><code>static</code> method in a class</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Substring</td><td><code>s[1...4]</code></td><td><code>s.substring(1, 4)</code></td></tr>
+          <tr><td>Contains</td><td><code>s.include?("x")</code></td><td><code>s.contains("x")</code></td></tr>
+          <tr><td>Index of</td><td><code>s.index("x")</code></td><td><code>s.indexOf("x")</code></td></tr>
+          <tr><td>Split</td><td><code>s.split(",")</code></td><td><code>s.split(",")</code> (regex!)</td></tr>
+          <tr><td>Trim</td><td><code>s.strip</code></td><td><code>s.strip()</code></td></tr>
+          <tr><td>Blank check</td><td><code>s.strip.empty?</code></td><td><code>s.isBlank()</code></td></tr>
+          <tr><td>Interpolate</td><td><code>"#{a}"</code></td><td><code>String.format("%s", a)</code></td></tr>
+          <tr><td>Build in loop</td><td><code>out += x</code></td><td><code>StringBuilder.append</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java array</th><th>Java List</th></tr>
+          <tr><td>Create</td><td><code>[1, 2, 3]</code></td><td><code>new int[]{1, 2, 3}</code></td><td><code>new ArrayList&lt;&gt;()</code></td></tr>
+          <tr><td>Length</td><td><code>a.length</code></td><td><code>a.length</code></td><td><code>list.size()</code></td></tr>
+          <tr><td>Read</td><td><code>a[i]</code></td><td><code>a[i]</code></td><td><code>list.get(i)</code></td></tr>
+          <tr><td>Append</td><td><code>a.push(x)</code></td><td>— (fixed size)</td><td><code>list.add(x)</code></td></tr>
+          <tr><td>Membership</td><td><code>a.include?(x)</code></td><td>—</td><td><code>list.contains(x)</code></td></tr>
+          <tr><td>Immutable</td><td><code>a.freeze</code></td><td>—</td><td><code>List.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Create</td><td><code>{}</code> / <code>Hash.new</code></td><td><code>new HashMap&lt;&gt;()</code></td></tr>
+          <tr><td>Insert / update</td><td><code>m[k] = v</code></td><td><code>m.put(k, v)</code></td></tr>
+          <tr><td>Read with default</td><td><code>m.fetch(k, d)</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+          <tr><td>Membership</td><td><code>m.key?(k)</code></td><td><code>m.containsKey(k)</code></td></tr>
+          <tr><td>Delete</td><td><code>m.delete(k)</code></td><td><code>m.remove(k)</code></td></tr>
+          <tr><td>Iterate</td><td><code>m.each { |k, v| ... }</code></td><td><code>for (var e : m.entrySet())</code></td></tr>
+          <tr><td>Immutable literal</td><td><code>{...}.freeze</code></td><td><code>Map.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Utility function</td><td><code>def f</code></td><td><code>static</code> method</td></tr>
+          <tr><td>Two shapes, one name</td><td>optional/default params</td><td>two overloads: <code>f(int)</code>, <code>f(int, String)</code></td></tr>
+          <tr><td>Variadic</td><td><code>def f(*xs)</code></td><td><code>f(int... xs)</code></td></tr>
+          <tr><td>Params inside</td><td>real array</td><td><code>xs</code> is an <code>int[]</code></td></tr>
+          <tr><td>Delegation</td><td>default value</td><td>one overload calls another</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-classes-and-objects.html">6. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Private field</td><td><code>@x</code> (instance var, not declared)</td><td><code>private int x;</code></td></tr>
+          <tr><td>Constructor</td><td><code>def initialize(x); @x = x; end</code></td><td><code>ClassName(int x) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>@x</code></td><td><code>this.x</code> or just <code>x</code></td></tr>
+          <tr><td>Getter</td><td><code>attr_reader :x</code></td><td><code>int getX()</code> (a method call)</td></tr>
+          <tr><td>Stringify</td><td><code>def to_s</code></td><td><code>@Override public String toString()</code></td></tr>
+          <tr><td>Instantiate</td><td><code>C.new(…)</code></td><td><code>new C(…)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-null-and-optional.html">7. Null &amp; Optional</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Absent-aware return</td><td><code>nil</code> (untyped)</td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Wrap a maybe-null</td><td>—</td><td><code>Optional.ofNullable(x)</code></td></tr>
+          <tr><td>Wrap a known value</td><td>—</td><td><code>Optional.of(x)</code></td></tr>
+          <tr><td>The empty case</td><td><code>nil</code></td><td><code>Optional.empty()</code></td></tr>
+          <tr><td>Default</td><td><code>x || d</code></td><td><code>opt.orElse(d)</code></td></tr>
+          <tr><td>Safe navigation</td><td><code>x&amp;.f</code></td><td><code>opt.map(v -&gt; v.f())</code></td></tr>
+          <tr><td>Run a side effect</td><td><code>g(x) if x</code></td><td><code>opt.ifPresent(g)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-switch.html">8. Control Flow &amp; Switch</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Iterate values</td><td><code>for x in xs</code> / <code>xs.each { |x| … }</code></td><td><code>for (T x : xs)</code></td></tr>
+          <tr><td>Multi-label branch</td><td><code>when A, B</code></td><td><code>case A, B -> …</code></td></tr>
+          <tr><td>Fall-through</td><td>never falls through</td><td>none with <code>-></code></td></tr>
+          <tr><td>Value from a branch</td><td>last expression in the <code>when</code></td><td><code>yield</code> (in a block)</td></tr>
+          <tr><td>Exhaustiveness</td><td>not checked</td><td>required (enum switch needs no <code>default</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-interfaces.html">9. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Satisfy a contract</td><td>duck typing (implicit, unchecked)</td><td><code>implements Shape</code> (explicit)</td></tr>
+          <tr><td>Abstract method</td><td>just define <code>area</code> somewhere</td><td><code>double area();</code></td></tr>
+          <tr><td>Method with a body</td><td><code>module</code> mixed in with <code>include</code></td><td><code>default</code> method in the interface</td></tr>
+          <tr><td>Multiple contracts</td><td><code>include A; include B</code></td><td><code>implements A, B</code></td></tr>
+          <tr><td>Implementer visibility</td><td>n/a — Ruby methods are public by default</td><td>must be <code>public</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstract.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Subclass</td><td><code>class B &lt; A</code></td><td><code>class B extends A</code></td></tr>
+          <tr><td>Super constructor</td><td><code>super(x)</code></td><td><code>super(x);</code></td></tr>
+          <tr><td>Super method</td><td><code>super.m</code> or bare <code>super</code></td><td><code>super.m()</code></td></tr>
+          <tr><td>Mark an override</td><td>(implicit)</td><td><code>@Override</code> (compiler-checked)</td></tr>
+          <tr><td>Abstract member</td><td>raise <code>NotImplementedError</code></td><td><code>abstract T m();</code></td></tr>
+          <tr><td>No subclassing</td><td>(none built in)</td><td><code>final class</code> / <code>final</code> method</td></tr>
+          <tr><td>Runtime type check</td><td><code>x.is_a?(B)</code></td><td><code>x instanceof B</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Declare</td><td><code>%i[a b]</code> or a frozen array/hash</td><td><code>enum E { A, B }</code></td></tr>
+          <tr><td>All values</td><td><code>E::ALL</code> (hand-rolled)</td><td><code>E.values()</code></td></tr>
+          <tr><td>Parse a name</td><td>hand-rolled <code>%i[a b].include?(:a)</code></td><td><code>E.valueOf(name)</code></td></tr>
+          <tr><td>Name of a constant</td><td><code>:a.to_s</code></td><td><code>E.A.name()</code></td></tr>
+          <tr><td>Attach data</td><td>side hash keyed by symbol</td><td>fields + constructor on the enum</td></tr>
+          <tr><td>Exhaustive branch</td><td><code>case</code>/<code>when</code>, no exhaustiveness check</td><td><code>switch</code> (no default needed)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Generic class</td><td><code>class Box</code> (no type param needed)</td><td><code>class Box&lt;T&gt;</code></td></tr>
+          <tr><td>Generic method</td><td><code>def id(x); x; end</code></td><td><code>&lt;T&gt; T id(T x)</code> (param before return type)</td></tr>
+          <tr><td>Upper bound</td><td>none — just call <code>&lt;=&gt;</code> and see what happens</td><td><code>&lt;T extends X&gt;</code></td></tr>
+          <tr><td>Covariant read</td><td>an <code>Array</code> holds anything, always</td><td><code>List&lt;? extends Number&gt;</code> (explicit wildcard)</td></tr>
+          <tr><td>Element type</td><td><code>Box.new(5)</code> — no declared element type</td><td><code>Box&lt;Integer&gt;</code> (no <code>int</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-collections-and-iteration.html">13. Collections &amp; Iteration</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Ordered list</td><td><code>Array</code></td><td><code>List&lt;T&gt;</code> (<code>ArrayList</code>)</td></tr>
+          <tr><td>Unique set</td><td><code>Set</code></td><td><code>Set&lt;T&gt;</code> (<code>HashSet</code>)</td></tr>
+          <tr><td>Key/value map</td><td><code>Hash</code></td><td><code>Map&lt;K, V&gt;</code> (<code>HashMap</code>)</td></tr>
+          <tr><td>Transform</td><td><code>xs.map { |x| f(x) }</code></td><td><code>xs.stream().map(f).toList()</code> or a loop</td></tr>
+          <tr><td>Sort by key</td><td><code>xs.sort_by { |p| p.age }</code></td><td><code>xs.sort(Comparator.comparingInt(P::age))</code></td></tr>
+          <tr><td>Tiebreak</td><td><code>sort_by { |p| [p.age, p.name] }</code></td><td><code>.thenComparing(P::name)</code></td></tr>
+          <tr><td>Descending</td><td><code>xs.sort_by { |p| -p.age }</code></td><td><code>.reversed()</code> / <code>Comparator.reverseOrder()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-streams.html">14. Streams</a></h3>
+        <table>
+          <tr><th>Goal</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Start</td><td><code>arr</code></td><td><code>list.stream()</code></td></tr>
+          <tr><td>Keep some</td><td><code>.select { |x| f }</code></td><td><code>.filter(f)</code></td></tr>
+          <tr><td>Transform</td><td><code>.map { |x| f }</code></td><td><code>.map(f)</code></td></tr>
+          <tr><td>Sum numbers</td><td><code>.sum</code></td><td><code>.mapToInt(f).sum()</code></td></tr>
+          <tr><td>Fold</td><td><code>.reduce(init) { |a,b| f }</code></td><td><code>.reduce(init, f)</code></td></tr>
+          <tr><td>Back to a list</td><td>already an array</td><td><code>.collect(Collectors.toList())</code></td></tr>
+          <tr><td>Join to string</td><td><code>.join(", ")</code></td><td><code>.collect(Collectors.joining(", "))</code></td></tr>
+          <tr><td>Group</td><td><code>.group_by { |x| f }</code></td><td><code>Collectors.groupingBy(f)</code></td></tr>
+          <tr><td>Count per group</td><td><code>.group_by(&amp;f).transform_values(&amp;:count)</code></td><td><code>groupingBy(f, counting())</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-lambdas-and-functional.html">15. Lambdas &amp; Functional Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>One-arg lambda</td><td><code>->(x) { x * 2 }</code></td><td><code>x -&gt; x * 2</code></td></tr>
+          <tr><td>Function type</td><td>none — duck typed, any object with <code>.call</code></td><td><code>Function&lt;Integer,Integer&gt;</code></td></tr>
+          <tr><td>Calling it</td><td><code>f.call(x)</code></td><td><code>f.apply(x)</code></td></tr>
+          <tr><td>Predicate</td><td><code>->(x) { x.even? }</code></td><td><code>Predicate&lt;T&gt;</code>, <code>p.test(x)</code></td></tr>
+          <tr><td>Supplier</td><td><code>-> { value }</code></td><td><code>Supplier&lt;T&gt;</code>, <code>s.get()</code></td></tr>
+          <tr><td>Static method ref</td><td><code>arr.map(&amp;method(:square))</code></td><td><code>Functional::square</code></td></tr>
+          <tr><td>Instance method ref</td><td><code>arr.map(&amp;:upcase)</code></td><td><code>String::toUpperCase</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-records.html">16. Records</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java record</th></tr>
+          <tr><td>Declare shape</td><td><code>Point = Struct.new(:x, :y)</code></td><td><code>record Point(int x, int y) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>p.x</code></td><td><code>p.x()</code> (accessor)</td></tr>
+          <tr><td>Value equality</td><td><code>a == b</code> (Struct-generated)</td><td><code>a.equals(b)</code> (generated)</td></tr>
+          <tr><td>Printable form</td><td><code>p.to_s</code> / <code>p.inspect</code></td><td><code>toString()</code> → <code>Point[x=3, y=4]</code></td></tr>
+          <tr><td>Validate on construction</td><td><code>initialize</code> override</td><td>compact constructor</td></tr>
+          <tr><td>Satisfy a contract</td><td><code>include SomeModule</code></td><td><code>record X(...) implements I</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-exceptions.html">17. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Throw</td><td><code>raise "x"</code></td><td><code>throw new RuntimeException("x")</code></td></tr>
+          <tr><td>Typed catch</td><td><code>rescue => e</code> (any)</td><td><code>catch (IOException e) { }</code></td></tr>
+          <tr><td>Multi-catch</td><td><code>rescue A, B => e</code></td><td><code>catch (A | B e) { }</code></td></tr>
+          <tr><td>Declared throws</td><td>—</td><td><code>void f() throws IOException</code></td></tr>
+          <tr><td>Custom error</td><td><code>&lt; StandardError</code></td><td><code>extends RuntimeException</code></td></tr>
+          <tr><td>Cleanup</td><td><code>ensure</code></td><td><code>finally { }</code> / try-with-resources</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-equals-hashcode-comparable.html">18. equals, hashCode &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Identity check</td><td><code>a.equal?(b)</code></td><td><code>a == b</code></td></tr>
+          <tr><td>Value equality</td><td>override <code>==</code></td><td>override <code>equals(Object)</code></td></tr>
+          <tr><td>Hashing</td><td>override <code>eql?</code>/<code>hash</code></td><td>override <code>hashCode()</code> to match equals</td></tr>
+          <tr><td>Combine fields into a hash</td><td>—</td><td><code>Objects.hash(a, b)</code></td></tr>
+          <tr><td>Natural ordering</td><td><code>include Comparable</code> + <code>&lt;=&gt;</code></td><td><code>Comparable&lt;T&gt;.compareTo</code></td></tr>
+          <tr><td>One-off ordering</td><td><code>sort_by</code>/<code>sort { ... }</code></td><td><code>Comparator</code> passed to sort</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-sealed-and-pattern-matching.html">19. Sealed Types &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Closed variant set</td><td>no closed-set enforcement; separate classes</td><td><code>sealed … permits A, B</code></td></tr>
+          <tr><td>One-line data class</td><td><code>Circle = Data.define(:r)</code></td><td><code>record Circle(double r) implements Shape {}</code></td></tr>
+          <tr><td>Test + narrow</td><td><code>case s in Circle(r:)</code></td><td><code>if (s instanceof Circle c)</code></td></tr>
+          <tr><td>Match on type</td><td><code>case s in Circle(r:) ... in Rect(w:, h:) ... end</code></td><td><code>switch (s) { case Circle c -> … }</code></td></tr>
+          <tr><td>Exhaustiveness</td><td><code>NoMatchingPatternError</code> only if reached</td><td>automatic over a sealed type</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Ruby</th><th>Java</th></tr>
+          <tr><td>Bounded generic</td><td>none — just call <code>entity.id</code> and see what happens</td><td><code>&lt;T extends Entity&gt;</code></td></tr>
+          <tr><td>Absent-or-present</td><td><code>value</code> or <code>nil</code></td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Filter + sort</td><td><code>arr.select(&amp;pred).sort_by(&amp;:id)</code></td><td><code>stream().filter(p).sorted(cmp).toList()</code></td></tr>
+          <tr><td>Sort key</td><td><code>sort_by(&amp;:id)</code></td><td><code>Comparator.comparingInt(Entity::id)</code></td></tr>
+          <tr><td>Signal "missing"</td><td><code>raise "..."</code> (untyped)</td><td>a typed <code>RuntimeException</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

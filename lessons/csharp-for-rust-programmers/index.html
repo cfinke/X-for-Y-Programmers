@@ -19,6 +19,246 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Rust ⇄ C# cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Typed variable</td><td><code>let x: i32 = 1;</code></td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred variable</td><td><code>let x = 1;</code></td><td><code>var x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>const X: i32 = 1;</code></td><td><code>const int x = 1;</code></td></tr>
+          <tr><td>Interpolation</td><td><code>format!("{x}")</code></td><td><code>$"{x}"</code></td></tr>
+          <tr><td>Free function</td><td><code>fn f() {}</code></td><td><code>static</code> method in a class</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Uppercase</td><td><code>s.to_uppercase()</code></td><td><code>s.ToUpper()</code></td></tr>
+          <tr><td>Contains</td><td><code>s.contains(x)</code></td><td><code>s.Contains(x)</code></td></tr>
+          <tr><td>Substring</td><td><code>&s[1..4]</code></td><td><code>s.Substring(1, 3)</code> (start, <em>length</em>)</td></tr>
+          <tr><td>Replace</td><td><code>s.replace("a", "b")</code></td><td><code>s.Replace("a", "b")</code> (replaces all)</td></tr>
+          <tr><td>Join</td><td><code>arr.join(sep)</code></td><td><code>string.Join(sep, arr)</code> (static)</td></tr>
+          <tr><td>Build in loop</td><td><code>s.push_str(piece)</code></td><td><code>sb.Append(piece)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Fixed-size block</td><td><code>[i32; 3]</code></td><td><code>new int[3]</code></td></tr>
+          <tr><td>Array literal</td><td><code>[1, 2, 3]</code></td><td><code>new int[] { 1, 2, 3 }</code></td></tr>
+          <tr><td>Growable list</td><td><code>vec![1, 2, 3]</code></td><td><code>new List&lt;int&gt; { 1, 2, 3 }</code></td></tr>
+          <tr><td>Length</td><td><code>a.len()</code></td><td><code>a.Length</code> / <code>list.Count</code></td></tr>
+          <tr><td>Append</td><td><code>v.push(x)</code></td><td><code>list.Add(x)</code></td></tr>
+          <tr><td>Membership</td><td><code>v.contains(&amp;x)</code></td><td><code>list.Contains(x)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-dictionaries.html">4. Dictionaries</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust (HashMap)</th><th>C#</th></tr>
+          <tr><td>Create + fill</td><td><code>HashMap::from([("a", 1)])</code></td><td><code>new Dictionary&lt;string,int&gt; { { "a", 1 } }</code></td></tr>
+          <tr><td>Insert/overwrite</td><td><code>m.insert("a", 1)</code></td><td><code>d["a"] = 1;</code></td></tr>
+          <tr><td>Insert (fail if exists)</td><td><code>m.try_insert("a", 1)</code> (nightly) or check first</td><td><code>d.Add("a", 1)</code></td></tr>
+          <tr><td>Safe read</td><td><code>m.get("a")</code> → <code>Option&lt;&amp;V&gt;</code></td><td><code>d.TryGetValue("a", out v)</code></td></tr>
+          <tr><td>Has key</td><td><code>m.contains_key("a")</code></td><td><code>d.ContainsKey("a")</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (k, v) in &amp;m</code></td><td><code>foreach (var kv in d)</code> → <code>kv.Key</code>, <code>kv.Value</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Optional parameter</td><td>—, use <code>Option&lt;T&gt;</code> or a builder</td><td><code>F(int x = 1)</code></td></tr>
+          <tr><td>Named argument</td><td>struct field syntax only</td><td><code>F(x: 1)</code></td></tr>
+          <tr><td>Rest / params</td><td><code>xs: &[i32]</code> slice</td><td><code>params int[] xs</code></td></tr>
+          <tr><td>Overloading</td><td>one function per name (or generics/traits)</td><td>a full body per signature</td></tr>
+          <tr><td>Extra output</td><td><code>Result</code>/<code>Option</code> or a tuple</td><td><code>out</code> parameter</td></tr>
+          <tr><td>Mutate caller's variable</td><td><code>&mut T</code> parameter</td><td><code>ref</code> parameter</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-classes-and-properties.html">6. Classes &amp; Properties</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Mutable public field</td><td><code>pub x: i32,</code></td><td><code>int X { get; set; }</code></td></tr>
+          <tr><td>Read-only from outside</td><td>private field + <code>fn x(&amp;self) -> i32</code></td><td><code>int X { get; private set; }</code></td></tr>
+          <tr><td>Immutable after construction</td><td>field set only in <code>new</code></td><td><code>int X { get; }</code></td></tr>
+          <tr><td>Computed getter</td><td><code>fn total(&amp;self) -> i32 { … }</code></td><td><code>int Total => …;</code></td></tr>
+          <tr><td>Private field</td><td><code>x: i32,</code> (default)</td><td><code>private int x;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-structs-and-value-types.html">7. Structs &amp; Value Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Value type</td><td>every <code>struct</code> (moved/copied)</td><td><code>struct</code> (copied on assign)</td></tr>
+          <tr><td>Reference type</td><td><code>Rc&lt;T&gt;</code> / <code>&amp;T</code> (shared)</td><td><code>class</code> (shared on assign)</td></tr>
+          <tr><td>Immutable field</td><td><code>x: i32</code> (no <code>mut</code>)</td><td><code>public readonly int X;</code></td></tr>
+          <tr><td>Value equality</td><td><code>#[derive(PartialEq)]</code></td><td>override <code>Equals</code> + <code>GetHashCode</code></td></tr>
+          <tr><td>Default value</td><td><code>Default::default()</code> (opt-in)</td><td><code>default(Point)</code> — all fields zeroed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Declare</td><td><code>trait Shape {}</code></td><td><code>interface IShape {}</code></td></tr>
+          <tr><td>Implement</td><td><code>impl Shape for Box {}</code></td><td><code>class Box : IShape {}</code></td></tr>
+          <tr><td>Conformance</td><td>nominal (explicit <code>impl</code>)</td><td>nominal (explicit declare)</td></tr>
+          <tr><td>Read-only property</td><td><code>fn name(&amp;self) -> &amp;str;</code></td><td><code>string Name { get; }</code></td></tr>
+          <tr><td>Multiple</td><td><code>impl A for C {} impl B for C {}</code></td><td><code>: A, B</code></td></tr>
+          <tr><td>Member bodies</td><td>default <code>fn</code> bodies allowed</td><td>none (in C# 7.3)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-inheritance-and-abstract.html">9. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Extend a class</td><td>(no inheritance) compose a field + <code>trait</code>/<code>impl</code></td><td><code>class D : B</code></td></tr>
+          <tr><td>Call base ctor</td><td>call the inner type's <code>new(...)</code> directly</td><td><code>: base(x)</code></td></tr>
+          <tr><td>Abstract method</td><td><code>fn f(&amp;self) -&gt; T;</code> (no body)</td><td><code>public abstract T F();</code></td></tr>
+          <tr><td>Overridable method</td><td>default trait method (<code>fn f(&amp;self) { … }</code>)</td><td>only <code>virtual</code>/<code>abstract</code></td></tr>
+          <tr><td>Override</td><td>redefine in <code>impl Trait for Type</code> (no keyword)</td><td><code>override</code> keyword required</td></tr>
+          <tr><td>Block subclassing</td><td>"sealed trait" pattern (private supertrait)</td><td><code>sealed class</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-enums.html">10. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Declare</td><td><code>enum P { Low, Medium, High }</code></td><td><code>enum P { Low, Medium, High }</code></td></tr>
+          <tr><td>Explicit value</td><td><code>Low = 1</code></td><td><code>Low = 1</code></td></tr>
+          <tr><td>To number</td><td><code>p as i32</code></td><td><code>(int)p</code></td></tr>
+          <tr><td>From number</td><td><code>match</code> on the number, arm by arm</td><td><code>(P)n</code></td></tr>
+          <tr><td>To name</td><td><code>format!("{:?}", p)</code> (with <code>#[derive(Debug)]</code>)</td><td><code>p.ToString()</code></td></tr>
+          <tr><td>From name</td><td><code>match</code> on the <code>&amp;str</code></td><td><code>Enum.Parse(typeof(P), "High")</code></td></tr>
+          <tr><td>Bit flags</td><td><code>bitflags!</code> crate</td><td><code>[Flags]</code>, <code>|</code>, <code>&amp;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-generics.html">11. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Generic type</td><td><code>struct Box&lt;T&gt; { item: T }</code></td><td><code>class Box&lt;T&gt; {}</code></td></tr>
+          <tr><td>Generic function</td><td><code>fn id&lt;T&gt;(x: T) -&gt; T</code></td><td><code>T Id&lt;T&gt;(T x)</code></td></tr>
+          <tr><td>Bound / constraint</td><td><code>&lt;T: Trait&gt;</code> or <code>where T: Trait</code></td><td><code>where T : C</code></td></tr>
+          <tr><td>Construct a T</td><td><code>T::default()</code> with <code>T: Default</code></td><td><code>new T()</code> with <code>where T : new()</code></td></tr>
+          <tr><td>Reference-type only</td><td><em>n/a (ownership, not reference-ness, is the axis)</em></td><td><code>where T : class</code></td></tr>
+          <tr><td>Value-type only</td><td><em>n/a — every type is a "value type" by default</em></td><td><code>where T : struct</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-collections-and-linq.html">12. Collections &amp; LINQ</a></h3>
+        <table>
+          <tr><th>Operation</th><th>Rust</th><th>C# / LINQ</th></tr>
+          <tr><td>Filter</td><td><code>filter(p)</code></td><td><code>Where(p)</code></td></tr>
+          <tr><td>Project</td><td><code>map(f)</code></td><td><code>Select(f)</code></td></tr>
+          <tr><td>Sort (primary + tie-break)</td><td><code>sort_by</code> with a combined comparator</td><td><code>OrderBy(...).ThenBy(...)</code></td></tr>
+          <tr><td>First match</td><td><code>find</code></td><td><code>First</code> / <code>FirstOrDefault</code></td></tr>
+          <tr><td>Exists / for-all</td><td><code>any</code> / <code>all</code></td><td><code>Any</code> / <code>All</code></td></tr>
+          <tr><td>Count</td><td><code>filter(p).count()</code></td><td><code>Count(p)</code></td></tr>
+          <tr><td>Sum</td><td><code>map(f).sum()</code></td><td><code>Sum(f)</code></td></tr>
+          <tr><td>Fold</td><td><code>fold(seed, f)</code></td><td><code>Aggregate(seed, f)</code></td></tr>
+          <tr><td>Group</td><td>manual <code>HashMap</code> loop</td><td><code>GroupBy(k)</code></td></tr>
+          <tr><td>Materialize</td><td><code>collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td><code>ToList()</code> / <code>ToDictionary(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-delegates-and-lambdas.html">13. Delegates &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Value-returning fn type</td><td><code>impl Fn(i32) -&gt; i32</code></td><td><code>Func&lt;int, int&gt;</code></td></tr>
+          <tr><td>Void fn type</td><td><code>impl FnMut(i32)</code></td><td><code>Action&lt;int&gt;</code></td></tr>
+          <tr><td>Boolean test</td><td><code>impl Fn(i32) -&gt; bool</code></td><td><code>Predicate&lt;int&gt;</code></td></tr>
+          <tr><td>Named fn type</td><td><code>type Op = fn(i32, i32) -&gt; i32;</code></td><td><code>delegate int Op(int a, int b);</code></td></tr>
+          <tr><td>Closure literal</td><td><code>|x| x + 1</code></td><td><code>x =&gt; x + 1</code></td></tr>
+          <tr><td>Closure</td><td><code>move |x| x + n</code></td><td><code>x =&gt; x + n</code> (captures <code>n</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-nullable-and-null.html">14. Nullable &amp; Null Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C# 7.3</th></tr>
+          <tr><td>Nullable value</td><td><code>Option&lt;i32&gt;</code></td><td><code>int?</code> / <code>Nullable&lt;int&gt;</code></td></tr>
+          <tr><td>Has a value?</td><td><code>n.is_some()</code></td><td><code>n.HasValue</code></td></tr>
+          <tr><td>Unwrap</td><td><code>n.unwrap()</code> (panics if empty)</td><td><code>n.Value</code> (throws if empty)</td></tr>
+          <tr><td>Unwrap or default</td><td><code>n.unwrap_or(0)</code></td><td><code>n.GetValueOrDefault()</code> or <code>n ?? 0</code></td></tr>
+          <tr><td>Safe navigation</td><td><code>obj.map(|o| o.prop)</code></td><td><code>obj?.Prop</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-exceptions.html">15. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Signal failure</td><td><code>return Err(MyError::new("x"))</code></td><td><code>throw new Exception("x")</code></td></tr>
+          <tr><td>Handle by variant</td><td><code>match result { Err(MyError::T(_)) => … }</code></td><td><code>catch (T e)</code></td></tr>
+          <tr><td>Custom error type</td><td><code>struct E { message: String }</code></td><td><code>class E : Exception</code></td></tr>
+          <tr><td>Message</td><td><code>e.message</code> (a field you define)</td><td><code>e.Message</code></td></tr>
+          <tr><td>Deterministic cleanup</td><td><code>impl Drop for X { fn drop(&mut self) { … } }</code></td><td><code>using (var x = …)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-pattern-matching.html">16. Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C# 7.3</th></tr>
+          <tr><td>Type test + bind</td><td><code>if let Some(n) = o.downcast_ref::&lt;i32&gt;()</code></td><td><code>o is int n</code></td></tr>
+          <tr><td>Class test + bind</td><td><code>if let Some(c) = o.downcast_ref::&lt;Cat&gt;()</code></td><td><code>o is Cat c</code></td></tr>
+          <tr><td>Guard on a match</td><td>nested <code>if *n &lt; 0</code>, or a <code>match</code> arm guard</td><td><code>o is int n &amp;&amp; n &lt; 0</code></td></tr>
+          <tr><td>Ignore the value</td><td><code>.downcast_ref::&lt;bool&gt;().is_some()</code></td><td>discard <code>o is bool _</code></td></tr>
+          <tr><td>Null</td><td><code>Option::None</code> (nothing to downcast)</td><td><code>o == null</code> (matches no type pattern)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-tuples-and-deconstruction.html">17. Tuples &amp; Deconstruction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Tuple type</td><td><code>(i32, String)</code></td><td><code>(int, string)</code></td></tr>
+          <tr><td>Named elements</td><td>— (use a struct)</td><td><code>(int Count, string Name)</code></td></tr>
+          <tr><td>Construct</td><td><code>(1, "a")</code></td><td><code>(1, "a")</code></td></tr>
+          <tr><td>Access</td><td><code>t.0</code></td><td><code>t.Item1</code> or <code>t.Count</code></td></tr>
+          <tr><td>Deconstruct</td><td><code>let (a, b) = t;</code></td><td><code>var (a, b) = t;</code></td></tr>
+          <tr><td>Struct destructure</td><td><code>let Point { x, y } = p;</code></td><td><code>var (x, y) = p;</code> via <code>Deconstruct</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-iterators-and-yield.html">18. Iterators &amp; yield</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Generator method</td><td>no stable equivalent — implement <code>Iterator::next</code> by hand</td><td>method returning <code>IEnumerable&lt;T&gt;</code> with <code>yield</code></td></tr>
+          <tr><td>Emit a value</td><td><code>Some(x)</code> (from <code>next</code>)</td><td><code>yield return x;</code></td></tr>
+          <tr><td>Stop early</td><td><code>None</code> (from <code>next</code>)</td><td><code>yield break;</code></td></tr>
+          <tr><td>Consume</td><td><code>for x in seq</code></td><td><code>foreach</code> / LINQ</td></tr>
+          <tr><td>Iterable type</td><td><code>impl IntoIterator for T</code></td><td><code>GetEnumerator()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-equality-and-comparable.html">19. Equality &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Value equality</td><td><code>#[derive(PartialEq)]</code> or <code>impl PartialEq</code></td><td><code>IEquatable&lt;T&gt;</code> + <code>Equals</code> overrides</td></tr>
+          <tr><td>Hashing a key</td><td><code>#[derive(Hash)]</code></td><td><code>GetHashCode()</code> override</td></tr>
+          <tr><td>Ordering</td><td><code>#[derive(Ord)]</code> or <code>impl Ord</code>, then <code>.sort()</code></td><td><code>IComparable&lt;T&gt;.CompareTo</code></td></tr>
+          <tr><td>Operator</td><td><code>==</code> is trait-based (<code>impl PartialEq</code>), no <code>operator</code> keyword</td><td><code>operator ==</code> / <code>!=</code> (explicit syntax)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>C#</th></tr>
+          <tr><td>Constrained generic</td><td><code>struct Repo&lt;T: Entity&gt;</code></td><td><code>class Repository&lt;T&gt; where T : IEntity</code></td></tr>
+          <tr><td>Keyed store</td><td><code>HashMap&lt;u32, T&gt;</code></td><td><code>Dictionary&lt;int, T&gt;</code></td></tr>
+          <tr><td>Safe lookup</td><td><code>map.get(&amp;id)</code> → <code>Option&lt;&amp;T&gt;</code></td><td><code>TryGetValue(id, out value)</code></td></tr>
+          <tr><td>Filter</td><td><code>iter.filter(p)</code></td><td><code>seq.Where(p)</code> (LINQ)</td></tr>
+          <tr><td>Custom error</td><td><code>struct E(String)</code> impl <code>Error</code></td><td><code>class E : Exception</code></td></tr>
+          <tr><td>Handle by type</td><td><code>match result { Err(e) =&gt; ... }</code></td><td><code>catch (E ex) { }</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

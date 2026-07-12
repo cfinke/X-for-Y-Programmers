@@ -19,6 +19,227 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Kotlin ⇄ JavaScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Typed declaration</td><td><code>var x: Int = 1</code></td><td><code>let x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>val x = 1</code></td><td><code>const x = 1;</code> (roughly the same idea)</td></tr>
+          <tr><td>Runtime type check</td><td>the compiler (plus <code>x is Int</code> if you really need it)</td><td><code>typeof x</code></td></tr>
+          <tr><td>Reassign a new type</td><td>compile error</td><td>allowed at runtime</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Task</th><th>Kotlin instinct</th><th>JavaScript runtime</th></tr>
+          <tr><td>Uppercase</td><td><code>s.uppercase(): String</code></td><td><code>s.toUpperCase()</code> — new string</td></tr>
+          <tr><td>Contains?</td><td><code>s.contains(x, ignoreCase = true): Boolean</code></td><td><code>s.includes(x)</code> — case-sensitive by default</td></tr>
+          <tr><td>Substring</td><td><code>s.substring(a, b): String</code></td><td><code>s.slice(a, b)</code>, negatives count from end</td></tr>
+          <tr><td>Split</td><td><code>s.split(sep): List&lt;String&gt;</code></td><td><code>s.split(sep)</code> — array of strings</td></tr>
+          <tr><td>Pad</td><td><code>s.padStart(n, pad): String</code></td><td>no-op if already &ge; <code>n</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays.html">3. Arrays</a></h3>
+        <table>
+          <tr><th>Operation</th><th>Method</th><th>Mutates?</th></tr>
+          <tr><td>Add to end</td><td><code>xs.push(v)</code></td><td>yes — returns new length</td></tr>
+          <tr><td>Remove from end</td><td><code>xs.pop()</code></td><td>yes — returns the element</td></tr>
+          <tr><td>Remove from front</td><td><code>xs.shift()</code></td><td>yes — returns the element</td></tr>
+          <tr><td>Add to front</td><td><code>xs.unshift(v)</code></td><td>yes — returns new length</td></tr>
+          <tr><td>Copy a range</td><td><code>xs.slice(start, end)</code></td><td>no — returns a new array</td></tr>
+          <tr><td>Join two arrays</td><td><code>xs.concat(ys)</code></td><td>no — returns a new array</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-objects.html">4. Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Property shorthand</td><td><code>Product(name, price)</code> (typed constructor args)</td><td><code>{ name }</code> (same-name shorthand)</td></tr>
+          <tr><td>Computed key</td><td><code>map[k] = v</code> on a <code>MutableMap</code></td><td><code>{ [k]: v }</code> keyed by <code>String(k)</code></td></tr>
+          <tr><td>Read a missing key</td><td>compile error (no such property)</td><td><code>undefined</code></td></tr>
+          <tr><td>Key existence</td><td><code>map.containsKey("k")</code> on a <code>Map</code></td><td><code>"k" in obj</code> is a plain boolean</td></tr>
+          <tr><td>Enumerate keys</td><td><code>map.keys</code> typed as <code>Set&lt;String&gt;</code></td><td><code>Object.keys(o)</code> — insertion order</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Declaration</td><td><code>fun add(a: Int, b: Int): Int</code></td><td><code>function add(a, b)</code> (hoisted)</td></tr>
+          <tr><td>Lambda expression</td><td><code>val f: (Int) -&gt; Int = { n -&gt; n * 2 }</code></td><td><code>const f = (n) =&gt; n * 2</code> (not hoisted)</td></tr>
+          <tr><td>Default param</td><td><code>name: String = "friend"</code></td><td><code>name = "friend"</code></td></tr>
+          <tr><td>Rest param</td><td><code>vararg xs: Int</code></td><td><code>...xs</code> (a real array)</td></tr>
+          <tr><td>Missing return type</td><td>inferred for expression bodies, required for block bodies</td><td>silently <code>undefined</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-scope-and-closures.html">6. Scope &amp; Closures</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Returned function type</td><td><code>(): () -&gt; Int</code></td><td>inferred at runtime</td></tr>
+          <tr><td>Private state</td><td><code>private var balance</code> field</td><td>captured variable</td></tr>
+          <tr><td>Captured value</td><td>typed binding (must be <code>var</code> to mutate)</td><td>live binding (sees mutations)</td></tr>
+          <tr><td>Wrapping a fn</td><td>generic <code>&lt;T, R&gt;</code> function type</td><td><code>...args</code> rest/spread</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-this-and-binding.html">7. this &amp; Binding</a></h3>
+        <table>
+          <tr><th>Call form</th><th>What <code>this</code> becomes</th><th>Kotlin's closest analog</th></tr>
+          <tr><td><code>obj.m()</code></td><td><code>obj</code></td><td>the receiver inside a member function</td></tr>
+          <tr><td><code>const f = obj.m; f()</code></td><td><code>undefined</code> / global</td><td>no equivalent — <code>obj::m</code> stays bound</td></tr>
+          <tr><td><code>f.call(x)</code> / <code>f.apply(x, [])</code></td><td><code>x</code></td><td>invoking an extension function with an explicit receiver</td></tr>
+          <tr><td><code>f.bind(x)</code></td><td>permanently <code>x</code></td><td>a bound callable reference like <code>x::method</code></td></tr>
+          <tr><td>arrow <code>() =&gt; ...</code></td><td>the enclosing <code>this</code></td><td>a lambda, which captures the enclosing <code>this</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-prototypes.html">8. Prototypes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript (runtime)</th></tr>
+          <tr><td>Declare a method</td><td><code>class C { fun m() {} }</code></td><td><code>C.prototype.m = function () {}</code></td></tr>
+          <tr><td>Instance data</td><td><code>class C(val name: String)</code></td><td><code>this.name = name</code> (own property)</td></tr>
+          <tr><td>Read the "type" of an instance</td><td><code>x::class</code></td><td><code>Object.getPrototypeOf(x)</code></td></tr>
+          <tr><td>Object with a chosen prototype</td><td>no equivalent — a class's shape is fixed at compile time</td><td><code>Object.create(proto)</code></td></tr>
+          <tr><td>Is it the instance's own?</td><td>—</td><td><code>obj.hasOwnProperty("m")</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript runtime</th></tr>
+          <tr><td>Visibility</td><td><code>private val x</code> — checked by compiler</td><td><code>#x</code> — enforced by the engine</td></tr>
+          <tr><td>Constructor property</td><td><code>class C(private val x: Int)</code></td><td>write <code>this.x = x</code> by hand</td></tr>
+          <tr><td>Field types</td><td><code>var count: Int = 0</code></td><td><code>count = 0</code></td></tr>
+          <tr><td>Getter</td><td><code>val value: Int get() = …</code></td><td><code>get value()</code></td></tr>
+          <tr><td>Static</td><td><code>companion object { var count = 0 }</code></td><td><code>static count = 0</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance.html">10. Inheritance</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Subclass</td><td><code>class Dog(...) : Animal(...)</code></td><td><code>class Dog extends Animal {}</code></td></tr>
+          <tr><td>Base constructor</td><td><code>: Animal(name)</code> in the header</td><td><code>super(name)</code> (required before <code>this</code>)</td></tr>
+          <tr><td>Field from a param</td><td><code>class Dog(val breed: String)</code></td><td><code>this.breed = breed;</code></td></tr>
+          <tr><td>Call base method</td><td><code>super.describe()</code></td><td><code>super.describe()</code> (same)</td></tr>
+          <tr><td>Runtime type test</td><td><code>x is Animal</code> / smart cast</td><td><code>x instanceof Animal</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-destructuring-and-spread.html">11. Destructuring &amp; Spread</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Rename</td><td><code>val (left, top) = p</code> (positional; call it anything)</td><td><code>const { x: left } = p;</code> (by key)</td></tr>
+          <tr><td>Default</td><td><code>u.address?.city ?: "Unknown"</code>; null-checked</td><td>fires on <code>undefined</code> only</td></tr>
+          <tr><td>Nested + default</td><td><code>u.address?.city ?: "Unknown"</code> (safe-call chain)</td><td><code>const { a: { b = 1 } = {} } = o;</code>, no shape check</td></tr>
+          <tr><td>Spread merge</td><td><code>mapA + mapB</code>, last write wins</td><td><code>{ ...a, ...b }</code>, shallow</td></tr>
+          <tr><td>Rest/vararg param</td><td><code>fun f(vararg xs: Int)</code></td><td><code>(...xs)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-array-iteration.html">12. Array Iteration</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript (runtime)</th></tr>
+          <tr><td>Mapped result type</td><td>inferred as <code>List&lt;U&gt;</code></td><td>whatever the callback returns</td></tr>
+          <tr><td>reduce accumulator</td><td>type you declare / infer for <code>fold</code></td><td>whatever you seed and return</td></tr>
+          <tr><td>find miss</td><td>nullable <code>T?</code> forces a check</td><td>silently <code>undefined</code></td></tr>
+          <tr><td>reduce, no seed, empty array</td><td><code>reduce</code> throws <code>UnsupportedOperationException</code></td><td>throws <code>TypeError</code> at runtime</td></tr>
+          <tr><td>Grouping accumulator</td><td><code>Map&lt;String, Int&gt;</code> (e.g. via <code>groupBy</code>)</td><td>a plain <code>{}</code> object</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-equality-and-truthiness.html">13. Equality &amp; Truthiness</a></h3>
+        <table>
+          <tr><th>Expression</th><th>Result</th><th>Why</th></tr>
+          <tr><td><code>0 == false</code></td><td><code>true</code></td><td><code>==</code> coerces both to numbers</td></tr>
+          <tr><td><code>0 === false</code></td><td><code>false</code></td><td><code>===</code> compares type + value</td></tr>
+          <tr><td><code>0 || "d"</code></td><td><code>"d"</code></td><td><code>0</code> is falsy</td></tr>
+          <tr><td><code>0 ?? "d"</code></td><td><code>0</code></td><td><code>0</code> is not nullish</td></tr>
+          <tr><td><code>a?.b</code> when <code>a</code> is null</td><td><code>undefined</code></td><td>short-circuits, no throw</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-error-handling.html">14. Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Caught value</td><td>typed by the <code>catch (e: Exception)</code> clause</td><td>could be anything thrown</td></tr>
+          <tr><td>Narrowing</td><td>smart cast + <code>is</code></td><td><code>instanceof</code> at runtime</td></tr>
+          <tr><td>Custom error</td><td>class extends <code>Exception</code></td><td>subclass <code>Error</code>, plus set <code>this.name</code></td></tr>
+          <tr><td>Cleanup</td><td><code>finally</code></td><td><code>finally</code> (same)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-iterators-and-generators.html">15. Iterators &amp; Generators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Iterable contract</td><td><code>Iterable&lt;T&gt;</code> (<code>iterator()</code>)</td><td>object with <code>[Symbol.iterator]()</code></td></tr>
+          <tr><td>Iterator contract</td><td><code>Iterator&lt;T&gt;</code> (<code>hasNext()</code> / <code>next()</code>)</td><td>object with <code>next()</code> → <code>{ value, done }</code></td></tr>
+          <tr><td>Generator</td><td><code>Sequence&lt;T&gt;</code> built with <code>sequence { yield(...) }</code></td><td>result of calling a <code>function*</code></td></tr>
+          <tr><td>Collect to array/list</td><td><code>sequence.toList()</code></td><td><code>[...gen]</code> / <code>Array.from(gen)</code> — both drive the protocol</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-promises.html">16. Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript (runtime)</th></tr>
+          <tr><td>Already-settled value</td><td><code>CompletableFuture.completedFuture(1)</code></td><td><code>Promise.resolve(1)</code></td></tr>
+          <tr><td>Rejection value</td><td>a <code>Throwable</code>, not part of the future's type</td><td>whatever you rejected with</td></tr>
+          <tr><td>Chaining</td><td><code>thenApply</code> wraps (like <code>map</code>); <code>thenCompose</code> flattens (like <code>flatMap</code>)</td><td><code>then</code> returns a new Promise; returned values flatten</td></tr>
+          <tr><td>Wait for all</td><td><code>CompletableFuture.allOf(...)</code> → <code>CompletableFuture&lt;Void&gt;</code>, read each future's value yourself</td><td>resolves to a plain array, rejects on first failure</td></tr>
+          <tr><td>Wait for all, keep errors</td><td>no built-in equivalent — <code>handle()</code> each future individually</td><td><code>Promise.allSettled</code> → <code>{status, value|reason}[]</code></td></tr>
+          <tr><td>First to settle</td><td><code>CompletableFuture.anyOf(...)</code></td><td>settles with the first result, win or lose</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-async-await.html">17. Async &amp; Await</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Return of async fn</td><td><code>suspend fun</code> returns <code>T</code> directly</td><td>a promise; contents unlabeled</td></tr>
+          <tr><td>Awaited value</td><td>the declared return type <code>T</code></td><td>whatever it settles to</td></tr>
+          <tr><td>Serial awaits</td><td>two sequential <code>suspend</code> calls</td><td>b starts only after a settles</td></tr>
+          <tr><td>Concurrency</td><td><code>async {}</code> + <code>awaitAll(...)</code></td><td><code>Promise.all([...])</code>; resolves to a results array</td></tr>
+          <tr><td>Caught rejection</td><td><code>catch (e: Exception)</code></td><td><code>catch (e)</code> — any thrown value</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-modules.html">18. Modules</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript (runtime)</th></tr>
+          <tr><td>Named export</td><td><code>const val x = 1</code> (top-level, public)</td><td><code>export const x = 1;</code> (same idea)</td></tr>
+          <tr><td>Default export</td><td>no equivalent — Kotlin has no default declarations</td><td>becomes the <code>default</code> binding</td></tr>
+          <tr><td>Restricted visibility</td><td><code>internal val x = 1</code> (module-private)</td><td>not exported — simply omit <code>export</code></td></tr>
+          <tr><td>Import a named declaration</td><td><code>import pricing.x</code></td><td><code>import { x } from "./m";</code></td></tr>
+          <tr><td>Import a default</td><td>no equivalent</td><td><code>import fn from "./m";</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-map-and-set.html">19. Map &amp; Set</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin / object</th><th>JavaScript Map / Set</th></tr>
+          <tr><td>Any-typed keys</td><td>keys stringified in objects</td><td><code>map.set(obj, v)</code> keeps identity</td></tr>
+          <tr><td>Size</td><td><code>Object.keys(o).length</code></td><td><code>map.size</code> / <code>set.size</code></td></tr>
+          <tr><td>Membership</td><td><code>k in o</code> (walks prototype)</td><td><code>map.has(k)</code> / <code>set.has(v)</code></td></tr>
+          <tr><td>Iteration order</td><td>integer-ish keys reordered</td><td>strict insertion order</td></tr>
+          <tr><td>Dedupe</td><td>manual</td><td><code>[...new Set(arr)]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>JavaScript</th></tr>
+          <tr><td>Task shape</td><td><code>data class Task</code> enforced</td><td>whatever object you construct</td></tr>
+          <tr><td>Bad input</td><td>rejected at compile time</td><td>rejected only if you <code>throw</code></td></tr>
+          <tr><td>Missing lookup</td><td><code>Task?</code> forces a null check</td><td><code>find</code> returns <code>undefined</code> silently</td></tr>
+          <tr><td>Aggregate</td><td><code>fold</code> with a typed accumulator</td><td><code>reduce</code> with a seed object</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

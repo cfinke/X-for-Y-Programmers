@@ -20,6 +20,246 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>PHP ⇄ Rust cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-mutability.html">1. Variables, Mutability &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Declare a variable</td><td><code>$x = 1;</code> (mutable, dynamic)</td><td><code>let x = 1;</code> (immutable, typed)</td></tr>
+          <tr><td>Mutable variable</td><td>every variable, always</td><td><code>let mut x = 1;</code> — opt in explicitly</td></tr>
+          <tr><td>Numbers</td><td><code>int</code>, <code>float</code>, juggled freely</td><td><code>i32</code>/<code>u32</code>/<code>f64</code>… never silently mixed</td></tr>
+          <tr><td>String interpolation</td><td><code>"$name is $age years old"</code></td><td><code>format!("{} is {} years old", name, age)</code></td></tr>
+          <tr><td>Naming</td><td><code>$camelCase</code></td><td><code>snake_case</code>, no sigil (the compiler will nag you)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-functions-and-control-flow.html">2. Functions &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Function</td><td><code>function f(int $x): string</code></td><td><code>fn f(x: i32) -> String</code></td></tr>
+          <tr><td>Choose a value</td><td><code>$m = $a > $b ? $a : $b;</code></td><td><code>let m = if a > b { a } else { b };</code></td></tr>
+          <tr><td>Return a value</td><td><code>return $x;</code> — mandatory</td><td>last expression, no semicolon; <code>return</code> only for early exits</td></tr>
+          <tr><td>Condition</td><td><code>if ($x >= 60)</code> — parens required</td><td><code>if x >= 60</code> — no parens, braces required</td></tr>
+          <tr><td>Truthiness</td><td><code>"0"</code>, <code>[]</code>, <code>null</code> are falsy</td><td>conditions must be a real <code>bool</code> — no coercion</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-strings.html">3. Strings: String &amp; &amp;str</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Own a string</td><td><code>string</code></td><td><code>String</code> (growable, heap)</td></tr>
+          <tr><td>Borrow a string</td><td>— (no distinction)</td><td><code>&amp;str</code> — the parameter type</td></tr>
+          <tr><td>Interpolate</td><td><code>"Hello, $name!"</code></td><td><code>format!("Hello, {}!", name)</code></td></tr>
+          <tr><td>Concatenate</td><td><code>$a . $b</code></td><td><code>format!("{}{}", a, b)</code> (or <code>a + b</code>)</td></tr>
+          <tr><td>Uppercase</td><td><code>strtoupper($s)</code></td><td><code>s.to_uppercase()</code></td></tr>
+          <tr><td>Search</td><td><code>str_contains($h, $n)</code></td><td><code>h.contains(n)</code></td></tr>
+          <tr><td>Byte length</td><td><code>strlen($s)</code></td><td><code>s.len()</code> — bytes in both</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-ownership.html">4. Ownership &amp; Moves</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Assign an array/collection</td><td>copy-on-write, invisible</td><td><code>let b = a;</code> — move; <code>a</code> is dead</td></tr>
+          <tr><td>Assign an object</td><td>shared handle, aliased mutation</td><td>move — no two owners, no aliasing surprises</td></tr>
+          <tr><td>Explicit copy</td><td><code>clone $obj</code> (objects only)</td><td><code>value.clone()</code> (anything cloneable)</td></tr>
+          <tr><td>Use after giving it away</td><td>fine (that's the surprise)</td><td>compile error: "value used here after move"</td></tr>
+          <tr><td>Numbers, bools</td><td>copied by value</td><td><code>Copy</code> types — also copied, exempt from moves</td></tr>
+          <tr><td>Cleanup</td><td>garbage collector, eventually</td><td>owner leaves scope → freed immediately</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-borrowing.html">5. Borrowing &amp; References</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Read-only access</td><td><code>array $numbers</code> — implicit copy</td><td><code>&amp;[i32]</code> / <code>&amp;T</code> — shared borrow, zero copy</td></tr>
+          <tr><td>Mutating access</td><td><code>array &amp;$items</code> — rare, spooky</td><td><code>&amp;mut Vec&lt;String&gt;</code> — explicit, exclusive</td></tr>
+          <tr><td>At the call site</td><td><code>addItem($list, ...)</code> — invisible</td><td><code>add_item(&amp;mut list, ...)</code> — announced</td></tr>
+          <tr><td>Aliasing rules</td><td>none — debug it at runtime</td><td>many readers <em>xor</em> one writer, compile-checked</td></tr>
+          <tr><td>Lengths &amp; indexes</td><td><code>int</code></td><td><code>usize</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-vectors.html">6. Vectors</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Create a list</td><td><code>$v = [10, 20, 30];</code></td><td><code>let v = vec![10, 20, 30];</code></td></tr>
+          <tr><td>Append</td><td><code>$v[] = $x;</code></td><td><code>v.push(x);</code> — only if <code>mut</code></td></tr>
+          <tr><td>Length</td><td><code>count($v)</code></td><td><code>v.len()</code></td></tr>
+          <tr><td>Safe index</td><td><code>$v[100] ?? null</code></td><td><code>v.get(100)</code> → <code>Option&lt;&amp;i32&gt;</code></td></tr>
+          <tr><td>Iterate</td><td><code>foreach ($v as $x)</code></td><td><code>for x in &amp;v</code></td></tr>
+          <tr><td>Sum</td><td><code>array_sum($v)</code></td><td><code>v.iter().sum()</code></td></tr>
+          <tr><td>Element types</td><td>anything, mixed freely</td><td>exactly one <code>T</code> per <code>Vec&lt;T&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-hashmaps.html">7. HashMaps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Create</td><td><code>$m = ['a' =&gt; 1];</code></td><td><code>let mut m = HashMap::new();</code> + <code>.insert()</code></td></tr>
+          <tr><td>Write</td><td><code>$m[$k] = $v;</code></td><td><code>m.insert(k, v);</code></td></tr>
+          <tr><td>Read with default</td><td><code>$m[$k] ?? 0</code></td><td><code>m.get(k).copied().unwrap_or(0)</code></td></tr>
+          <tr><td>Key exists?</td><td><code>isset($m[$k])</code></td><td><code>m.contains_key(k)</code></td></tr>
+          <tr><td>Upsert</td><td><code>$m[$k] = ($m[$k] ?? 0) + $n;</code></td><td><code>*m.entry(k).or_insert(0) += n;</code></td></tr>
+          <tr><td>Iterate</td><td><code>foreach ($m as $k =&gt; $v)</code></td><td><code>for (k, v) in &amp;m</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-option.html">8. Option: The End of Null</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Maybe-a-string</td><td><code>?string</code></td><td><code>Option&lt;String&gt;</code></td></tr>
+          <tr><td>Nothing</td><td><code>null</code></td><td><code>None</code></td></tr>
+          <tr><td>Something</td><td>the bare value</td><td><code>Some(value)</code> — wrapped, must be unwrapped</td></tr>
+          <tr><td>Default</td><td><code>$x ?? $default</code></td><td><code>x.unwrap_or(default)</code></td></tr>
+          <tr><td>Null-safe chain</td><td><code>$x?-&gt;method()</code></td><td><code>x.map(|v| v.method())</code></td></tr>
+          <tr><td>Check</td><td><code>isset($x)</code>, <code>!== null</code></td><td><code>x.is_some()</code>, or better: <code>match</code></td></tr>
+          <tr><td>Forgot to check</td><td>runtime TypeError / fatal</td><td>compile error</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-result-and-errors.html">9. Result &amp; the ? Operator</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Fallible signature</td><td><code>: int</code> + <code>@throws</code> docblock, maybe</td><td><code>-&gt; Result&lt;u32, String&gt;</code>, enforced</td></tr>
+          <tr><td>Failure</td><td><code>throw new Exception($msg);</code></td><td><code>Err(msg)</code></td></tr>
+          <tr><td>Success</td><td><code>return $v;</code></td><td><code>Ok(v)</code></td></tr>
+          <tr><td>Propagate</td><td>do nothing (it flies past) or catch/rethrow</td><td><code>?</code> — explicit, but one character</td></tr>
+          <tr><td>Translate errors</td><td><code>catch (E $e) { throw new F(...); }</code></td><td><code>.map_err(|e| ...)</code></td></tr>
+          <tr><td>String to int</td><td><code>(int) $s</code> — <code>0</code> on garbage</td><td><code>s.parse::&lt;u32&gt;()</code> — <code>Err</code> on garbage</td></tr>
+          <tr><td>Handle both</td><td><code>try</code>/<code>catch</code></td><td><code>match r { Ok(v) =&gt; ..., Err(e) =&gt; ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-structs-and-methods.html">10. Structs &amp; Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Data</td><td><code>class</code> with typed properties</td><td><code>struct</code> — fields only</td></tr>
+          <tr><td>Behavior</td><td>methods in the same class body</td><td><code>impl BankAccount { ... }</code></td></tr>
+          <tr><td>Constructor</td><td><code>__construct</code> + <code>new BankAccount(...)</code></td><td><code>fn new(...)</code> by convention + <code>BankAccount::new(...)</code></td></tr>
+          <tr><td>Read-only <code>$this</code></td><td>(no way to say it)</td><td><code>&amp;self</code></td></tr>
+          <tr><td>Mutating <code>$this</code></td><td>every method, implicitly</td><td><code>&amp;mut self</code> — declared, checked</td></tr>
+          <tr><td>Visibility</td><td><code>private</code>/<code>protected</code>/<code>public</code> keywords</td><td>private by default, <code>pub</code> to expose</td></tr>
+          <tr><td>Failure in a method</td><td><code>throw new RuntimeException(...)</code></td><td><code>-&gt; Result&lt;(), String&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums-and-match.html">11. Enums &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Enum case</td><td><code>case Circle;</code> — fieldless</td><td><code>Circle { radius: f64 }</code> — carries data</td></tr>
+          <tr><td>Constructing</td><td><code>['type' =&gt; 'circle', 'radius' =&gt; 1.0]</code></td><td><code>Shape::Circle { radius: 1.0 }</code></td></tr>
+          <tr><td>Branch on it</td><td><code>match ($shape['type'])</code> — string tag</td><td><code>match shape</code> — the variant itself</td></tr>
+          <tr><td>Get at the data</td><td><code>$shape['radius']</code> — hope it's there</td><td><code>Shape::Circle { radius } =&gt;</code> — bound by the pattern</td></tr>
+          <tr><td>Missing case</td><td><code>UnhandledMatchError</code> at runtime</td><td>compile error: "non-exhaustive patterns"</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-traits.html">12. Traits</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Contract</td><td><code>interface Describable</code></td><td><code>trait Describe</code> — required methods, no body</td></tr>
+          <tr><td>Shared body</td><td><code>trait DescribeDefaults</code> + <code>use</code></td><td>a default body in the same trait</td></tr>
+          <tr><td>Adopting it</td><td><code>implements</code>/<code>use</code> inside the class</td><td><code>impl Describe for Dog</code> — outside the type</td></tr>
+          <tr><td>Types you don't own</td><td>can't retrofit an interface</td><td>implement your trait for any type</td></tr>
+          <tr><td>Overriding the default</td><td>redeclare the method in the class</td><td>write <code>describe</code> in the <code>impl</code> block</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-generics.html">13. Generics &amp; Trait Bounds</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Generic function</td><td><code>/** @template T */</code> docblock</td><td><code>fn first&lt;T&gt;(...)</code> — real syntax</td></tr>
+          <tr><td>Generic collection</td><td><code>@param array&lt;T&gt; $items</code></td><td><code>items: &amp;[T]</code></td></tr>
+          <tr><td>Capability constraint</td><td><code>@template T of Comparable</code> (analyzer-only)</td><td><code>&lt;T: PartialOrd&gt;</code> (compiler-enforced)</td></tr>
+          <tr><td>Multiple constraints</td><td>more docblock</td><td><code>&lt;T: PartialOrd + Clone&gt;</code></td></tr>
+          <tr><td>Who checks it</td><td>Psalm/PHPStan, if configured</td><td>rustc, every build</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-closures-and-iterators.html">14. Closures &amp; Iterators</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Closure</td><td><code>fn($x) =&gt; $x * 2</code></td><td><code>|x| x * 2</code></td></tr>
+          <tr><td>Capturing</td><td><code>function ($x) use ($tax) { ... }</code></td><td>automatic — just mention <code>tax</code></td></tr>
+          <tr><td>Filter</td><td><code>array_filter($items, $fn)</code> + <code>array_values</code></td><td><code>.filter(fn)</code> — no key cleanup</td></tr>
+          <tr><td>Map</td><td><code>array_map($fn, $items)</code></td><td><code>.map(fn)</code></td></tr>
+          <tr><td>Sum</td><td><code>array_sum(...)</code></td><td><code>.sum()</code></td></tr>
+          <tr><td>Materialize</td><td>each step builds a full array</td><td>lazy until <code>.collect()</code> / <code>.sum()</code> — one pass</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-slices-tuples-destructuring.html">15. Slices, Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>A pair</td><td><code>[$x, $y]</code> — an array, by convention</td><td><code>(f64, f64)</code> — a real type</td></tr>
+          <tr><td>Destructure</td><td><code>[$a, $b] = $pair;</code></td><td><code>let (a, b) = pair;</code></td></tr>
+          <tr><td>Positional access</td><td><code>$pair[0]</code></td><td><code>pair.0</code> (a field, not an index)</td></tr>
+          <tr><td>Swap</td><td><code>[$a, $b] = [$b, $a];</code></td><td><code>(a, b) = (b, a);</code> (bindings must be <code>mut</code>)</td></tr>
+          <tr><td>Sub-view of a list</td><td><code>array_slice($v, 1, 3)</code> — copies</td><td><code>&amp;v[1..4]</code> — borrows, zero copy</td></tr>
+          <tr><td>Accepts Vec or array</td><td><code>array</code> (and hope)</td><td><code>&amp;[i32]</code> — both coerce to a slice</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-lifetimes.html">16. Lifetimes: An Introduction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Returning a value</td><td><code>return $a;</code> — refcounted, always safe</td><td><code>-&gt; String</code> owns; <code>-&gt; &amp;str</code> borrows</td></tr>
+          <tr><td>"How long is it valid?"</td><td>The GC's problem</td><td>The lifetime's answer: <code>&lt;'a&gt;</code></td></tr>
+          <tr><td>Declaring one</td><td>—</td><td><code>fn longest&lt;'a&gt;(a: &amp;'a str, b: &amp;'a str) -&gt; &amp;'a str</code></td></tr>
+          <tr><td>One input, one output</td><td>—</td><td>Elision: <code>fn first_word(s: &amp;str) -&gt; &amp;str</code>, no annotation</td></tr>
+          <tr><td>Runtime cost</td><td>Refcount bookkeeping on every value</td><td>Zero — lifetimes are compile-time only</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-derive-and-common-traits.html">17. Common Traits &amp; Derive</a></h3>
+        <table>
+          <tr><th>Capability</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Dump for debugging</td><td><code>var_dump($p)</code></td><td><code>#[derive(Debug)]</code> + <code>format!("{:?}", p)</code> / <code>println!("{:?}", p)</code></td></tr>
+          <tr><td>Copy a value</td><td><code>clone $p</code> (shallow, <code>__clone</code> hooks)</td><td><code>#[derive(Clone)]</code> + <code>p.clone()</code> (field-by-field, no hooks)</td></tr>
+          <tr><td>Value equality</td><td><code>$a == $b</code> (juggles) / <code>$a === $b</code> (identity)</td><td><code>#[derive(PartialEq)]</code> + <code>a == b</code> — one operator, no juggling</td></tr>
+          <tr><td>Zero-ish default</td><td>Constructor defaults</td><td><code>#[derive(Default)]</code> + <code>Point::default()</code></td></tr>
+          <tr><td>Who writes the code</td><td>The engine, for everything, always</td><td>The compiler, per type, when you ask</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-modules.html">18. Modules &amp; Visibility</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Declare a namespace</td><td><code>namespace App\Inventory;</code></td><td><code>mod inventory { ... }</code></td></tr>
+          <tr><td>Path separator</td><td><code>\</code></td><td><code>::</code></td></tr>
+          <tr><td>Import a name</td><td><code>use App\Inventory\Counter;</code></td><td><code>use inventory::item_count;</code></td></tr>
+          <tr><td>Finding the code</td><td>PSR-4 autoloader, path must match, fails at runtime</td><td>Compiler resolves every path at build time</td></tr>
+          <tr><td>Default visibility</td><td>Public (functions/consts always reachable)</td><td>Private — <code>pub</code> opts in</td></tr>
+          <tr><td>"Internal" helper</td><td><code>@internal</code> docblock (a plea)</td><td>Omit <code>pub</code> (a wall)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-threads-and-channels.html">19. Threads &amp; Channels</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Run work concurrently</td><td>Queue + worker process / <code>pcntl_fork</code></td><td><code>thread::spawn(move || ...)</code></td></tr>
+          <tr><td>Wait for the result</td><td>Poll the results queue</td><td><code>handle.join().unwrap()</code></td></tr>
+          <tr><td>Hand data to the worker</td><td><code>json_encode</code> → Redis → <code>json_decode</code></td><td><code>move</code> ownership in; typed values, zero serialization</td></tr>
+          <tr><td>Stream of jobs/results</td><td>Redis list, stringly-typed</td><td><code>mpsc::channel()</code> — <code>tx.send(x)</code> / <code>rx.recv()</code>, typed and ordered</td></tr>
+          <tr><td>Data race protection</td><td>By architecture (nothing is shared)</td><td>By the compiler (unsafe sharing won't build)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>PHP</th><th>Rust</th></tr>
+          <tr><td>Data shape</td><td><code>class Item</code>, props by convention</td><td><code>struct Item</code> — fields checked everywhere</td></tr>
+          <tr><td>Maybe-missing result</td><td><code>?Item</code>, then <code>!== null</code> checks (or forget one)</td><td><code>Option&lt;&amp;Item&gt;</code> — the compiler makes you look</td></tr>
+          <tr><td>Aggregate</td><td><code>array_sum(array_map(...))</code></td><td><code>.iter().map(...).sum()</code></td></tr>
+          <tr><td>Find</td><td><code>foreach</code> + early <code>return</code></td><td><code>.iter().find(|i| ...)</code></td></tr>
+          <tr><td>Mutate in place</td><td>Object handles mutate through any <code>array</code> param</td><td>Only through <code>&amp;mut</code>, visible in the signature</td></tr>
+          <tr><td>Filter + project</td><td><code>array_values(array_map(..., array_filter(...)))</code></td><td><code>.iter().filter(...).map(...).collect()</code> — no reindexing dance</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

@@ -17,6 +17,262 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Rust ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Basic Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Immutable binding</td><td><code>let x = 1;</code></td><td><code>const x = 1;</code> (binding only — contents stay mutable)</td></tr>
+          <tr><td>Mutable binding</td><td><code>let mut x = 1;</code></td><td><code>let x = 1;</code></td></tr>
+          <tr><td>Integers &amp; floats</td><td><code>i32</code>, <code>u64</code>, <code>f64</code>, …</td><td><code>number</code> (always an f64; exact only to 2^53; no overflow checks)</td></tr>
+          <tr><td>Strings</td><td><code>String</code> / <code>&amp;str</code> / <code>&amp;String</code></td><td><code>string</code> (one GC'd type, no lifetimes)</td></tr>
+          <tr><td>Function signature</td><td><code>fn f(x: i32) -&gt; String</code></td><td><code>function f(x: number): string</code></td></tr>
+          <tr><td>Naming</td><td><code>snake_case</code></td><td><code>camelCase</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Interpolation</td><td><code>format!("{name}")</code></td><td><code>`${name}`</code> (any expression allowed inside)</td></tr>
+          <tr><td>Uppercase</td><td><code>s.to_uppercase()</code></td><td><code>s.toUpperCase()</code></td></tr>
+          <tr><td>Substring test</td><td><code>s.contains("x")</code></td><td><code>s.includes("x")</code></td></tr>
+          <tr><td>Length</td><td><code>s.len()</code> — bytes; <code>s.chars().count()</code> — chars</td><td><code>s.length</code> — property, UTF-16 code units</td></tr>
+          <tr><td>Concatenation</td><td><code>push_str</code> / <code>+</code> with moves and borrows</td><td><code>a + b</code> — new string, nothing moved</td></tr>
+          <tr><td>Mutability</td><td><code>String</code> mutable with <code>mut</code></td><td>Strings are always immutable values</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-vectors-to-arrays.html">3. Vectors → Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Declare</td><td><code>let mut v: Vec&lt;i32&gt; = vec![1, 2, 3];</code></td><td><code>const v: number[] = [1, 2, 3];</code></td></tr>
+          <tr><td>Grow</td><td><code>v.push(4)</code> — requires <code>mut</code></td><td><code>v.push(4)</code> — works on <code>const</code></td></tr>
+          <tr><td>Length</td><td><code>v.len()</code></td><td><code>v.length</code> (property)</td></tr>
+          <tr><td>Safe index</td><td><code>v.get(i)</code> → <code>Option&lt;&amp;T&gt;</code></td><td><code>v[i]</code> → <code>T | undefined</code> (checked with the flag <code>noUncheckedIndexedAccess</code>)</td></tr>
+          <tr><td>Panicking index</td><td><code>v[i]</code> — panics out of bounds</td><td>none — out of bounds is always <code>undefined</code></td></tr>
+          <tr><td>Iterate</td><td><code>for x in &amp;v</code></td><td><code>for (const x of v)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-hashmaps-to-objects.html">4. HashMaps → Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Build</td><td><code>HashMap::new()</code> + <code>insert</code></td><td>object literal <code>{ k: v }</code></td></tr>
+          <tr><td>Type</td><td><code>HashMap&lt;String, u64&gt;</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+          <tr><td>Lookup</td><td><code>m.get(&amp;k)</code> → <code>Option&lt;&amp;V&gt;</code></td><td><code>m[k]</code> → value or <code>undefined</code>, no borrow</td></tr>
+          <tr><td>Default</td><td><code>.unwrap_or(0)</code></td><td><code>?? 0</code></td></tr>
+          <tr><td>Membership</td><td><code>m.contains_key(&amp;k)</code></td><td><code>k in m</code></td></tr>
+          <tr><td>Iterate pairs</td><td><code>for (k, v) in &amp;m</code> — arbitrary order</td><td><code>Object.entries(m)</code> — insertion order</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions-and-closures.html">5. Functions &amp; Closures</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Function</td><td><code>fn f(x: i32) -&gt; String</code></td><td><code>function f(x: number): string</code></td></tr>
+          <tr><td>Closure</td><td><code>|x| x * 2</code></td><td><code>(x) =&gt; x * 2</code></td></tr>
+          <tr><td>Closure as param</td><td><code>&lt;F: Fn(i32) -&gt; i32&gt;(f: F)</code></td><td><code>f: (n: number) =&gt; number</code></td></tr>
+          <tr><td>Capture semantics</td><td><code>Fn</code>/<code>FnMut</code>/<code>FnOnce</code>, <code>move</code></td><td>one kind; GC keeps captures alive</td></tr>
+          <tr><td>Default argument</td><td>builder pattern / <code>Option</code> + <code>unwrap_or</code></td><td><code>greeting: string = "Hello"</code></td></tr>
+          <tr><td>Optional argument</td><td><code>Option&lt;T&gt;</code> parameter</td><td><code>last?: string</code> → <code>string | undefined</code> in the body</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-option-to-null.html">6. Option → Null &amp; Undefined</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Maybe-absent value</td><td><code>Option&lt;T&gt;</code></td><td><code>T | null</code> or <code>T | undefined</code></td></tr>
+          <tr><td>Present</td><td><code>Some(v)</code></td><td><code>v</code> — no wrapper to build or unwrap</td></tr>
+          <tr><td>Absent</td><td><code>None</code></td><td><code>null</code> (deliberate) / <code>undefined</code> (never set)</td></tr>
+          <tr><td>Default on absence</td><td><code>opt.unwrap_or(d)</code></td><td><code>v ?? d</code></td></tr>
+          <tr><td>Project a field</td><td><code>opt.map(|u| u.name)</code></td><td><code>u?.name</code></td></tr>
+          <tr><td>Chained lookups</td><td><code>a.and_then(|x| x.b).map(|b| b.c)</code></td><td><code>a?.b?.c</code></td></tr>
+          <tr><td>Check-then-use</td><td><code>if let Some(u) = opt</code></td><td><code>if (u !== null)</code> — the compiler narrows the type</td></tr>
+          <tr><td>Optional struct field</td><td><code>nickname: Option&lt;String&gt;</code></td><td><code>nickname?: string</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>"A or B" type</td><td><code>enum IdValue { Num(i32), Text(String) }</code></td><td><code>number | string</code>, written inline</td></tr>
+          <tr><td>Construct a value</td><td><code>IdValue::Num(42)</code></td><td><code>42</code> — the value is already a member</td></tr>
+          <tr><td>Branch on the case</td><td><code>match id { Num(n) =&gt; ... }</code></td><td><code>if (typeof id === "number")</code></td></tr>
+          <tr><td>Get the payload out</td><td>destructure in the match arm</td><td>nothing to unwrap — <code>id</code> is narrowed in place</td></tr>
+          <tr><td>Exhaustiveness</td><td>compiler rejects a missing arm</td><td>the <code>else</code> branch is the leftover type; a union member you never handle stays a compile error at the use site</td></tr>
+          <tr><td>Variant names</td><td>you invent <code>Num</code>/<code>Text</code></td><td>none — the runtime types are the tags</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-traits-to-interfaces.html">8. Interfaces &amp; Object Shapes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Record shape</td><td><code>struct Product { ... }</code></td><td><code>interface Product { ... }</code></td></tr>
+          <tr><td>Conformance</td><td>explicit <code>impl Trait for Type</code>, nominal</td><td>structural — right shape means it conforms, automatically</td></tr>
+          <tr><td>Maybe-present field</td><td><code>description: Option&lt;String&gt;</code></td><td><code>description?: string</code> (reads as <code>string | undefined</code>)</td></tr>
+          <tr><td>Building a value</td><td><code>Product { id: 1, ... }</code> — struct must exist first</td><td><code>{ id: 1, ... }</code> — a bare literal satisfies the interface</td></tr>
+          <tr><td>Copy-with-changes</td><td><code>Product { price: p2, ..p.clone() }</code></td><td><code>{ ...p, price: p2 }</code></td></tr>
+          <tr><td>Runtime presence</td><td>struct/trait shape known to the compiled program</td><td>erased — no <code>instanceof</code>, compile-time only</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-structs-to-classes.html">9. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Type definition</td><td><code>struct</code> + <code>impl</code>, separate</td><td><code>class</code> — fields, constructor, methods together</td></tr>
+          <tr><td>Constructor</td><td><code>fn new() -&gt; Self</code>, by convention</td><td><code>constructor(...)</code>, called via <code>new BankAccount(...)</code></td></tr>
+          <tr><td>Field init shorthand</td><td><code>Self { owner, id, balance }</code></td><td><code>constructor(private balance: number)</code> — parameter property</td></tr>
+          <tr><td>Receiver</td><td><code>&amp;self</code> / <code>&amp;mut self</code>, explicit</td><td><code>this</code>, implicit; no mut/aliasing discipline at all</td></tr>
+          <tr><td>Visibility default</td><td>private; opt in with <code>pub</code></td><td>public; opt out with <code>private</code></td></tr>
+          <tr><td>Immutable field</td><td>no <code>&amp;mut self</code> methods touch it</td><td><code>readonly</code> — constructor-only assignment</td></tr>
+          <tr><td>Fatal error</td><td><code>panic!</code> (unwinds, rarely caught)</td><td><code>throw new Error(...)</code> (caught with try/catch, routinely)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstracts.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Behavior contract</td><td><code>trait Shape</code></td><td><code>abstract class Shape</code> (or an interface, if no shared code)</td></tr>
+          <tr><td>Required method</td><td><code>fn area(&amp;self) -&gt; f64;</code></td><td><code>abstract area(): number;</code></td></tr>
+          <tr><td>Shared implementation</td><td>trait default method</td><td>concrete method on the abstract class</td></tr>
+          <tr><td>Implementing it</td><td><code>impl Shape for Circle</code></td><td><code>class Circle extends Shape</code></td></tr>
+          <tr><td>Contract + state</td><td>impossible — traits hold no fields</td><td>abstract classes hold fields and constructors</td></tr>
+          <tr><td>Heterogeneous collection</td><td><code>Vec&lt;Box&lt;dyn Shape&gt;&gt;</code></td><td><code>Shape[]</code></td></tr>
+          <tr><td>Dynamic dispatch</td><td>opt-in via trait objects</td><td>the only kind of method call there is</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums &amp; Literal Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Fieldless enum</td><td><code>enum Status { Pending, Shipped }</code></td><td><code>enum Status { Pending = "pending", ... }</code></td></tr>
+          <tr><td>Lightweight alternative</td><td>— (still an enum)</td><td><code>type Status = "pending" | "shipped";</code></td></tr>
+          <tr><td>Variant access</td><td><code>Status::Pending</code></td><td><code>Status.Pending</code></td></tr>
+          <tr><td>Branching</td><td><code>match status { ... }</code></td><td><code>switch (status) { case ...: }</code></td></tr>
+          <tr><td>Variant → string</td><td><code>impl Display</code> or a derive crate</td><td>Free: a string enum's value is its label</td></tr>
+          <tr><td>Data in variants</td><td><code>Shipped(TrackingId)</code></td><td>Not here — discriminated unions (lesson 17)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Generic function</td><td><code>fn first&lt;T&gt;(items: &amp;[T])</code></td><td><code>function firstItem&lt;T&gt;(items: T[])</code></td></tr>
+          <tr><td>Bound</td><td><code>T: Display + Clone</code></td><td><code>T extends { ... }</code> (structural, no impl)</td></tr>
+          <tr><td>Multiple bounds</td><td><code>T: A + B</code></td><td><code>T extends A &amp; B</code></td></tr>
+          <tr><td>Explicit instantiation</td><td><code>f::&lt;i32&gt;(x)</code> turbofish</td><td><code>f&lt;number&gt;(x)</code> — rare; inference covers it</td></tr>
+          <tr><td>Compilation strategy</td><td>Monomorphization (copies per type)</td><td>Erasure (types deleted, one function)</td></tr>
+          <tr><td>Field-name generics</td><td>Proc macro territory</td><td><code>K extends keyof T</code>, result <code>T[K]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-iterators-to-array-methods.html">13. Iterators → Array Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Enter the pipeline</td><td><code>.iter()</code></td><td>Nothing — call methods on the array</td></tr>
+          <tr><td>Filter / map</td><td><code>.filter(|p| ...)</code> / <code>.map(|p| ...)</code></td><td><code>.filter(p =&gt; ...)</code> / <code>.map(p =&gt; ...)</code></td></tr>
+          <tr><td>Materialize</td><td><code>.collect::&lt;Vec&lt;_&gt;&gt;()</code></td><td>Nothing — every step returns an array</td></tr>
+          <tr><td>Fold</td><td><code>.fold(init, |acc, x| ...)</code></td><td><code>.reduce((acc, x) =&gt; ..., init)</code> — init goes last</td></tr>
+          <tr><td>Sort comparator</td><td>Returns <code>Ordering</code></td><td>Returns a number: <code>a.price - b.price</code></td></tr>
+          <tr><td>Sort safety</td><td><code>&amp;mut</code> makes mutation explicit</td><td><code>.sort</code> silently mutates — <code>[...arr].sort(...)</code> to copy</td></tr>
+          <tr><td>Evaluation</td><td>Lazy, fused into one loop</td><td>Eager — each step allocates a new array</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-tuples-and-destructuring.html">14. Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Tuple type</td><td><code>(i32, String)</code></td><td><code>[number, string]</code></td></tr>
+          <tr><td>Tuple value</td><td><code>(3, 4)</code></td><td><code>[3, 4]</code> (an array, fixed shape)</td></tr>
+          <tr><td>Positional access</td><td><code>point.0</code></td><td><code>point[0]</code></td></tr>
+          <tr><td>Tuple destructuring</td><td><code>let (x, y) = point;</code></td><td><code>const [x, y] = point;</code></td></tr>
+          <tr><td>Struct/object destructuring</td><td><code>let User { name, age } = user;</code></td><td><code>const { name, age } = user;</code></td></tr>
+          <tr><td>Rename / default</td><td><code>{ name: n, .. }</code> / —</td><td><code>{ name: n }</code> / <code>{ role = "user" }</code></td></tr>
+          <tr><td>Swap</td><td><code>let (a, b) = (b, a);</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-spread-and-struct-update.html">15. Spread &amp; Rest</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Struct update</td><td><code>Point { x: 10, ..old }</code></td><td><code>{ ...old, x: 10 }</code> (dots first, overrides after)</td></tr>
+          <tr><td>What happens to the source</td><td>Moved (or explicitly cloned)</td><td>Shallow-copied; source stays usable</td></tr>
+          <tr><td>Concatenate</td><td><code>[a, b].concat()</code>, <code>extend_from_slice</code></td><td><code>[...a, ...b]</code></td></tr>
+          <tr><td>Append immutably</td><td><code>let mut v = items.to_vec(); v.push(x);</code></td><td><code>[...items, x]</code></td></tr>
+          <tr><td>Variadic function</td><td>None — take <code>&amp;[T]</code></td><td><code>function f(...args: T[])</code></td></tr>
+          <tr><td>Merge with defaults</td><td>Builder pattern / <code>..Default::default()</code></td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-type-narrowing.html">16. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Runtime-unknown value</td><td><code>&amp;dyn Any</code>, <code>serde_json::Value</code></td><td><code>unknown</code></td></tr>
+          <tr><td>Probe a primitive</td><td><code>downcast_ref::&lt;String&gt;()</code></td><td><code>typeof v === "string"</code></td></tr>
+          <tr><td>Probe a collection</td><td><code>downcast_ref::&lt;Vec&lt;T&gt;&gt;()</code></td><td><code>Array.isArray(v)</code></td></tr>
+          <tr><td>Probe a class instance</td><td><code>downcast_ref::&lt;MyType&gt;()</code></td><td><code>v instanceof MyType</code></td></tr>
+          <tr><td>Where the narrow value lives</td><td>new binding in the arm: <code>if let Some(s) = …</code></td><td>the same variable, narrowed in the branch</td></tr>
+          <tr><td>Custom shape check</td><td>hand-written fn returning <code>bool</code></td><td><code>fn(v: unknown): v is User</code> — narrows the caller's variable</td></tr>
+          <tr><td>Escape hatch (avoid)</td><td><code>unsafe { transmute }</code></td><td><code>any</code>, <code>as</code> casts</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-discriminated-unions.html">17. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Data-carrying enum</td><td><code>enum Shape { Circle { radius: f64 }, … }</code></td><td>object types with literal <code>kind</code> tags, joined by <code>|</code></td></tr>
+          <tr><td>Discriminant</td><td>hidden tag, sized by the compiler</td><td><code>kind: "circle"</code> — a real runtime field</td></tr>
+          <tr><td>Pattern match</td><td><code>match shape { Shape::Circle { radius } =&gt; … }</code></td><td><code>switch (shape.kind) { case "circle": shape.radius }</code></td></tr>
+          <tr><td>Binding the payload</td><td>destructured in the arm</td><td>no destructuring needed — <code>shape</code> itself narrows</td></tr>
+          <tr><td>Exhaustiveness</td><td>built into <code>match</code></td><td><code>default: const x: never = shape;</code></td></tr>
+          <tr><td>Adding a variant</td><td>every non-exhaustive <code>match</code> errors</td><td>every <code>never</code>-guarded <code>switch</code> errors</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-utility-types.html">18. Utility Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>All-fields-optional patch</td><td>hand-written <code>Option&lt;T&gt;</code> struct / builder crate</td><td><code>Partial&lt;User&gt;</code></td></tr>
+          <tr><td>All-fields-required</td><td>the struct itself</td><td><code>Required&lt;T&gt;</code> (undoes Partial)</td></tr>
+          <tr><td>Keep some fields</td><td>new struct + <code>From</code> impl</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+          <tr><td>Drop some fields</td><td>new struct + <code>From</code> impl</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+          <tr><td>Immutable view</td><td><code>&amp;T</code>, enforced at compile <em>and</em> borrow-check time</td><td><code>Readonly&lt;T&gt;</code>, compile-time only</td></tr>
+          <tr><td>Map-like</td><td><code>HashMap&lt;K, V&gt;</code></td><td><code>Record&lt;K, V&gt;</code> (an object type, not a class)</td></tr>
+          <tr><td>Apply a patch</td><td><code>unwrap_or</code> per field / <code>..user</code></td><td><code>{ ...user, ...changes }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-async-await.html">19. Async &amp; Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Async function</td><td><code>async fn f() -&gt; T</code> (returns <code>impl Future</code>)</td><td><code>async function f(): Promise&lt;T&gt;</code></td></tr>
+          <tr><td>Await</td><td><code>expr.await</code> (postfix)</td><td><code>await expr</code> (prefix)</td></tr>
+          <tr><td>Runtime</td><td>bring your own: tokio, async-std…</td><td>built into the host — nothing to choose</td></tr>
+          <tr><td>Execution model</td><td>lazy: futures inert until polled</td><td>eager: running as soon as created</td></tr>
+          <tr><td>Fan-out</td><td><code>join!</code> / <code>try_join_all</code></td><td><code>Promise.all([…])</code></td></tr>
+          <tr><td>First success</td><td><code>select!</code></td><td><code>Promise.race</code> / <code>Promise.any</code></td></tr>
+          <tr><td>Errors</td><td><code>Result</code> + <code>?</code></td><td>rejection throws at <code>await</code>; <code>try/catch</code></td></tr>
+          <tr><td>Threading concerns</td><td><code>Send</code>/<code>Sync</code> bounds, <code>Pin</code></td><td>none — one thread, cooperative</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Rust</th><th>TypeScript</th></tr>
+          <tr><td>Define a module</td><td>file + <code>mod name;</code> declaration</td><td>the file itself — nothing to declare</td></tr>
+          <tr><td>Make public</td><td><code>pub</code></td><td><code>export</code></td></tr>
+          <tr><td>Import from your code</td><td><code>use crate::inventory::Item;</code></td><td><code>import { Item } from "./inventory";</code></td></tr>
+          <tr><td>Import a dependency</td><td><code>use serde::…</code> + Cargo.toml</td><td><code>import … from "pkg"</code> + package.json</td></tr>
+          <tr><td>Rename</td><td><code>use x as y;</code></td><td><code>import { x as y }</code></td></tr>
+          <tr><td>Default visibility</td><td>private to the module</td><td>private to the file</td></tr>
+          <tr><td>Fine-grained visibility</td><td><code>pub(crate)</code>, <code>pub(super)</code></td><td>none — exported or not</td></tr>
+          <tr><td>Coherence / orphan rules</td><td>enforced by the compiler</td><td>none; convention and review</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

@@ -17,6 +17,268 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>C++ ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Basic Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Declaration</td><td><code>int x = 1;</code></td><td><code>let x: number = 1;</code> (type after name)</td></tr>
+          <tr><td>All numeric types</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>float</code>, <code>size_t</code>…</td><td><code>number</code> (an IEEE-754 double)</td></tr>
+          <tr><td>Strings</td><td><code>std::string</code></td><td><code>string</code></td></tr>
+          <tr><td>Booleans</td><td><code>bool</code></td><td><code>boolean</code></td></tr>
+          <tr><td>Inference</td><td><code>auto x = 42;</code></td><td><code>let x = 42;</code> (the default)</td></tr>
+          <tr><td>Constant binding</td><td><code>T* const p</code> (const pointer)</td><td><code>const x = …;</code> (no reassignment; contents still mutable)</td></tr>
+          <tr><td>Return type</td><td><code>auto f() -&gt; std::string</code></td><td><code>function f(): string { }</code></td></tr>
+          <tr><td>Integer overflow</td><td>Signed overflow is UB</td><td>No overflow; precision loss beyond 2<sup>53</sup>&nbsp;−&nbsp;1</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Concatenate</td><td><code>a + b</code></td><td><code>a + b</code></td></tr>
+          <tr><td>Format/interpolate</td><td><code>std::format</code>, <code>ostringstream</code></td><td><code>`text ${expr}`</code></td></tr>
+          <tr><td>Length</td><td><code>s.size()</code></td><td><code>s.length</code> (property)</td></tr>
+          <tr><td>Contains</td><td><code>s.find(w) != npos</code></td><td><code>s.includes(w)</code></td></tr>
+          <tr><td>Starts / ends</td><td><code>s.starts_with(p)</code> (C++20)</td><td><code>s.startsWith(p)</code> / <code>s.endsWith(p)</code></td></tr>
+          <tr><td>Uppercase</td><td><code>std::transform(..., ::toupper)</code></td><td><code>s.toUpperCase()</code> (returns a new string)</td></tr>
+          <tr><td>Compare</td><td><code>a == b</code> (by value)</td><td><code>a === b</code> (by value)</td></tr>
+          <tr><td>Mutate in place</td><td><code>s[0] = 'x';</code></td><td>Impossible — strings are immutable</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-vectors-to-arrays.html">3. Vectors → Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Declare</td><td><code>std::vector&lt;int&gt; v = {1, 2};</code></td><td><code>const v: number[] = [1, 2];</code></td></tr>
+          <tr><td>Append</td><td><code>v.push_back(x);</code></td><td><code>v.push(x);</code></td></tr>
+          <tr><td>Remove last</td><td><code>v.pop_back();</code></td><td><code>v.pop()</code> (also returns the element)</td></tr>
+          <tr><td>Size</td><td><code>v.size()</code></td><td><code>v.length</code></td></tr>
+          <tr><td>Index</td><td><code>v[i]</code> (UB) / <code>v.at(i)</code> (throws)</td><td><code>v[i]</code> (→ <code>undefined</code> if out of range)</td></tr>
+          <tr><td>Membership</td><td><code>std::find(begin, end, x) != end</code></td><td><code>v.includes(x)</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (const auto&amp; x : v)</code></td><td><code>for (const x of v)</code></td></tr>
+          <tr><td>Slice / subrange</td><td><code>std::span</code> or iterator pairs</td><td><code>v.slice(from, to)</code> (returns a copy)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps-to-objects.html">4. Maps → Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Declare</td><td><code>std::map&lt;std::string, int&gt; m;</code></td><td><code>const m: Record&lt;string, number&gt; = {};</code></td></tr>
+          <tr><td>Insert / update</td><td><code>m["k"] = 1;</code></td><td><code>m["k"] = 1;</code> (same)</td></tr>
+          <tr><td>Read missing key</td><td><code>m["k"]</code> inserts a default!</td><td><code>m["k"]</code> → <code>undefined</code>, no insertion</td></tr>
+          <tr><td>Read with fallback</td><td><code>find</code> + <code>end()</code> + <code>it-&gt;second</code></td><td><code>m["k"] ?? fallback</code></td></tr>
+          <tr><td>Has key?</td><td><code>m.count("k")</code> / <code>m.contains("k")</code></td><td><code>"k" in m</code></td></tr>
+          <tr><td>Erase</td><td><code>m.erase("k");</code></td><td><code>delete m["k"];</code></td></tr>
+          <tr><td>Iterate</td><td><code>for (const auto&amp; [k, v] : m)</code></td><td><code>for (const [k, v] of Object.entries(m))</code></td></tr>
+          <tr><td>Keys / values</td><td>iterate and collect</td><td><code>Object.keys(m)</code> / <code>Object.values(m)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Default argument</td><td><code>int f(int x, int y = 10)</code></td><td><code>function f(x: number, y: number = 10)</code></td></tr>
+          <tr><td>Lambda</td><td><code>[](int x) { return x * 2; }</code></td><td><code>(x: number) =&gt; x * 2</code></td></tr>
+          <tr><td>Capture</td><td><code>[=]</code>, <code>[&amp;]</code>, <code>[this]</code>, <code>[x = std::move(y)]</code></td><td>automatic — everything mentioned is captured</td></tr>
+          <tr><td>Lambda outliving scope</td><td>dangling reference (UB) with <code>[&amp;]</code></td><td>safe — GC keeps captured variables alive</td></tr>
+          <tr><td>Function type</td><td><code>std::function&lt;int(int)&gt;</code></td><td><code>(x: number) =&gt; number</code></td></tr>
+          <tr><td>Overloading</td><td>multiple bodies, picked by signature</td><td>one body; optional/default/union parameters</td></tr>
+          <tr><td>Optional parameter</td><td>trailing default argument</td><td><code>h?: number</code> — reads as <code>undefined</code> if omitted</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-and-optional.html">6. Null &amp; Optional</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Maybe-absent value</td><td><code>std::optional&lt;T&gt;</code> / <code>T*</code></td><td><code>T | null</code> or <code>T | undefined</code></td></tr>
+          <tr><td>Empty state</td><td><code>std::nullopt</code> / <code>nullptr</code></td><td><code>null</code> / <code>undefined</code></td></tr>
+          <tr><td>Default on absence</td><td><code>opt.value_or(def)</code></td><td><code>x ?? def</code></td></tr>
+          <tr><td>Presence check</td><td><code>opt.has_value()</code> (voluntary)</td><td><code>x !== null</code> (compiler-enforced before use)</td></tr>
+          <tr><td>Chained access</td><td><code>if (p &amp;&amp; p-&gt;q) p-&gt;q-&gt;r</code></td><td><code>p?.q?.r</code></td></tr>
+          <tr><td>Unchecked access</td><td><code>opt.value()</code> — throws / <code>*p</code> — UB</td><td>Does not compile</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Declare the alternatives</td><td><code>std::variant&lt;int, std::string&gt;</code></td><td><code>number | string</code></td></tr>
+          <tr><td>Which one is it?</td><td><code>std::holds_alternative&lt;int&gt;(v)</code></td><td><code>typeof v === "number"</code></td></tr>
+          <tr><td>Extract the value</td><td><code>std::get&lt;int&gt;(v)</code></td><td>Nothing — the check already narrowed it</td></tr>
+          <tr><td>Wrong access</td><td><code>std::bad_variant_access</code> at runtime</td><td>Compile error</td></tr>
+          <tr><td>Exhaustive handling</td><td><code>std::visit</code> + overload set</td><td><code>if</code>/<code>else</code> chain (compiler tracks what remains)</td></tr>
+          <tr><td>Name an alias</td><td><code>using Id = std::variant&lt;...&gt;;</code></td><td><code>type Id = number | string;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces &amp; Object Shapes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Declare a contract</td><td>Pure-virtual base or C++20 <code>concept</code></td><td><code>interface Product { ... }</code></td></tr>
+          <tr><td>Conforming to it</td><td>Inherit (nominal) / instantiate and pray (templates)</td><td>Automatic if the shape matches (structural)</td></tr>
+          <tr><td>Runtime cost</td><td>vtable + indirect call (base-class route)</td><td>None — interfaces are erased</td></tr>
+          <tr><td>Where errors appear</td><td>Instantiation site, template stack trace</td><td>Call site, one-line diagnostic</td></tr>
+          <tr><td>Optional member</td><td><code>double discount = 0.0;</code> or <code>std::optional</code></td><td><code>discount?: number;</code></td></tr>
+          <tr><td>Read optional member</td><td>Just read it (and hope)</td><td>Must handle <code>undefined</code>: <code>d ?? 0</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Where code lives</td><td><code>.h</code> + <code>.cpp</code></td><td>One class body</td></tr>
+          <tr><td>Access control</td><td><code>public:</code>/<code>private:</code> sections</td><td><code>public</code>/<code>private</code>/<code>protected</code> per member (default public)</td></tr>
+          <tr><td>Member init</td><td>Initializer list <code>: x_(x)</code></td><td>Ctor-body assignment or <code>constructor(private x: number)</code></td></tr>
+          <tr><td>const member</td><td><code>const int id_;</code></td><td><code>readonly id: number;</code></td></tr>
+          <tr><td>Destruction</td><td><code>~T()</code>, RAII, <code>delete</code></td><td>Garbage collector; no destructors</td></tr>
+          <tr><td>Copy/move</td><td>Rule of five</td><td>None — objects are always shared references</td></tr>
+          <tr><td>this-&gt;</td><td>Optional</td><td><code>this.</code> is <em>mandatory</em> for members</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstracts.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Abstract base</td><td>class with a pure virtual</td><td><code>abstract class Shape</code></td></tr>
+          <tr><td>Pure virtual</td><td><code>virtual double area() const = 0;</code></td><td><code>abstract area(): number;</code></td></tr>
+          <tr><td>Derive</td><td><code>class Circle : public Shape</code></td><td><code>class Circle extends Shape</code></td></tr>
+          <tr><td>Base ctor</td><td><code>Circle(double r) : Shape("circle")</code></td><td><code>super("circle")</code> inside <code>constructor</code></td></tr>
+          <tr><td>Override</td><td><code>override</code> (and base must be <code>virtual</code>)</td><td>just redefine; <code>override</code> keyword optional</td></tr>
+          <tr><td>Dispatch</td><td>static unless <code>virtual</code></td><td>always dynamic</td></tr>
+          <tr><td>Multiple inheritance</td><td><code>class D : A, B</code></td><td>one <code>extends</code> + any number of <code>implements</code></td></tr>
+          <tr><td>Virtual destructor</td><td>required for polymorphic delete</td><td>no destructors — GC handles it</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums &amp; Literal Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Scoped enum</td><td><code>enum class Color { Red };</code></td><td><code>enum Color { Red = "red" }</code></td></tr>
+          <tr><td>Use a member</td><td><code>Color::Red</code></td><td><code>Color.Red</code></td></tr>
+          <tr><td>Print a value</td><td><code>static_cast&lt;int&gt;(c)</code> or a to_string switch</td><td>string enums print themselves</td></tr>
+          <tr><td>Closed set of values</td><td>enum class only</td><td><code>type P = "low" | "high";</code> (idiomatic)</td></tr>
+          <tr><td>Runtime footprint</td><td>an integer</td><td>enum: a real object; literal union: erased, nothing</td></tr>
+          <tr><td>Use site</td><td><code>f(Priority::Low)</code></td><td><code>f("low")</code> — no qualifier</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Generic function</td><td><code>template &lt;typename T&gt; T f(T x)</code></td><td><code>function f&lt;T&gt;(x: T): T</code></td></tr>
+          <tr><td>Constraint</td><td><code>template &lt;std::integral T&gt;</code>, <code>enable_if</code></td><td><code>&lt;T extends number&gt;</code></td></tr>
+          <tr><td>Body checked</td><td>at each instantiation</td><td>once, at the declaration</td></tr>
+          <tr><td>Deduction</td><td><code>f(5)</code> deduces <code>T = int</code></td><td><code>f(5)</code> infers <code>T = number</code></td></tr>
+          <tr><td>Member-name constraint</td><td>none (offsetof / ptr-to-member)</td><td><code>&lt;K extends keyof T&gt;</code>, result <code>T[K]</code></td></tr>
+          <tr><td>Specialization / SFINAE</td><td>yes</td><td>no — one body per generic</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-algorithms-to-array-methods.html">13. Algorithms → Array Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Keep matching elements</td><td><code>std::copy_if</code> + <code>back_inserter</code></td><td><code>v.filter(pred)</code> — new array</td></tr>
+          <tr><td>Element-wise transform</td><td><code>std::transform</code></td><td><code>v.map(fn)</code> — new array</td></tr>
+          <tr><td>Fold</td><td><code>std::accumulate(b, e, init, op)</code></td><td><code>v.reduce(op, init)</code></td></tr>
+          <tr><td>Sort</td><td><code>std::sort(b, e, cmp)</code> — mutates</td><td><code>v.sort(cmp)</code> — also mutates; copy with <code>[...v]</code></td></tr>
+          <tr><td>Comparator</td><td>bool less-than</td><td>number: negative / 0 / positive</td></tr>
+          <tr><td>Also handy</td><td><code>any_of / all_of / find_if</code></td><td><code>.some / .every / .find</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-structured-bindings.html">14. Structured Bindings → Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Pair / tuple type</td><td><code>std::pair&lt;A, B&gt;</code>, <code>std::tuple&lt;...&gt;</code></td><td><code>[A, B]</code>, <code>[A, B, C]</code></td></tr>
+          <tr><td>Unpack positionally</td><td><code>auto [x, y] = p;</code></td><td><code>const [x, y] = p;</code></td></tr>
+          <tr><td>Swap</td><td><code>std::tie(a, b) = std::make_tuple(b, a);</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+          <tr><td>Pick members by name</td><td>—</td><td><code>const { name, age } = user;</code></td></tr>
+          <tr><td>Rename while binding</td><td>—</td><td><code>const { name: n } = user;</code></td></tr>
+          <tr><td>Default for missing field</td><td>—</td><td><code>const { role = "guest" } = user;</code></td></tr>
+          <tr><td>Unpack in a signature</td><td>—</td><td><code>function f({ name }: User) { ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-spread-and-variadics.html">15. Spread &amp; Rest</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Variadic function</td><td><code>template &lt;typename... Ts&gt; f(Ts... xs)</code></td><td><code>f(...xs: number[])</code></td></tr>
+          <tr><td>Consume the pack</td><td>recursion or fold expression</td><td><code>xs</code> is an array — loop/<code>reduce</code></td></tr>
+          <tr><td>Pack size</td><td><code>sizeof...(xs)</code></td><td><code>xs.length</code></td></tr>
+          <tr><td>Forward a pack</td><td><code>f(std::forward&lt;Ts&gt;(xs)...)</code></td><td><code>f(...xs)</code></td></tr>
+          <tr><td>Brace-init a container</td><td><code>std::initializer_list</code></td><td>array literal <code>[1, 2, 3]</code></td></tr>
+          <tr><td>Concatenate containers</td><td><code>insert(end, begin, end)</code></td><td><code>[...a, ...b]</code></td></tr>
+          <tr><td>Copy-with-changes</td><td>copy struct, assign fields</td><td><code>{ ...obj, field: newValue }</code></td></tr>
+          <tr><td>Conflicting keys</td><td>n/a</td><td>later spread wins</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-type-narrowing.html">16. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Check</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Downcast a base pointer</td><td><code>dynamic_cast&lt;D*&gt;(p)</code> + nullptr test</td><td><code>p instanceof D</code> — narrows <code>p</code> itself</td></tr>
+          <tr><td>Which variant alternative?</td><td><code>std::holds_alternative&lt;T&gt;(v)</code> + <code>std::get</code></td><td><code>typeof v === "string"</code> — no get step</td></tr>
+          <tr><td>Is it an array?</td><td>overloads / <code>if constexpr</code></td><td><code>Array.isArray(v)</code></td></tr>
+          <tr><td>Does it have a member?</td><td>SFINAE / <code>requires</code> (compile time only)</td><td><code>"field" in v</code> (runtime, and it narrows)</td></tr>
+          <tr><td>Your own check</td><td><code>bool is_user(...)</code> + <code>static_cast</code></td><td><code>function isUser(x): x is User</code></td></tr>
+          <tr><td>Untyped payload</td><td><code>void*</code> (unchecked)</td><td><code>unknown</code> (must narrow before use)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-discriminated-unions.html">17. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>The tag</td><td><code>enum class Kind kind;</code></td><td><code>kind: "circle"</code> (literal type)</td></tr>
+          <tr><td>The sum type</td><td><code>std::variant&lt;A, B, C&gt;</code></td><td><code>type S = A | B | C</code></td></tr>
+          <tr><td>Dispatch</td><td><code>std::visit</code> + <code>overloaded</code> lambdas</td><td><code>switch (s.kind)</code></td></tr>
+          <tr><td>Payload access</td><td><code>std::get&lt;A&gt;(v)</code></td><td>just <code>s.radius</code> — the case narrowed it</td></tr>
+          <tr><td>Exhaustiveness</td><td>visitor fails to compile</td><td><code>const _x: never = s;</code> in <code>default</code></td></tr>
+          <tr><td>Wrong-member access</td><td>UB (raw union) / throw (variant)</td><td>compile error</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-utility-types.html">18. Utility Types</a></h3>
+        <table>
+          <tr><th>You want</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>All fields optional</td><td>hand-written <code>std::optional</code> twin</td><td><code>Partial&lt;T&gt;</code></td></tr>
+          <tr><td>All fields required</td><td>the original struct</td><td><code>Required&lt;T&gt;</code></td></tr>
+          <tr><td>A projection of fields</td><td>hand-written summary struct</td><td><code>Pick&lt;T, "a" | "b"&gt;</code></td></tr>
+          <tr><td>Everything but some fields</td><td>hand-written struct again</td><td><code>Omit&lt;T, "secret"&gt;</code></td></tr>
+          <tr><td>Read-only view</td><td><code>const T&amp;</code></td><td><code>Readonly&lt;T&gt;</code></td></tr>
+          <tr><td>Map from keys to values</td><td><code>std::map&lt;K, V&gt;</code></td><td><code>Record&lt;K, V&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-async-await.html">19. Async &amp; Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Handle to a future value</td><td><code>std::future&lt;T&gt;</code></td><td><code>Promise&lt;T&gt;</code></td></tr>
+          <tr><td>Start async work</td><td><code>std::async</code> / spawn a thread</td><td>call an <code>async function</code></td></tr>
+          <tr><td>Get the result</td><td><code>fut.get()</code> — blocks</td><td><code>await p</code> — suspends the coroutine</td></tr>
+          <tr><td>Wait for N results</td><td>loop of <code>.get()</code> calls</td><td><code>await Promise.all(promises)</code></td></tr>
+          <tr><td>Error propagation</td><td>exception rethrown by <code>.get()</code></td><td>rejection rethrown by <code>await</code>; <code>try/catch</code></td></tr>
+          <tr><td>Shared-state protection</td><td><code>std::mutex</code>, <code>std::atomic</code></td><td>unnecessary — one thread, no data races</td></tr>
+          <tr><td>Return type marker</td><td><code>std::future&lt;T&gt;</code> from <code>std::async</code></td><td><code>async</code> ⇒ always returns <code>Promise&lt;T&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>C++</th><th>TypeScript</th></tr>
+          <tr><td>Share code</td><td><code>#include "file.h"</code> — textual paste</td><td><code>import { name } from "./file"</code></td></tr>
+          <tr><td>Publish a symbol</td><td>declare in header, define in source</td><td><code>export</code> at the definition</td></tr>
+          <tr><td>Double inclusion</td><td>header guards / <code>#pragma once</code></td><td>non-issue: modules evaluate once</td></tr>
+          <tr><td>Duplicate definitions</td><td>ODR, linker errors</td><td>impossible — per-module scope</td></tr>
+          <tr><td>Module-private helper</td><td><code>static</code> / anonymous namespace</td><td>anything without <code>export</code></td></tr>
+          <tr><td>Rename on use</td><td>n/a</td><td><code>import { a as b }</code></td></tr>
+          <tr><td>Primary export</td><td>n/a</td><td><code>export default</code> / <code>import x from</code></td></tr>
+          <tr><td>Types across files</td><td>headers again</td><td><code>export interface</code> — erased at compile time</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

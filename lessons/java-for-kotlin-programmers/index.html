@@ -19,6 +19,253 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Kotlin ⇄ Java cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Typed local</td><td><code>var x: Int = 1</code></td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred local</td><td><code>var x = 1</code></td><td><code>var x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>val x = 1</code></td><td><code>final int x = 1;</code></td></tr>
+          <tr><td>Numeric types</td><td><code>Int</code>, <code>Long</code>, <code>Double</code>, <code>Float</code>…</td><td><code>int</code>, <code>long</code>, <code>double</code>, <code>float</code>…</td></tr>
+          <tr><td>Free function</td><td><code>fun f() {}</code></td><td><code>static</code> method in a class</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Substring</td><td><code>s.substring(1, 4)</code></td><td><code>s.substring(1, 4)</code></td></tr>
+          <tr><td>Contains</td><td><code>s.contains("x")</code></td><td><code>s.contains("x")</code></td></tr>
+          <tr><td>Index of</td><td><code>s.indexOf("x")</code></td><td><code>s.indexOf("x")</code></td></tr>
+          <tr><td>Split</td><td><code>s.split(",")</code></td><td><code>s.split(",")</code> (regex!)</td></tr>
+          <tr><td>Trim</td><td><code>s.trim()</code></td><td><code>s.strip()</code></td></tr>
+          <tr><td>Blank check</td><td><code>s.isBlank()</code></td><td><code>s.isBlank()</code></td></tr>
+          <tr><td>Interpolate</td><td><code>"$a"</code></td><td><code>String.format("%s", a)</code></td></tr>
+          <tr><td>Build in loop</td><td><code>out += x</code></td><td><code>StringBuilder.append</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java array</th><th>Java List</th></tr>
+          <tr><td>Create</td><td><code>intArrayOf(1, 2, 3)</code></td><td><code>new int[]{1, 2, 3}</code></td><td><code>new ArrayList&lt;&gt;()</code></td></tr>
+          <tr><td>Length</td><td><code>a.size</code></td><td><code>a.length</code></td><td><code>list.size()</code></td></tr>
+          <tr><td>Read</td><td><code>a[i]</code></td><td><code>a[i]</code></td><td><code>list.get(i)</code></td></tr>
+          <tr><td>Append</td><td><code>mutableListOf&lt;Int&gt;().add(x)</code></td><td>— (fixed size)</td><td><code>list.add(x)</code></td></tr>
+          <tr><td>Membership</td><td><code>a.contains(x)</code></td><td>—</td><td><code>list.contains(x)</code></td></tr>
+          <tr><td>Immutable</td><td><code>listOf(...)</code></td><td>—</td><td><code>List.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Create</td><td><code>mutableMapOf()</code></td><td><code>new HashMap&lt;&gt;()</code></td></tr>
+          <tr><td>Insert / update</td><td><code>m[k] = v</code></td><td><code>m.put(k, v)</code></td></tr>
+          <tr><td>Read with default</td><td><code>m[k] ?: d</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+          <tr><td>Membership</td><td><code>m.containsKey(k)</code></td><td><code>m.containsKey(k)</code></td></tr>
+          <tr><td>Delete</td><td><code>m.remove(k)</code></td><td><code>m.remove(k)</code></td></tr>
+          <tr><td>Iterate</td><td><code>for ((k, v) in m)</code></td><td><code>for (var e : m.entrySet())</code></td></tr>
+          <tr><td>Immutable literal</td><td><code>mapOf(...)</code></td><td><code>Map.of(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Utility function</td><td><code>fun f() {}</code></td><td><code>static</code> method</td></tr>
+          <tr><td>Two shapes, one name</td><td>default parameter</td><td>two overloads: <code>f(int)</code>, <code>f(int, String)</code></td></tr>
+          <tr><td>Variadic</td><td><code>fun f(vararg xs: Int)</code></td><td><code>f(int... xs)</code></td></tr>
+          <tr><td>Params inside</td><td>real array (<code>IntArray</code>)</td><td><code>xs</code> is an <code>int[]</code></td></tr>
+          <tr><td>Delegation</td><td>default value</td><td>one overload calls another</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-classes-and-objects.html">6. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Private field</td><td><code>private var x: Int</code></td><td><code>private int x;</code></td></tr>
+          <tr><td>Constructor</td><td><code>class C(x: Int) { … }</code></td><td><code>ClassName(int x) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>this.x</code> or just <code>x</code></td><td><code>this.x</code> or just <code>x</code></td></tr>
+          <tr><td>Getter</td><td>implicit, or <code>fun getX()</code></td><td><code>int getX()</code> (a method call)</td></tr>
+          <tr><td>Stringify</td><td><code>override fun toString()</code></td><td><code>@Override public String toString()</code></td></tr>
+          <tr><td>Instantiate</td><td><code>C(…)</code> (no <code>new</code>)</td><td><code>new C(…)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-null-and-optional.html">7. Null &amp; Optional</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Absent-aware return</td><td><code>T?</code></td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Wrap a maybe-null</td><td>—</td><td><code>Optional.ofNullable(x)</code></td></tr>
+          <tr><td>Wrap a known value</td><td>—</td><td><code>Optional.of(x)</code></td></tr>
+          <tr><td>The empty case</td><td><code>null</code></td><td><code>Optional.empty()</code></td></tr>
+          <tr><td>Default</td><td><code>x ?: d</code></td><td><code>opt.orElse(d)</code></td></tr>
+          <tr><td>Safe call</td><td><code>x?.f()</code></td><td><code>opt.map(v -&gt; v.f())</code></td></tr>
+          <tr><td>Run a side effect</td><td><code>x?.let { g(it) }</code></td><td><code>opt.ifPresent(g)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-switch.html">8. Control Flow &amp; Switch</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Iterate values</td><td><code>for (x in xs)</code></td><td><code>for (T x : xs)</code></td></tr>
+          <tr><td>Multi-label branch</td><td><code>A, B -> …</code></td><td><code>case A, B -> …</code></td></tr>
+          <tr><td>Fall-through</td><td>none</td><td>none with <code>-></code></td></tr>
+          <tr><td>Value from a branch</td><td>block's last expression</td><td><code>yield</code> (in a block)</td></tr>
+          <tr><td>Exhaustiveness</td><td>required when used as an expression</td><td>required (enum switch needs no <code>default</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-interfaces.html">9. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Satisfy a contract</td><td><code>class C : Shape</code> (explicit)</td><td><code>implements Shape</code> (explicit)</td></tr>
+          <tr><td>Abstract method</td><td><code>fun area(): Double</code></td><td><code>double area();</code></td></tr>
+          <tr><td>Method with a body</td><td>interface function with a default body</td><td><code>default</code> method in the interface</td></tr>
+          <tr><td>Multiple contracts</td><td><code>: A, B</code></td><td><code>implements A, B</code></td></tr>
+          <tr><td>Implementer visibility</td><td>public by default</td><td>must be <code>public</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstract.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Subclass</td><td><code>class B(...) : A(...)</code></td><td><code>class B extends A</code></td></tr>
+          <tr><td>Super constructor</td><td><code>: A(x)</code></td><td><code>super(x);</code></td></tr>
+          <tr><td>Super method</td><td><code>super.m()</code></td><td><code>super.m()</code></td></tr>
+          <tr><td>Mark an override</td><td><code>override fun m()</code> (mandatory)</td><td><code>@Override</code> (optional, compiler-checked)</td></tr>
+          <tr><td>Abstract member</td><td><code>abstract fun m(): T</code></td><td><code>abstract T m();</code></td></tr>
+          <tr><td>No subclassing</td><td>default, unless marked <code>open</code></td><td><code>final class</code> / <code>final</code> method</td></tr>
+          <tr><td>Runtime type check</td><td><code>x is B</code></td><td><code>x instanceof B</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Declare</td><td><code>enum class E { A, B }</code></td><td><code>enum E { A, B }</code></td></tr>
+          <tr><td>All values</td><td><code>E.values()</code> / <code>E.entries</code></td><td><code>E.values()</code></td></tr>
+          <tr><td>Parse a name</td><td><code>E.valueOf(name)</code></td><td><code>E.valueOf(name)</code></td></tr>
+          <tr><td>Name of a constant</td><td><code>E.A.name</code></td><td><code>E.A.name()</code></td></tr>
+          <tr><td>Attach data</td><td>constructor properties on the enum class</td><td>fields + constructor on the enum</td></tr>
+          <tr><td>Exhaustive branch</td><td><code>when</code> (no else needed)</td><td><code>switch</code> (no default needed)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Generic class</td><td><code>class Box&lt;T&gt;(...)</code></td><td><code>class Box&lt;T&gt;</code></td></tr>
+          <tr><td>Generic method</td><td><code>fun &lt;T&gt; id(x: T): T</code> (param right after <code>fun</code>)</td><td><code>&lt;T&gt; T id(T x)</code> (param before return type)</td></tr>
+          <tr><td>Upper bound</td><td><code>&lt;T : X&gt;</code></td><td><code>&lt;T extends X&gt;</code></td></tr>
+          <tr><td>Covariant read</td><td><code>List</code> is declared <code>out T</code> in the stdlib</td><td><code>List&lt;? extends Number&gt;</code> (explicit wildcard)</td></tr>
+          <tr><td>Element type</td><td><code>Box&lt;Int&gt;</code> (autoboxed)</td><td><code>Box&lt;Integer&gt;</code> (no <code>int</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-collections-and-iteration.html">13. Collections &amp; Iteration</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Ordered list</td><td><code>List&lt;T&gt;</code> / <code>MutableList&lt;T&gt;</code></td><td><code>List&lt;T&gt;</code> (<code>ArrayList</code>)</td></tr>
+          <tr><td>Unique set</td><td><code>Set&lt;T&gt;</code> / <code>MutableSet&lt;T&gt;</code></td><td><code>Set&lt;T&gt;</code> (<code>HashSet</code>)</td></tr>
+          <tr><td>Key/value map</td><td><code>Map&lt;K, V&gt;</code> / <code>MutableMap&lt;K, V&gt;</code></td><td><code>Map&lt;K, V&gt;</code> (<code>HashMap</code>)</td></tr>
+          <tr><td>Transform</td><td><code>xs.map { f(it) }</code></td><td><code>xs.stream().map(f).toList()</code> or a loop</td></tr>
+          <tr><td>Sort by key</td><td><code>xs.sortedBy { it.age }</code></td><td><code>xs.sort(Comparator.comparingInt(P::age))</code></td></tr>
+          <tr><td>Tiebreak</td><td><code>compareBy { it.age }.thenBy { it.name }</code></td><td><code>.thenComparing(P::name)</code></td></tr>
+          <tr><td>Descending</td><td><code>xs.sortedByDescending { it.age }</code></td><td><code>.reversed()</code> / <code>Comparator.reverseOrder()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-streams.html">14. Streams</a></h3>
+        <table>
+          <tr><th>Goal</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Start</td><td><code>list</code></td><td><code>list.stream()</code></td></tr>
+          <tr><td>Keep some</td><td><code>.filter { f(it) }</code></td><td><code>.filter(f)</code></td></tr>
+          <tr><td>Transform</td><td><code>.map { f(it) }</code></td><td><code>.map(f)</code></td></tr>
+          <tr><td>Sum numbers</td><td><code>.sumOf { it }</code></td><td><code>.mapToInt(f).sum()</code></td></tr>
+          <tr><td>Fold</td><td><code>.fold(init) { a, b -&gt; f(a, b) }</code></td><td><code>.reduce(init, f)</code></td></tr>
+          <tr><td>Back to a list</td><td>already a <code>List</code></td><td><code>.collect(Collectors.toList())</code></td></tr>
+          <tr><td>Join to string</td><td><code>.joinToString(", ")</code></td><td><code>.collect(Collectors.joining(", "))</code></td></tr>
+          <tr><td>Group</td><td><code>.groupBy { f(it) }</code></td><td><code>Collectors.groupingBy(f)</code></td></tr>
+          <tr><td>Count per group</td><td><code>.groupBy(f).mapValues { it.value.size }</code></td><td><code>groupingBy(f, counting())</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-lambdas-and-functional.html">15. Lambdas &amp; Functional Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>One-arg lambda</td><td><code>{ x -&gt; x * 2 }</code></td><td><code>x -&gt; x * 2</code></td></tr>
+          <tr><td>Function type</td><td><code>(Int) -&gt; Int</code></td><td><code>Function&lt;Integer,Integer&gt;</code></td></tr>
+          <tr><td>Calling it</td><td><code>f(x)</code></td><td><code>f.apply(x)</code></td></tr>
+          <tr><td>Predicate</td><td><code>(Int) -&gt; Boolean</code></td><td><code>Predicate&lt;T&gt;</code>, <code>p.test(x)</code></td></tr>
+          <tr><td>Supplier</td><td><code>() -&gt; T</code></td><td><code>Supplier&lt;T&gt;</code>, <code>s.get()</code></td></tr>
+          <tr><td>Static method ref</td><td><code>list.map(::square)</code></td><td><code>Functional::square</code></td></tr>
+          <tr><td>Instance method ref</td><td><code>list.map(String::uppercase)</code></td><td><code>String::toUpperCase</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-records.html">16. Records</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java record</th></tr>
+          <tr><td>Declare shape</td><td><code>data class Point(val x: Int, val y: Int)</code></td><td><code>record Point(int x, int y) {}</code></td></tr>
+          <tr><td>Read a field</td><td><code>p.x</code></td><td><code>p.x()</code> (accessor)</td></tr>
+          <tr><td>Value equality</td><td><code>a == b</code> (generated)</td><td><code>a.equals(b)</code> (generated)</td></tr>
+          <tr><td>Printable form</td><td><code>toString()</code> → <code>Point(x=3, y=4)</code></td><td><code>toString()</code> → <code>Point[x=3, y=4]</code></td></tr>
+          <tr><td>Validate on construction</td><td><code>init</code> block</td><td>compact constructor</td></tr>
+          <tr><td>Satisfy a contract</td><td><code>class Point(...) : Interface</code></td><td><code>record X(...) implements I</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-exceptions.html">17. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Throw</td><td><code>throw RuntimeException("x")</code></td><td><code>throw new RuntimeException("x")</code></td></tr>
+          <tr><td>Typed catch</td><td><code>catch (e: IOException) { }</code></td><td><code>catch (IOException e) { }</code></td></tr>
+          <tr><td>Multi-catch</td><td>no built-in syntax; catch a common supertype or branch with <code>when</code></td><td><code>catch (A | B e) { }</code></td></tr>
+          <tr><td>Declared throws</td><td>— (only <code>@Throws</code> for Java interop)</td><td><code>void f() throws IOException</code></td></tr>
+          <tr><td>Custom error</td><td><code>class MyErr(msg: String) : Exception(msg)</code></td><td><code>class MyErr extends RuntimeException</code></td></tr>
+          <tr><td>Cleanup</td><td><code>finally { }</code> / <code>Closeable.use { }</code></td><td><code>finally { }</code> / try-with-resources</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-equals-hashcode-comparable.html">18. equals, hashCode &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Identity check</td><td><code>a === b</code></td><td><code>a == b</code></td></tr>
+          <tr><td>Value equality</td><td><code>data class</code> generates <code>equals</code></td><td>override <code>equals(Object)</code></td></tr>
+          <tr><td>Hashing</td><td><code>data class</code> generates <code>hashCode</code></td><td>override <code>hashCode()</code> to match equals</td></tr>
+          <tr><td>Combine fields into a hash</td><td>—</td><td><code>Objects.hash(a, b)</code></td></tr>
+          <tr><td>Natural ordering</td><td><code>Comparable&lt;T&gt;.compareTo</code></td><td><code>Comparable&lt;T&gt;.compareTo</code></td></tr>
+          <tr><td>One-off ordering</td><td><code>sortedBy { }</code> / <code>sortedWith</code></td><td><code>Comparator</code> passed to sort</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-sealed-and-pattern-matching.html">19. Sealed Types &amp; Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Closed variant set</td><td><code>sealed interface</code> / <code>sealed class</code></td><td><code>sealed … permits A, B</code></td></tr>
+          <tr><td>One-line data class</td><td><code>data class Circle(val r: Double) : Shape</code></td><td><code>record Circle(double r) implements Shape {}</code></td></tr>
+          <tr><td>Test + narrow</td><td><code>if (s is Circle)</code> (smart cast)</td><td><code>if (s instanceof Circle c)</code></td></tr>
+          <tr><td>Match on type</td><td><code>when (s) { is Circle -> … }</code></td><td><code>switch (s) { case Circle c -> … }</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>compiler-checked over a sealed type</td><td>automatic over a sealed type</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Kotlin</th><th>Java</th></tr>
+          <tr><td>Bounded generic</td><td><code>&lt;T : Entity&gt;</code></td><td><code>&lt;T extends Entity&gt;</code></td></tr>
+          <tr><td>Absent-or-present</td><td><code>T?</code></td><td><code>Optional&lt;T&gt;</code></td></tr>
+          <tr><td>Filter + sort</td><td><code>list.filter(p).sortedBy { it.id }</code></td><td><code>stream().filter(p).sorted(cmp).toList()</code></td></tr>
+          <tr><td>Sort key</td><td><code>compareBy { it.id }</code></td><td><code>Comparator.comparingInt(Entity::id)</code></td></tr>
+          <tr><td>Signal "missing"</td><td><code>throw NoSuchElementException(...)</code></td><td>a typed <code>RuntimeException</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

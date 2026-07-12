@@ -19,6 +19,264 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Python ⇄ TypeScript cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Basic Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Variable with hint</td><td><code>x: int = 1</code></td><td><code>let x: number = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>X = 1</code> (convention only)</td><td><code>const x = 1;</code> (actually enforced)</td></tr>
+          <tr><td>str / int / float / bool</td><td><code>str</code>, <code>int</code>, <code>float</code>, <code>bool</code></td><td><code>string</code>, <code>number</code> (covers both), <code>boolean</code></td></tr>
+          <tr><td>Return type</td><td><code>def f() -&gt; str:</code></td><td><code>function f(): string { }</code></td></tr>
+          <tr><td>Booleans</td><td><code>True</code> / <code>False</code></td><td><code>true</code> / <code>false</code></td></tr>
+          <tr><td>When types are checked</td><td>Only if you run mypy/pyright</td><td>Always, at compile time</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-template-literals.html">2. Strings &amp; Template Literals</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Interpolation</td><td><code>f"Hi {name}"</code></td><td><code>`Hi ${name}`</code></td></tr>
+          <tr><td>Expressions inside</td><td><code>f"{s.upper()}"</code></td><td><code>`${s.toUpperCase()}`</code></td></tr>
+          <tr><td>Length</td><td><code>len(s)</code></td><td><code>s.length</code> (property!)</td></tr>
+          <tr><td>Membership</td><td><code>"x" in s</code></td><td><code>s.includes("x")</code></td></tr>
+          <tr><td>Case</td><td><code>.upper()</code> / <code>.lower()</code></td><td><code>.toUpperCase()</code> / <code>.toLowerCase()</code></td></tr>
+          <tr><td>Join</td><td><code>", ".join(words)</code></td><td><code>words.join(", ")</code></td></tr>
+          <tr><td>Multi-line strings</td><td><code>"""..."""</code></td><td>Template literals span lines too</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-lists-to-arrays.html">3. Lists → Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Type annotation</td><td><code>list[int]</code></td><td><code>number[]</code> (or <code>Array&lt;number&gt;</code>)</td></tr>
+          <tr><td>Append</td><td><code>nums.append(x)</code></td><td><code>nums.push(x)</code> (returns new length!)</td></tr>
+          <tr><td>Length</td><td><code>len(nums)</code></td><td><code>nums.length</code></td></tr>
+          <tr><td>Membership</td><td><code>x in nums</code></td><td><code>nums.includes(x)</code></td></tr>
+          <tr><td>Last element</td><td><code>nums[-1]</code></td><td><code>nums.at(-1)</code></td></tr>
+          <tr><td>Slice</td><td><code>nums[1:3]</code></td><td><code>nums.slice(1, 3)</code></td></tr>
+          <tr><td>Pop / insert front</td><td><code>.pop()</code> / <code>.insert(0, x)</code></td><td><code>.pop()</code> / <code>.unshift(x)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-dicts-to-objects.html">4. Dicts → Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Lookup-table type</td><td><code>dict[str, int]</code></td><td><code>Record&lt;string, number&gt;</code></td></tr>
+          <tr><td>Fixed shape</td><td><code>TypedDict</code></td><td>inline type <code>{ name: string; age: number }</code></td></tr>
+          <tr><td>Literal</td><td><code>{"name": "Ada"}</code></td><td><code>{ name: "Ada" }</code> (bare keys)</td></tr>
+          <tr><td>Access</td><td><code>d["name"]</code></td><td><code>d.name</code> (or <code>d["name"]</code>)</td></tr>
+          <tr><td>Missing key</td><td>raises <code>KeyError</code></td><td>reads as <code>undefined</code></td></tr>
+          <tr><td>Default</td><td><code>d.get(k, 0)</code></td><td><code>d[k] ?? 0</code></td></tr>
+          <tr><td>Keys / items</td><td><code>d.keys()</code> / <code>d.items()</code></td><td><code>Object.keys(d)</code> / <code>Object.entries(d)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Declaration</td><td><code>def f(x: int) -&gt; str:</code></td><td><code>function f(x: number): string { }</code></td></tr>
+          <tr><td>Default parameter</td><td><code>def f(g="Hello"):</code></td><td><code>function f(g = "Hello") { }</code></td></tr>
+          <tr><td>Optional parameter</td><td><code>g: str | None = None</code></td><td><code>g?: string</code> (undefined if omitted)</td></tr>
+          <tr><td>Lambda</td><td><code>lambda n: n * 2</code></td><td><code>(n) =&gt; n * 2</code> (multi-statement OK!)</td></tr>
+          <tr><td>Keyword arguments</td><td><code>f(name="Ada")</code></td><td>options object: <code>f({ name: "Ada" })</code></td></tr>
+          <tr><td>Per-field defaults</td><td><code>def f(age=0):</code></td><td><code>function f({ age = 0 }: Opts) { }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-none-null-undefined.html">6. None, Null &amp; Undefined</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Deliberate "no value"</td><td><code>None</code></td><td><code>null</code></td></tr>
+          <tr><td>"Was never set"</td><td>also <code>None</code></td><td><code>undefined</code> (missing keys, omitted params)</td></tr>
+          <tr><td>Optional type</td><td><code>str | None</code> / <code>Optional[str]</code></td><td><code>string | null</code></td></tr>
+          <tr><td>Safe navigation</td><td><code>if u is not None: ...</code></td><td><code>u?.address?.city</code></td></tr>
+          <tr><td>Default on missing</td><td><code>x if x is not None else d</code></td><td><code>x ?? d</code></td></tr>
+          <tr><td>Truthiness default</td><td><code>x or d</code> (swallows <code>""</code>, <code>0</code>)</td><td><code>x || d</code> — usually you want <code>??</code></td></tr>
+          <tr><td>Equality check</td><td><code>x is None</code></td><td><code>x === null</code>, <code>x === undefined</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-union-types.html">7. Union Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Union of two types</td><td><code>Union[int, str]</code> or <code>int | str</code></td><td><code>number | string</code></td></tr>
+          <tr><td>Optional value</td><td><code>Optional[str]</code> = <code>str | None</code></td><td><code>string | null</code> (or <code>| undefined</code>)</td></tr>
+          <tr><td>Runtime type check</td><td><code>isinstance(x, int)</code></td><td><code>typeof x === "number"</code></td></tr>
+          <tr><td>Zero-pad a number</td><td><code>str(n).zfill(6)</code></td><td><code>n.toString().padStart(6, "0")</code></td></tr>
+          <tr><td>Calling a member's method</td><td>Allowed anywhere; crashes at runtime if wrong</td><td>Compile error until you narrow the union</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces &amp; Object Shapes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Dict/object shape</td><td><code>class P(TypedDict):</code></td><td><code>interface P { }</code></td></tr>
+          <tr><td>Optional field</td><td><code>NotRequired[str]</code> / <code>total=False</code></td><td><code>desc?: string;</code></td></tr>
+          <tr><td>Record class</td><td><code>@dataclass</code></td><td>interface + object literal (or <code>class</code>, Lesson 9)</td></tr>
+          <tr><td>Structural typing</td><td><code>Protocol</code> (opt-in)</td><td>every interface (the default)</td></tr>
+          <tr><td>Copy with changes</td><td><code>{**p, "price": x}</code></td><td><code>{ ...p, price: x }</code></td></tr>
+          <tr><td>Missing optional field</td><td><code>"key" in p</code></td><td><code>p.desc !== undefined</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Constructor</td><td><code>def __init__(self, ...):</code></td><td><code>constructor(...) { }</code></td></tr>
+          <tr><td>Instance reference</td><td><code>self</code>, listed as a parameter</td><td><code>this</code>, implicit in methods</td></tr>
+          <tr><td>Private field</td><td><code>self._x</code> (convention)</td><td><code>private x</code> (compile-time enforced)</td></tr>
+          <tr><td>Immutable field</td><td>frozen dataclass / discipline</td><td><code>readonly x</code></td></tr>
+          <tr><td>Field boilerplate killer</td><td><code>@dataclass</code></td><td><code>constructor(private x: number) {}</code></td></tr>
+          <tr><td>Raise on bad input</td><td><code>raise ValueError("msg")</code></td><td><code>throw new Error("msg")</code></td></tr>
+          <tr><td>Instantiate</td><td><code>BankAccount("Ada", ...)</code></td><td><code>new BankAccount("Ada", ...)</code> (<code>new</code> required)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-abstracts.html">10. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Inherit</td><td><code>class Circle(Shape):</code></td><td><code>class Circle extends Shape</code></td></tr>
+          <tr><td>Parent constructor</td><td><code>super().__init__(x)</code></td><td><code>super(x)</code></td></tr>
+          <tr><td>Abstract base</td><td><code>class Shape(abc.ABC):</code></td><td><code>abstract class Shape</code></td></tr>
+          <tr><td>Abstract method</td><td><code>@abstractmethod</code> + <code>...</code> body</td><td><code>abstract area(): number;</code> (no body)</td></tr>
+          <tr><td>When it's enforced</td><td>At instantiation, at runtime</td><td>At compile time — for both <code>new Shape()</code> and incomplete subclasses</td></tr>
+          <tr><td>π</td><td><code>math.pi</code></td><td><code>Math.PI</code></td></tr>
+          <tr><td>Runtime type check</td><td><code>isinstance(c, Shape)</code></td><td><code>c instanceof Shape</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-enums.html">11. Enums &amp; Literal Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Enum declaration</td><td><code>class OrderStatus(Enum):</code></td><td><code>enum OrderStatus { }</code></td></tr>
+          <tr><td>Member with payload</td><td><code>PENDING = "pending"</code></td><td><code>Pending = "pending",</code></td></tr>
+          <tr><td>Getting the value</td><td><code>OrderStatus.PENDING.value</code></td><td><code>OrderStatus.Pending</code> — already the string</td></tr>
+          <tr><td>Literal set of strings</td><td><code>Literal["a", "b"]</code></td><td><code>"a" | "b"</code></td></tr>
+          <tr><td>Named alias</td><td><code>Status = Literal["a", "b"]</code></td><td><code>type Status = "a" | "b";</code></td></tr>
+          <tr><td>Runtime footprint</td><td>Enum: real class; Literal: none</td><td>enum: real object; literal union: none (erased)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-generics.html">12. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Declare a type variable</td><td><code>T = TypeVar("T")</code></td><td><code>&lt;T&gt;</code> inline, nothing else</td></tr>
+          <tr><td>Generic function</td><td><code>def first(items: list[T]) -&gt; T | None</code></td><td><code>function firstItem&lt;T&gt;(items: T[]): T | undefined</code></td></tr>
+          <tr><td>3.12 shorthand</td><td><code>def first[T](items: list[T])</code></td><td>the same idea, TS-style, since 2012</td></tr>
+          <tr><td>Bounded type var</td><td><code>TypeVar("T", bound=Named)</code></td><td><code>&lt;T extends Named&gt;</code></td></tr>
+          <tr><td>Key-of constraint</td><td>no direct equivalent</td><td><code>&lt;K extends keyof T&gt;</code></td></tr>
+          <tr><td>Generic class</td><td><code>class Box(Generic[T]):</code></td><td><code>class Box&lt;T&gt; { }</code></td></tr>
+          <tr><td>Calling</td><td><code>first(names)</code> — T inferred</td><td><code>firstItem(names)</code> — T inferred too</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-comprehensions-to-array-methods.html">13. Comprehensions → Array Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Map</td><td><code>[f(x) for x in xs]</code></td><td><code>xs.map(x =&gt; f(x))</code></td></tr>
+          <tr><td>Filter</td><td><code>[x for x in xs if cond(x)]</code></td><td><code>xs.filter(x =&gt; cond(x))</code></td></tr>
+          <tr><td>Filter + map</td><td><code>[f(x) for x in xs if cond(x)]</code></td><td><code>xs.filter(x =&gt; cond(x)).map(x =&gt; f(x))</code></td></tr>
+          <tr><td>Sum</td><td><code>sum(f(x) for x in xs)</code></td><td><code>xs.reduce((acc, x) =&gt; acc + f(x), 0)</code></td></tr>
+          <tr><td>Sort (new list)</td><td><code>sorted(xs, key=lambda x: x.k)</code></td><td><code>[...xs].sort((a, b) =&gt; a.k - b.k)</code></td></tr>
+          <tr><td>Sort (in place)</td><td><code>xs.sort(key=...)</code></td><td><code>xs.sort((a, b) =&gt; ...)</code> — the default!</td></tr>
+          <tr><td>Any / all</td><td><code>any(...)</code> / <code>all(...)</code></td><td><code>xs.some(...)</code> / <code>xs.every(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-tuples-and-destructuring.html">14. Tuples &amp; Destructuring</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Tuple type</td><td><code>tuple[str, int]</code></td><td><code>[string, number]</code></td></tr>
+          <tr><td>Unpack a pair</td><td><code>x, y = point</code></td><td><code>const [x, y] = point;</code></td></tr>
+          <tr><td>Star unpacking</td><td><code>first, *rest = items</code></td><td><code>const [first, ...rest] = items;</code></td></tr>
+          <tr><td>Skip an element</td><td><code>_, second = pair</code></td><td><code>const [, second] = pair;</code></td></tr>
+          <tr><td>Swap</td><td><code>a, b = b, a</code></td><td><code>[a, b] = [b, a];</code></td></tr>
+          <tr><td>Pull fields from an object</td><td><code>name = user["name"]</code></td><td><code>const { name, age } = user;</code></td></tr>
+          <tr><td>Rename / default while pulling</td><td>—</td><td><code>const { name: userName, age = 0 } = user;</code></td></tr>
+          <tr><td>Destructured parameter</td><td>—</td><td><code>function f({ name, age }: User) { }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-spread-and-rest.html">15. Spread &amp; Rest</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Variadic parameters</td><td><code>def f(*args: int):</code></td><td><code>function f(...nums: number[])</code></td></tr>
+          <tr><td>Merge dicts / objects</td><td><code>{**defaults, **overrides}</code></td><td><code>{ ...defaults, ...overrides }</code></td></tr>
+          <tr><td>Concatenate lists / arrays</td><td><code>[*a, *b]</code></td><td><code>[...a, ...b]</code></td></tr>
+          <tr><td>Unpack into a call</td><td><code>f(*items)</code></td><td><code>f(...items)</code></td></tr>
+          <tr><td>Shallow copy</td><td><code>list(xs)</code> / <code>dict(d)</code></td><td><code>[...xs]</code> / <code>{ ...d }</code></td></tr>
+          <tr><td>Keyword arguments</td><td><code>def f(**kwargs):</code></td><td>a typed options object: <code>f({ theme: "dark" })</code></td></tr>
+          <tr><td>Collect the remainder</td><td><code>first, *rest = items</code></td><td><code>const [first, ...rest] = items;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-type-narrowing.html">16. Type Narrowing &amp; Guards</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Is it a string?</td><td><code>isinstance(x, str)</code></td><td><code>typeof x === "string"</code></td></tr>
+          <tr><td>Is it a number?</td><td><code>isinstance(x, (int, float))</code></td><td><code>typeof x === "number"</code></td></tr>
+          <tr><td>Is it a list/array?</td><td><code>isinstance(x, list)</code></td><td><code>Array.isArray(x)</code></td></tr>
+          <tr><td>Is it a dict-like object?</td><td><code>isinstance(x, dict)</code></td><td><code>typeof x === "object" &amp;&amp; x !== null</code></td></tr>
+          <tr><td>Does it have a key?</td><td><code>"name" in d</code></td><td><code>"name" in obj</code> (narrows the type!)</td></tr>
+          <tr><td>Is it an instance of a class?</td><td><code>isinstance(x, User)</code></td><td><code>x instanceof User</code></td></tr>
+          <tr><td>Custom reusable guard</td><td><code>-&gt; TypeGuard[User]</code></td><td><code>: x is User</code></td></tr>
+          <tr><td>Untrusted input type</td><td><code>object</code></td><td><code>unknown</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-discriminated-unions.html">17. Discriminated Unions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Variant</td><td><code>@dataclass class Circle</code> or a dict with <code>"type"</code></td><td><code>type Circle = { kind: "circle"; radius: number }</code></td></tr>
+          <tr><td>The union</td><td><code>Shape = Circle | Rectangle</code></td><td><code>type Shape = Circle | Rectangle;</code></td></tr>
+          <tr><td>Dispatch</td><td><code>match shape: case Circle(...):</code></td><td><code>switch (shape.kind) { case "circle": }</code></td></tr>
+          <tr><td>Per-branch typing</td><td>Pattern binds fields</td><td>Narrowing: <code>shape</code> <em>is</em> a <code>Circle</code> in that case</td></tr>
+          <tr><td>Exhaustiveness</td><td>Only with strict mypy (<code>assert_never</code>)</td><td><code>const x: never = shape;</code> in <code>default</code></td></tr>
+          <tr><td>Tag naming</td><td><code>"type"</code> key, snake_case fields</td><td><code>kind</code> property, camelCase fields</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-utility-types.html">18. Utility Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>All fields optional</td><td><code>TypedDict(total=False)</code>, written by hand</td><td><code>Partial&lt;User&gt;</code></td></tr>
+          <tr><td>Only some fields</td><td>Second class, kept in sync manually</td><td><code>Pick&lt;User, "id" | "name"&gt;</code></td></tr>
+          <tr><td>All but some fields</td><td>Second class again</td><td><code>Omit&lt;User, "email"&gt;</code></td></tr>
+          <tr><td>Immutable view</td><td><code>@dataclass(frozen=True)</code></td><td><code>Readonly&lt;User&gt;</code> (compile-time only)</td></tr>
+          <tr><td>Copy with changes</td><td><code>replace(user, name="X")</code></td><td><code>{ ...user, name: "X" }</code></td></tr>
+          <tr><td>Typo in a change</td><td>Runtime <code>TypeError</code></td><td>Compile error (<code>Partial</code> knows the keys)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-async-await.html">19. Async &amp; Promises</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Async function</td><td><code>async def f() -&gt; str:</code></td><td><code>async function f(): Promise&lt;string&gt;</code></td></tr>
+          <tr><td>The awaitable type</td><td><code>Awaitable[str]</code> / coroutine</td><td><code>Promise&lt;string&gt;</code></td></tr>
+          <tr><td>Run concurrently</td><td><code>await asyncio.gather(a, b)</code></td><td><code>await Promise.all([a, b])</code></td></tr>
+          <tr><td>Start the loop</td><td><code>asyncio.run(main())</code></td><td>Not needed — the loop always runs</td></tr>
+          <tr><td>Failure</td><td>Exception raised at the <code>await</code></td><td>Rejected promise thrown at the <code>await</code></td></tr>
+          <tr><td>Handle it</td><td><code>try / except</code></td><td><code>try / catch</code></td></tr>
+          <tr><td>Fire and inspect later</td><td><code>asyncio.create_task(coro)</code></td><td>Just call it — you already hold a <code>Promise</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-modules-and-capstone.html">20. Modules &amp; Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>TypeScript</th></tr>
+          <tr><td>Named import</td><td><code>from cart import add_item</code></td><td><code>import { addItem } from "./cart";</code></td></tr>
+          <tr><td>Whole module</td><td><code>import cart</code></td><td><code>import * as cart from "./cart";</code></td></tr>
+          <tr><td>Publishing a name</td><td>Implicit (all top-level names)</td><td>Explicit: <code>export function</code> / <code>export const</code></td></tr>
+          <tr><td>"Private" helper</td><td><code>_leading_underscore</code> (convention)</td><td>Just don't export it (enforced)</td></tr>
+          <tr><td>Package marker</td><td><code>__init__.py</code></td><td>None — every file is already a module</td></tr>
+          <tr><td>Entry point</td><td><code>if __name__ == "__main__":</code></td><td>A dedicated entry file (e.g. <code>main.ts</code>)</td></tr>
+          <tr><td>The one main thing</td><td>No direct equivalent</td><td><code>export default</code> (import without braces)</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

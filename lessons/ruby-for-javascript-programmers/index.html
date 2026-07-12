@@ -19,6 +19,266 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>JavaScript ⇄ Ruby cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Declare a variable</td><td><code>let x = 1;</code></td><td><code>x = 1</code> (assignment is declaration)</td></tr>
+          <tr><td>Constant</td><td><code>const x = 1;</code></td><td><code>X = 1</code> (capitalized; reassignment only warns)</td></tr>
+          <tr><td>Numbers</td><td><code>number</code> + <code>BigInt</code></td><td><code>Integer</code> (arbitrary precision) and <code>Float</code></td></tr>
+          <tr><td>Interpolation</td><td><code>`${name}!`</code></td><td><code>"#{name}!"</code> (double quotes only)</td></tr>
+          <tr><td>Check a type</td><td><code>typeof x === "string"</code></td><td><code>x.is_a?(String)</code>, or <code>x.class</code></td></tr>
+          <tr><td>Return</td><td><code>return</code> (except arrow shorthand)</td><td>last expression; <code>return</code> only for early exit</td></tr>
+          <tr><td>Naming</td><td><code>describeUser</code></td><td><code>describe_user</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings-and-interpolation.html">2. Strings &amp; Interpolation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Interpolation</td><td><code>`${x}`</code> (backticks)</td><td><code>"#{x}"</code> (double quotes)</td></tr>
+          <tr><td>Literal string</td><td>'...' or "..." (same thing)</td><td><code>'...'</code> — no interpolation, no escapes</td></tr>
+          <tr><td>Uppercase / lowercase</td><td><code>.toUpperCase()</code> / <code>.toLowerCase()</code></td><td><code>.upcase</code> / <code>.downcase</code></td></tr>
+          <tr><td>Contains?</td><td><code>.includes(x)</code></td><td><code>.include?(x)</code></td></tr>
+          <tr><td>Length</td><td><code>.length</code></td><td><code>.length</code> (also <code>.size</code>)</td></tr>
+          <tr><td>Repeat</td><td><code>.repeat(3)</code></td><td><code>s * 3</code></td></tr>
+          <tr><td>Trim / strip</td><td><code>.trim()</code></td><td><code>.strip</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays.html">3. Arrays</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Push</td><td><code>arr.push(x)</code></td><td><code>arr &lt;&lt; x</code> (returns the array — chainable)</td></tr>
+          <tr><td>Last element</td><td><code>arr.at(-1)</code></td><td><code>arr[-1]</code> or <code>arr.last</code></td></tr>
+          <tr><td>First element</td><td><code>arr[0]</code></td><td><code>arr[0]</code> or <code>arr.first</code></td></tr>
+          <tr><td>Slice</td><td><code>arr.slice(1, 3)</code></td><td><code>arr[1..2]</code> (inclusive) or <code>arr[1...3]</code></td></tr>
+          <tr><td>Sum</td><td><code>arr.reduce((a, b) =&gt; a + b, 0)</code></td><td><code>arr.sum</code></td></tr>
+          <tr><td>Length</td><td><code>arr.length</code></td><td><code>arr.length</code> / <code>arr.size</code></td></tr>
+          <tr><td>Contains?</td><td><code>arr.includes(x)</code></td><td><code>arr.include?(x)</code></td></tr>
+          <tr><td>Join</td><td><code>arr.join(", ")</code></td><td><code>arr.join(", ")</code> (same!)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-hashes-and-symbols.html">4. Hashes &amp; Symbols</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Literal</td><td><code>{ apples: 3 }</code></td><td><code>{ apples: 3 }</code> — sugar for <code>{ :apples =&gt; 3 }</code></td></tr>
+          <tr><td>Non-identifier keys</td><td><code>{ "a b": 1 }</code></td><td><code>{ "a b" =&gt; 1 }</code> (any object can be a key)</td></tr>
+          <tr><td>Read</td><td><code>o.k</code> / <code>o["k"]</code></td><td><code>h[:k]</code> (brackets only; missing key is <code>nil</code>)</td></tr>
+          <tr><td>Read with default</td><td><code>o[k] ?? 0</code></td><td><code>h.fetch(k, 0)</code>; bare <code>h.fetch(k)</code> raises</td></tr>
+          <tr><td>Iterate</td><td><code>Object.entries(o)</code> + loop</td><td><code>h.each { |k, v| ... }</code></td></tr>
+          <tr><td>Copy-with-changes</td><td><code>{ ...o, k: v }</code></td><td><code>h.merge(k =&gt; v)</code></td></tr>
+          <tr><td>Keys / values</td><td><code>Object.keys(o)</code> / <code>.values(o)</code></td><td><code>h.keys</code> / <code>h.values</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods &amp; Implicit Return</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Implicit return</td><td>braceless arrows only</td><td>every method, always (last expression)</td></tr>
+          <tr><td>Early exit</td><td><code>return</code></td><td><code>return</code> — its only idiomatic job</td></tr>
+          <tr><td>Positional default</td><td><code>greeting = "Hello"</code></td><td><code>greeting = "Hello"</code> (same)</td></tr>
+          <tr><td>Named options</td><td><code>function f({ a, b = 0 })</code></td><td><code>def f(a:, b: 0)</code></td></tr>
+          <tr><td>Call with options</td><td><code>f({ a: 1 })</code></td><td><code>f(a: 1)</code> (no braces needed)</td></tr>
+          <tr><td>Missing required option</td><td><code>undefined</code>, discovered later</td><td><code>ArgumentError</code>, at the call site</td></tr>
+          <tr><td>Naming</td><td><code>isAdult</code>, <code>sortInPlace</code></td><td><code>adult?</code>, <code>sort!</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-nil-and-safe-navigation.html">6. Nil &amp; Safe Navigation</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Absence</td><td><code>null</code> / <code>undefined</code></td><td><code>nil</code></td></tr>
+          <tr><td>Optional chaining</td><td><code>a?.b?.c</code></td><td><code>a&amp;.b&amp;.c</code></td></tr>
+          <tr><td>Default value</td><td><code>x ?? d</code> (⚠ <code>||</code> eats <code>0</code>, <code>""</code>)</td><td><code>x || d</code> (safe: only <code>nil</code>/<code>false</code> are falsy)</td></tr>
+          <tr><td>Default assignment</td><td><code>x ??= d</code></td><td><code>x ||= d</code></td></tr>
+          <tr><td>Check for absence</td><td><code>x === null</code>, <code>x == null</code>…</td><td><code>x.nil?</code></td></tr>
+          <tr><td>Hash miss</td><td><code>obj.k</code> → <code>undefined</code></td><td><code>hash[:k]</code> → <code>nil</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-everything-is-an-object.html">7. Everything Is an Object</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Absolute value</td><td><code>Math.abs(n)</code></td><td><code>n.abs</code></td></tr>
+          <tr><td>Even / odd</td><td><code>n % 2 === 0</code></td><td><code>n.even?</code> / <code>n.odd?</code></td></tr>
+          <tr><td>Round to digits</td><td><code>Math.round(f * 100) / 100</code></td><td><code>f.round(2)</code></td></tr>
+          <tr><td>Characters</td><td><code>s.split("")</code></td><td><code>s.chars</code></td></tr>
+          <tr><td>Repeat n times</td><td><code>for (let i = 0; i &lt; n; i++)</code></td><td><code>n.times { |i| ... }</code></td></tr>
+          <tr><td>Zero check</td><td><code>n === 0</code></td><td><code>n.zero?</code></td></tr>
+          <tr><td>What is this?</td><td><code>typeof n</code></td><td><code>n.class</code> (a method, of course)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-control-flow-and-case.html">8. Control Flow &amp; case</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Guard clause</td><td><code>if (x) return y;</code></td><td><code>return y if x</code></td></tr>
+          <tr><td>Negated condition</td><td><code>if (!ok) bail();</code></td><td><code>bail unless ok</code></td></tr>
+          <tr><td>Range test in switch</td><td><code>switch (true) { case s &gt;= 90: ... }</code></td><td><code>when 90..</code> / <code>when 80..89</code></td></tr>
+          <tr><td>Several values, one arm</td><td>stacked <code>case</code> labels + fallthrough</td><td><code>when "sat", "sun"</code></td></tr>
+          <tr><td>Fallthrough</td><td>default — <code>break</code> or bug</td><td>doesn't exist; arms are exclusive</td></tr>
+          <tr><td>Value of the branch</td><td>statement (use a ternary)</td><td><code>if</code>/<code>case</code> are expressions</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-classes.html">9. Classes &amp; Objects</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Constructor</td><td><code>constructor(x)</code></td><td><code>def initialize(x)</code></td></tr>
+          <tr><td>Instantiate</td><td><code>new User("Ada")</code></td><td><code>User.new("Ada")</code></td></tr>
+          <tr><td>Instance state</td><td><code>this.x</code> / <code>this.#x</code></td><td><code>@x</code> (always private)</td></tr>
+          <tr><td>Getter</td><td><code>get x() { return this.#x; }</code></td><td><code>attr_reader :x</code></td></tr>
+          <tr><td>Getter + setter</td><td><code>get x()</code> + <code>set x(v)</code></td><td><code>attr_accessor :x</code></td></tr>
+          <tr><td>Private methods</td><td><code>#helper() {}</code></td><td><code>private</code> before the defs</td></tr>
+          <tr><td>Self-reference</td><td><code>this</code> (call-site dependent)</td><td><code>self</code> (lexically fixed)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance-and-modules.html">10. Inheritance &amp; Modules</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Inherit</td><td><code>class C extends S</code></td><td><code>class C &lt; S</code></td></tr>
+          <tr><td>Call parent, same args</td><td><code>super(a, b)</code> — spell them out</td><td><code>super</code> — bare keyword forwards everything</td></tr>
+          <tr><td>Call parent, no args</td><td><code>super()</code></td><td><code>super()</code> — parens mean NONE (inverted!)</td></tr>
+          <tr><td>Abstract method</td><td><code>throw new Error(...)</code> / TS <code>abstract</code></td><td><code>raise NotImplementedError</code></td></tr>
+          <tr><td>Mixin</td><td><code>Object.assign(C.prototype, obj)</code></td><td><code>include SomeModule</code></td></tr>
+          <tr><td>Instance check</td><td><code>x instanceof C</code></td><td><code>x.is_a?(C)</code> — true for included modules too</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-blocks-procs-lambdas.html">11. Blocks, Procs &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Pass a callback</td><td><code>each(arr, (x) =&gt; ...)</code></td><td><code>arr.each { |x| ... }</code> — block, outside the parens</td></tr>
+          <tr><td>Multiline callback</td><td><code>(x) =&gt; { ... }</code></td><td><code>do |x| ... end</code></td></tr>
+          <tr><td>Invoke it inside</td><td><code>fn(x)</code></td><td><code>yield(x)</code> — no parameter declared</td></tr>
+          <tr><td>Was one passed?</td><td><code>typeof fn === "function"</code></td><td><code>block_given?</code></td></tr>
+          <tr><td>Function value</td><td><code>const f = (x) =&gt; x * 2;</code></td><td><code>f = -&gt;(x) { x * 2 }</code></td></tr>
+          <tr><td>Call it</td><td><code>f(4)</code></td><td><code>f.call(4)</code> (also <code>f.(4)</code>, <code>f[4]</code>)</td></tr>
+          <tr><td>Method-call one-liner</td><td><code>.map((x) =&gt; x.toUpperCase())</code></td><td><code>.map(&amp;:upcase)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-enumerable.html">12. Enumerable: map, select &amp; Friends</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Transform</td><td><code>.map((x) =&gt; ...)</code></td><td><code>.map { |x| ... }</code></td></tr>
+          <tr><td>Keep matches</td><td><code>.filter((x) =&gt; cond)</code></td><td><code>.select { |x| cond }</code></td></tr>
+          <tr><td>Drop matches</td><td><code>.filter((x) =&gt; !cond)</code></td><td><code>.reject { |x| cond }</code></td></tr>
+          <tr><td>Total</td><td><code>.reduce((t, x) =&gt; t + x, 0)</code></td><td><code>.sum</code> (or <code>.sum { |x| ... }</code>)</td></tr>
+          <tr><td>Sort by key</td><td><code>.sort((a, b) =&gt; a.p - b.p)</code></td><td><code>.sort_by { |x| x[:p] }</code></td></tr>
+          <tr><td>Min / max by key</td><td>sort then <code>[0]</code>, or reduce</td><td><code>.min_by { }</code> / <code>.max_by { }</code></td></tr>
+          <tr><td>Any / all</td><td><code>.some()</code> / <code>.every()</code></td><td><code>.any? { }</code> / <code>.all? { }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enumerable-power-tools.html">13. Enumerable Power Tools</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Group into buckets</td><td><code>Object.groupBy(xs, fn)</code> (2024)</td><td><code>xs.group_by { |x| ... }</code></td></tr>
+          <tr><td>Count occurrences</td><td><code>reduce</code> + <code>?? 0</code> dance</td><td><code>xs.tally</code></td></tr>
+          <tr><td>Build a hash</td><td><code>reduce((acc, x) =&gt; { ...; return acc }, {})</code></td><td><code>xs.each_with_object({}) { |x, acc| ... }</code></td></tr>
+          <tr><td>Split in two</td><td>two <code>.filter</code> passes</td><td><code>xs.partition { |x| cond }</code></td></tr>
+          <tr><td>Fold with an operator</td><td><code>.reduce((t, x) =&gt; t + x)</code></td><td><code>xs.reduce(:+)</code></td></tr>
+          <tr><td>Default-valued hash</td><td><code>acc[k] ?? 0</code> at every read</td><td><code>Hash.new(0)</code> — declared once at the seed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-destructuring-and-splat.html">14. Destructuring &amp; Splat</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Destructure a pair</td><td><code>const [a, b] = pair;</code></td><td><code>a, b = pair</code></td></tr>
+          <tr><td>Swap</td><td><code>[a, b] = [b, a];</code></td><td><code>a, b = b, a</code></td></tr>
+          <tr><td>Leading rest</td><td><code>const [x, ...rest] = xs;</code></td><td><code>x, *rest = xs</code></td></tr>
+          <tr><td>Trailing rest</td><td>SyntaxError</td><td><code>*init, last = xs</code></td></tr>
+          <tr><td>Variadic parameter</td><td><code>function f(...nums)</code></td><td><code>def f(*nums)</code></td></tr>
+          <tr><td>Keyword rest</td><td><code>function f({ ...opts })</code></td><td><code>def f(**opts)</code> — a hash</td></tr>
+          <tr><td>Spread into an array</td><td><code>[...a, ...b]</code></td><td><code>[*a, *b]</code></td></tr>
+          <tr><td>Merge hashes</td><td><code>{ ...defaults, ...overrides }</code></td><td><code>defaults.merge(overrides)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-duck-typing.html">15. Duck Typing &amp; respond_to?</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Can it do X?</td><td><code>typeof x.speak === "function"</code></td><td><code>x.respond_to?(:speak)</code></td></tr>
+          <tr><td>Is it a Y?</td><td><code>x instanceof Dog</code></td><td><code>x.is_a?(Dog)</code> (also matches subclasses)</td></tr>
+          <tr><td>Exact class</td><td><code>x.constructor === Dog</code></td><td><code>x.instance_of?(Dog)</code></td></tr>
+          <tr><td>Declared interface</td><td>TS <code>interface</code>; JS: nothing</td><td>nothing — responding IS the interface</td></tr>
+          <tr><td>Wrong duck</td><td><code>TypeError: x.speak is not a function</code></td><td><code>NoMethodError: undefined method 'speak'</code></td></tr>
+          <tr><td>List its methods</td><td><code>Object.getOwnPropertyNames(...)</code></td><td><code>x.methods</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-exceptions.html">16. Exceptions &amp; Error Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Try / catch / finally</td><td><code>try/catch/finally</code></td><td><code>begin/rescue/ensure/end</code></td></tr>
+          <tr><td>Catch one error type</td><td><code>catch</code> + <code>instanceof</code> check</td><td><code>rescue ArgumentError =&gt; e</code></td></tr>
+          <tr><td>Throw</td><td><code>throw new Error("msg")</code></td><td><code>raise ArgumentError, "msg"</code></td></tr>
+          <tr><td>Re-throw</td><td><code>throw e</code></td><td>bare <code>raise</code> inside a rescue</td></tr>
+          <tr><td>Custom error</td><td><code>extends Error</code> + name fixup</td><td><code>class ParseError &lt; StandardError; end</code></td></tr>
+          <tr><td>Whole-method try</td><td>wrap the body in <code>try</code></td><td>def-level <code>rescue</code>, no <code>begin</code></td></tr>
+          <tr><td>Catch-all default</td><td><code>catch</code> takes everything</td><td>bare <code>rescue</code> = <code>StandardError</code> only</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-structs-and-comparable.html">17. Structs &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Value object</td><td>class + constructor + <code>equals()</code></td><td><code>Point = Struct.new(:x, :y)</code></td></tr>
+          <tr><td>Equality</td><td><code>===</code> is reference identity</td><td>Struct <code>==</code> compares values</td></tr>
+          <tr><td>Destructure</td><td><code>const { x, y } = point;</code></td><td><code>x, y = *point</code></td></tr>
+          <tr><td>Add methods</td><td>in the class body</td><td><code>Struct.new(...) do ... end</code></td></tr>
+          <tr><td>Comparator</td><td><code>(a, b) =&gt; a - b</code> passed to <code>sort</code></td><td><code>def &lt;=&gt;(other)</code> on the class</td></tr>
+          <tr><td>Derived operators</td><td>write each one yourself</td><td><code>include Comparable</code>: <code>&lt; &gt; == between? clamp</code></td></tr>
+          <tr><td>Multi-key compare</td><td>nested if / <code>||</code> chains</td><td><code>[a, b] &lt;=&gt; [c, d]</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-enumerators-and-lazy.html">18. Enumerators &amp; Lazy</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Infinite sequence</td><td><code>function*</code> + <code>while (true) yield</code></td><td><code>(1..Float::INFINITY).lazy</code></td></tr>
+          <tr><td>Filter it</td><td>hand-written generator helper</td><td><code>.select { }</code> — same API as arrays</td></tr>
+          <tr><td>Take n</td><td>hand-written <code>take()</code></td><td><code>.first(n)</code> (forces the lazy chain)</td></tr>
+          <tr><td>Custom source</td><td><code>function* () { yield v; }</code></td><td><code>Enumerator.new { |y| y &lt;&lt; v }</code></td></tr>
+          <tr><td>Infinite loop inside</td><td><code>while (true)</code></td><td><code>loop do ... end</code></td></tr>
+          <tr><td>Chunk by n</td><td>index-stepping <code>for</code> loop</td><td><code>each_slice(n)</code></td></tr>
+          <tr><td>Sliding window</td><td>index arithmetic</td><td><code>each_cons(n)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-json.html">19. Working with JSON</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Setup</td><td>built in</td><td><code>require "json"</code></td></tr>
+          <tr><td>Serialize</td><td><code>JSON.stringify(data)</code></td><td><code>data.to_json</code></td></tr>
+          <tr><td>Parse</td><td><code>JSON.parse(s)</code></td><td><code>JSON.parse(s)</code> — string keys by default</td></tr>
+          <tr><td>Symbol keys</td><td>n/a</td><td><code>JSON.parse(s, symbolize_names: true)</code></td></tr>
+          <tr><td>Missing key default</td><td><code>u.name ?? "unknown"</code></td><td><code>u.fetch(:name, "unknown")</code></td></tr>
+          <tr><td>Nested lookup</td><td><code>obj?.a?.b</code></td><td><code>data.dig(:a, :b)</code></td></tr>
+          <tr><td>Bad input</td><td><code>SyntaxError</code> (generic)</td><td><code>JSON::ParserError</code> (rescue by name)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>JavaScript</th><th>Ruby</th></tr>
+          <tr><td>Sum with a projection</td><td><code>reduce((s, i) =&gt; s + f(i), 0)</code></td><td><code>sum { |i| f(i) }</code></td></tr>
+          <tr><td>First match</td><td><code>find</code> → <code>undefined</code></td><td><code>find</code> → <code>nil</code></td></tr>
+          <tr><td>Filter + project</td><td><code>filter().map()</code></td><td><code>select { }.map { }</code></td></tr>
+          <tr><td>Non-mutating update</td><td><code>map</code> + <code>{ ...i, count }</code></td><td><code>map</code> + <code>Item.new(...)</code></td></tr>
+          <tr><td>Reference semantics</td><td>objects/arrays are references</td><td>same! — copy on write is on you</td></tr>
+          <tr><td>Block shorthand</td><td>—</td><td><code>map(&amp;:name)</code> when the block just calls a method</td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

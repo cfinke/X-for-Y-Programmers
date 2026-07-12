@@ -19,6 +19,246 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Go ⇄ C# cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Typed variable</td><td><code>var x int = 1</code></td><td><code>int x = 1;</code></td></tr>
+          <tr><td>Inferred variable</td><td><code>x := 1</code></td><td><code>var x = 1;</code></td></tr>
+          <tr><td>Constant</td><td><code>const x = 1</code></td><td><code>const int x = 1;</code></td></tr>
+          <tr><td>Interpolation</td><td><code>fmt.Sprintf("%d", x)</code></td><td><code>$"{x}"</code></td></tr>
+          <tr><td>Free function</td><td><code>func f() {}</code></td><td><code>static</code> method in a class</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Uppercase</td><td><code>strings.ToUpper(s)</code></td><td><code>s.ToUpper()</code></td></tr>
+          <tr><td>Contains</td><td><code>strings.Contains(s, "x")</code></td><td><code>s.Contains(x)</code></td></tr>
+          <tr><td>Substring</td><td><code>s[1:4]</code></td><td><code>s.Substring(1, 3)</code> (start, <em>length</em>)</td></tr>
+          <tr><td>Replace</td><td><code>strings.ReplaceAll(s, "a", "b")</code></td><td><code>s.Replace("a", "b")</code> (replaces all)</td></tr>
+          <tr><td>Join</td><td><code>strings.Join(arr, sep)</code></td><td><code>string.Join(sep, arr)</code> (static, args swapped)</td></tr>
+          <tr><td>Build in loop</td><td><code>sb.WriteString(piece)</code></td><td><code>sb.Append(piece)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-arrays-and-lists.html">3. Arrays &amp; Lists</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Fixed-size block</td><td><code>[3]int{}</code> (rarely used)</td><td><code>new int[3]</code></td></tr>
+          <tr><td>Array literal</td><td><code>[]int{1, 2, 3}</code></td><td><code>new int[] { 1, 2, 3 }</code></td></tr>
+          <tr><td>Growable list</td><td><code>[]int{1, 2, 3}</code> (via <code>append</code>)</td><td><code>new List&lt;int&gt; { 1, 2, 3 }</code></td></tr>
+          <tr><td>Length</td><td><code>len(a)</code></td><td><code>a.Length</code> / <code>list.Count</code></td></tr>
+          <tr><td>Append</td><td><code>a = append(a, x)</code></td><td><code>list.Add(x)</code></td></tr>
+          <tr><td>Membership</td><td><code>slices.Contains(a, x)</code></td><td><code>list.Contains(x)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-dictionaries.html">4. Dictionaries</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go (map)</th><th>C#</th></tr>
+          <tr><td>Create + fill</td><td><code>map[string]int{"a": 1}</code></td><td><code>new Dictionary&lt;string,int&gt; { { "a", 1 } }</code></td></tr>
+          <tr><td>Insert/overwrite</td><td><code>m["a"] = 1</code></td><td><code>d["a"] = 1;</code></td></tr>
+          <tr><td>Insert (fail if exists)</td><td>— (always overwrites)</td><td><code>d.Add("a", 1)</code></td></tr>
+          <tr><td>Safe read</td><td><code>v, ok := m["a"]</code> → <code>ok</code> is <code>false</code></td><td><code>d.TryGetValue("a", out v)</code></td></tr>
+          <tr><td>Has key</td><td><code>_, ok := m["a"]</code></td><td><code>d.ContainsKey("a")</code></td></tr>
+          <tr><td>Iterate</td><td><code>for k, v := range m</code></td><td><code>foreach (var kv in d)</code> → <code>kv.Key</code>, <code>kv.Value</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-methods.html">5. Methods</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Optional parameter</td><td>no default values</td><td><code>F(int x = 1)</code></td></tr>
+          <tr><td>Named argument</td><td>—</td><td><code>F(x: 1)</code></td></tr>
+          <tr><td>Rest / params</td><td><code>xs ...int</code></td><td><code>params int[] xs</code></td></tr>
+          <tr><td>Overloading</td><td>not supported, distinct names</td><td>a full body per signature</td></tr>
+          <tr><td>Extra output</td><td>return <code>(value, ok)</code></td><td><code>out</code> parameter</td></tr>
+          <tr><td>Mutate caller's variable</td><td>pass a pointer (<code>*int</code>)</td><td><code>ref</code> parameter</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-classes-and-properties.html">6. Classes &amp; Properties</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Mutable property</td><td><code>X int</code> (exported field)</td><td><code>int X { get; set; }</code></td></tr>
+          <tr><td>Read-only from outside</td><td><code>x int</code> + <code>func (t T) X() int</code> (no setter)</td><td><code>int X { get; private set; }</code></td></tr>
+          <tr><td>Immutable after construction</td><td>exported field set only in <code>NewT(...)</code>, by convention</td><td><code>int X { get; }</code></td></tr>
+          <tr><td>Computed getter</td><td><code>func (t T) Total() int {…}</code></td><td><code>int Total => …;</code></td></tr>
+          <tr><td>Unexported field</td><td><code>x int</code></td><td><code>private int x;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-structs-and-value-types.html">7. Structs &amp; Value Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Value type</td><td><code>struct</code> (always, unless you use a pointer)</td><td><code>struct</code> (copied on assign)</td></tr>
+          <tr><td>Reference type</td><td><code>*T</code> (pointer)</td><td><code>class</code> (shared on assign)</td></tr>
+          <tr><td>Immutable field</td><td>convention only (no keyword)</td><td><code>public readonly int X;</code></td></tr>
+          <tr><td>Value equality</td><td><code>==</code> on comparable structs</td><td>override <code>Equals</code> + <code>GetHashCode</code></td></tr>
+          <tr><td>Default value</td><td>zero value, e.g. <code>Point{}</code></td><td><code>default(Point)</code> — all fields zeroed</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-interfaces.html">8. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Declare</td><td><code>type Shape interface { Area() float64 }</code></td><td><code>interface IShape {}</code></td></tr>
+          <tr><td>Implement</td><td><code>func (b Box) Area() float64 { ... }</code> (implicit)</td><td><code>class Box : IShape</code></td></tr>
+          <tr><td>Conformance</td><td>structural (implicit)</td><td>nominal (explicit)</td></tr>
+          <tr><td>Read-only property</td><td><code>Name string</code> (exported field or getter method)</td><td><code>string Name { get; }</code></td></tr>
+          <tr><td>Multiple</td><td>satisfies any interface whose methods it implements</td><td><code>: A, B</code></td></tr>
+          <tr><td>Member bodies</td><td>none (interfaces are pure method sets)</td><td>none (in C# 7.3)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-inheritance-and-abstract.html">9. Inheritance &amp; Abstract Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Extend a type</td><td>embed a struct: <code>type D struct { B }</code></td><td><code>class D : B</code></td></tr>
+          <tr><td>Call base ctor</td><td>(none — set fields in a struct literal)</td><td><code>: base(x)</code></td></tr>
+          <tr><td>Abstract method</td><td>interface method: <code>Area() float64</code></td><td><code>public abstract T F();</code></td></tr>
+          <tr><td>Overridable method</td><td>(no virtual dispatch through embedding)</td><td>only <code>virtual</code>/<code>abstract</code></td></tr>
+          <tr><td>Override</td><td>define a same-named method on the outer type</td><td><code>override</code> keyword required</td></tr>
+          <tr><td>Block subclassing</td><td>(none — no subclassing to block)</td><td><code>sealed class</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-enums.html">10. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Declare</td><td><code>type P int</code> + <code>const</code> block</td><td><code>enum P { Low, Medium, High }</code></td></tr>
+          <tr><td>Explicit value</td><td><code>Low P = 1</code></td><td><code>Low = 1</code></td></tr>
+          <tr><td>To number</td><td><code>int(p)</code></td><td><code>(int)p</code></td></tr>
+          <tr><td>From number</td><td><code>P(n)</code></td><td><code>(P)n</code></td></tr>
+          <tr><td>To name</td><td>a hand-written <code>String()</code> method</td><td><code>p.ToString()</code></td></tr>
+          <tr><td>From name</td><td>a hand-written lookup map</td><td><code>Enum.Parse(typeof(P), "High")</code></td></tr>
+          <tr><td>Bit flags</td><td><code>1 &lt;&lt; iota</code>, manual <code>|</code>/<code>&amp;</code></td><td><code>[Flags]</code>, <code>|</code>, <code>&amp;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-generics.html">11. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Generic type</td><td><code>type Box[T any] struct{}</code></td><td><code>class Box&lt;T&gt; {}</code></td></tr>
+          <tr><td>Generic function</td><td><code>func Id[T any](x T) T</code></td><td><code>T Id&lt;T&gt;(T x)</code></td></tr>
+          <tr><td>Bound / constraint</td><td><code>[T C]</code> (interface constraint)</td><td><code>where T : C</code></td></tr>
+          <tr><td>Construct a T</td><td><code>new(T)</code> or <code>var t T</code> — always legal</td><td><code>new T()</code> with <code>where T : new()</code></td></tr>
+          <tr><td>Reference-type only</td><td><em>n/a (no class/struct constraint split)</em></td><td><code>where T : class</code></td></tr>
+          <tr><td>Value-type only</td><td><em>n/a</em></td><td><code>where T : struct</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-collections-and-linq.html">12. Collections &amp; LINQ</a></h3>
+        <table>
+          <tr><th>Operation</th><th>Go</th><th>C# / LINQ</th></tr>
+          <tr><td>Filter</td><td>for loop + <code>if</code> + <code>append</code></td><td><code>Where(p)</code></td></tr>
+          <tr><td>Project</td><td>for loop + <code>append</code> of a mapped value</td><td><code>Select(f)</code></td></tr>
+          <tr><td>Sort (primary + tie-break)</td><td>one comparator in <code>sort.Slice</code></td><td><code>OrderBy(...).ThenBy(...)</code></td></tr>
+          <tr><td>First match</td><td>for loop, <code>return</code> on match</td><td><code>First</code> / <code>FirstOrDefault</code></td></tr>
+          <tr><td>Exists / for-all</td><td>for loop with a <code>bool</code> flag</td><td><code>Any</code> / <code>All</code></td></tr>
+          <tr><td>Count</td><td>for loop with a counter</td><td><code>Count(p)</code></td></tr>
+          <tr><td>Sum</td><td>for loop, <code>sum += x</code></td><td><code>Sum(f)</code></td></tr>
+          <tr><td>Fold</td><td>for loop, <code>acc = f(acc, x)</code></td><td><code>Aggregate(seed, f)</code></td></tr>
+          <tr><td>Group</td><td>manual <code>map[string][]T</code> loop</td><td><code>GroupBy(k)</code></td></tr>
+          <tr><td>Materialize</td><td>already a slice</td><td><code>ToList()</code> / <code>ToDictionary(...)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-delegates-and-lambdas.html">13. Delegates &amp; Lambdas</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Value-returning fn type</td><td><code>func(x int) int</code></td><td><code>Func&lt;int, int&gt;</code></td></tr>
+          <tr><td>Void fn type</td><td><code>func(x int)</code></td><td><code>Action&lt;int&gt;</code></td></tr>
+          <tr><td>Boolean test</td><td><code>func(x int) bool</code></td><td><code>Predicate&lt;int&gt;</code></td></tr>
+          <tr><td>Named fn type</td><td><code>type Op func(a, b int) int</code></td><td><code>delegate int Op(int a, int b);</code></td></tr>
+          <tr><td>Arrow / lambda</td><td><code>func(x int) int { return x + 1 }</code></td><td><code>x =&gt; x + 1</code></td></tr>
+          <tr><td>Closure</td><td><code>func(n int) func(int) int { return func(x int) int { return x + n } }</code></td><td><code>x =&gt; x + n</code> (captures <code>n</code>)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-nullable-and-null.html">14. Nullable &amp; Null Handling</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C# 7.3</th></tr>
+          <tr><td>Nullable value</td><td><code>*int</code> (pointer, nil means absent)</td><td><code>int?</code> / <code>Nullable&lt;int&gt;</code></td></tr>
+          <tr><td>Has a value?</td><td><code>n != nil</code></td><td><code>n.HasValue</code></td></tr>
+          <tr><td>Unwrap</td><td><code>*n</code> (panics if nil)</td><td><code>n.Value</code> (throws if empty)</td></tr>
+          <tr><td>Unwrap or default</td><td><code>v := 0; if n != nil { v = *n }</code></td><td><code>n.GetValueOrDefault()</code> or <code>n ?? 0</code></td></tr>
+          <tr><td>Safe navigation</td><td><code>if obj != nil { x = obj.Prop }</code></td><td><code>obj?.Prop</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-exceptions.html">15. Exceptions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Signal failure</td><td><code>return err</code></td><td><code>throw new Exception("x")</code></td></tr>
+          <tr><td>Handle by type</td><td><code>errors.As(err, &amp;target)</code></td><td><code>catch (T e)</code></td></tr>
+          <tr><td>Custom error</td><td><code>type E struct{}; func (e *E) Error() string</code></td><td><code>class E : Exception</code></td></tr>
+          <tr><td>Message</td><td><code>err.Error()</code></td><td><code>e.Message</code></td></tr>
+          <tr><td>Deterministic cleanup</td><td><code>defer x.Close()</code></td><td><code>using (var x = …)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-pattern-matching.html">16. Pattern Matching</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C# 7.3</th></tr>
+          <tr><td>Type test + bind</td><td><code>n, ok := o.(int)</code></td><td><code>o is int n</code></td></tr>
+          <tr><td>Class test + bind</td><td><code>c, ok := o.(*Cat)</code></td><td><code>o is Cat c</code></td></tr>
+          <tr><td>Guard on a match</td><td><code>n, ok := o.(int); ok &amp;&amp; n &lt; 0</code></td><td><code>o is int n &amp;&amp; n &lt; 0</code></td></tr>
+          <tr><td>Ignore the value</td><td>blank identifier <code>_</code></td><td>discard <code>o is bool _</code></td></tr>
+          <tr><td>Null</td><td><code>o == nil</code></td><td><code>o == null</code> (matches no type pattern)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-tuples-and-deconstruction.html">17. Tuples &amp; Deconstruction</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Tuple type</td><td>no tuple type — <code>func f() (int, string)</code></td><td><code>(int, string)</code></td></tr>
+          <tr><td>Named elements</td><td><code>func f() (count int, name string)</code> (named results)</td><td><code>(int Count, string Name)</code></td></tr>
+          <tr><td>Construct</td><td><code>return 1, "a"</code></td><td><code>(1, "a")</code></td></tr>
+          <tr><td>Access</td><td>separate variables, e.g. <code>lo</code></td><td><code>t.Item1</code> or <code>t.Count</code></td></tr>
+          <tr><td>Deconstruct</td><td><code>a, b := f()</code></td><td><code>var (a, b) = t;</code></td></tr>
+          <tr><td>Struct field pull-apart</td><td><code>x, y := p.X, p.Y</code> (manual)</td><td><code>var (x, y) = p;</code> via <code>Deconstruct</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-iterators-and-yield.html">18. Iterators &amp; yield</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Generator function</td><td>closure <code>func(yield func(V) bool)</code></td><td>method returning <code>IEnumerable&lt;T&gt;</code> with <code>yield</code></td></tr>
+          <tr><td>Emit a value</td><td><code>if !yield(x) { return }</code></td><td><code>yield return x;</code></td></tr>
+          <tr><td>Stop early</td><td><code>return</code></td><td><code>yield break;</code></td></tr>
+          <tr><td>Consume</td><td><code>for x := range seq</code></td><td><code>foreach</code> / LINQ</td></tr>
+          <tr><td>Iterable type</td><td>method returning <code>iter.Seq[T]</code></td><td><code>GetEnumerator()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-equality-and-comparable.html">19. Equality &amp; Comparable</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Value equality</td><td><code>==</code> on comparable structs, or hand-written <code>Equals</code></td><td><code>IEquatable&lt;T&gt;</code> + <code>Equals</code> overrides</td></tr>
+          <tr><td>Hashing a key</td><td>struct used directly as a map key (compiler hashes it)</td><td><code>GetHashCode()</code> override</td></tr>
+          <tr><td>Ordering</td><td><code>sort.Slice(s, func(i, j int) bool { … })</code></td><td><code>IComparable&lt;T&gt;.CompareTo</code></td></tr>
+          <tr><td>Operator</td><td>can't overload <code>==</code></td><td><code>operator ==</code> / <code>!=</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Go</th><th>C#</th></tr>
+          <tr><td>Constrained generic</td><td><code>type R[T Entity] struct { ... }</code></td><td><code>class Repository&lt;T&gt; where T : IEntity</code></td></tr>
+          <tr><td>Keyed store</td><td><code>map[int]T</code></td><td><code>Dictionary&lt;int, T&gt;</code></td></tr>
+          <tr><td>Safe lookup</td><td><code>v, ok := m[id]</code> (comma-ok)</td><td><code>TryGetValue(id, out value)</code></td></tr>
+          <tr><td>Filter</td><td>loop with <code>if</code> + <code>append</code></td><td><code>seq.Where(p)</code> (LINQ)</td></tr>
+          <tr><td>Custom error</td><td><code>type E struct{}</code> with an <code>Error()</code> method</td><td><code>class E : Exception</code></td></tr>
+          <tr><td>Signal failure</td><td>a returned <code>error</code>, checked with <code>if err != nil</code></td><td><code>catch (E ex) { }</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

@@ -20,6 +20,253 @@
     </p>
   </header>
   <ol class="lesson-grid" id="lesson-list"></ol>
+  <section class="cheatsheet">
+    <h2>Python ⇄ Kotlin cheat sheet</h2>
+    <p class="cheat-intro">A comprehensive quick reference pulled together from all 20 lessons — every idiom mapped between the two languages, in one place.</p>
+      <div class="cheat-topic">
+        <h3><a href="lessons/01-variables-and-types.html">1. Variables &amp; Types</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Read-only binding</td><td>no true equivalent (convention only)</td><td><code>val x = 1</code></td></tr>
+          <tr><td>Reassignable</td><td><code>x = 1</code></td><td><code>var x = 1</code></td></tr>
+          <tr><td>Explicit type</td><td><code>x: int = 1</code></td><td><code>val x: Int = 1</code></td></tr>
+          <tr><td>Template</td><td><code>f"{x}"</code></td><td><code>"$x"</code> / <code>"${x.foo}"</code></td></tr>
+          <tr><td>Runtime type</td><td><code>type(x).__name__</code></td><td><code>x::class.simpleName</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/02-strings.html">2. Strings</a></h3>
+        <table>
+          <tr><th>Task</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Interpolate</td><td><code>f"{x}"</code></td><td><code>"$x"</code> / <code>"${x.y}"</code></td></tr>
+          <tr><td>Case</td><td><code>s.upper()</code></td><td><code>uppercase()</code></td></tr>
+          <tr><td>Split &amp; join</td><td><code>"-".join(s.split(","))</code></td><td><code>s.split(",").joinToString("-")</code></td></tr>
+          <tr><td>Substring</td><td><code>s[0:5]</code></td><td><code>s.substring(0, 5)</code></td></tr>
+          <tr><td>Contains</td><td><code>x in s</code></td><td><code>s.contains(x)</code></td></tr>
+          <tr><td>Parse int</td><td><code>int(s)</code></td><td><code>s.toInt()</code></td></tr>
+          <tr><td>Raw / multi-line</td><td><code>"""line1
+        line2"""</code></td><td><code>"""line1
+        line2"""</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/03-lists-and-collections.html">3. Lists &amp; Collections</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Read-only list</td><td>(no built-in equivalent; convention only)</td><td><code>List&lt;Int&gt;</code></td></tr>
+          <tr><td>Mutable list</td><td><code>list</code></td><td><code>MutableList&lt;Int&gt;</code></td></tr>
+          <tr><td>Build</td><td><code>[1, 2, 3]</code></td><td><code>listOf(1, 2, 3)</code></td></tr>
+          <tr><td>Append</td><td><code>xs.append(4)</code></td><td><code>xs.add(4)</code></td></tr>
+          <tr><td>Remove value</td><td><code>xs.remove(4)</code></td><td><code>xs.remove(4)</code></td></tr>
+          <tr><td>Length</td><td><code>len(xs)</code></td><td><code>xs.size</code></td></tr>
+          <tr><td>Membership</td><td><code>2 in xs</code></td><td><code>2 in xs</code></td></tr>
+          <tr><td>Ends</td><td><code>xs[0]</code> / <code>xs[-1]</code></td><td><code>xs.first()</code> / <code>xs.last()</code></td></tr>
+          <tr><td>Transform</td><td><code>[x * 2 for x in xs]</code></td><td><code>xs.map { it * 2 }</code></td></tr>
+          <tr><td>Keep some</td><td><code>[x for x in xs if ...]</code></td><td><code>xs.filter { ... }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/04-maps.html">4. Maps</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Read-only map</td><td><code>types.MappingProxyType(d)</code></td><td><code>mapOf(...)</code> → <code>Map</code></td></tr>
+          <tr><td>Mutable map</td><td><code>dict()</code></td><td><code>mutableMapOf(...)</code> → <code>MutableMap</code></td></tr>
+          <tr><td>Lookup</td><td><code>m[k]</code> → raises <code>KeyError</code></td><td><code>m[k]</code> → <code>V?</code></td></tr>
+          <tr><td>With default</td><td><code>m.get(k, d)</code></td><td><code>m.getOrDefault(k, d)</code></td></tr>
+          <tr><td>Insert / update</td><td><code>m[k] = v</code></td><td><code>m[k] = v</code></td></tr>
+          <tr><td>Views</td><td><code>m.keys()</code> / <code>m.values()</code></td><td><code>m.keys</code> / <code>m.values</code> / <code>m.entries</code></td></tr>
+          <tr><td>Iterate pairs</td><td><code>for k, v in m.items()</code></td><td><code>for ((k, v) in m)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/05-functions.html">5. Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Single expression</td><td><code>f = lambda n: n * n</code></td><td><code>fun f(n: Int) = n * n</code></td></tr>
+          <tr><td>Default argument</td><td><code>def f(x=1):</code></td><td><code>fun f(x: Int = 1)</code></td></tr>
+          <tr><td>Named argument</td><td><code>f(x=1)</code></td><td><code>f(x = 1)</code></td></tr>
+          <tr><td>Rest / vararg</td><td><code>def f(*xs):</code></td><td><code>fun f(vararg xs: Int)</code></td></tr>
+          <tr><td>Spread a collection</td><td><code>f(*arr)</code></td><td><code>f(*arr)</code></td></tr>
+          <tr><td>No return value</td><td><code>-&gt; None</code></td><td><code>: Unit</code> (omit it)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/06-null-safety.html">6. Null Safety</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Nullable type</td><td><code>Optional[str]</code></td><td><code>String?</code></td></tr>
+          <tr><td>Safe call</td><td><code>x.f() if x is not None else None</code></td><td><code>x?.f()</code></td></tr>
+          <tr><td>Fallback</td><td><code>x or y</code></td><td><code>x ?: y</code></td></tr>
+          <tr><td>Assert non-null</td><td><code>assert x is not None</code> (runtime, separate statement)</td><td><code>x!!</code> (runtime, inline)</td></tr>
+          <tr><td>Run if non-null</td><td><code>if x is not None: f(x)</code></td><td><code>x?.let { f(it) }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/07-classes-and-properties.html">7. Classes &amp; Properties</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Property in constructor</td><td><code>def __init__(self, name): self.name = name</code></td><td><code>class C(val name: String)</code></td></tr>
+          <tr><td>Read-only property</td><td>property with no setter (by convention)</td><td><code>val</code></td></tr>
+          <tr><td>Mutable property</td><td>plain attribute</td><td><code>var</code></td></tr>
+          <tr><td>Construction-time setup</td><td><code>__init__</code> body</td><td><code>init { }</code></td></tr>
+          <tr><td>Computed property</td><td><code>@property</code> + <code>def x(self): …</code></td><td><code>val x get() = …</code></td></tr>
+          <tr><td>Write interceptor</td><td><code>@x.setter</code> + <code>def x(self, v): …</code></td><td><code>set(value) { field = … }</code></td></tr>
+          <tr><td>Read-only from outside</td><td><code>_x</code> + a public getter, by convention</td><td><code>var x = 0; private set</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/08-data-classes.html">8. Data Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Value bundle</td><td><code>class P: def __init__(self, x): self.x = x</code></td><td><code>data class P(val x: Int)</code></td></tr>
+          <tr><td>Value equality</td><td>define <code>__eq__</code> (or use <code>@dataclass</code>)</td><td><code>a == b</code> (generated)</td></tr>
+          <tr><td>Reference identity</td><td><code>a is b</code></td><td><code>a === b</code></td></tr>
+          <tr><td>Immutable update</td><td><code>Point(p.x, 9)</code> or <code>dataclasses.replace(p, y=9)</code></td><td><code>p.copy(y = 9)</code></td></tr>
+          <tr><td>Destructure</td><td><code>x, y = p.x, p.y</code></td><td><code>val (x, y) = p</code></td></tr>
+          <tr><td>Debug string</td><td><code>repr(p)</code> (needs <code>__repr__</code>)</td><td><code>p.toString()</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/09-when-and-control-flow.html">9. when &amp; Control Flow</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Multi-way branch</td><td><code>if</code>/<code>elif</code>/<code>else</code> (or <code>match</code> in 3.10+)</td><td><code>when</code> (no fall-through)</td></tr>
+          <tr><td>Branch as a value</td><td>not directly (needs a helper or dict lookup)</td><td><code>val g = when (...) { ... }</code></td></tr>
+          <tr><td>Grouped cases</td><td><code>elif x in (1, 2):</code></td><td><code>1, 2 -&gt;</code></td></tr>
+          <tr><td>Range test</td><td><code>1 &lt;= x &lt;= 10</code></td><td><code>x in 1..10</code></td></tr>
+          <tr><td>Conditional expression</td><td><code>a if a &gt; b else b</code></td><td><code>if (a &gt; b) a else b</code></td></tr>
+          <tr><td>Count down</td><td><code>for i in range(n, 0, -1):</code></td><td><code>for (i in n downTo 1)</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/10-inheritance.html">10. Inheritance</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Subclassable</td><td>every class (default)</td><td><code>open class</code> (opt in)</td></tr>
+          <tr><td>Overridable method</td><td>every method (default)</td><td><code>open fun</code> (opt in)</td></tr>
+          <tr><td>Override keyword</td><td>none needed</td><td><code>override</code> (required)</td></tr>
+          <tr><td>Abstract member</td><td><code>@abstractmethod<br>def sound(self): ...</code></td><td><code>abstract fun sound(): String</code></td></tr>
+          <tr><td>Base constructor</td><td><code>super().__init__(name)</code> in body</td><td><code>: Animal(name)</code> in header</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/11-interfaces.html">11. Interfaces</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Declare interface</td><td><code>class E(ABC): …</code></td><td><code>interface E { … }</code></td></tr>
+          <tr><td>Implement</td><td><code>class C(E):</code> (or duck typing / <code>Protocol</code>)</td><td><code>class C : E</code></td></tr>
+          <tr><td>Multiple interfaces</td><td><code>class C(A, B):</code></td><td><code>: A, B</code></td></tr>
+          <tr><td>Abstract property</td><td><code>@property</code> + <code>@abstractmethod</code></td><td><code>val name: String</code></td></tr>
+          <tr><td>Property with logic</td><td><code>@property</code> on the ABC</td><td><code>val p: T get() = …</code></td></tr>
+          <tr><td>Default method body</td><td>concrete method on the ABC</td><td><code>fun f() = …</code> in the interface</td></tr>
+          <tr><td>Override</td><td>just redefine the method</td><td><code>override</code> keyword required</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/12-sealed-classes.html">12. Sealed Classes</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Closed set of types</td><td>base class + subclasses (unenforced)</td><td><code>sealed class</code> / <code>sealed interface</code></td></tr>
+          <tr><td>Variant</td><td><code>@dataclass class Circle: ...</code></td><td><code>class Circle(...) : Shape()</code></td></tr>
+          <tr><td>Match</td><td><code>match shape: case Circle(): ...</code></td><td><code>when (s) { is Circle -&gt; }</code></td></tr>
+          <tr><td>Narrowing</td><td><code>case Circle(radius=r)</code> binds <code>r</code></td><td>smart cast after <code>is</code></td></tr>
+          <tr><td>Exhaustiveness</td><td>not checked — a missing case is silently skipped</td><td>built in — no <code>else</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/13-enums.html">13. Enums</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Declare</td><td><code>class Status(Enum): OK = auto()</code></td><td><code>enum class Status { OK }</code></td></tr>
+          <tr><td>Attach data</td><td><code>OK = 200</code> (via <code>value</code>)</td><td><code>OK(200)</code> + <code>val code</code></td></tr>
+          <tr><td>Constant name</td><td><code>Status.OK.name</code></td><td><code>Status.OK.name</code></td></tr>
+          <tr><td>Position</td><td>no built-in ordinal</td><td><code>Status.OK.ordinal</code></td></tr>
+          <tr><td>By name</td><td><code>Status["OK"]</code></td><td><code>Status.valueOf("OK")</code></td></tr>
+          <tr><td>All members</td><td><code>list(Status)</code></td><td><code>Status.values()</code></td></tr>
+          <tr><td>Switch</td><td><code>match</code> (no exhaustiveness check)</td><td>exhaustive <code>when</code> — no <code>else</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/14-lambdas-and-higher-order.html">14. Lambdas &amp; Higher-Order Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Lambda</td><td><code>lambda x: x + 1</code></td><td><code>{ x -> x + 1 }</code></td></tr>
+          <tr><td>Implicit single param</td><td>no equivalent (must name the parameter)</td><td><code>{ it + 1 }</code></td></tr>
+          <tr><td>Function type</td><td><code>Callable[[int], int]</code></td><td><code>(Int) -> Int</code></td></tr>
+          <tr><td>Trailing lambda</td><td><code>map(lambda x: …, arr)</code></td><td><code>list.map { … }</code></td></tr>
+          <tr><td>Returning a function</td><td><code>def m(): return lambda n: …</code></td><td><code>fun m(): (Int) -> Int = { … }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/15-collection-operations.html">15. Collection Operations</a></h3>
+        <table>
+          <tr><th>Goal</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Transform</td><td><code>[f(x) for x in xs]</code></td><td><code>xs.map { }</code></td></tr>
+          <tr><td>Keep some</td><td><code>[x for x in xs if p(x)]</code></td><td><code>xs.filter { }</code></td></tr>
+          <tr><td>Sum a field</td><td><code>sum(x.n for x in xs)</code></td><td><code>xs.sumOf { it.n }</code></td></tr>
+          <tr><td>Custom aggregate</td><td><code>functools.reduce(...)</code></td><td><code>xs.fold(seed) { a, x -&gt; }</code></td></tr>
+          <tr><td>Group</td><td>manual <code>dict</code> loop</td><td><code>xs.groupBy { }</code></td></tr>
+          <tr><td>Index by key</td><td><code>{x.key: x for x in xs}</code></td><td><code>xs.associateBy { }</code></td></tr>
+          <tr><td>Sort by key</td><td><code>sorted(xs, key=...)</code></td><td><code>xs.sortedBy { }</code></td></tr>
+          <tr><td>Any / all / count</td><td><code>any</code>/<code>all</code>/<code>sum(1 for ...)</code></td><td><code>any</code>/<code>all</code>/<code>count</code></td></tr>
+          <tr><td>Find one</td><td><code>next((x for x in xs if p(x)), None)</code></td><td><code>xs.find { }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/16-extension-functions.html">16. Extension Functions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Add a "method"</td><td><code>def f(x: T): ...</code> then <code>f(x)</code></td><td><code>fun T.f() {...}</code> then <code>x.f()</code></td></tr>
+          <tr><td>The receiver</td><td>first parameter (<code>self</code>-like)</td><td><code>this</code> (implicit)</td></tr>
+          <tr><td>Add a "property"</td><td>monkey-patched <code>property</code> (unsupported on builtins)</td><td><code>val T.p: R get() = ...</code></td></tr>
+          <tr><td>Dispatch</td><td>n/a</td><td>static (resolved by declared type)</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/17-generics.html">17. Generics</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Generic function</td><td><code>T = TypeVar("T")</code><br><code>def f(x: T) -&gt; T</code></td><td><code>fun &lt;T&gt; f(x: T)</code></td></tr>
+          <tr><td>Generic class</td><td><code>class Box(Generic[T])</code></td><td><code>class Box&lt;T&gt;(val value: T)</code></td></tr>
+          <tr><td>Upper bound</td><td><code>TypeVar("T", bound=X)</code></td><td><code>&lt;T : X&gt;</code></td></tr>
+          <tr><td>Producer (covariant)</td><td><code>TypeVar("T", covariant=True)</code></td><td><code>class Src&lt;out T&gt;</code> / <code>Box&lt;out T&gt;</code></td></tr>
+          <tr><td>Consumer (contravariant)</td><td><code>TypeVar("T", contravariant=True)</code></td><td><code>class Sink&lt;in T&gt;</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/18-scope-functions.html">18. Scope Functions</a></h3>
+        <table>
+          <tr><th>Function</th><th>Receiver is</th><th>Returns</th><th>Reach for it when…</th></tr>
+          <tr><td><code>apply</code></td><td><code>this</code></td><td>the receiver</td><td>configuring an object (builders)</td></tr>
+          <tr><td><code>also</code></td><td><code>it</code></td><td>the receiver</td><td>a side effect in a chain (log, validate)</td></tr>
+          <tr><td><code>let</code></td><td><code>it</code></td><td>block result</td><td>null-guarded transforms: <code>x?.let { … }</code></td></tr>
+          <tr><td><code>run</code></td><td><code>this</code></td><td>block result</td><td>computing a value from a receiver</td></tr>
+          <tr><td><code>with</code></td><td><code>this</code> (arg)</td><td>block result</td><td>many calls on one object, no chaining</td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/19-objects-and-companions.html">19. Objects &amp; Companions</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Singleton</td><td>module-level instance, e.g. <code>tally = Tally()</code></td><td><code>object Tally { … }</code></td></tr>
+          <tr><td>Class-level member</td><td><code>@classmethod def parse(cls, …)</code></td><td><code>companion object { fun parse(…) }</code></td></tr>
+          <tr><td>Class-level constant</td><td><code>SPECIES = "human"</code> (class attribute)</td><td><code>const val X</code> (in companion)</td></tr>
+          <tr><td>Private constructor</td><td>convention only — leading underscore or a private factory</td><td><code>class C private constructor(…)</code></td></tr>
+          <tr><td>Anonymous instance</td><td>a small local class instantiated on the spot</td><td><code>object : Greeter { … }</code></td></tr>
+        </table>
+      </div>
+      <div class="cheat-topic">
+        <h3><a href="lessons/20-capstone.html">20. Capstone</a></h3>
+        <table>
+          <tr><th>Concept</th><th>Python</th><th>Kotlin</th></tr>
+          <tr><td>Node hierarchy</td><td>tagged union of <code>@dataclass</code>es</td><td><code>sealed interface</code> + <code>data class</code></td></tr>
+          <tr><td>Recursive dispatch</td><td><code>match e: case Num(): ...</code></td><td>exhaustive <code>when (e)</code></td></tr>
+          <tr><td>Narrowing a variant</td><td><code>case Num(value=v)</code> destructures and binds <code>v</code></td><td>smart cast after <code>is</code></td></tr>
+          <tr><td>Missing value</td><td><code>float | None</code></td><td><code>Double?</code></td></tr>
+          <tr><td>Map/filter out nulls</td><td><code>[y for y in map(f, xs) if y is not None]</code></td><td><code>.mapNotNull { }</code></td></tr>
+        </table>
+      </div>
+  </section>
   <footer class="site-footer"><a href="../../index.html">Home</a> · <a href="mailto:cfinke@gmail.com">Contact</a> · <a href="https://github.com/cfinke/X-for-Y-Programmers/">Contribute</a></footer>
 </div>
 <script src="js/course.js"></script>

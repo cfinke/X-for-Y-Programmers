@@ -64,19 +64,31 @@ h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
   margin-bottom: 1.25rem;
 }
 
-.intro table, .notes table {
+.intro table, .notes table, .cheatsheet table {
   border-collapse: collapse;
   width: 100%;
   margin: 0.75rem 0;
   font-size: 0.9rem;
 }
 
-.intro th, .intro td, .notes th, .notes td {
+.intro th, .intro td, .notes th, .notes td,
+.cheatsheet th, .cheatsheet td {
   border: 1px solid var(--border);
   padding: 0.4rem 0.6rem;
   text-align: left;
   vertical-align: top;
 }
+
+.cheatsheet {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.cheat-intro { color: var(--muted); font-size: 0.9rem; margin: 0 0 1rem; }
+.cheat-topic { margin: 1.5rem 0; }
+.cheat-topic h3 { font-size: 1rem; margin: 0 0 0.4rem; }
+.cheat-topic h3 a { color: inherit; text-decoration: none; }
+.cheat-topic h3 a:hover { text-decoration: underline; }
 
 .intro th, .notes th { background: var(--ts-soft); }
 
